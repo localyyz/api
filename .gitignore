@@ -1,0 +1,12 @@
+.DS_Store
+cmd/*/tmp/
+bin/
+config/api.conf
+
+*~
+\#*\#
+.\#*
+
+*.test
+*.sw?
+.tags
