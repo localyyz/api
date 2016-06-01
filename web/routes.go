@@ -11,7 +11,13 @@ import (
 func New() http.Handler {
 	r := chi.NewRouter()
 
-	r.Post("/login/:network", auth.AuthCtx, auth.Login)
+	r.Post("/login/facebook", auth.FacebookLogin)
+
+	r.Route("/session", func(r chi.Router) {
+		r.Use(auth.SessionCtx)
+
+		r.Delete("/logout", auth.Logout)
+	})
 
 	return r
 }

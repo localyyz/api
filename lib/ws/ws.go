@@ -3,18 +3,91 @@ package ws
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"runtime"
+	"strings"
 )
 
-func Bind(payload io.Reader, v interface{}) error {
-	err := json.NewDecoder(payload).Decode(v)
-	io.Copy(ioutil.Discard, payload)
+type Result map[string]interface{}
+
+// Bind is a custom json decoder that adds additional json tag such as
+// `required`
+func Bind(payload io.Reader, v interface{}) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if _, ok := r.(runtime.Error); ok {
+				panic(r)
+			}
+
+			err = r.(error)
+		}
+	}()
+
+	// decode the json into a placeholder result map
+	b, err := ioutil.ReadAll(payload)
 	if err != nil {
-		return err
+		return
 	}
+
+	var r Result
+	err = json.Unmarshal(b, &r)
+	if err != nil {
+		return
+	}
+
+	// check required fields
+	err = checkRequired(r, reflect.ValueOf(v))
+	if err != nil {
+		return
+	}
+
+	// finally, decode into v
+	return json.Unmarshal(b, &v)
+}
+
+func checkRequired(r Result, v reflect.Value) error {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return fmt.Errorf("output value must be a struct.")
+	}
+
+	if !v.CanSet() {
+		return fmt.Errorf("output value cannot be set.")
+	}
+
+	vType := v.Type()
+	num := vType.NumField()
+
+	for i := 0; i < num; i++ {
+
+		jsonTag := vType.Field(i).Tag.Get("json")
+		if jsonTag == "" {
+			continue
+		}
+
+		index := strings.IndexRune(jsonTag, ',')
+		var name string
+		if index == -1 {
+			name = jsonTag
+		} else {
+			name = jsonTag[:index]
+		}
+
+		if jsonTag[index:] == ",required" {
+			// if required field and not found, throw error
+			if _, ok := r[name]; !ok {
+				return fmt.Errorf("required field '%v' missing in request", name)
+			}
+		}
+	}
+
 	return nil
 }
 

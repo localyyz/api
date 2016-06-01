@@ -14,9 +14,10 @@ type Account struct {
 	Name      string `db:"name" json:"name" facebook:"name"`
 	AvatarURL string `db:"avatar_url" json:"avatar_url"`
 
-	AccessToken string     `db:"access_token" json:"access_token"`
+	AccessToken string     `db:"access_token" json:"-"`
 	Network     string     `db:"network" json:"network"`
-	ExpiresAt   *time.Time `db:"expires_at" json:"expires_at"`
+	LoggedIn    bool       `db:"logged_in" json:"logged_in"`
+	LastLogInAt *time.Time `db:"last_login_at" json:"last_login_at"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"created_at,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updated_at,omitempty"`
