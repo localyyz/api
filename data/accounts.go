@@ -1,6 +1,7 @@
 package data
 
 import (
+	"encoding/json"
 	"time"
 
 	"upper.io/bond"
@@ -24,6 +25,12 @@ type Account struct {
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deleted_at,omitempty"`
 }
 
+// Authenticated user with jwt embed
+type AuthUser struct {
+	*Account
+	JWT string `json:"jwt"`
+}
+
 type AccountStore struct {
 	bond.Store
 }
@@ -36,10 +43,39 @@ func (s AccountStore) FindByUsername(username string) (*Account, error) {
 	return s.FindOne(db.Cond{"username": username})
 }
 
+func (s AccountStore) FindByID(ID int64) (*Account, error) {
+	return s.FindOne(db.Cond{"id": ID})
+}
+
 func (s AccountStore) FindOne(cond db.Cond) (*Account, error) {
 	var a *Account
 	if err := s.Find(cond).One(&a); err != nil {
 		return nil, err
 	}
 	return a, nil
+}
+
+// AuthUser wraps a user with JWT token
+func NewAuthUser(user *Account) (*AuthUser, error) {
+	token, err := GenerateToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &AuthUser{Account: user, JWT: token.Raw}, nil
+}
+
+// NewSessionUser returns a session user from jwt auth token
+func NewSessionUser(tok string) (*Account, error) {
+	token, err := DecodeToken(tok)
+	if err != nil {
+		return nil, err
+	}
+
+	userID, err := token.Claims["user_id"].(json.Number).Int64()
+	if err != nil {
+		return nil, err
+	}
+
+	// find a logged in user with the given id
+	return DB.Account.FindOne(db.Cond{"id": userID, "logged_in": true})
 }

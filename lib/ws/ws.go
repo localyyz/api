@@ -93,7 +93,8 @@ func checkRequired(r Result, v reflect.Value) error {
 
 func Respond(w http.ResponseWriter, status int, v interface{}) {
 	if err, ok := v.(error); ok {
-		JSON(w, status, WrapError(err))
+		status, err = WrapError(status, err)
+		JSON(w, status, err.Error())
 		return
 	}
 	val := reflect.ValueOf(v)

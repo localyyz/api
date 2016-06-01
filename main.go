@@ -35,6 +35,9 @@ func main() {
 	// [connect]
 	connect.Configure(conf.Connect)
 
+	// [jwt]
+	data.SetupJWTAuth(conf.Jwt.Secret)
+
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
 	graceful.PreHook(func() {

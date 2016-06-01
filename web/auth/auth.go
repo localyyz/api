@@ -3,9 +3,11 @@ package auth
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/pressly/chi"
 
+	"bitbucket.org/pxue/api/data"
 	"bitbucket.org/pxue/api/lib/connect"
 	"bitbucket.org/pxue/api/lib/ws"
 
@@ -14,6 +16,27 @@ import (
 
 func SessionCtx(next chi.Handler) chi.Handler {
 	return chi.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+
+		// check Authorization header for jwt
+		auth := r.Header.Get("Authorization")
+		if auth == "" {
+			ws.Respond(w, http.StatusUnauthorized, errors.New("no authorization header"))
+			return
+		}
+
+		const prefix = "BEARER "
+		if !strings.HasPrefix(auth, prefix) {
+			ws.Respond(w, http.StatusUnauthorized, errors.New("invalid authorization header"))
+			return
+		}
+
+		user, err := data.NewSessionUser(auth[len(prefix):])
+		if err != nil {
+			ws.Respond(w, http.StatusUnauthorized, err)
+			return
+		}
+		ctx = context.WithValue(ctx, "session.user", user)
+
 		next.ServeHTTPC(ctx, w, r)
 	})
 }
@@ -41,9 +64,24 @@ func FacebookLogin(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	ws.Respond(w, http.StatusOK, user)
+	authUser, err := data.NewAuthUser(user)
+	if err != nil {
+		ws.Respond(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusOK, authUser)
 }
 
 func Logout(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	ws.Respond(w, http.StatusOK, "")
+	user := ctx.Value("session.user").(*data.Account)
+
+	// logout the user
+	user.LoggedIn = false
+	if err := data.DB.Account.Save(user); err != nil {
+		ws.Respond(w, http.StatusServiceUnavailable, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusNoContent, "")
 }

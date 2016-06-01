@@ -22,6 +22,11 @@ type Config struct {
 
 	// [connect]
 	Connect connect.Configs `toml:"connect"`
+
+	// [jwt]
+	Jwt struct {
+		Secret string `toml:"secret"`
+	} `toml:"jwt"`
 }
 
 func NewFromFile(fileConfig, envConfig string) (*Config, error) {
