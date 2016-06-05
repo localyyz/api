@@ -26,7 +26,7 @@ func SetupFB(conf *Config) {
 	}
 }
 
-func (f *FBConnect) Login(token string) (*data.Account, error) {
+func (f *FBConnect) Login(token string) (*data.User, error) {
 	sess := f.App.Session(token)
 
 	userID, err := sess.User()
@@ -39,7 +39,7 @@ func (f *FBConnect) Login(token string) (*data.Account, error) {
 		return nil, err
 	}
 
-	user, err := data.DB.Account.FindByUsername(userID)
+	user, err := data.DB.User.FindByUsername(userID)
 	if err != nil {
 		if err != db.ErrNoMoreRows {
 			return nil, err
@@ -47,7 +47,7 @@ func (f *FBConnect) Login(token string) (*data.Account, error) {
 	}
 
 	if user == nil {
-		user = &data.Account{
+		user = &data.User{
 			AccessToken: token,
 			Network:     `facebook`,
 		}
@@ -67,14 +67,14 @@ func (f *FBConnect) Login(token string) (*data.Account, error) {
 	user.LoggedIn = true
 	user.LastLogInAt = &t
 
-	if err := data.DB.Account.Save(user); err != nil {
+	if err := data.DB.User.Save(user); err != nil {
 		return nil, err
 	}
 
 	return user, nil
 }
 
-func (f *FBConnect) GetUser(u *data.Account) error {
+func (f *FBConnect) GetUser(u *data.User) error {
 	if u.AccessToken == "" {
 		return errors.New("invalid token")
 	}

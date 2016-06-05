@@ -8,7 +8,7 @@ import (
 	"upper.io/db"
 )
 
-type Account struct {
+type User struct {
 	ID        int64  `db:"id,pk,omitempty" json:"id" facebook:"-"`
 	Username  string `db:"username" json:"username" facebook:"id,required"`
 	Email     string `db:"email" json:"email" facebook:"email"`
@@ -27,28 +27,28 @@ type Account struct {
 
 // Authenticated user with jwt embed
 type AuthUser struct {
-	*Account
+	*User
 	JWT string `json:"jwt"`
 }
 
-type AccountStore struct {
+type UserStore struct {
 	bond.Store
 }
 
-func (u *Account) CollectionName() string {
-	return `accounts`
+func (u *User) CollectionName() string {
+	return `users`
 }
 
-func (s AccountStore) FindByUsername(username string) (*Account, error) {
+func (s UserStore) FindByUsername(username string) (*User, error) {
 	return s.FindOne(db.Cond{"username": username})
 }
 
-func (s AccountStore) FindByID(ID int64) (*Account, error) {
+func (s UserStore) FindByID(ID int64) (*User, error) {
 	return s.FindOne(db.Cond{"id": ID})
 }
 
-func (s AccountStore) FindOne(cond db.Cond) (*Account, error) {
-	var a *Account
+func (s UserStore) FindOne(cond db.Cond) (*User, error) {
+	var a *User
 	if err := s.Find(cond).One(&a); err != nil {
 		return nil, err
 	}
@@ -56,16 +56,16 @@ func (s AccountStore) FindOne(cond db.Cond) (*Account, error) {
 }
 
 // AuthUser wraps a user with JWT token
-func NewAuthUser(user *Account) (*AuthUser, error) {
+func NewAuthUser(user *User) (*AuthUser, error) {
 	token, err := GenerateToken(user.ID)
 	if err != nil {
 		return nil, err
 	}
-	return &AuthUser{Account: user, JWT: token.Raw}, nil
+	return &AuthUser{User: user, JWT: token.Raw}, nil
 }
 
 // NewSessionUser returns a session user from jwt auth token
-func NewSessionUser(tok string) (*Account, error) {
+func NewSessionUser(tok string) (*User, error) {
 	token, err := DecodeToken(tok)
 	if err != nil {
 		return nil, err
@@ -77,5 +77,5 @@ func NewSessionUser(tok string) (*Account, error) {
 	}
 
 	// find a logged in user with the given id
-	return DB.Account.FindOne(db.Cond{"id": userID, "logged_in": true})
+	return DB.User.FindOne(db.Cond{"id": userID, "logged_in": true})
 }

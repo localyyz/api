@@ -74,11 +74,11 @@ func FacebookLogin(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 }
 
 func Logout(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	user := ctx.Value("session.user").(*data.Account)
+	user := ctx.Value("session.user").(*data.User)
 
 	// logout the user
 	user.LoggedIn = false
-	if err := data.DB.Account.Save(user); err != nil {
+	if err := data.DB.User.Save(user); err != nil {
 		ws.Respond(w, http.StatusServiceUnavailable, err)
 		return
 	}

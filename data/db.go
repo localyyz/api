@@ -19,7 +19,7 @@ var (
 type Database struct {
 	bond.Session
 
-	Account AccountStore
+	User UserStore
 }
 
 type DBConf struct {
@@ -47,7 +47,7 @@ func NewDBSession(conf DBConf) error {
 	if err != nil {
 		return err
 	}
-	db.Account = AccountStore{db.Store(&Account{})}
+	db.User = UserStore{db.Store(&User{})}
 
 	DB = db
 	return nil
