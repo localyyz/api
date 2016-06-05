@@ -15,7 +15,7 @@ import (
 )
 
 func SessionCtx(next chi.Handler) chi.Handler {
-	return chi.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 		// check Authorization header for jwt
 		auth := r.Header.Get("Authorization")
@@ -36,9 +36,9 @@ func SessionCtx(next chi.Handler) chi.Handler {
 			return
 		}
 		ctx = context.WithValue(ctx, "session.user", user)
-
 		next.ServeHTTPC(ctx, w, r)
-	})
+	}
+	return chi.HandlerFunc(handler)
 }
 
 // FacebookLogin handles both first-time login (signup) and repeated-logins from a social network

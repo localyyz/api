@@ -20,6 +20,7 @@ type Database struct {
 	bond.Session
 
 	User UserStore
+	Post PostStore
 }
 
 type DBConf struct {
@@ -48,6 +49,7 @@ func NewDBSession(conf DBConf) error {
 		return err
 	}
 	db.User = UserStore{db.Store(&User{})}
+	db.Post = PostStore{db.Store(&Post{})}
 
 	DB = db
 	return nil
