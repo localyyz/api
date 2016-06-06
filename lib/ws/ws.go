@@ -91,13 +91,40 @@ func checkRequired(r Result, v reflect.Value) error {
 	return nil
 }
 
-func Respond(w http.ResponseWriter, status int, v interface{}) {
+func cursorLinkHeader(w http.ResponseWriter, cursor *Page) {
+	var links []string
+	for name, url := range cursor.PageURLs() {
+		links = append(links, fmt.Sprintf("<%s>;rel=\"%s\"", url, name))
+	}
+
+	w.Header().Set("Link", strings.Join(links, ","))
+}
+
+func Respond(w http.ResponseWriter, status int, v interface{}, optCursor ...*Page) {
 	if err, ok := v.(error); ok {
 		status, err = WrapError(status, err)
 		JSON(w, status, err.Error())
 		return
 	}
 	val := reflect.ValueOf(v)
+
+	if len(optCursor) > 0 && optCursor[0] != nil {
+		cursor := optCursor[0]
+		cursorLinkHeader(w, cursor)
+
+		// Return first element of the slice only.
+		if cursor.FirstOnly() {
+			if val.Kind() == reflect.Slice {
+				if val.Len() > 0 {
+					v = val.Index(0).Interface()
+				} else {
+					v = nil
+				}
+			}
+			JSON(w, status, v)
+			return
+		}
+	}
 
 	// Force to return empty JSON array [] instead of null in case of zero slice.
 	if val.Kind() == reflect.Slice && val.IsNil() {

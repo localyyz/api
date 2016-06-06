@@ -73,6 +73,10 @@ func CreatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 func UpdatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	user := ctx.Value("session.user").(*data.User)
 	post := ctx.Value("post").(*data.Post)
+	if post.UserID != user.ID {
+		ws.Respond(w, http.StatusBadRequest, utils.ErrBadAction)
+		return
+	}
 
 	payload := struct {
 		*data.Post
@@ -108,6 +112,11 @@ func UpdatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 func DeletePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	post := ctx.Value("post").(*data.Post)
+	user := ctx.Value("session.user").(*data.User)
+	if post.UserID != user.ID {
+		ws.Respond(w, http.StatusBadRequest, utils.ErrBadAction)
+		return
+	}
 
 	if err := data.DB.Post.Delete(post); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)

@@ -3,5 +3,6 @@ package utils
 import "errors"
 
 var (
-	ErrBadID = errors.New("bad or invalid id")
+	ErrBadID     = errors.New("bad or invalid id")
+	ErrBadAction = errors.New("can't do this")
 )

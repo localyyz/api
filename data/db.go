@@ -19,8 +19,10 @@ var (
 type Database struct {
 	bond.Session
 
-	User UserStore
-	Post PostStore
+	User    UserStore
+	Post    PostStore
+	Like    LikeStore
+	Comment CommentStore
 }
 
 type DBConf struct {
@@ -50,6 +52,8 @@ func NewDBSession(conf DBConf) error {
 	}
 	db.User = UserStore{db.Store(&User{})}
 	db.Post = PostStore{db.Store(&Post{})}
+	db.Like = LikeStore{db.Store(&Like{})}
+	db.Comment = CommentStore{db.Store(&Comment{})}
 
 	DB = db
 	return nil
