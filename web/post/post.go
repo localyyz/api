@@ -123,5 +123,5 @@ func DeletePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws.Respond(w, http.StatusNoContent, "")
+	ws.Respond(w, http.StatusNoContent, nil)
 }

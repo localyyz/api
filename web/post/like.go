@@ -73,5 +73,5 @@ func UnlikePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
-	ws.Respond(w, http.StatusNoContent, "")
+	ws.Respond(w, http.StatusNoContent, nil)
 }

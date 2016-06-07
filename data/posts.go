@@ -88,6 +88,15 @@ func (p *Post) UpdateLikeCount() {
 	}
 }
 
+// Update comment count on the post...
+func (p *Post) UpdateCommentCount() {
+	count, err := DB.Comment.Find(db.Cond{"post_id": p.ID}).Count()
+	if err == nil {
+		p.Comments = uint32(count)
+		DB.Save(p)
+	}
+}
+
 func (s *PostStore) FindByID(postID int64) (*Post, error) {
 	return s.FindOne(db.Cond{"id": postID})
 }
