@@ -19,8 +19,8 @@ func Routes() http.Handler {
 		r.Mount("/comment", CommentRoutes())
 
 		r.Get("/", GetPost)
-		r.Put("/", UpdatePost)    // user
-		r.Delete("/", DeletePost) // user
+		r.Put("/", UpdatePost)    // self user
+		r.Delete("/", DeletePost) // self user
 	})
 
 	return r

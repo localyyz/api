@@ -56,8 +56,8 @@ func AddComment(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 		// Ignore
 		ID        interface{} `json:"id,omitempty"`
-		PostID    interface{} `json:"post_id,omitempty"`
-		CreatedAt interface{} `json:"created_at,omitempty"`
+		PostID    interface{} `json:"postId,omitempty"`
+		CreatedAt interface{} `json:"createdAt,omitempty"`
 	}
 	if err := ws.Bind(r.Body, &payload); err != nil {
 		ws.Respond(w, http.StatusBadRequest, err)

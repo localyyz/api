@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"bitbucket.org/pxue/api/web/auth"
-	"bitbucket.org/pxue/api/web/me"
 	"bitbucket.org/pxue/api/web/post"
+	"bitbucket.org/pxue/api/web/user"
 
 	"github.com/pressly/chi"
 )
@@ -21,7 +21,7 @@ func New() http.Handler {
 			r.Delete("/logout", auth.Logout)
 		})
 
-		r.Mount("/me", me.Routes())
+		r.Mount("/users", user.Routes())
 		r.Mount("/posts", post.Routes())
 	})
 

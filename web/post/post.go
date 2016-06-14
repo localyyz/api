@@ -43,11 +43,11 @@ func CreatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 		// Ignore
 		ID        interface{} `json:"id,omitempty"`
-		UserID    interface{} `json:"user_id,omitempty"`
+		UserID    interface{} `json:"userId,omitempty"`
 		Comments  interface{} `json:"comments,omitempty"`
 		Likes     interface{} `json:"comments,omitempty"`
-		CreatedAt interface{} `json:"created_at,omitempty"`
-		UpdatedAt interface{} `json:"updated_at,omitempty"`
+		CreatedAt interface{} `json:"createdAt,omitempty"`
+		UpdatedAt interface{} `json:"updatedAt,omitempty"`
 	}
 	if err := ws.Bind(r.Body, &payload); err != nil {
 		ws.Respond(w, http.StatusBadRequest, err)
@@ -83,13 +83,13 @@ func UpdatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 		// Ignore
 		ID        interface{} `json:"id,omitempty"`
-		UserID    interface{} `json:"user_id,omitempty"`
+		UserID    interface{} `json:"userId,omitempty"`
 		Comments  interface{} `json:"comments,omitempty"`
 		Likes     interface{} `json:"comments,omitempty"`
 		Filter    interface{} `json:"filter,omitempty"`
-		ImageURL  interface{} `json:"image_url,omitempty"`
-		CreatedAt interface{} `json:"created_at,omitempty"`
-		UpdatedAt interface{} `json:"updated_at,omitempty"`
+		ImageURL  interface{} `json:"imageUrl,omitempty"`
+		CreatedAt interface{} `json:"createdAt,omitempty"`
+		UpdatedAt interface{} `json:"updatedAt,omitempty"`
 	}{Post: post}
 	if err := ws.Bind(r.Body, &payload); err != nil {
 		ws.Respond(w, http.StatusBadRequest, err)

@@ -21,7 +21,7 @@ type Post struct {
 
 	Likes    uint32 `db:"likes" json:"likes"`
 	Comments uint32 `db:"comments" json:"comments"`
-	Score    uint64 `db:"score" json:"-"` // internal score
+	Score    uint64 `db:"score" json:"-"` // internal score for trending
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -106,6 +106,15 @@ func (p *Post) AfterCreate(sess bond.Session) error {
 		return err
 	}
 	return nil
+}
+
+func (store *PostStore) FindUserRecent(userID int64, optCursor ...*ws.Page) ([]*Post, error) {
+	var posts []*Post
+	q := store.Find(db.Cond{"user_id": userID}).Sort("-created_at")
+	if err := q.All(&posts); err != nil {
+		return nil, err
+	}
+	return posts, nil
 }
 
 func (store *PostStore) FindByID(postID int64) (*Post, error) {
