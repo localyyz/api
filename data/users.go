@@ -13,16 +13,16 @@ type User struct {
 	Username  string `db:"username" json:"username" facebook:"id,required"`
 	Email     string `db:"email" json:"email" facebook:"email"`
 	Name      string `db:"name" json:"name" facebook:"name"`
-	AvatarURL string `db:"avatar_url" json:"avatar_url"`
+	AvatarURL string `db:"avatar_url" json:"avatarUrl"`
 
 	AccessToken string     `db:"access_token" json:"-"`
 	Network     string     `db:"network" json:"network"`
-	LoggedIn    bool       `db:"logged_in" json:"logged_in"`
-	LastLogInAt *time.Time `db:"last_login_at" json:"last_login_at"`
+	LoggedIn    bool       `db:"logged_in" json:"loggedIn"`
+	LastLogInAt *time.Time `db:"last_login_at" json:"lastLoginAt"`
 
-	CreatedAt *time.Time `db:"created_at,omitempty" json:"created_at,omitempty"`
-	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updated_at,omitempty"`
-	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deleted_at,omitempty"`
+	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
+	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
+	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt,omitempty"`
 }
 
 // Authenticated user with jwt embed

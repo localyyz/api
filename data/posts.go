@@ -12,8 +12,8 @@ import (
 
 type Post struct {
 	ID         int64      `db:"id,pk,omitempty" json:"id"`
-	UserID     int64      `db:"user_id" json:"id"`
-	LocationID int64      `db:"location_id" json:"location_id"`
+	UserID     int64      `db:"user_id" json:"userId"`
+	LocationID int64      `db:"location_id" json:"locationId"`
 	Filter     PostFilter `db:"filter" json:"filter"`
 
 	Caption  string
@@ -23,8 +23,8 @@ type Post struct {
 	Comments uint32 `db:"comments" json:"comments"`
 	Score    uint64 `db:"score" json:"-"` // internal score
 
-	CreatedAt *time.Time `db:"created_at,omitempty" json:"created_at,omitempty"`
-	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"upated_at,omitempty"`
+	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
+	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 }
 
 type PostStore struct {
@@ -39,6 +39,7 @@ const (
 
 var _ interface {
 	bond.HasBeforeCreate
+	bond.HasAfterCreate
 } = &Post{}
 
 var (
@@ -49,14 +50,8 @@ func (p *Post) CollectionName() string {
 	return `posts`
 }
 
-func (p *Post) BeforeCreate(bond.Session) error {
-	p.CreatedAt = GetTimeUTCPointer()
-
-	return nil
-}
-
-func (s *PostStore) GetTrending(cursor *ws.Page) ([]*Post, error) {
-	q := s.Find().Sort("-score")
+func (store *PostStore) GetTrending(cursor *ws.Page) ([]*Post, error) {
+	q := store.Find().Sort("-score")
 	if cursor != nil {
 		q = cursor.UpdateQueryUpper(q)
 	}
@@ -67,8 +62,8 @@ func (s *PostStore) GetTrending(cursor *ws.Page) ([]*Post, error) {
 	return posts, nil
 }
 
-func (s *PostStore) GetFresh(cursor *ws.Page) ([]*Post, error) {
-	q := s.Find().Sort("-created_at")
+func (store *PostStore) GetFresh(cursor *ws.Page) ([]*Post, error) {
+	q := store.Find().Sort("-created_at")
 	if cursor != nil {
 		q = cursor.UpdateQueryUpper(q)
 	}
@@ -97,34 +92,58 @@ func (p *Post) UpdateCommentCount() {
 	}
 }
 
-func (s *PostStore) FindByID(postID int64) (*Post, error) {
-	return s.FindOne(db.Cond{"id": postID})
+func (p *Post) BeforeCreate(bond.Session) error {
+	p.CreatedAt = GetTimeUTCPointer()
+
+	return nil
 }
 
-func (s *PostStore) FindOne(cond db.Cond) (*Post, error) {
+func (p *Post) AfterCreate(sess bond.Session) error {
+	// add to user points
+	// TODO: throttle + daily limit?
+	if err := DB.UserPoint.Tx(sess).Save(&UserPoint{UserID: p.UserID, PostID: p.ID}); err != nil {
+		sess.Rollback()
+		return err
+	}
+	return nil
+}
+
+func (store *PostStore) FindByID(postID int64) (*Post, error) {
+	return store.FindOne(db.Cond{"id": postID})
+}
+
+func (store *PostStore) FindOne(cond db.Cond) (*Post, error) {
 	var p *Post
-	if err := s.Find(cond).One(&p); err != nil {
+	if err := store.Find(cond).One(&p); err != nil {
 		return nil, err
 	}
 	return p, nil
 }
 
+func (store *PostStore) FindAll(cond db.Cond) ([]*Post, error) {
+	var posts []*Post
+	if err := store.Find(cond).All(&posts); err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
 // String returns the string value of the status.
-func (s PostFilter) String() string {
-	return postFilters[s]
+func (pf PostFilter) String() string {
+	return postFilters[pf]
 }
 
 // MarshalText satisfies TextMarshaler
-func (s PostFilter) MarshalText() ([]byte, error) {
-	return []byte(s.String()), nil
+func (pf PostFilter) MarshalText() ([]byte, error) {
+	return []byte(pf.String()), nil
 }
 
 // UnmarshalText satisfies TextUnmarshaler
-func (s *PostFilter) UnmarshalText(text []byte) error {
+func (pf *PostFilter) UnmarshalText(text []byte) error {
 	enum := string(text)
 	for i := 0; i < len(postFilters); i++ {
 		if enum == postFilters[i] {
-			*s = PostFilter(i)
+			*pf = PostFilter(i)
 			return nil
 		}
 	}

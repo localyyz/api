@@ -9,10 +9,10 @@ import (
 
 type Comment struct {
 	ID        int64      `db:"id,pk,omitempty" json:"id"`
-	UserID    int64      `db:"user_id" json:"user_id"`
-	PostID    int64      `db:"post_id" json:"post_id"`
+	UserID    int64      `db:"user_id" json:"userId"`
+	PostID    int64      `db:"post_id" json:"postId"`
 	Body      string     `db:"body" json:"body"`
-	CreatedAt *time.Time `db:"created_at,omitempty" json:"created_at,omitempty"`
+	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 }
 
 type CommentStore struct {
@@ -29,25 +29,25 @@ func (c *Comment) CollectionName() string {
 	return `comments`
 }
 
-func (s *CommentStore) FindByPostID(postID int64) ([]*Comment, error) {
-	return s.FindAll(db.Cond{"post_id": postID})
+func (store *CommentStore) FindByPostID(postID int64) ([]*Comment, error) {
+	return store.FindAll(db.Cond{"post_id": postID})
 }
 
-func (s *CommentStore) FindByID(commentID int64) (*Comment, error) {
-	return s.FindOne(db.Cond{"id": commentID})
+func (store *CommentStore) FindByID(commentID int64) (*Comment, error) {
+	return store.FindOne(db.Cond{"id": commentID})
 }
 
-func (s *CommentStore) FindAll(cond db.Cond) ([]*Comment, error) {
+func (store *CommentStore) FindAll(cond db.Cond) ([]*Comment, error) {
 	var cs []*Comment
-	if err := s.Find(cond).All(&cs); err != nil {
+	if err := store.Find(cond).All(&cs); err != nil {
 		return nil, err
 	}
 	return cs, nil
 }
 
-func (s *CommentStore) FindOne(cond db.Cond) (*Comment, error) {
+func (store *CommentStore) FindOne(cond db.Cond) (*Comment, error) {
 	var c *Comment
-	if err := s.Find(cond).One(&c); err != nil {
+	if err := store.Find(cond).One(&c); err != nil {
 		return nil, err
 	}
 	return c, nil
