@@ -3,10 +3,10 @@ package post
 import (
 	"net/http"
 
-	"golang.org/x/net/context"
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 
-	"bitbucket.org/pxue/api/data"
-	"bitbucket.org/pxue/api/lib/ws"
+	"golang.org/x/net/context"
 )
 
 func ListTrendingPost(ctx context.Context, w http.ResponseWriter, r *http.Request) {

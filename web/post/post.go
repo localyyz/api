@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"bitbucket.org/pxue/api/data"
-	"bitbucket.org/pxue/api/lib/ws"
-	"bitbucket.org/pxue/api/web/utils"
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/utils"
+
 	"github.com/pressly/chi"
 	"golang.org/x/net/context"
 )

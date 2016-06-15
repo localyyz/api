@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"bitbucket.org/pxue/api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 
 	"upper.io/bond"
 	"upper.io/db"

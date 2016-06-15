@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pressly/chi"
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 
-	"bitbucket.org/pxue/api/data"
-	"bitbucket.org/pxue/api/lib/connect"
-	"bitbucket.org/pxue/api/lib/ws"
+	"github.com/pressly/chi"
 
 	"golang.org/x/net/context"
 )

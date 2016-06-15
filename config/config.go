@@ -4,8 +4,8 @@ import (
 	"errors"
 	"os"
 
-	"bitbucket.org/pxue/api/data"
-	"bitbucket.org/pxue/api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 
 	"github.com/BurntSushi/toml"
 )

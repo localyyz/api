@@ -3,9 +3,9 @@ package web
 import (
 	"net/http"
 
-	"bitbucket.org/pxue/api/web/auth"
-	"bitbucket.org/pxue/api/web/post"
-	"bitbucket.org/pxue/api/web/user"
+	"bitbucket.org/moodie-app/moodie-api/web/auth"
+	"bitbucket.org/moodie-app/moodie-api/web/post"
+	"bitbucket.org/moodie-app/moodie-api/web/user"
 
 	"github.com/pressly/chi"
 )

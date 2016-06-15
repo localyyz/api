@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/utils"
+
 	"github.com/pressly/chi"
 
 	"upper.io/db"
-
-	"bitbucket.org/pxue/api/data"
-	"bitbucket.org/pxue/api/lib/ws"
-	"bitbucket.org/pxue/api/web/utils"
 
 	"golang.org/x/net/context"
 )

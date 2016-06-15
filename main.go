@@ -6,13 +6,13 @@ import (
 	"syscall"
 	"time"
 
-	"bitbucket.org/pxue/api/config"
-	"bitbucket.org/pxue/api/data"
-	"bitbucket.org/pxue/api/lib/connect"
-	"bitbucket.org/pxue/api/web"
+	"bitbucket.org/moodie-app/moodie-api/config"
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 
 	"github.com/goware/lg"
 	"github.com/zenazn/goji/graceful"
+	"github.com/zenazn/goji/web"
 )
 
 var (
