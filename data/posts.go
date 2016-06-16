@@ -98,8 +98,7 @@ func (p *Post) UpdateCommentCount() {
 
 // Update score
 func (p *Post) UpdateScore() {
-	// We should decay the post score
-	p.Score = p.Score + p.Likes + p.Comments
+	p.Score = p.CreatedAt.Unix() + p.Likes + p.Comments
 	DB.Save(p)
 }
 
@@ -115,6 +114,7 @@ func (p *Post) BeforeCreate(bond.Session) error {
 
 func (p *Post) AfterCreate(sess bond.Session) error {
 	// add to user points
+	// TODO: smarter throttling. ie 2 points max per venue, up to 3 venue..
 	count, err := DB.UserPoint.Tx(session).CountByUserID(p.UserID)
 	if err != nil {
 		return err
