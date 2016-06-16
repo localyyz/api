@@ -19,8 +19,6 @@ print-%: ; @echo $*=$($*)
 run:
 	@(export CONFIG=$$PWD/config/api.conf && go run main.go)
 
-bindir:
+build:
 	@mkdir -p ./bin
-
-build: bindir
-	GOGC=off go build -i -o ./bin/api ./
+	GOGC=off go build -i -o ./bin/api ./main.go
