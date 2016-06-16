@@ -20,6 +20,8 @@ var (
 )
 
 func main() {
+	flags.Parse(os.Args[1:])
+
 	conf, err := config.NewFromFile(*confFile, os.Getenv("CONFIG"))
 	if err != nil {
 		lg.Fatal(err)
