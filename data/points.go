@@ -35,6 +35,10 @@ func (store *UserPointStore) FindByUserID(userID int64) ([]*UserPoint, error) {
 	return store.FindAll(db.Cond{"user_id": userID})
 }
 
+func (store *UserPointStore) CountByUserID(userID int64) (uint64, error) {
+	return store.Find(db.Cond{"user_id": userID}).Count()
+}
+
 func (store *UserPointStore) FindAll(cond db.Cond) ([]*UserPoint, error) {
 	var points []*UserPoint
 	if err := DB.UserPoint.Find(cond).All(&points); err != nil {

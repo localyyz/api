@@ -44,7 +44,8 @@ var _ interface {
 } = &Post{}
 
 var (
-	postFilters = []string{"none"}
+	postFilters     = []string{"none"}
+	DailyPointLimit = 3
 )
 
 func (p *Post) CollectionName() string {
@@ -114,7 +115,14 @@ func (p *Post) BeforeCreate(bond.Session) error {
 
 func (p *Post) AfterCreate(sess bond.Session) error {
 	// add to user points
-	// TODO: throttle + daily limit?
+	count, err := DB.UserPoint.Tx(session).CountByUserID(p.UserID)
+	if err != nil {
+		return err
+	}
+	if count > DailyPointLimit { // do nothing
+		return nil
+	}
+
 	if err := DB.UserPoint.Tx(sess).Save(&UserPoint{UserID: p.UserID, PostID: p.ID}); err != nil {
 		sess.Rollback()
 		return err
