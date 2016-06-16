@@ -9,9 +9,9 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/goware/lg"
 	"github.com/zenazn/goji/graceful"
-	"github.com/zenazn/goji/web"
 )
 
 var (

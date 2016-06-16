@@ -13,6 +13,11 @@ import (
 func New() http.Handler {
 	r := chi.NewRouter()
 
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`¯\_(ツ)_/¯`))
+	})
+
 	r.Post("/login/facebook", auth.FacebookLogin)
 
 	r.Group(func(r chi.Router) {
