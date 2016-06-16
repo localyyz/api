@@ -22,6 +22,7 @@ type Post struct {
 	Likes    uint32 `db:"likes" json:"likes"`
 	Comments uint32 `db:"comments" json:"comments"`
 	Score    uint64 `db:"score" json:"-"` // internal score for trending
+	Featured int64  `db:"featured" json:"featured"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -81,6 +82,7 @@ func (p *Post) UpdateLikeCount() {
 		p.Likes = uint32(count)
 		DB.Save(p)
 	}
+	p.UpdateScore()
 }
 
 // Update comment count on the post...
@@ -90,10 +92,22 @@ func (p *Post) UpdateCommentCount() {
 		p.Comments = uint32(count)
 		DB.Save(p)
 	}
+	p.UpdateScore()
+}
+
+// Update score
+func (p *Post) UpdateScore() {
+	// We should decay the post score
+	p.Score = p.Score + p.Likes + p.Comments
+	DB.Save(p)
 }
 
 func (p *Post) BeforeCreate(bond.Session) error {
 	p.CreatedAt = GetTimeUTCPointer()
+
+	// score is current time in utc.
+	// NOTE: if no one likes or comments. trending = fresh
+	p.Score = p.CreatedAt.Unix()
 
 	return nil
 }

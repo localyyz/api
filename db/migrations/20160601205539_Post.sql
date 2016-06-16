@@ -21,6 +21,7 @@ CREATE TABLE posts (
     likes integer DEFAULT 0 NOT NULL,
     comments integer DEFAULT 0 NOT NULL,
     score bigint DEFAULT 0 NOT NULL,
+    featured bigint DEFAULT 0 NOT NULL,
 
     created_at timestamp DEFAULT now() NOT NULL,
     updated_at timestamp,
