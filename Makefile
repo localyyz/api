@@ -14,9 +14,6 @@ all:
 	@echo "  build-all             - build all binaries into bin/ directory"
 	@echo ""
 
-#LDFLAGS+=-X github.com/pressly/api.VERSION=$$(scripts/version.sh)
-#LDFLAGS+=-X github.com/pressly/api.LONGVERSION=$$(scripts/version.sh --long)
-
 print-%: ; @echo $*=$($*)
 
 run:
@@ -26,4 +23,4 @@ bindir:
 	@mkdir -p ./bin
 
 build: bindir
-	GOGC=off go build -i -ldflags "$(LDFLAGS)" -o ./bin/api ./
+	GOGC=off go build -i -o ./bin/api ./
