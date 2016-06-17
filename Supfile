@@ -1,0 +1,98 @@
+# Moodie
+---
+
+env:
+  NAME: api
+  IMAGE: paulx/api
+  HOST_PORT: 5331
+  CONTAINER_PORT: 5331
+  CONFIG: /data/etc/api.conf
+
+networks:
+  local:
+    env:
+      ENV: localhost
+    hosts:
+      - localhost
+  production:
+    env:
+      ENV: production
+    hosts:
+      - ubuntu@159.203.26.181
+
+commands:
+  config:
+    desc: Upload/test config file.
+    upload:
+     - src: ./config/api.conf
+       dst: /data/etc/
+    run: test -f $CONFIG
+
+  ping:
+    desc: Print uname and current date/time.
+    run: uname -a; date
+
+  ps:
+    desc: List running Docker containers
+    run: docker ps | grep $NAME
+
+  pull:
+    desc: Pull latest Docker image
+    run: docker pull $IMAGE
+
+  image:
+    desc: List Docker image
+    run: docker images | grep $IMAGE
+
+  run:
+    desc: Run Docker container
+    script: ./scripts/docker-run.sh
+
+  logs:
+    desc: Docker logs
+    run: docker logs $NAME
+
+  tail-logs:
+    desc: Tail Docker logs
+    run: docker logs --tail=20 -f $NAME 2>&1
+
+  health:
+    desc: Application health check
+    run: curl localhost:$HOST_PORT
+
+  start:
+    desc: Start Docker container
+    run: docker start $NAME || exit 0
+
+  restart:
+    desc: Restart Docker container
+    run: docker restart $NAME || exit 0
+
+  stop:
+    desc: Stop Docker container
+    run: docker stop $NAME || exit 0
+
+  rm:
+    desc: Remove Docker container
+    run: docker rm $NAME || exit 0
+
+  shell:
+    desc: Interactive shell on all hosts
+    stdin: true
+    run: /bin/sh
+
+  exec:
+    desc: Exec into Docker container
+    stdin: true
+    run: docker exec -i $NAME bash
+
+targets:
+  deploy:
+    - pull
+    - config
+    - stop
+    - rm
+    - run
+    - ps
+    - logs
+    - health

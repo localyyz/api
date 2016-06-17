@@ -3,15 +3,14 @@
 Routes:
 
 `GET /`
-	Health check URI
+    Health check URI
 
 `POST /login/facebook`
-	login with facebook
- 
- required:
- 	
- 	`token: string`
- 	exchange short-lived facebook token for an user object
+    login with facebook
+
+required:
+
+    `token: string` // exchange short-lived facebook token for an user object
  	
  resp:
  
