@@ -26,7 +26,7 @@ commands:
     upload:
      - src: ./config/api.conf
        dst: /data/etc/
-    run: test -f $CONFIG
+    run: test -f $CONFIG || exit 1
 
   ping:
     desc: Print uname and current date/time.

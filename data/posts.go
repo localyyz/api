@@ -98,7 +98,7 @@ func (p *Post) UpdateCommentCount() {
 
 // Update score
 func (p *Post) UpdateScore() {
-	p.Score = p.CreatedAt.Unix() + p.Likes + p.Comments
+	p.Score = uint64(p.CreatedAt.Unix()) + uint64(p.Likes) + uint64(p.Comments)
 	DB.Save(p)
 }
 
@@ -107,7 +107,7 @@ func (p *Post) BeforeCreate(bond.Session) error {
 
 	// score is current time in utc.
 	// NOTE: if no one likes or comments. trending = fresh
-	p.Score = p.CreatedAt.Unix()
+	p.Score = uint64(p.CreatedAt.Unix())
 
 	return nil
 }
@@ -115,15 +115,15 @@ func (p *Post) BeforeCreate(bond.Session) error {
 func (p *Post) AfterCreate(sess bond.Session) error {
 	// add to user points
 	// TODO: smarter throttling. ie 2 points max per venue, up to 3 venue..
-	count, err := DB.UserPoint.Tx(session).CountByUserID(p.UserID)
+	count, err := DB.UserPoint.CountByUserID(p.UserID)
 	if err != nil {
 		return err
 	}
-	if count > DailyPointLimit { // do nothing
+	if int(count) > DailyPointLimit { // do nothing
 		return nil
 	}
 
-	if err := DB.UserPoint.Tx(sess).Save(&UserPoint{UserID: p.UserID, PostID: p.ID}); err != nil {
+	if err := DB.UserPoint.Save(&UserPoint{UserID: p.UserID, PostID: p.ID}); err != nil {
 		sess.Rollback()
 		return err
 	}
