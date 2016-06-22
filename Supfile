@@ -24,9 +24,10 @@ commands:
   config:
     desc: Upload/test config file.
     upload:
-     - src: ./config/api.production.conf
-       dst: /data/etc/api.conf
-    run: test -f $CONFIG || exit 1
+     - src: ./config/api.$SUP_NETWORK.conf
+       dst: /tmp/
+    run:
+        test -f /tmp/config/api.$SUP_NETWORK.conf || exit 1 && mv /tmp/config/api.$SUP_NETWORK.conf $CONFIG
 
   ping:
     desc: Print uname and current date/time.
