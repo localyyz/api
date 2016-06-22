@@ -16,8 +16,8 @@ type Post struct {
 	LocationID int64      `db:"location_id" json:"locationId"`
 	Filter     PostFilter `db:"filter" json:"filter"`
 
-	Caption  string
-	ImageURL string // TODO imageID? for now, just serve the image is fine
+	Caption  string `db:"caption" json:"caption"`
+	ImageURL string `db:"image_url" json:"imageUrl"`
 
 	Likes    uint32 `db:"likes" json:"likes"`
 	Comments uint32 `db:"comments" json:"comments"`

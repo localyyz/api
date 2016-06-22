@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
+	"bitbucket.org/moodie-app/moodie-api/web/middleware/logger"
 	"bitbucket.org/moodie-app/moodie-api/web/post"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
 
@@ -12,6 +13,8 @@ import (
 
 func New() http.Handler {
 	r := chi.NewRouter()
+
+	r.Use(logger.Logger)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

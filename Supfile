@@ -24,8 +24,8 @@ commands:
   config:
     desc: Upload/test config file.
     upload:
-     - src: ./config/api.conf
-       dst: /data/etc/
+     - src: ./config/api.production.conf
+       dst: /data/etc/api.conf
     run: test -f $CONFIG || exit 1
 
   ping:
