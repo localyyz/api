@@ -25,6 +25,11 @@ type User struct {
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt,omitempty"`
 }
 
+type UserContext struct {
+	Commented bool
+	Liked     bool
+}
+
 // Authenticated user with jwt embed
 type AuthUser struct {
 	*User

@@ -28,6 +28,12 @@ type Post struct {
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 }
 
+type PostWithUser struct {
+	*Post
+	User    *User        `json:"user"`
+	Context *UserContext `json:"context"`
+}
+
 type PostStore struct {
 	bond.Store
 }

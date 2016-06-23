@@ -3,6 +3,8 @@ package post
 import (
 	"net/http"
 
+	"github.com/goware/lg"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 
@@ -16,8 +18,17 @@ func ListTrendingPost(ctx context.Context, w http.ResponseWriter, r *http.Reques
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
-	ws.Respond(w, http.StatusOK, posts, cursor.Update(posts))
-	return
+	resp := []*data.PostWithUser{}
+	for _, p := range posts {
+		u, err := data.DB.User.FindByID(p.UserID)
+		if err != nil {
+			lg.Warn(err)
+			continue
+		}
+		resp = append(resp, &data.PostWithUser{Post: p, User: u})
+	}
+
+	ws.Respond(w, http.StatusOK, resp, cursor.Update(resp))
 }
 
 func ListFreshPost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -27,6 +38,16 @@ func ListFreshPost(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
-	ws.Respond(w, http.StatusOK, posts, cursor.Update(posts))
-	return
+
+	resp := []*data.PostWithUser{}
+	for _, p := range posts {
+		u, err := data.DB.User.FindByID(p.UserID)
+		if err != nil {
+			lg.Warn(err)
+			continue
+		}
+		resp = append(resp, &data.PostWithUser{Post: p, User: u})
+	}
+
+	ws.Respond(w, http.StatusOK, resp, cursor.Update(resp))
 }
