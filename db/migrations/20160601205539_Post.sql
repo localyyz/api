@@ -12,7 +12,7 @@ CREATE SEQUENCE post_id_seq
 CREATE TABLE posts (
     id bigint PRIMARY KEY DEFAULT nextval('post_id_seq'::regclass) NOT NULL,
     user_id bigint REFERENCES users (id),
-    location_id bigint,
+    place_id bigint REFERENCES places (id),
     
     caption text,
     image_url text,

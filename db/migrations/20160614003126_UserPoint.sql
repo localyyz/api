@@ -10,7 +10,7 @@ CREATE SEQUENCE user_point_id_seq
     CACHE 1;
 
 CREATE TABLE user_points (
-    id bigint PRIMARY KEY DEFAULT nextval('like_id_seq'::regclass) NOT NULL,
+    id bigint PRIMARY KEY DEFAULT nextval('user_point_id_seq'::regclass) NOT NULL,
     user_id bigint REFERENCES users (id),
     post_id bigint REFERENCES posts (id) ON DELETE CASCADE,
     

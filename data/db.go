@@ -24,6 +24,10 @@ type Database struct {
 	Like      LikeStore
 	Comment   CommentStore
 	UserPoint UserPointStore
+
+	Place        PlaceStore
+	PlaceType    PlaceTypeStore
+	Neighborhood NeighborhoodStore
 }
 
 type DBConf struct {
@@ -56,6 +60,10 @@ func NewDBSession(conf DBConf) error {
 	db.Like = LikeStore{db.Store(&Like{})}
 	db.Comment = CommentStore{db.Store(&Comment{})}
 	db.UserPoint = UserPointStore{db.Store(&UserPoint{})}
+
+	db.Place = PlaceStore{db.Store(&Place{})}
+	db.PlaceType = PlaceTypeStore{db.Store(&PlaceType{})}
+	db.Neighborhood = NeighborhoodStore{db.Store(&Neighborhood{})}
 
 	DB = db
 	return nil

@@ -11,10 +11,10 @@ import (
 )
 
 type Post struct {
-	ID         int64      `db:"id,pk,omitempty" json:"id"`
-	UserID     int64      `db:"user_id" json:"userId"`
-	LocationID int64      `db:"location_id" json:"locationId"`
-	Filter     PostFilter `db:"filter" json:"filter"`
+	ID      int64      `db:"id,pk,omitempty" json:"id,omitempty"`
+	UserID  int64      `db:"user_id" json:"userId"`
+	PlaceID int64      `db:"place_id" json:"placeId"`
+	Filter  PostFilter `db:"filter" json:"filter"`
 
 	Caption  string `db:"caption" json:"caption"`
 	ImageURL string `db:"image_url" json:"imageUrl"`

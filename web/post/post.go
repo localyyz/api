@@ -42,6 +42,8 @@ func CreatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		data.Post
 
+		GooglePlaceID string `json:"googlePlaceId"`
+
 		// Ignore
 		ID        interface{} `json:"id,omitempty"`
 		UserID    interface{} `json:"userId,omitempty"`
