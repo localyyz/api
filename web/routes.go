@@ -31,7 +31,6 @@ func New() http.Handler {
 
 		r.Mount("/users", user.Routes())
 		r.Mount("/posts", post.Routes())
-		r.Mount("/search", search.Routes())
 	})
 
 	return r

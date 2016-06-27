@@ -13,6 +13,7 @@ type Place struct {
 	GoogleID       string `db:"google_id" json:"googleId"`
 	NeighborhoodID int64  `db:"neighborhood_id" json:"neighborhoodId"`
 
+	Name    string    `db:"name" json:"name"`
 	Type    PlaceType `db:"place_type" json:"place_type"`
 	Address string    `db:"address" json:"address"`
 	Phone   string    `db:"phone" json:"phone"`

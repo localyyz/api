@@ -4,10 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"upper.io/db"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
+	"github.com/goware/lg"
 	"github.com/pressly/chi"
 	"golang.org/x/net/context"
 )
@@ -42,7 +45,8 @@ func CreatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		data.Post
 
-		GooglePlaceID string `json:"googlePlaceId"`
+		GooglePlaceID     string `json:"googlePlaceId,required"`
+		GooglePlaceDetail string `json:"googlePlaceDetail,required"`
 
 		// Ignore
 		ID        interface{} `json:"id,omitempty"`
@@ -59,6 +63,30 @@ func CreatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 	newPost := &payload.Post
 	newPost.UserID = user.ID
+
+	if payload.GooglePlaceID != "" {
+		var place *data.Place
+		err := data.DB.Place.Find(db.Cond{"google_id": payload.GooglePlaceID}).One(&place)
+		if err != nil {
+			if err != db.ErrNoMoreRows {
+				ws.Respond(w, http.StatusInternalServerError, err)
+				return
+			}
+			place = &data.Place{
+				GoogleID:       payload.GooglePlaceID,
+				Name:           payload.GooglePlaceDetail,
+				NeighborhoodID: 1, // for now..
+			}
+			if err := data.DB.Place.Save(place); err != nil {
+				ws.Respond(w, http.StatusInternalServerError, err)
+				lg.Warn(err)
+				return
+			}
+		}
+		if place != nil && place.ID != 0 {
+			newPost.PlaceID = place.ID
+		}
+	}
 
 	if err := data.DB.Post.Save(newPost); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)

@@ -28,9 +28,10 @@ type Post struct {
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 }
 
-type PostWithUser struct {
+type PostPresenter struct {
 	*Post
 	User    *User        `json:"user"`
+	Place   *Place       `json:"place"`
 	Context *UserContext `json:"context"`
 }
 

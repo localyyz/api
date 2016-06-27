@@ -26,7 +26,6 @@ type Database struct {
 	UserPoint UserPointStore
 
 	Place        PlaceStore
-	PlaceType    PlaceTypeStore
 	Neighborhood NeighborhoodStore
 }
 
@@ -62,7 +61,6 @@ func NewDBSession(conf DBConf) error {
 	db.UserPoint = UserPointStore{db.Store(&UserPoint{})}
 
 	db.Place = PlaceStore{db.Store(&Place{})}
-	db.PlaceType = PlaceTypeStore{db.Store(&PlaceType{})}
 	db.Neighborhood = NeighborhoodStore{db.Store(&Neighborhood{})}
 
 	DB = db

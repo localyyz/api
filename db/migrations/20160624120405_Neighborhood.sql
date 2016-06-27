@@ -11,7 +11,7 @@ CREATE SEQUENCE neighborhood_id_seq
 CREATE TABLE neighborhoods (
     id bigint PRIMARY KEY DEFAULT nextval('neighborhood_id_seq'::regclass) NOT NULL,
     name text DEFAULT '' NOT NULL
-)
+);
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back

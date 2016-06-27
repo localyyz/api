@@ -14,6 +14,7 @@ CREATE TABLE places (
     neighborhood_id bigint REFERENCES neighborhoods (id),
 
     place_type smallint DEFAULT 0 NOT NULL,
+    name text DEFAULT '' NOT NULL,
     address text DEFAULT '' NOT NULL,
     phone text DEFAULT '' NOT NULL,
     website text DEFAULT '' NOT NULL,
