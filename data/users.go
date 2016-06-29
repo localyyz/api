@@ -26,8 +26,8 @@ type User struct {
 }
 
 type UserContext struct {
-	Commented bool
-	Liked     bool
+	Commented bool `json:"commented"`
+	Liked     bool `json:"liked"`
 }
 
 // Authenticated user with jwt embed

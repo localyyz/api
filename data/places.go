@@ -28,9 +28,15 @@ type Place struct {
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 }
 
+type PlaceWithPost struct {
+	*Place
+	Posts []*Post `json:"posts"`
+}
+
 type Neighborhood struct {
-	ID   int64  `db:"id,pk,omitempty" json:"id,omitempty"`
-	Name string `db:"name" json:"name"`
+	ID          int64  `db:"id,pk,omitempty" json:"id,omitempty"`
+	Name        string `db:"name" json:"name"`
+	Description string `db:"description" json:"description"`
 }
 
 type PlaceType uint

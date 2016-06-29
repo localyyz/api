@@ -9,7 +9,5 @@ import (
 func Routes() http.Handler {
 	r := chi.NewRouter()
 
-	r.Post("/places", AutocompletePlaces)
-
 	return r
 }

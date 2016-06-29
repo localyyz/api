@@ -15,7 +15,7 @@ func Routes() http.Handler {
 	r.Route("/:postID", func(r chi.Router) {
 		r.Use(PostCtx)
 
-		r.Mount("/like", LikeRoutes())
+		r.Mount("/likes", LikeRoutes())
 		r.Mount("/comment", CommentRoutes())
 
 		r.Get("/", GetPost)
@@ -29,14 +29,9 @@ func Routes() http.Handler {
 func LikeRoutes() http.Handler {
 	r := chi.NewRouter()
 
-	r.Post("/", LikePost)
 	r.Get("/", ListPostLike)
-	r.Route("/:likeID", func(r chi.Router) {
-		r.Use(LikeCtx)
-
-		r.Get("/", GetLike)
-		r.Delete("/", UnlikePost)
-	})
+	r.Post("/", LikePost)
+	r.Delete("/", UnlikePost)
 
 	return r
 }

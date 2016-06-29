@@ -14,7 +14,8 @@ type UserPoint struct {
 
 	// Point could have been earned through posting a picture
 	// to a venue or earned through user engadgement
-	PostID int64 `db:"post_id" json:"postId"`
+	PostID  int64 `db:"post_id" json:"postId"`
+	PlaceID int64 `db:"place_id" json:"placeId"`
 
 	// internal multiplier associated with this point
 	// multipliers are applied by promotions
@@ -27,8 +28,27 @@ type UserPointStore struct {
 	bond.Store
 }
 
+var (
+	DailyPointLimit = 3
+)
+
 func (p *UserPoint) CollectionName() string {
 	return `user_points`
+}
+
+// TODO: smarter throttling. ie 2 points max per venue, up to 3 venue..
+// IsLimited finds user points and checks if they have reached the daily point
+// limit
+func (store *UserPointStore) IsLimited(userID int64) (bool, error) {
+	cond := db.Cond{
+		"user_id":       userID,
+		"created_at >=": time.Now().AddDate(0, 0, -1), // last 24
+	}
+	count, err := store.Find(cond).Count()
+	if err != nil {
+		return false, err
+	}
+	return (int(count) >= DailyPointLimit), nil
 }
 
 func (store *UserPointStore) FindByUserID(userID int64) ([]*UserPoint, error) {

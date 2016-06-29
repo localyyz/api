@@ -5,7 +5,9 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/middleware/logger"
+	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/post"
+	"bitbucket.org/moodie-app/moodie-api/web/search"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
 
 	"github.com/pressly/chi"
@@ -30,6 +32,8 @@ func New() http.Handler {
 		})
 
 		r.Mount("/users", user.Routes())
+		r.Mount("/search", search.Routes())
+		r.Mount("/places", place.Routes())
 		r.Mount("/posts", post.Routes())
 	})
 

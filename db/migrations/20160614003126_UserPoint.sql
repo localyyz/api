@@ -13,6 +13,7 @@ CREATE TABLE user_points (
     id bigint PRIMARY KEY DEFAULT nextval('user_point_id_seq'::regclass) NOT NULL,
     user_id bigint REFERENCES users (id),
     post_id bigint REFERENCES posts (id) ON DELETE CASCADE,
+    place_id bigint REFERENCES places (id) ON DELETE CASCADE,
     
     multiplier smallint,
 

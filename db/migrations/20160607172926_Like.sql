@@ -16,6 +16,8 @@ CREATE TABLE likes (
     created_at timestamp DEFAULT now() NOT NULL
 );
 
+ALTER TABLE ONLY likes ADD CONSTRAINT unique_user_post UNIQUE (user_id, post_id);
+
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
 
