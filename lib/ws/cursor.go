@@ -126,13 +126,6 @@ func (p *Page) UpdateQueryUpper(res db.Result) db.Result {
 	return res.Limit(uint(p.Limit))
 }
 
-//func (p *Page) UpdateQuerySquirrel(q squirrel.SelectBuilder) squirrel.SelectBuilder {
-//if p.Page > 1 {
-//return q.Limit(uint64(p.Limit)).Offset(uint64((p.Page - 1) * p.Limit))
-//}
-//return q.Limit(uint64(p.Limit))
-//}
-
 func (p *Page) HasFirst() bool { return true }
 
 func (p *Page) HasLast() bool { return false }
