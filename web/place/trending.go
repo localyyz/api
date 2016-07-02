@@ -2,6 +2,7 @@ package place
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"upper.io/db"
@@ -20,8 +21,39 @@ type postScore struct {
 func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	cursor := ws.NewPage(r)
 
+	// mood type
+	// NOTE: this is not REST, but let's just pretend it is
+	placeCond := db.Cond{}
+	if pType := strings.TrimSpace(r.URL.Query().Get("placeType")); pType != "" {
+		// try to parse a placetype out of it
+		var p data.PlaceType
+		if err := p.UnmarshalText([]byte(pType)); err != nil {
+			ws.Respond(w, http.StatusBadRequest, err)
+			return
+		}
+		placeCond["place_type"] = p
+	}
+	if lId := strings.TrimSpace(r.URL.Query().Get("localeId")); lId != "" {
+		placeCond["locale_id"] = lId
+	}
+
+	var places []*data.Place
+	if err := data.DB.Place.Find(placeCond).All(&places); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// get list of place ids
+	var placeIDs []int64
+	for _, p := range places {
+		placeIDs = append(placeIDs, p.ID)
+	}
+
 	n := time.Now().AddDate(0, 0, -2) // 2 days rolling
-	cond := db.Cond{"created_at >=": n}
+	cond := db.Cond{
+		"created_at >=": n,
+		"place_id":      placeIDs,
+	}
 
 	// order list of places by post score in the last 48h
 	var scores []postScore

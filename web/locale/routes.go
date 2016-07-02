@@ -1,4 +1,4 @@
-package search
+package locale
 
 import (
 	"net/http"
@@ -9,5 +9,8 @@ import (
 func Routes() http.Handler {
 	r := chi.NewRouter()
 
+	r.Get("/", ListLocales)
+
 	return r
+
 }

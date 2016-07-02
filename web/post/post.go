@@ -73,9 +73,9 @@ func CreatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			place = &data.Place{
-				GoogleID:       payload.GooglePlaceID,
-				Name:           payload.GooglePlaceDetail,
-				NeighborhoodID: 1, // for now.. TODO: need to grab the detail from google?
+				GoogleID: payload.GooglePlaceID,
+				Name:     payload.GooglePlaceDetail,
+				LocaleID: 1, // for now.. TODO: need to grab the detail from google?
 			}
 			if err := data.DB.Place.Save(place); err != nil {
 				ws.Respond(w, http.StatusInternalServerError, err)
