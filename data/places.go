@@ -10,11 +10,11 @@ import (
 type Place struct {
 	ID int64 `db:"id,pk,omitempty" json:"id,omitempty"`
 	// external google places id
-	GoogleID       string `db:"google_id" json:"googleId"`
-	NeighborhoodID int64  `db:"neighborhood_id" json:"neighborhoodId"`
+	GoogleID string `db:"google_id" json:"googleId"`
+	LocaleID int64  `db:"locale_id" json:"localeId"`
 
 	Name    string    `db:"name" json:"name"`
-	Type    PlaceType `db:"place_type" json:"place_type"`
+	Type    PlaceType `db:"place_type" json:"placeType"`
 	Address string    `db:"address" json:"address"`
 	Phone   string    `db:"phone" json:"phone"`
 	Website string    `db:"website" json:"website"`
@@ -31,12 +31,6 @@ type Place struct {
 type PlaceWithPost struct {
 	*Place
 	Posts []*Post `json:"posts"`
-}
-
-type Neighborhood struct {
-	ID          int64  `db:"id,pk,omitempty" json:"id,omitempty"`
-	Name        string `db:"name" json:"name"`
-	Description string `db:"description" json:"description"`
 }
 
 type PlaceType uint
@@ -60,10 +54,6 @@ type PlaceEtc struct {
 
 func (p *Place) CollectionName() string {
 	return `places`
-}
-
-func (n *Neighborhood) CollectionName() string {
-	return `neighborhoods`
 }
 
 // String returns the string value of the status.

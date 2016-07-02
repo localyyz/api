@@ -25,8 +25,8 @@ type Database struct {
 	Comment   CommentStore
 	UserPoint UserPointStore
 
-	Place        PlaceStore
-	Neighborhood NeighborhoodStore
+	Place  PlaceStore
+	Locale LocaleStore
 }
 
 type DBConf struct {
@@ -61,7 +61,7 @@ func NewDBSession(conf DBConf) error {
 	db.UserPoint = UserPointStore{db.Store(&UserPoint{})}
 
 	db.Place = PlaceStore{db.Store(&Place{})}
-	db.Neighborhood = NeighborhoodStore{db.Store(&Neighborhood{})}
+	db.Locale = LocaleStore{db.Store(&Locale{})}
 
 	DB = db
 	return nil

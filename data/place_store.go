@@ -20,7 +20,3 @@ func (store PlaceStore) FindOne(cond db.Cond) (*Place, error) {
 	}
 	return place, nil
 }
-
-type NeighborhoodStore struct {
-	bond.Store
-}

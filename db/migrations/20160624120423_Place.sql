@@ -11,7 +11,7 @@ CREATE SEQUENCE place_id_seq
 CREATE TABLE places (
     id bigint PRIMARY KEY DEFAULT nextval('place_id_seq'::regclass) NOT NULL,
     google_id text NOT NULL,
-    neighborhood_id bigint REFERENCES neighborhoods (id),
+    locale_id bigint REFERENCES locales (id),
 
     place_type smallint DEFAULT 0 NOT NULL,
     name text DEFAULT '' NOT NULL,
