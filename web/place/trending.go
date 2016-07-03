@@ -23,6 +23,8 @@ func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	// mood type
 	// NOTE: this is not REST, but let's just pretend it is
+	// TODO: fuck man this is complicated
+
 	placeCond := db.Cond{}
 	if pType := strings.TrimSpace(r.URL.Query().Get("placeType")); pType != "" {
 		// try to parse a placetype out of it
@@ -58,9 +60,9 @@ func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	// order list of places by post score in the last 48h
 	var scores []postScore
 	err := data.DB.Post.Find(cond).
-		Select("place_id", "SUM(score) AS scores").
+		Select("place_id", db.Raw{"SUM(score) AS scores"}).
 		Group("place_id").
-		Sort("-scores").
+		Sort(db.Raw{"-SUM(score)"}).
 		All(&scores)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)

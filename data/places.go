@@ -43,7 +43,7 @@ const (
 	PlaceTypeEntertainment
 )
 
-var placeTypes = []string{"unknown", "food", "night life", "shopping", "entertainment"}
+var placeTypes = []string{"unknown", "food", "night", "shop", "ent"}
 
 type PlaceEtc struct {
 	Latitude     float64  `json:"latitude"`
