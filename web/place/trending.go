@@ -15,7 +15,7 @@ import (
 
 type postScore struct {
 	PlaceID int64 `db:"place_id"`
-	Scores  int32 `db:"scores"`
+	Scores  int64 `db:"scores"`
 }
 
 func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -60,7 +60,7 @@ func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	// order list of places by post score in the last 48h
 	var scores []postScore
 	err := data.DB.Post.Find(cond).
-		Select("place_id", db.Raw{"SUM(score) AS scores"}).
+		Select("place_id", db.Raw{"CAST(SUM(score) AS bigint) AS scores"}).
 		Group("place_id").
 		Sort(db.Raw{"-SUM(score)"}).
 		All(&scores)
