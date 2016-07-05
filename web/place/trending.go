@@ -84,7 +84,23 @@ func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		if err != nil {
 			continue
 		}
-		resp = append(resp, &data.PlaceWithPost{Place: p, Posts: posts})
+
+		postPresenters := make([]*data.PostPresenter, len(posts))
+		for i, p := range posts {
+			user, err := data.DB.User.FindByID(p.UserID)
+			if err != nil {
+				continue
+			}
+
+			liked, err := data.DB.Like.Find(db.Cond{"user_id": p.UserID, "post_id": p.ID}).Count()
+			if err != nil {
+				continue
+			}
+
+			postPresenters[i] = &data.PostPresenter{Post: p, User: user, Context: &data.UserContext{Liked: (liked > 0)}}
+		}
+
+		resp = append(resp, &data.PlaceWithPost{Place: p, Posts: postPresenters})
 	}
 
 	ws.Respond(w, http.StatusOK, resp, cursor.Update(resp))

@@ -30,7 +30,7 @@ type Place struct {
 
 type PlaceWithPost struct {
 	*Place
-	Posts []*Post `json:"posts"`
+	Posts []*PostPresenter `json:"posts"`
 }
 
 type PlaceType uint

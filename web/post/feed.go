@@ -45,7 +45,6 @@ func ListFreshPost(ctx context.Context, w http.ResponseWriter, r *http.Request) 
 	for _, post := range posts {
 		user, err := data.DB.User.FindByID(post.UserID)
 		if err != nil {
-			lg.Warn(err)
 			continue
 		}
 		place, err := data.DB.Place.FindByID(post.PlaceID)
