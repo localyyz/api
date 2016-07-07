@@ -15,7 +15,7 @@ func Routes() http.Handler {
 	r.Route("/:placeID", func(r chi.Router) {
 		r.Use(PlaceCtx)
 
-		//r.Get("/", GetPlace)
+		r.Get("/", GetPlace)
 		r.Mount("/posts", post.Routes())
 	})
 

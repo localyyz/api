@@ -13,29 +13,16 @@ import (
 	"golang.org/x/net/context"
 )
 
-func ListTrendingPost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	cursor := ws.NewPage(r)
-	posts, err := data.DB.Post.GetTrending(cursor)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := []*data.PostPresenter{}
-	for _, p := range posts {
-		u, err := data.DB.User.FindByID(p.UserID)
-		if err != nil {
-			lg.Warn(err)
-			continue
-		}
-		resp = append(resp, &data.PostPresenter{Post: p, User: u})
-	}
-
-	ws.Respond(w, http.StatusOK, resp, cursor.Update(resp))
-}
-
 func ListFreshPost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	place, hasPlaceCtx := ctx.Value("place").(*data.Place)
+
+	cond := db.Cond{}
+	if hasPlaceCtx {
+		cond["place_id"] = place.ID
+	}
+
 	cursor := ws.NewPage(r)
-	posts, err := data.DB.Post.GetFresh(cursor)
+	posts, err := data.DB.Post.GetFresh(cursor, cond)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return

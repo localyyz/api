@@ -30,3 +30,19 @@ func PlaceCtx(next chi.Handler) chi.Handler {
 	}
 	return chi.HandlerFunc(handler)
 }
+
+func GetPlace(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	place := ctx.Value("place").(*data.Place)
+
+	locale, err := data.DB.Locale.FindByID(place.LocaleID)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := &data.PlacePresenter{
+		Place:  place,
+		Locale: locale,
+	}
+	ws.Respond(w, http.StatusOK, resp)
+}

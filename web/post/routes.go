@@ -10,7 +10,6 @@ func Routes() http.Handler {
 	r := chi.NewRouter()
 
 	r.Post("/", CreatePost)
-	//r.Get("/trending", ListTrendingPost)
 	r.Get("/recent", ListFreshPost)
 	r.Route("/:postID", func(r chi.Router) {
 		r.Use(PostCtx)

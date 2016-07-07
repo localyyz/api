@@ -39,8 +39,11 @@ func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		placeCond["locale_id"] = lId
 	}
 
+	q := data.DB.Place.Find(placeCond)
+	q = cursor.UpdateQueryUpper(q)
+
 	var places []*data.Place
-	if err := data.DB.Place.Find(placeCond).All(&places); err != nil {
+	if err := q.All(&places); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}

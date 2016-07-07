@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/goware/lg"
+
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 
 	"upper.io/bond"
@@ -70,8 +72,12 @@ func (store *PostStore) GetTrending(cursor *ws.Page) ([]*Post, error) {
 	return posts, nil
 }
 
-func (store *PostStore) GetFresh(cursor *ws.Page) ([]*Post, error) {
+func (store *PostStore) GetFresh(cursor *ws.Page, cond db.Cond) ([]*Post, error) {
 	q := store.Find().Sort("-created_at")
+	if len(cond) > 0 {
+		q = q.Where(cond) // filter by first
+	}
+
 	if cursor != nil {
 		q = cursor.UpdateQueryUpper(q)
 	}
@@ -105,7 +111,9 @@ func (p *Post) UpdateCommentCount() {
 // Update score
 func (p *Post) UpdateScore() {
 	p.Score = uint64(p.CreatedAt.Unix()) + uint64(p.Likes) + uint64(p.Comments)
-	DB.Save(p)
+	if err := DB.Save(p); err != nil {
+		lg.Errorf("failed to update post score: %v", err)
+	}
 }
 
 func (p *Post) BeforeCreate(bond.Session) error {
