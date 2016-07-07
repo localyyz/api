@@ -11,11 +11,13 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/user"
 
 	"github.com/pressly/chi"
+	"github.com/pressly/chi/middleware"
 )
 
 func New() http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(middleware.NoCache)
 	r.Use(logger.Logger)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
