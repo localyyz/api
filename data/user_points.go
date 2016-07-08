@@ -68,7 +68,7 @@ func (store *UserPointStore) CountByUserID(userID int64) (uint64, error) {
 
 func (store *UserPointStore) FindAll(cond db.Cond) ([]*UserPoint, error) {
 	var points []*UserPoint
-	if err := DB.UserPoint.Find(cond).All(&points); err != nil {
+	if err := DB.UserPoint.Find(cond).Sort("-created_at").All(&points); err != nil {
 		return nil, err
 	}
 	return points, nil
