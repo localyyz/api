@@ -28,6 +28,13 @@ type UserPointStore struct {
 	bond.Store
 }
 
+type UserPointPresenter struct {
+	*UserPoint
+	Place  *Place `json:"place"`
+	Post   *Post  `json:"post"`
+	Reward uint32 `json:"reward"`
+}
+
 var (
 	DailyPointLimit = 3
 )

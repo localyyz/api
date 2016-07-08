@@ -9,6 +9,14 @@ type PlaceStore struct {
 	bond.Store
 }
 
+func (store PlaceStore) FindAll(cond db.Cond) ([]*Place, error) {
+	var places []*Place
+	if err := store.Find(cond).All(&places); err != nil {
+		return nil, err
+	}
+	return places, nil
+}
+
 func (store PlaceStore) FindByID(ID int64) (*Place, error) {
 	return store.FindOne(db.Cond{"id": ID})
 }

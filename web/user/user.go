@@ -60,19 +60,12 @@ func GetPointHistory(ctx context.Context, w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// no.. i don't want to load posts thru likes..
-	type presenter struct {
-		*data.UserPoint
-		Post   *data.Post `json:"post"`
-		Reward uint32     `json:"reward"`
-	}
-
 	// get all the posts
 	var postID []int64
 	for _, p := range points {
 		postID = append(postID, p.PostID)
 	}
-	posts, err := data.DB.Post.FindAll(db.Cond{"post_id": postID})
+	posts, err := data.DB.Post.FindAll(db.Cond{"id": postID})
 	if err != nil {
 		ws.Respond(w, http.StatusServiceUnavailable, err)
 		return
@@ -82,16 +75,31 @@ func GetPointHistory(ctx context.Context, w http.ResponseWriter, r *http.Request
 		postsMap[p.ID] = p
 	}
 
-	resp := make([]*presenter, len(points))
+	var placeID []int64
+	for _, p := range points {
+		placeID = append(placeID, p.PlaceID)
+	}
+	places, err := data.DB.Place.FindAll(db.Cond{"id": placeID})
+	if err != nil {
+		ws.Respond(w, http.StatusServiceUnavailable, err)
+		return
+	}
+	placesMap := map[int64]*data.Place{}
+	for _, p := range places {
+		placesMap[p.ID] = p
+	}
+
+	resp := make([]*data.UserPointPresenter, len(points))
 	for i, p := range points {
-		resp[i] = &presenter{
+		resp[i] = &data.UserPointPresenter{
 			UserPoint: p,
 			Post:      postsMap[p.PostID],
+			Place:     placesMap[p.PlaceID],
 			Reward:    10, // TODO: Arbituary.
 		}
 	}
 
-	ws.Respond(w, http.StatusOK, points)
+	ws.Respond(w, http.StatusOK, resp)
 	return
 }
 
