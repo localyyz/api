@@ -1,14 +1,12 @@
 package place
 
 import (
-	"net/http"
-
 	"bitbucket.org/moodie-app/moodie-api/web/post"
 
 	"github.com/pressly/chi"
 )
 
-func Routes() http.Handler {
+func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/trending", ListTrendingPlaces)

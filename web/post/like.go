@@ -7,12 +7,10 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-
-	"golang.org/x/net/context"
 )
 
-func ListPostLike(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	post := ctx.Value("post").(*data.Post)
+func ListPostLike(w http.ResponseWriter, r *http.Request) {
+	post := r.Context().Value("post").(*data.Post)
 	likes, err := data.DB.Like.FindByPostID(post.ID)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
@@ -21,7 +19,8 @@ func ListPostLike(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, 200, likes)
 }
 
-func LikePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func LikePost(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 	post := ctx.Value("post").(*data.Post)
 
@@ -36,7 +35,8 @@ func LikePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusCreated, newLike)
 }
 
-func UnlikePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func UnlikePost(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 	post := ctx.Value("post").(*data.Post)
 

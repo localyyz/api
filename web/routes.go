@@ -5,7 +5,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/locale"
-	"bitbucket.org/moodie-app/moodie-api/web/middleware/logger"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/post"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
@@ -14,11 +13,11 @@ import (
 	"github.com/pressly/chi/middleware"
 )
 
-func New() http.Handler {
+func New() chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.NoCache)
-	r.Use(logger.Logger)
+	r.Use(middleware.Logger)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

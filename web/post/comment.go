@@ -1,6 +1,7 @@
 package post
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -9,13 +10,11 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
 	"github.com/pressly/chi"
-
-	"golang.org/x/net/context"
 )
 
-func CommentCtx(next chi.Handler) chi.Handler {
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		commentID, err := strconv.ParseInt(chi.URLParam(ctx, "commentID"), 10, 64)
+func CommentCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		commentID, err := strconv.ParseInt(chi.URLParam(r, "commentID"), 10, 64)
 		if err != nil {
 			ws.Respond(w, http.StatusBadRequest, utils.ErrBadID)
 			return
@@ -26,14 +25,15 @@ func CommentCtx(next chi.Handler) chi.Handler {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
+		ctx := r.Context()
 		ctx = context.WithValue(ctx, "comment", comment)
-		next.ServeHTTPC(ctx, w, r)
+		next.ServeHTTP(w, r)
 	}
-	return chi.HandlerFunc(handler)
+	return http.HandlerFunc(handler)
 }
 
-func ListPostComment(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	post := ctx.Value("post").(*data.Post)
+func ListPostComment(w http.ResponseWriter, r *http.Request) {
+	post := r.Context().Value("post").(*data.Post)
 	comments, err := data.DB.Comment.FindByPostID(post.ID)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
@@ -42,12 +42,13 @@ func ListPostComment(ctx context.Context, w http.ResponseWriter, r *http.Request
 	ws.Respond(w, 200, comments)
 }
 
-func GetComment(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	comment := ctx.Value("comment").(*data.Comment)
+func GetComment(w http.ResponseWriter, r *http.Request) {
+	comment := r.Context().Value("comment").(*data.Comment)
 	ws.Respond(w, 200, comment)
 }
 
-func AddComment(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func AddComment(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 	post := ctx.Value("post").(*data.Post)
 
@@ -75,7 +76,8 @@ func AddComment(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusCreated, newComment)
 }
 
-func DeleteComment(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func DeleteComment(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 	comment := ctx.Value("comment").(*data.Comment)
 	if comment.UserID != user.ID {

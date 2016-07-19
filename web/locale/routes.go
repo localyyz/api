@@ -1,12 +1,8 @@
 package locale
 
-import (
-	"net/http"
+import "github.com/pressly/chi"
 
-	"github.com/pressly/chi"
-)
-
-func Routes() http.Handler {
+func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/", ListLocales)

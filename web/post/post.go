@@ -1,6 +1,7 @@
 package post
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -12,12 +13,11 @@ import (
 
 	"github.com/goware/lg"
 	"github.com/pressly/chi"
-	"golang.org/x/net/context"
 )
 
-func PostCtx(next chi.Handler) chi.Handler {
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		postID, err := strconv.ParseInt(chi.URLParam(ctx, "postID"), 10, 64)
+func PostCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		postID, err := strconv.ParseInt(chi.URLParam(r, "postID"), 10, 64)
 		if err != nil {
 			ws.Respond(w, http.StatusBadRequest, utils.ErrBadID)
 			return
@@ -28,19 +28,20 @@ func PostCtx(next chi.Handler) chi.Handler {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
+		ctx := r.Context()
 		ctx = context.WithValue(ctx, "post", post)
-		next.ServeHTTPC(ctx, w, r)
+		next.ServeHTTP(w, r)
 	}
-	return chi.HandlerFunc(handler)
+	return http.HandlerFunc(handler)
 }
 
-func GetPost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	post := ctx.Value("post").(*data.Post)
+func GetPost(w http.ResponseWriter, r *http.Request) {
+	post := r.Context().Value("post").(*data.Post)
 	ws.Respond(w, http.StatusOK, post)
 }
 
-func CreatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	user := ctx.Value("session.user").(*data.User)
+func CreatePost(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("session.user").(*data.User)
 
 	var payload struct {
 		data.Post
@@ -101,7 +102,8 @@ func CreatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusCreated, resp)
 }
 
-func UpdatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func UpdatePost(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 	post := ctx.Value("post").(*data.Post)
 	if post.UserID != user.ID {
@@ -141,7 +143,8 @@ func UpdatePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusCreated, resp)
 }
 
-func DeletePost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func DeletePost(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	post := ctx.Value("post").(*data.Post)
 	user := ctx.Value("session.user").(*data.User)
 	if post.UserID != user.ID {

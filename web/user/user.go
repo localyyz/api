@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -11,26 +12,27 @@ import (
 	"github.com/pressly/chi"
 
 	"upper.io/db"
-
-	"golang.org/x/net/context"
 )
 
-func MeCtx(next chi.Handler) chi.Handler {
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func MeCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		me, ok := ctx.Value("session.user").(*data.User)
 		if !ok {
 			ws.Respond(w, http.StatusUnauthorized, nil)
 			return
 		}
 		ctx = context.WithValue(ctx, "user", me)
-		next.ServeHTTPC(ctx, w, r)
+		next.ServeHTTP(w, r)
 	}
-	return chi.HandlerFunc(handler)
+	return http.HandlerFunc(handler)
 }
 
-func UserCtx(next chi.Handler) chi.Handler {
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		userID, err := strconv.ParseInt(chi.URLParam(ctx, "userID"), 10, 64)
+func UserCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		userID, err := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
 		if err != nil {
 			ws.Respond(w, http.StatusBadRequest, utils.ErrBadID)
 			return
@@ -42,18 +44,18 @@ func UserCtx(next chi.Handler) chi.Handler {
 			return
 		}
 		ctx = context.WithValue(ctx, "user", user)
-		next.ServeHTTPC(ctx, w, r)
+		next.ServeHTTP(w, r)
 	}
-	return chi.HandlerFunc(handler)
+	return http.HandlerFunc(handler)
 }
 
-func GetUser(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	user := ctx.Value("user").(*data.User)
+func GetUser(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(*data.User)
 	ws.Respond(w, http.StatusOK, user)
 }
 
-func GetPointHistory(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	user := ctx.Value("session.user").(*data.User)
+func GetPointHistory(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("session.user").(*data.User)
 	points, err := data.DB.UserPoint.FindByUserID(user.ID)
 	if err != nil {
 		ws.Respond(w, http.StatusServiceUnavailable, err)
@@ -103,8 +105,8 @@ func GetPointHistory(ctx context.Context, w http.ResponseWriter, r *http.Request
 	return
 }
 
-func GetRecentPost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	user := ctx.Value("user").(*data.User)
+func GetRecentPost(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(*data.User)
 
 	posts, err := data.DB.Post.FindUserRecent(user.ID)
 	if err != nil {

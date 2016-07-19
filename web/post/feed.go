@@ -9,12 +9,10 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-
-	"golang.org/x/net/context"
 )
 
-func ListFreshPost(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	place, hasPlaceCtx := ctx.Value("place").(*data.Place)
+func ListFreshPost(w http.ResponseWriter, r *http.Request) {
+	place, hasPlaceCtx := r.Context().Value("place").(*data.Place)
 
 	cond := db.Cond{}
 	if hasPlaceCtx {
