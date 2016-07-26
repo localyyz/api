@@ -14,6 +14,7 @@ import (
 
 func LocaleCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		localeID, err := strconv.ParseInt(chi.URLParam(r, "localeID"), 10, 64)
 		if err != nil {
 			ws.Respond(w, http.StatusBadRequest, utils.ErrBadID)
@@ -25,9 +26,8 @@ func LocaleCtx(next http.Handler) http.Handler {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
-		ctx := r.Context()
 		ctx = context.WithValue(ctx, "locale", locale)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
 }

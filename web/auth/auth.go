@@ -35,7 +35,7 @@ func SessionCtx(next http.Handler) http.Handler {
 			return
 		}
 		ctx = context.WithValue(ctx, "session.user", user)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
 }

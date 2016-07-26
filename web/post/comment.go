@@ -27,7 +27,7 @@ func CommentCtx(next http.Handler) http.Handler {
 		}
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "comment", comment)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
 }

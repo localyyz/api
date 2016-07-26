@@ -27,7 +27,7 @@ func PlaceCtx(next http.Handler) http.Handler {
 		}
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "place", place)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
 }

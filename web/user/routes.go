@@ -11,7 +11,7 @@ func Routes() chi.Router {
 	})
 
 	r.Route("/:userID", func(r chi.Router) {
-		r.Use(MeCtx)
+		r.Use(UserCtx)
 		r.Mount("/", UserRoutes())
 	})
 
