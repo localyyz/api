@@ -9,6 +9,7 @@ type Locale struct {
 	ID          int64  `db:"id,pk,omitempty" json:"id,omitempty"`
 	Name        string `db:"name" json:"name"`
 	Description string `db:"description" json:"description"`
+	GoogleID    string `db:"google_id" json:"googleId"`
 }
 
 type LocaleStore struct {

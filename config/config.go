@@ -20,6 +20,11 @@ type Config struct {
 	// [db]
 	DB data.DBConf `toml:"db"`
 
+	// [map]
+	Map struct { // google maps api key
+		ApiKey string `toml:"api_key"`
+	} `toml:"map"`
+
 	// [connect]
 	Connect connect.Configs `toml:"connect"`
 

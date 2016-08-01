@@ -18,6 +18,7 @@ CREATE TABLE users (
 
     network varchar(64) NOT NULL,
     access_token varchar(512) NOT NULL,
+    geo geography(POINT, 4326) DEFAULT ST_GeographyFromText('SRID=4326;POINT(0 0)'),
 
     logged_in bool DEFAULT false NOT NULL,
     last_login_at timestamp,
