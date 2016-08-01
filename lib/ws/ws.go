@@ -78,12 +78,11 @@ func checkRequired(r Result, v reflect.Value) error {
 			name = jsonTag
 		} else {
 			name = jsonTag[:index]
-		}
-
-		if jsonTag[index:] == ",required" {
-			// if required field and not found, throw error
-			if _, ok := r[name]; !ok {
-				return fmt.Errorf("required field '%v' missing in request", name)
+			if jsonTag[index:] == ",required" {
+				// if required field and not found, throw error
+				if _, ok := r[name]; !ok {
+					return fmt.Errorf("required field '%v' missing in request", name)
+				}
 			}
 		}
 	}
