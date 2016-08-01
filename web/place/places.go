@@ -1,10 +1,9 @@
 package place
 
 import (
+	"context"
 	"net/http"
 	"strconv"
-
-	"golang.org/x/net/context"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
