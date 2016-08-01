@@ -1,12 +1,8 @@
 package post
 
-import (
-	"net/http"
+import "github.com/pressly/chi"
 
-	"github.com/pressly/chi"
-)
-
-func Routes() http.Handler {
+func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Post("/", CreatePost)
@@ -25,7 +21,7 @@ func Routes() http.Handler {
 	return r
 }
 
-func LikeRoutes() http.Handler {
+func LikeRoutes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/", ListPostLike)
@@ -35,7 +31,7 @@ func LikeRoutes() http.Handler {
 	return r
 }
 
-func CommentRoutes() http.Handler {
+func CommentRoutes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Post("/", AddComment)

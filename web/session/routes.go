@@ -1,12 +1,12 @@
-package locale
+package session
 
 import "github.com/pressly/chi"
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/", ListLocales)
+	r.Delete("/", Logout)
+	r.Post("/heartbeat", Heartbeat)
 
 	return r
-
 }

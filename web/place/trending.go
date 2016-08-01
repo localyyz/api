@@ -9,8 +9,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-
-	"golang.org/x/net/context"
 )
 
 type postScore struct {
@@ -18,7 +16,7 @@ type postScore struct {
 	Scores  int64 `db:"scores"`
 }
 
-func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func ListTrendingPlaces(w http.ResponseWriter, r *http.Request) {
 	cursor := ws.NewPage(r)
 
 	// mood type
@@ -26,15 +24,6 @@ func ListTrendingPlaces(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	// TODO: fuck man this is complicated
 
 	placeCond := db.Cond{}
-	if pType := strings.TrimSpace(r.URL.Query().Get("placeType")); pType != "" {
-		// try to parse a placetype out of it
-		var p data.PlaceType
-		if err := p.UnmarshalText([]byte(pType)); err != nil {
-			ws.Respond(w, http.StatusBadRequest, err)
-			return
-		}
-		placeCond["place_type"] = p
-	}
 	if lId := strings.TrimSpace(r.URL.Query().Get("localeId")); lId != "" {
 		placeCond["locale_id"] = lId
 	}

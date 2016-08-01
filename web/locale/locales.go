@@ -1,6 +1,7 @@
 package locale
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -9,13 +10,12 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
-
-	"golang.org/x/net/context"
 )
 
-func LocaleCtx(next chi.Handler) chi.Handler {
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		localeID, err := strconv.ParseInt(chi.URLParam(ctx, "localeID"), 10, 64)
+func LocaleCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		localeID, err := strconv.ParseInt(chi.URLParam(r, "localeID"), 10, 64)
 		if err != nil {
 			ws.Respond(w, http.StatusBadRequest, utils.ErrBadID)
 			return
@@ -27,12 +27,12 @@ func LocaleCtx(next chi.Handler) chi.Handler {
 			return
 		}
 		ctx = context.WithValue(ctx, "locale", locale)
-		next.ServeHTTPC(ctx, w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
-	return chi.HandlerFunc(handler)
+	return http.HandlerFunc(handler)
 }
 
-func ListLocales(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func ListLocales(w http.ResponseWriter, r *http.Request) {
 	cursor := ws.NewPage(r)
 	q := data.DB.Locale.Find().Sort("-id")
 	q = cursor.UpdateQueryUpper(q)

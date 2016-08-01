@@ -1,21 +1,24 @@
 package user
 
-import (
-	"net/http"
+import "github.com/pressly/chi"
 
-	"github.com/pressly/chi"
-)
-
-func Routes() http.Handler {
+func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Mount("/me", MeCtx, UserRoutes())
-	r.Mount("/:userId", UserCtx, UserRoutes())
+	r.Route("/me", func(r chi.Router) {
+		r.Use(MeCtx)
+		r.Mount("/", UserRoutes())
+	})
+
+	r.Route("/:userID", func(r chi.Router) {
+		r.Use(UserCtx)
+		r.Mount("/", UserRoutes())
+	})
 
 	return r
 }
 
-func UserRoutes() http.Handler {
+func UserRoutes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/", GetUser)

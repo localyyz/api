@@ -12,6 +12,7 @@ function create() {
   cat <<EOF | psql -h127.0.0.1 -U postgres
     CREATE USER moodie WITH PASSWORD 'moodie';
     CREATE DATABASE $database ENCODING 'UTF-8' LC_COLLATE='en_US.UTF-8' LC_CTYPE='en_US.UTF-8' TEMPLATE template0 OWNER moodie;
+    CREATE EXTENSION postgis;
 EOF
 
   cat <<EOF | psql -h127.0.0.1 -U postgres $database

@@ -13,7 +13,6 @@ CREATE TABLE places (
     google_id text NOT NULL,
     locale_id bigint REFERENCES locales (id),
 
-    place_type smallint DEFAULT 0 NOT NULL,
     name text DEFAULT '' NOT NULL,
     address text DEFAULT '' NOT NULL,
     phone text DEFAULT '' NOT NULL,

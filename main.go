@@ -32,6 +32,11 @@ func main() {
 		lg.Fatal(err)
 	}
 
+	//[map]
+	if err := data.SetupMapsClient(conf.Map.ApiKey); err != nil {
+		lg.Fatal(err)
+	}
+
 	//[connect]
 	connect.Configure(conf.Connect)
 

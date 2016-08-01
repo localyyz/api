@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/goware/geotools"
+
 	"upper.io/bond"
 	"upper.io/db"
 )
@@ -15,10 +17,11 @@ type User struct {
 	Name      string `db:"name" json:"name" facebook:"name"`
 	AvatarURL string `db:"avatar_url" json:"avatarUrl"`
 
-	AccessToken string     `db:"access_token" json:"-"`
-	Network     string     `db:"network" json:"network"`
-	LoggedIn    bool       `db:"logged_in" json:"loggedIn"`
-	LastLogInAt *time.Time `db:"last_login_at" json:"lastLoginAt"`
+	AccessToken string         `db:"access_token" json:"-"`
+	Network     string         `db:"network" json:"network"`
+	LoggedIn    bool           `db:"logged_in" json:"loggedIn"`
+	LastLogInAt *time.Time     `db:"last_login_at" json:"lastLoginAt"`
+	Geo         geotools.Point `db:"geo" json:"geo"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -34,6 +37,11 @@ type UserContext struct {
 type AuthUser struct {
 	*User
 	JWT string `json:"jwt"`
+}
+
+type LocateUser struct {
+	*User
+	Locale *Locale `json:"locale"`
 }
 
 type UserStore struct {

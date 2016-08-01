@@ -1,9 +1,6 @@
 package data
 
-import (
-	"fmt"
-	"time"
-)
+import "time"
 
 // For now, just map places to google id
 // NOTE: we would have to carry this data on our side eventually
@@ -13,16 +10,13 @@ type Place struct {
 	GoogleID string `db:"google_id" json:"googleId"`
 	LocaleID int64  `db:"locale_id" json:"localeId"`
 
-	Name    string    `db:"name" json:"name"`
-	Type    PlaceType `db:"place_type" json:"placeType"`
-	Address string    `db:"address" json:"address"`
-	Phone   string    `db:"phone" json:"phone"`
-	Website string    `db:"website" json:"website"`
+	Name    string `db:"name" json:"name"`
+	Address string `db:"address" json:"address"`
+	Phone   string `db:"phone" json:"phone"`
+	Website string `db:"website" json:"website"`
 
 	Etc *PlaceEtc `db:"etc,jsonb" json:"etc"`
-
 	// TODO: Hours
-	// TODO: Subtypes?
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -37,48 +31,12 @@ type PlaceWithPost struct {
 	*Place
 	Posts []*PostPresenter `json:"posts"`
 }
-
-type PlaceType uint
-
-const (
-	PlaceTypeUnknown PlaceType = iota
-	PlaceTypeFood
-	PlaceTypeNightLife
-	PlaceTypeShopping
-	PlaceTypeEntertainment
-)
-
-var placeTypes = []string{"unknown", "food", "night", "shop", "ent"}
-
 type PlaceEtc struct {
-	Latitude     float64  `json:"latitude"`
-	Longitude    float64  `json:"longitude"`
-	GoogleRating float64  `json:"google_rating"`
-	GoogleTypes  []string `json:"google_types"`
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	GoogleRating float64 `json:"google_rating"`
 }
 
 func (p *Place) CollectionName() string {
 	return `places`
-}
-
-// String returns the string value of the status.
-func (pt PlaceType) String() string {
-	return placeTypes[pt]
-}
-
-// MarshalText satisfies TextMarshaler
-func (pt PlaceType) MarshalText() ([]byte, error) {
-	return []byte(pt.String()), nil
-}
-
-// UnmarshalText satisfies TextUnmarshaler
-func (pt *PlaceType) UnmarshalText(text []byte) error {
-	enum := string(text)
-	for i := 0; i < len(placeTypes); i++ {
-		if enum == placeTypes[i] {
-			*pt = PlaceType(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("unknown place type %s", enum)
 }
