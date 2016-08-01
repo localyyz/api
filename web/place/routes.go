@@ -9,8 +9,14 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Post("/search", SearchPlaces)
 	r.Get("/trending", ListTrendingPlaces)
+
+	r.Group(func(r chi.Router) {
+		r.Use(PlaceTypeCtx)
+		r.Get("/nearby", NearbyPlaces)
+		r.Post("/search", SearchPlaces)
+	})
+
 	r.Route("/:placeID", func(r chi.Router) {
 		r.Use(PlaceCtx)
 

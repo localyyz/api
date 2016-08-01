@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/locale"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/post"
+	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
 
 	"github.com/pressly/chi"
@@ -27,11 +28,9 @@ func New() chi.Router {
 	r.Post("/login/facebook", auth.FacebookLogin)
 
 	r.Group(func(r chi.Router) {
-		r.Use(auth.SessionCtx)
-		r.Route("/session", func(r chi.Router) {
-			r.Delete("/logout", auth.Logout)
-		})
+		r.Use(session.SessionCtx)
 
+		r.Mount("/session", session.Routes())
 		r.Mount("/users", user.Routes())
 		r.Mount("/locale", locale.Routes())
 		r.Mount("/places", place.Routes())
