@@ -20,6 +20,10 @@ func (n *Locale) CollectionName() string {
 	return `locales`
 }
 
+func (store *LocaleStore) FindByName(name string) (*Locale, error) {
+	return store.FindOne(db.Cond{"name": name})
+}
+
 func (store LocaleStore) FindByID(localeID int64) (*Locale, error) {
 	return store.FindOne(db.Cond{"id": localeID})
 }

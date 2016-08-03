@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"upper.io/db"
+
 	"googlemaps.github.io/maps"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -36,7 +38,29 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws.Respond(w, http.StatusOK, places)
+	// return any active promotions
+	placeIDs := make([]int64, len(places))
+	for i, p := range places {
+		placeIDs[i] = p.ID
+	}
+
+	// query promos
+	promos, err := data.DB.Promo.FindAll(db.Cond{"place_id IN": placeIDs})
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// places with promos
+	resp := struct {
+		Places []*data.Place
+		Promos []*data.Promo
+	}{
+		places,
+		promos,
+	}
+
+	ws.Respond(w, http.StatusOK, resp)
 }
 
 // SearchPlaces takes a place name and returns all the places that match from

@@ -2,6 +2,9 @@ package data
 
 import (
 	"context"
+	"time"
+
+	"upper.io/db"
 
 	"github.com/goware/geotools"
 	"github.com/goware/lg"
@@ -12,6 +15,7 @@ import (
 var (
 	mapsClient  *maps.Client
 	radiusLimit = 50
+	timeout     = 10 * time.Second
 )
 
 func SetupMapsClient(apiKey string) error {
@@ -20,7 +24,65 @@ func SetupMapsClient(apiKey string) error {
 	return err
 }
 
+func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	detailsReq := maps.PlaceDetailsRequest{
+		PlaceID: placeID,
+	}
+
+	res, err := mapsClient.PlaceDetails(ctx, &detailsReq)
+	if err != nil {
+		return nil, err
+	}
+
+	// find locale
+	var floc bool
+	var locale *Locale
+	for _, loc := range res.AddressComponents {
+		for _, loct := range loc.Types {
+			if loct == "locality" {
+				floc = true
+				break
+			}
+		}
+		if floc {
+			locale, err := DB.Locale.FindByName(loc.ShortName)
+			if err != nil && err != db.ErrNoMoreRows {
+				return nil, err
+			}
+			if locale == nil {
+				locale = &Locale{
+					Name:        loc.ShortName,
+					Description: loc.LongName,
+				}
+				if err := DB.Locale.Save(locale); err != nil {
+					return nil, err
+				}
+			}
+			break
+		}
+	}
+
+	place := &Place{
+		GoogleID: placeID,
+		Name:     res.Name,
+		Address:  res.FormattedAddress,
+		Phone:    res.FormattedPhoneNumber,
+		Website:  res.Website,
+	}
+	if locale != nil {
+		place.LocaleID = locale.ID
+	}
+
+	return place, nil
+}
+
 func GetNearby(ctx context.Context, geo *geotools.Point) ([]*Place, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	latlng := geotools.LatLngFromPoint(*geo)
 	lg.Warnf("nearby: lat(%v),lng(%v)", latlng.Lat, latlng.Lng)
 
@@ -47,6 +109,9 @@ func GetNearby(ctx context.Context, geo *geotools.Point) ([]*Place, error) {
 }
 
 func GetLocale(ctx context.Context, geo *geotools.Point) (*Locale, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	latlng := geotools.LatLngFromPoint(*geo)
 	lg.Warnf("locale: lat(%v),lng(%v)", latlng.Lat, latlng.Lng)
 

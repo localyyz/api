@@ -22,7 +22,12 @@ type Place struct {
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 }
 
-type PlacePresenter struct {
+type PlaceWithPromo struct {
+	*Place
+	Promos []*Promo `json:"promos"`
+}
+
+type PlaceWithLocale struct {
 	*Place
 	Locale *Locale `json:"locale"`
 }

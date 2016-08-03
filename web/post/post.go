@@ -11,7 +11,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
-	"github.com/goware/lg"
 	"github.com/pressly/chi"
 )
 
@@ -46,8 +45,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		data.Post
 
-		GooglePlaceID     string `json:"googlePlaceId,required"`
-		GooglePlaceDetail string `json:"googlePlaceDetail,required"`
+		GooglePlaceID string `json:"googlePlaceId,required"`
 
 		// Ignore
 		ID        interface{} `json:"id,omitempty"`
@@ -73,14 +71,13 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 				ws.Respond(w, http.StatusInternalServerError, err)
 				return
 			}
-			place = &data.Place{
-				GoogleID: payload.GooglePlaceID,
-				Name:     payload.GooglePlaceDetail,
-				LocaleID: 1, // for now.. TODO: need to grab the detail from google?
+			place, err := data.GetPlaceDetail(r.Context(), payload.GooglePlaceID)
+			if err != nil {
+				ws.Respond(w, http.StatusInternalServerError, err)
+				return
 			}
 			if err := data.DB.Place.Save(place); err != nil {
 				ws.Respond(w, http.StatusInternalServerError, err)
-				lg.Warn(err)
 				return
 			}
 		}

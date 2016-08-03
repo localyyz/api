@@ -40,7 +40,7 @@ func GetPlace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &data.PlacePresenter{
+	resp := &data.PlaceWithLocale{
 		Place:  place,
 		Locale: locale,
 	}
