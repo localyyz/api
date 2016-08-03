@@ -32,14 +32,6 @@ function drop() {
 EOF
 }
 
-function migrate() {
-  if [[ "$database" =~ "test" ]]; then
-    ./bin/goose -config=./etc/api.test.conf up
-  else
-    ./bin/goose -config=./etc/api.conf up
-  fi
-}
-
 if [ $# -lt 2 ]; then
   usage
 fi
@@ -60,7 +52,6 @@ case "$operation" in
   "reset")
     drop
     create
-    migrate
     ;;
   *)
     echo "no such operation"

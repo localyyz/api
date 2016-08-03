@@ -12,9 +12,38 @@ all:
 	@echo "  run                   - run API in dev mode"
 	@echo "  build                 - build api into bin/ directory"
 	@echo "  build-all             - build all binaries into bin/ directory"
+	@echo "  tools                 - go get's a bunch of tools for dev"
+	@echo ""
+	@echo "  db-create             - create dev db"
+	@echo "  db-status             - migrate dev DB to latest version"
+	@echo "  db-down               - roll back dev DB to a previous version"
+	@echo "  db-status             - status of current dev DB version"
 	@echo ""
 
 print-%: ; @echo $*=$($*)
+
+
+##
+## Tools
+##
+tools:
+	go get -u github.com/pressly/sup
+	go get -u bitbucket.org/liamstask/goose/cmd/goose
+
+##
+## Database
+##
+db-status:
+	goose status
+
+db-up:
+	goose up
+
+db-down:
+	goose down
+
+db-create:
+	@./db/db.sh create moodie
 
 run:
 	@(export CONFIG=$$PWD/config/api.conf && go run main.go)
