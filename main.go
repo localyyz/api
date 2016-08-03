@@ -32,8 +32,8 @@ func main() {
 		lg.Fatal(err)
 	}
 
-	//[map]
-	if err := data.SetupMapsClient(conf.Map.ApiKey); err != nil {
+	//[geotool]
+	if err := data.SetupMapsClient(conf.Geotool.ApiKey); err != nil {
 		lg.Fatal(err)
 	}
 
