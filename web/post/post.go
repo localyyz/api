@@ -36,7 +36,26 @@ func PostCtx(next http.Handler) http.Handler {
 
 func GetPost(w http.ResponseWriter, r *http.Request) {
 	post := r.Context().Value("post").(*data.Post)
-	ws.Respond(w, http.StatusOK, post)
+
+	place, err := data.DB.Place.FindByID(post.PlaceID)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	promo, err := data.DB.Promo.FindByID(post.PromoID)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	user, err := data.DB.User.FindByID(post.UserID)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := data.PostPresenter{Post: post, Place: place, Promo: promo, User: user}
+
+	ws.Respond(w, http.StatusOK, resp)
 }
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
@@ -45,15 +64,19 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		data.Post
 
+		// required...
+		// PromoID int64 ?
 		GooglePlaceID string `json:"googlePlaceId,required"`
 
 		// Ignore
-		ID        interface{} `json:"id,omitempty"`
-		UserID    interface{} `json:"userId,omitempty"`
-		Comments  interface{} `json:"comments,omitempty"`
-		Likes     interface{} `json:"comments,omitempty"`
-		CreatedAt interface{} `json:"createdAt,omitempty"`
-		UpdatedAt interface{} `json:"updatedAt,omitempty"`
+		ID          interface{} `json:"id,omitempty"`
+		PlaceID     interface{} `jsoN:"placeId,omitempty"`
+		UserID      interface{} `json:"userId,omitempty"`
+		Comments    interface{} `json:"comments,omitempty"`
+		Likes       interface{} `json:"comments,omitempty"`
+		PromoStatus interface{} `json:"promoStatus,omitempty"`
+		CreatedAt   interface{} `json:"createdAt,omitempty"`
+		UpdatedAt   interface{} `json:"updatedAt,omitempty"`
 	}
 	if err := ws.Bind(r.Body, &payload); err != nil {
 		ws.Respond(w, http.StatusBadRequest, err)
@@ -63,40 +86,29 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	newPost := &payload.Post
 	newPost.UserID = user.ID
 
-	if payload.GooglePlaceID != "" {
-		var place *data.Place
-		err := data.DB.Place.Find(db.Cond{"google_id": payload.GooglePlaceID}).One(&place)
-		if err != nil {
-			if err != db.ErrNoMoreRows {
-				ws.Respond(w, http.StatusInternalServerError, err)
-				return
-			}
-			place, err := data.GetPlaceDetail(r.Context(), payload.GooglePlaceID)
-			if err != nil {
-				ws.Respond(w, http.StatusInternalServerError, err)
-				return
-			}
-			if err := data.DB.Place.Save(place); err != nil {
-				ws.Respond(w, http.StatusInternalServerError, err)
-				return
-			}
+	place, err := data.DB.Place.FindByGoogleID(payload.GooglePlaceID)
+	if err != nil {
+		if err != db.ErrNoMoreRows {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
 		}
-		if place != nil && place.ID != 0 {
-			newPost.PlaceID = place.ID
+		place, err := data.GetPlaceDetail(r.Context(), payload.GooglePlaceID)
+		if err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		if err := data.DB.Place.Save(place); err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
 		}
 	}
-
+	newPost.PlaceID = place.ID
 	if err := data.DB.Post.Save(newPost); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	resp := struct {
-		*data.User
-		*data.Post
-	}{User: user, Post: newPost}
-
-	ws.Respond(w, http.StatusCreated, resp)
+	ws.Respond(w, http.StatusCreated, newPost)
 }
 
 func UpdatePost(w http.ResponseWriter, r *http.Request) {

@@ -11,11 +11,16 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	if err := ws.Bind(r.Body, &user.Geo); err != nil {
+	var payload struct {
+		Longitude float64 `json:"lng,required"`
+		Latitude  float64 `json:"lat,required"`
+	}
+	if err := ws.Bind(r.Body, &payload); err != nil {
 		ws.Respond(w, http.StatusBadRequest, err)
 		return
 	}
-	if err := data.DB.User.Save(user); err != nil {
+
+	if err := user.SetLocation(payload.Latitude, payload.Longitude); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}

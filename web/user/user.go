@@ -63,10 +63,17 @@ func GetPointHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get all the posts
-	var postID []int64
+	var (
+		postID  []int64
+		placeID []int64
+		promoID []int64
+	)
 	for _, p := range points {
 		postID = append(postID, p.PostID)
+		placeID = append(placeID, p.PlaceID)
+		promoID = append(promoID, p.PromoID)
 	}
+
 	posts, err := data.DB.Post.FindAll(db.Cond{"id": postID})
 	if err != nil {
 		ws.Respond(w, http.StatusServiceUnavailable, err)
@@ -77,10 +84,6 @@ func GetPointHistory(w http.ResponseWriter, r *http.Request) {
 		postsMap[p.ID] = p
 	}
 
-	var placeID []int64
-	for _, p := range points {
-		placeID = append(placeID, p.PlaceID)
-	}
 	places, err := data.DB.Place.FindAll(db.Cond{"id": placeID})
 	if err != nil {
 		ws.Respond(w, http.StatusServiceUnavailable, err)
@@ -91,14 +94,29 @@ func GetPointHistory(w http.ResponseWriter, r *http.Request) {
 		placesMap[p.ID] = p
 	}
 
+	promos, err := data.DB.Promo.FindAll(db.Cond{"id": promoID})
+	if err != nil {
+		ws.Respond(w, http.StatusServiceUnavailable, err)
+		return
+	}
+	promosMap := map[int64]*data.Promo{}
+	for _, p := range promos {
+		promosMap[p.ID] = p
+	}
+
 	resp := make([]*data.UserPointPresenter, len(points))
 	for i, p := range points {
 		resp[i] = &data.UserPointPresenter{
 			UserPoint: p,
-			Post:      postsMap[p.PostID],
-			Place:     placesMap[p.PlaceID],
-			Reward:    10, // TODO: Arbituary.
 		}
+
+		promo, promoFound := promosMap[p.PromoID]
+		if promoFound {
+			resp[i].Promo = promo
+		}
+
+		resp[i].Post = postsMap[p.PostID]
+		resp[i].Place = placesMap[p.PlaceID]
 	}
 
 	ws.Respond(w, http.StatusOK, resp)

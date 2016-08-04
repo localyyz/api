@@ -55,6 +55,12 @@ func (u *User) CollectionName() string {
 	return `users`
 }
 
+// SetLocation sets the user geo location
+func (u *User) SetLocation(lat, lon float64) error {
+	u.Geo = *geotools.NewPointFromLatLng(lat, lon)
+	return DB.Save(u)
+}
+
 func (s UserStore) FindByUsername(username string) (*User, error) {
 	return s.FindOne(db.Cond{"username": username})
 }

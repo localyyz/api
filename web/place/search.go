@@ -53,8 +53,8 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 
 	// places with promos
 	resp := struct {
-		Places []*data.Place
-		Promos []*data.Promo
+		Places []*data.Place `json:"places"`
+		Promos []*data.Promo `json:"promos"`
 	}{
 		places,
 		promos,
