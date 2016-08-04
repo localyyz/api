@@ -28,6 +28,7 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 
 	resp := data.LocateUser{
 		User:   user,
+		Geo:    user.Geo,
 		Locale: locale,
 	}
 	ws.Respond(w, http.StatusCreated, resp)
