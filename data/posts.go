@@ -13,13 +13,17 @@ import (
 )
 
 type Post struct {
-	ID      int64      `db:"id,pk,omitempty" json:"id,omitempty"`
-	UserID  int64      `db:"user_id" json:"userId"`
-	PlaceID int64      `db:"place_id" json:"placeId"`
-	Filter  PostFilter `db:"filter" json:"filter"`
+	ID      int64 `db:"id,pk,omitempty" json:"id,omitempty"`
+	UserID  int64 `db:"user_id" json:"userId"`
+	PlaceID int64 `db:"place_id" json:"placeId"`
 
-	Caption  string `db:"caption" json:"caption"`
-	ImageURL string `db:"image_url" json:"imageUrl"`
+	PromoID int64 `db:"promo_id" json:"promoId"`
+	// Promo status indicates if the reward was earned successfully
+	PromoStatus RewardStatus `db:"promo_status" json:"promoStatus"`
+
+	Caption  string     `db:"caption" json:"caption"`
+	ImageURL string     `db:"image_url" json:"imageUrl"`
+	Filter   PostFilter `db:"filter" json:"filter"`
 
 	Likes    uint32 `db:"likes" json:"likes"`
 	Comments uint32 `db:"comments" json:"comments"`
@@ -30,10 +34,13 @@ type Post struct {
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 }
 
+type RewardStatus uint32
+
 type PostPresenter struct {
 	*Post
 	User    *User        `json:"user"`
 	Place   *Place       `json:"place"`
+	Promo   *Promo       `json:"promo"`
 	Context *UserContext `json:"context"`
 }
 
@@ -44,16 +51,24 @@ type PostStore struct {
 type PostFilter uint
 
 const (
+	RewardInProgress RewardStatus = iota
+	RewardCompleted
+	RewardFailed
+)
+
+const (
 	FilterNone PostFilter = iota
 )
 
 var _ interface {
 	bond.HasBeforeCreate
 	bond.HasAfterCreate
+	bond.HasValidate
 } = &Post{}
 
 var (
-	postFilters = []string{"none"}
+	postFilters    = []string{"none"}
+	rewardStatuses = []string{"claimed", "completed", "failed"}
 )
 
 func (p *Post) CollectionName() string {
@@ -88,6 +103,48 @@ func (store *PostStore) GetFresh(cursor *ws.Page, cond db.Cond) ([]*Post, error)
 	return posts, nil
 }
 
+// Update promotion reward
+func (p *Post) UpdatePromoReward() {
+	if p.PromoStatus != RewardInProgress {
+		return
+	}
+
+	promo, err := DB.Promo.FindByID(p.PromoID)
+	if err != nil {
+		return
+	}
+
+	// promotion ended
+	if time.Now().After(promo.EndAt) {
+		p.PromoStatus = RewardFailed
+		DB.Post.Save(p)
+		return
+	}
+	// promotion max duration elapsed
+	if time.Since(*p.CreatedAt) > time.Duration(promo.Duration)*time.Second {
+		p.PromoStatus = RewardFailed
+		DB.Post.Save(p)
+		return
+	}
+
+	switch promo.Type {
+	case PromoTypeReachLike:
+		if int64(p.Likes) >= promo.XToReward {
+			p.PromoStatus = RewardCompleted
+			DB.Post.Save(p)
+
+			DB.UserPoint.Save(&UserPoint{
+				UserID:  p.UserID,
+				PostID:  p.ID,
+				PlaceID: p.PlaceID,
+				PromoID: p.PromoID,
+				Reward:  promo.Reward,
+			})
+			return
+		}
+	}
+}
+
 // Update likes count on the post...
 func (p *Post) UpdateLikeCount() {
 	count, err := DB.Like.Find(db.Cond{"post_id": p.ID}).Count()
@@ -95,6 +152,7 @@ func (p *Post) UpdateLikeCount() {
 		p.Likes = uint32(count)
 		DB.Save(p)
 	}
+	p.UpdatePromoReward()
 	p.UpdateScore()
 }
 
@@ -127,16 +185,23 @@ func (p *Post) BeforeCreate(bond.Session) error {
 }
 
 func (p *Post) AfterCreate(sess bond.Session) error {
-	// add to user points
-	isLimited, err := DB.UserPoint.IsLimited(p.UserID)
-	if err != nil || isLimited {
-		return err
+	return nil
+}
+
+func (p *Post) Validate() error {
+	if p.PromoID != 0 {
+		promo, err := DB.Promo.FindByID(p.PromoID)
+		if err != nil {
+			return err
+		}
+		if time.Now().Before(promo.StartAt) {
+			return ErrPromoStart
+		}
+		if time.Now().After(promo.EndAt) {
+			return ErrPromoEnded
+		}
 	}
 
-	up := &UserPoint{UserID: p.UserID, PostID: p.ID, PlaceID: p.PlaceID}
-	if err := DB.UserPoint.Save(up); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -189,4 +254,26 @@ func (pf *PostFilter) UnmarshalText(text []byte) error {
 		}
 	}
 	return fmt.Errorf("unknown post filter %s", enum)
+}
+
+// String returns the string value of the status.
+func (r RewardStatus) String() string {
+	return rewardStatuses[r]
+}
+
+// MarshalText satisfies TextMarshaler
+func (r RewardStatus) MarshalText() ([]byte, error) {
+	return []byte(r.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (r *RewardStatus) UnmarshalText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(rewardStatuses); i++ {
+		if enum == rewardStatuses[i] {
+			*r = RewardStatus(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown reward status %s", enum)
 }

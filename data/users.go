@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"bitbucket.org/moodie-app/moodie-api/web/utils"
+
 	"github.com/goware/geotools"
 
 	"upper.io/bond"
@@ -19,9 +21,9 @@ type User struct {
 
 	AccessToken string         `db:"access_token" json:"-"`
 	Network     string         `db:"network" json:"network"`
-	LoggedIn    bool           `db:"logged_in" json:"loggedIn"`
+	LoggedIn    bool           `db:"logged_in" json:"-"`
 	LastLogInAt *time.Time     `db:"last_login_at" json:"lastLoginAt"`
-	Geo         geotools.Point `db:"geo" json:"geo"`
+	Geo         geotools.Point `db:"geo" json:"-"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -41,7 +43,8 @@ type AuthUser struct {
 
 type LocateUser struct {
 	*User
-	Locale *Locale `json:"locale"`
+	Geo    geotools.Point `json:"geo"`
+	Locale *Locale        `json:"locale"`
 }
 
 type UserStore struct {
@@ -84,11 +87,15 @@ func NewSessionUser(tok string) (*User, error) {
 		return nil, err
 	}
 
-	userID, err := token.Claims["user_id"].(json.Number).Int64()
-	if err != nil {
-		return nil, err
-	}
+	rawUserID, ok := token.Claims["user_id"].(json.Number)
+	if ok {
+		userID, err := rawUserID.Int64()
+		if err != nil {
+			return nil, err
+		}
 
-	// find a logged in user with the given id
-	return DB.User.FindOne(db.Cond{"id": userID, "logged_in": true})
+		// find a logged in user with the given id
+		return DB.User.FindOne(db.Cond{"id": userID, "logged_in": true})
+	}
+	return nil, utils.ErrInvalidSession
 }

@@ -1,12 +1,18 @@
 package data
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
 	"upper.io/db"
+)
+
+var (
+	ErrPromoStart = errors.New("promo have not started")
+	ErrPromoEnded = errors.New("promo ended")
 )
 
 func GetTimeUTCPointer() *time.Time {

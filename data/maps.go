@@ -98,13 +98,37 @@ func GetNearby(ctx context.Context, geo *geotools.Point) ([]*Place, error) {
 	}
 
 	places := make([]*Place, len(nearbyResponse.Results))
+	googleIDs := make([]string, len(places))
 	for i, p := range nearbyResponse.Results {
 		places[i] = &Place{
 			GoogleID: p.PlaceID,
 			Name:     p.Name,
 			Address:  p.Vicinity,
 		}
+		googleIDs[i] = p.PlaceID
 	}
+
+	dbPlaceMap := map[string]int64{}
+	var pl *Place
+	q := DB.Place.Find(db.Cond{"google_id IN": googleIDs})
+	for {
+		err := q.Next(&pl)
+		if err != nil {
+			if err == db.ErrNoMoreRows {
+				break
+			}
+			return nil, err
+		}
+		dbPlaceMap[pl.GoogleID] = pl.ID
+	}
+
+	for _, place := range places {
+		plID, found := dbPlaceMap[place.GoogleID]
+		if found {
+			place.ID = plID
+		}
+	}
+
 	return places, nil
 }
 
