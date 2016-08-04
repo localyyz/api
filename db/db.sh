@@ -12,10 +12,10 @@ function create() {
   cat <<EOF | psql -h127.0.0.1 -U postgres
     CREATE USER moodie WITH PASSWORD 'moodie';
     CREATE DATABASE $database ENCODING 'UTF-8' LC_COLLATE='en_US.UTF-8' LC_CTYPE='en_US.UTF-8' TEMPLATE template0 OWNER moodie;
-    CREATE EXTENSION postgis;
 EOF
 
   cat <<EOF | psql -h127.0.0.1 -U postgres $database
+    CREATE EXTENSION postgis;
     GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO moodie;
     GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO moodie;
     ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO moodie;

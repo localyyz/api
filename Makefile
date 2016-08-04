@@ -15,6 +15,7 @@ all:
 	@echo "  tools                 - go get's a bunch of tools for dev"
 	@echo ""
 	@echo "  db-create             - create dev db"
+	@echo "  db-reset              - reset dev db (drop, create, migrate)"
 	@echo "  db-status             - migrate dev DB to latest version"
 	@echo "  db-down               - roll back dev DB to a previous version"
 	@echo "  db-status             - status of current dev DB version"
@@ -44,6 +45,10 @@ db-down:
 
 db-create:
 	@./db/db.sh create moodie
+
+db-reset:
+	@./db/db.sh reset moodie
+	goose up
 
 run:
 	@(export CONFIG=$$PWD/config/api.conf && go run main.go)
