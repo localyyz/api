@@ -18,7 +18,9 @@ CREATE TABLE users (
 
     created_at timestamp DEFAULT now() NOT NULL,
     updated_at timestamp,
-    deleted_at timestamp
+    deleted_at timestamp,
+
+    CONSTRAINT unique_username UNIQUE (username)
 );
 
 CREATE TABLE locales (
@@ -51,6 +53,7 @@ CREATE TABLE promos (
     type smallint DEFAULT 0 NOT NULL,
     reward bigint DEFAULT 0 NOT NULL,
     x_to_reward bigint DEFAULT 0 NOT NULL,
+    duration bigint DEFAULT 86400 NOT NULL,
     start_at timestamp NOT NULL,
     end_at timestamp NOT NULL,
     created_at timestamp DEFAULT now() NOT NULL
@@ -60,6 +63,9 @@ CREATE TABLE posts (
     id serial PRIMARY KEY,
     user_id bigint REFERENCES users (id),
     place_id bigint REFERENCES places (id),
+
+    promo_id bigint REFERENCES promos (id),
+    promo_status smallint DEFAULT 0 NOT NULL,
     
     caption text,
     image_url text,
@@ -79,15 +85,11 @@ CREATE TABLE user_points (
     id serial PRIMARY KEY,
     user_id bigint REFERENCES users (id),
 
-    status smallint DEFAULT 0 NOT NULL,
-    start_value bigint DEFAULT 0 NOT NULL,
-    end_value bigint DEFAULT 0 NOT NULL,
-    current_value bigint DEFAULT 0 NOT NULL,
-    point_reward bigint DEFAULT 0 NOT NULL,
-
     post_id bigint REFERENCES posts (id) ON DELETE CASCADE,
     place_id bigint REFERENCES places (id) ON DELETE CASCADE,
     promo_id bigint REFERENCES promos (id) ON DELETE CASCADE,
+
+    reward bigint DEFAULT 0 NOT NULL,
     
     created_at timestamp DEFAULT now() NOT NULL
 );
