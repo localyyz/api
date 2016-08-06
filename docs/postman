@@ -1,0 +1,186 @@
+{
+	"variables": [],
+	"info": {
+		"name": "moodie",
+		"_postman_id": "79057b80-4bc2-6150-a95a-bfbdb7e3ad08",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "heartbeat",
+			"request": {
+				"url": "localhost:5331/session/heartbeat",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"lng\": -79.392265,\n    \"lat\": 43.6500519\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "nearby",
+			"request": {
+				"url": "localhost:5331/places/nearby?t=store",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "create post",
+			"request": {
+				"url": "localhost:5331/posts",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"googlePlaceId\": \"ChIJVbTUtto0K4gR-FgmHc3uCe8\",\n    \"promoId\": 5,\n    \"caption\": \"like dis plz\",\n    \"imageUrl\": \"https://s3.amazonaws.com/moodie/moodie/uploads/1a91021186d2e77b918a934d5f9fc594.png\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get post",
+			"request": {
+				"url": "localhost:5331/posts/3",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"googlePlaceId\": \"ChIJVbTUtto0K4gR-FgmHc3uCe8\",\n    \"promoId\": 5,\n    \"caption\": \"like dis plz\",\n    \"imageUrl\": \"https://s3.amazonaws.com/moodie/moodie/uploads/1a91021186d2e77b918a934d5f9fc594.png\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "like a post",
+			"request": {
+				"url": "localhost:5331/posts/3/likes",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"googlePlaceId\": \"ChIJVbTUtto0K4gR-FgmHc3uCe8\",\n    \"promoId\": 5,\n    \"caption\": \"like dis plz\",\n    \"imageUrl\": \"https://s3.amazonaws.com/moodie/moodie/uploads/1a91021186d2e77b918a934d5f9fc594.png\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "list locale",
+			"request": {
+				"url": "localhost:5331/locale",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"lng\": -79.392265,\n    \"lat\": 43.6500519\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "add comment",
+			"request": {
+				"url": "localhost:5331/posts/1/comments",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"lng\": -79.392265,\n    \"lat\": 43.6500519\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
