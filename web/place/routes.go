@@ -2,7 +2,6 @@ package place
 
 import (
 	"bitbucket.org/moodie-app/moodie-api/web/post"
-
 	"github.com/pressly/chi"
 )
 
@@ -21,7 +20,7 @@ func Routes() chi.Router {
 		r.Use(PlaceCtx)
 
 		r.Get("/", GetPlace)
-		r.Mount("/posts", post.Routes())
+		r.Get("/posts/recent", post.ListFreshPost)
 	})
 
 	return r

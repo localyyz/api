@@ -200,6 +200,24 @@ func (p *Post) Validate() error {
 		if time.Now().After(promo.EndAt) {
 			return ErrPromoEnded
 		}
+
+		if promo.PlaceID != p.PlaceID {
+			return ErrPromoPlace
+		}
+
+		// TODO: can promo be re-done?
+		count, err := DB.Post.Find(
+			db.Cond{
+				"user_id":  p.UserID,
+				"promo_id": p.PromoID,
+			},
+		).Count()
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return ErrPromoUsed
+		}
 	}
 
 	return nil

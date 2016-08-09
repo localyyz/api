@@ -13,6 +13,8 @@ import (
 var (
 	ErrPromoStart = errors.New("promo have not started")
 	ErrPromoEnded = errors.New("promo ended")
+	ErrPromoUsed  = errors.New("promo already used")
+	ErrPromoPlace = errors.New("promo cannot be applied to this place")
 )
 
 func GetTimeUTCPointer() *time.Time {

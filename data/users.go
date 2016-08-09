@@ -51,8 +51,17 @@ type UserStore struct {
 	bond.Store
 }
 
+var _ interface {
+	bond.HasBeforeCreate
+} = &User{}
+
 func (u *User) CollectionName() string {
 	return `users`
+}
+
+func (u *User) BeforeCreate(bond.Session) error {
+	u.Geo = *geotools.NewPointFromLatLng(0, 0) // set to zero location
+	return nil
 }
 
 // SetLocation sets the user geo location
