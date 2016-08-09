@@ -24,6 +24,10 @@ func (store *LocaleStore) FindByName(name string) (*Locale, error) {
 	return store.FindOne(db.Cond{"name": name})
 }
 
+func (store LocaleStore) FindByGoogleID(googleID string) (*Locale, error) {
+	return store.FindOne(db.Cond{"google_id": googleID})
+}
+
 func (store LocaleStore) FindByID(localeID int64) (*Locale, error) {
 	return store.FindOne(db.Cond{"id": localeID})
 }

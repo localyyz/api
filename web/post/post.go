@@ -59,7 +59,8 @@ func GetPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("session.user").(*data.User)
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
 
 	var payload struct {
 		data.Post
@@ -92,11 +93,17 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
-		place, err := data.GetPlaceDetail(r.Context(), payload.GooglePlaceID)
+		place, err := data.GetPlaceDetail(ctx, payload.GooglePlaceID)
 		if err != nil {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
+		locale, err := data.GetLocale(ctx, &user.Geo)
+		if err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		place.LocaleID = locale.ID
 		if err := data.DB.Place.Save(place); err != nil {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return

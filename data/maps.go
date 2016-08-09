@@ -37,33 +37,33 @@ func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
 		return nil, err
 	}
 
-	// find locale
-	var floc bool
-	var locale *Locale
-	for _, loc := range res.AddressComponents {
-		for _, loct := range loc.Types {
-			if loct == "locality" {
-				floc = true
-				break
-			}
-		}
-		if floc {
-			locale, err := DB.Locale.FindByName(loc.ShortName)
-			if err != nil && err != db.ErrNoMoreRows {
-				return nil, err
-			}
-			if locale == nil {
-				locale = &Locale{
-					Name:        loc.ShortName,
-					Description: loc.LongName,
-				}
-				if err := DB.Locale.Save(locale); err != nil {
-					return nil, err
-				}
-			}
-			break
-		}
-	}
+	//find locale
+	//var floc bool
+	//var locale *Locale
+	//for _, loc := range res.AddressComponents {
+	//for _, loct := range loc.Types {
+	//if loct == "locality" {
+	//floc = true
+	//break
+	//}
+	//}
+	//if floc {
+	//locale, err := DB.Locale.FindByName(loc.ShortName)
+	//if err != nil && err != db.ErrNoMoreRows {
+	//return nil, err
+	//}
+	//if locale == nil {
+	//locale = &Locale{
+	//Name:        loc.ShortName,
+	//Description: loc.LongName,
+	//}
+	//if err := DB.Locale.Save(locale); err != nil {
+	//return nil, err
+	//}
+	//}
+	//break
+	//}
+	//}
 
 	place := &Place{
 		GoogleID: placeID,
@@ -72,9 +72,9 @@ func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
 		Phone:    res.FormattedPhoneNumber,
 		Website:  res.Website,
 	}
-	if locale != nil {
-		place.LocaleID = locale.ID
-	}
+	//if locale != nil {
+	//place.LocaleID = locale.ID
+	//}
 
 	return place, nil
 }
@@ -151,14 +151,22 @@ func GetLocale(ctx context.Context, geo *geotools.Point) (*Locale, error) {
 	var locale *Locale
 	for _, r := range geocodeResponse {
 		ac := r.AddressComponents[0]
-		locale = &Locale{
-			Name:        ac.ShortName,
-			Description: ac.LongName,
-			GoogleID:    r.PlaceID,
+
+		locale, err = DB.Locale.FindByGoogleID(locale.GoogleID)
+		if err != nil {
+			if err == db.ErrNoMoreRows {
+				locale = &Locale{
+					Name:        ac.ShortName,
+					Description: ac.LongName,
+					GoogleID:    r.PlaceID,
+				}
+				DB.Locale.Save(locale) // silently fail if needed
+			}
+			return nil, err
 		}
+
 		break
 	}
-	DB.Locale.Save(locale) // silently fail if needed
 
 	return locale, nil
 }
