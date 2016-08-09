@@ -152,7 +152,7 @@ func GetLocale(ctx context.Context, geo *geotools.Point) (*Locale, error) {
 	for _, r := range geocodeResponse {
 		ac := r.AddressComponents[0]
 
-		locale, err = DB.Locale.FindByGoogleID(locale.GoogleID)
+		locale, err = DB.Locale.FindByGoogleID(r.PlaceID)
 		if err != nil {
 			if err == db.ErrNoMoreRows {
 				locale = &Locale{
