@@ -64,7 +64,8 @@ CREATE TABLE posts (
     user_id bigint REFERENCES users (id),
     place_id bigint REFERENCES places (id),
 
-    promo_id bigint REFERENCES promos (id),
+    --promo_id bigint REFERENCES promos (id),
+    promo_id bigint,
     promo_status smallint DEFAULT 0 NOT NULL,
     
     caption text,
