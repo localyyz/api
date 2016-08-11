@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"upper.io/db"
@@ -164,8 +165,10 @@ func GetLocale(ctx context.Context, geo *geotools.Point) (*Locale, error) {
 			}
 			return nil, err
 		}
-
 		break
+	}
+	if locale.ID == 0 {
+		return nil, errors.New("unknown locale")
 	}
 
 	return locale, nil
