@@ -46,6 +46,9 @@ db-down:
 db-create:
 	@./db/db.sh create moodie
 
+db-drop:
+	@./db/db.sh drop moodie
+
 db-reset:
 	@./db/db.sh reset moodie
 	goose up
