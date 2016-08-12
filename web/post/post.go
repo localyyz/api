@@ -87,13 +87,17 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	newPost := &payload.Post
 	newPost.UserID = user.ID
 
-	place, err := data.DB.Place.FindByGoogleID(payload.GooglePlaceID)
+	var (
+		place *data.Place
+		err   error
+	)
+	place, err = data.DB.Place.FindByGoogleID(payload.GooglePlaceID)
 	if err != nil {
 		if err != db.ErrNoMoreRows {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
-		place, err := data.GetPlaceDetail(ctx, payload.GooglePlaceID)
+		place, err = data.GetPlaceDetail(ctx, payload.GooglePlaceID)
 		if err != nil {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return

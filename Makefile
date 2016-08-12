@@ -15,6 +15,7 @@ all:
 	@echo "  tools                 - go get's a bunch of tools for dev"
 	@echo ""
 	@echo "  db-create             - create dev db"
+	@echo "  db-drop               - drop dev db"
 	@echo "  db-reset              - reset dev db (drop, create, migrate)"
 	@echo "  db-status             - migrate dev DB to latest version"
 	@echo "  db-down               - roll back dev DB to a previous version"
