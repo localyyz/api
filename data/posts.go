@@ -189,7 +189,7 @@ func (p *Post) AfterCreate(sess bond.Session) error {
 }
 
 func (p *Post) Validate() error {
-	if p.PromoID != 0 {
+	if p.PromoID != 0 && p.PromoStatus == RewardInProgress {
 		promo, err := DB.Promo.FindByID(p.PromoID)
 		if err != nil {
 			return err
