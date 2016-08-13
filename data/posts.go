@@ -189,6 +189,7 @@ func (p *Post) AfterCreate(sess bond.Session) error {
 }
 
 func (p *Post) Validate() error {
+	// Validate applied promo status is valid
 	if p.PromoID != 0 && p.PromoStatus == RewardInProgress {
 		promo, err := DB.Promo.FindByID(p.PromoID)
 		if err != nil {
@@ -206,6 +207,8 @@ func (p *Post) Validate() error {
 		}
 
 		// TODO: can promo be re-done?
+		// TODO: can post be created without promotion applied?
+		// Check if there is already a promo for this place
 		count, err := DB.Post.Find(
 			db.Cond{
 				"user_id":  p.UserID,
@@ -216,7 +219,8 @@ func (p *Post) Validate() error {
 			return err
 		}
 		if count > 0 {
-			return ErrPromoUsed
+			//return ErrPromoUsed
+			p.PromoID = 0
 		}
 	}
 
