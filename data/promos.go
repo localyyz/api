@@ -47,6 +47,10 @@ func (p *Promo) CollectionName() string {
 	return `promos`
 }
 
+func (store PromoStore) FindByPlaceID(placeID int64) (*Promo, error) {
+	return store.FindOne(db.Cond{"place_id": placeID})
+}
+
 func (store PromoStore) FindByID(ID int64) (*Promo, error) {
 	return store.FindOne(db.Cond{"id": ID})
 }

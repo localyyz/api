@@ -113,6 +113,19 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
+	// TODO: frontend work flow...
+	// for now, let's just find the promo attached to the location
+	//   picked by this post. auto apply promotion
+	promo, err := data.DB.Promo.FindByPlaceID(place.ID)
+	if err != nil && err != db.ErrNoMoreRows {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	if promo != nil {
+		newPost.PromoID = promo.ID
+	}
+
 	newPost.PlaceID = place.ID
 	if err := data.DB.Post.Save(newPost); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
