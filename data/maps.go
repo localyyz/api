@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"upper.io/db"
@@ -23,6 +24,20 @@ func SetupMapsClient(apiKey string) error {
 	var err error
 	mapsClient, err = maps.NewClient(maps.WithAPIKey(apiKey))
 	return err
+}
+
+func parseAddress(address string) (parsed string) {
+	parsed = address
+	if address == "" {
+		return
+	}
+
+	splits := strings.Split(address, ",")
+	if len(splits) > 0 {
+		parsed = splits[0]
+	}
+
+	return
 }
 
 func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
@@ -65,11 +80,10 @@ func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
 	//break
 	//}
 	//}
-
 	place := &Place{
 		GoogleID: placeID,
 		Name:     res.Name,
-		Address:  res.FormattedAddress,
+		Address:  parseAddress(res.FormattedAddress),
 		Phone:    res.FormattedPhoneNumber,
 		Website:  res.Website,
 	}
