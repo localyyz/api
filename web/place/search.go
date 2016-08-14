@@ -51,6 +51,17 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
+	var resp struct {
+		Places []*data.Place `json:"places"`
+		Promos []*data.Promo `json:"promos"`
+	}
+
+	if len(places) == 0 {
+		resp.Places = []*data.Place{}
+		resp.Promos = []*data.Promo{}
+		ws.Respond(w, http.StatusOK, resp)
+		return
+	}
 
 	// return any active promotions
 	placeIDs := make([]int64, len(places))
@@ -66,13 +77,8 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// places with promos
-	resp := struct {
-		Places []*data.Place `json:"places"`
-		Promos []*data.Promo `json:"promos"`
-	}{
-		places,
-		promos,
-	}
+	resp.Places = places
+	resp.Promos = promos
 
 	ws.Respond(w, http.StatusOK, resp)
 }

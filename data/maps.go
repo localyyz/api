@@ -136,6 +136,12 @@ func GetNearby(ctx context.Context, geo *geotools.Point) ([]*Place, error) {
 	}
 	nearbyResponse, err := mapsClient.NearbySearch(ctx, nearbyReq)
 	if err != nil {
+		// TODO: really shitty way of checking empty results
+		// but unless i want to roll my own mapsclient, this is
+		// the easier option, for now
+		if strings.Contains(err.Error(), "ZERO_RESULTS") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
