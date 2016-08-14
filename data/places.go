@@ -36,6 +36,7 @@ type PlaceWithPost struct {
 	*Place
 	Posts []*PostPresenter `json:"posts"`
 }
+
 type PlaceEtc struct {
 	Latitude     float64 `json:"latitude"`
 	Longitude    float64 `json:"longitude"`
