@@ -14,6 +14,7 @@ func Routes() chi.Router {
 		r.Use(PlaceTypeCtx)
 		r.Get("/nearby", NearbyPlaces)
 		r.Post("/search", SearchPlaces)
+		r.Post("/autocomplete", AutoCompletePlaces)
 	})
 
 	r.Route("/:placeID", func(r chi.Router) {

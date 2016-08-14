@@ -28,6 +28,20 @@ func PlaceTypeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+func AutoCompletePlaces(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+
+	queryString := strings.TrimSpace(r.URL.Query().Get("q"))
+	places, err := data.GetPlaceAutoComplete(ctx, &user.Geo, queryString)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusOK, places)
+}
+
 func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)

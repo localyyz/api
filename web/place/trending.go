@@ -16,12 +16,19 @@ type postScore struct {
 	Scores  int64 `db:"scores"`
 }
 
+func ListTrendingNearby(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("session.user").(*data.User)
+	_ = user
+}
+
 func ListTrendingPlaces(w http.ResponseWriter, r *http.Request) {
 	cursor := ws.NewPage(r)
 
 	// mood type
 	// NOTE: this is not REST, but let's just pretend it is
-	// TODO: fuck man this is complicated
+
+	// TRENDING
+	// 1. locale based -> get places nearby
 
 	placeCond := db.Cond{}
 	if lId := strings.TrimSpace(r.URL.Query().Get("localeId")); lId != "" {

@@ -40,6 +40,33 @@ func parseAddress(address string) (parsed string) {
 	return
 }
 
+func GetPlaceAutoComplete(ctx context.Context, geo *geotools.Point, query string) ([]*Place, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	latlng := geotools.LatLngFromPoint(*geo)
+	lg.Warnf("autocomplete: lat(%v),lng(%v)", latlng.Lat, latlng.Lng)
+
+	placeType := ctx.Value("place.type").(maps.PlaceType)
+	autocompReq := &maps.PlaceAutocompleteRequest{
+		Input:    query,
+		Location: &maps.LatLng{Lat: latlng.Lat, Lng: latlng.Lng},
+		Radius:   200,
+		Type:     placeType,
+	}
+	autocompResponse, err := mapsClient.PlaceAutocomplete(ctx, autocompReq)
+	if err != nil {
+		return nil, err
+	}
+
+	var places []*Place
+	for _, pred := range autocompResponse.Predictions {
+		places = append(places, &Place{Name: pred.Description, GoogleID: pred.PlaceID})
+	}
+
+	return places, nil
+}
+
 func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -169,15 +196,15 @@ func GetLocale(ctx context.Context, geo *geotools.Point) (*Locale, error) {
 
 		locale, err = DB.Locale.FindByGoogleID(r.PlaceID)
 		if err != nil {
-			if err == db.ErrNoMoreRows {
-				locale = &Locale{
-					Name:        ac.ShortName,
-					Description: ac.LongName,
-					GoogleID:    r.PlaceID,
-				}
-				DB.Locale.Save(locale) // silently fail if needed
+			if err != db.ErrNoMoreRows {
+				return nil, err
 			}
-			return nil, err
+			locale = &Locale{
+				Name:        ac.ShortName,
+				Description: ac.LongName,
+				GoogleID:    r.PlaceID,
+			}
+			DB.Locale.Save(locale) // silently fail if needed
 		}
 		break
 	}

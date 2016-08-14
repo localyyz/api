@@ -65,7 +65,83 @@
 						},
 						"description": "Nearby places and promotions\n\nparams:\n\nt = google places types\nhttps://developers.google.com/places/supported_types"
 					},
-					"response": []
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"url": "localhost:5331/places/nearby?t=store",
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"enabled": true,
+										"description": "The mime type of this content"
+									},
+									{
+										"key": "Authorization",
+										"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+										"enabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "javascript",
+							"_postman_previewtype": "html",
+							"header": [
+								{
+									"name": "Cache-Control",
+									"key": "Cache-Control",
+									"value": "no-cache, private, max-age=0",
+									"description": "Tells all caching mechanisms from server to client whether they may cache this object. It is measured in seconds"
+								},
+								{
+									"name": "Content-Type",
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8",
+									"description": "The mime type of this content"
+								},
+								{
+									"name": "Date",
+									"key": "Date",
+									"value": "Sun, 14 Aug 2016 00:59:37 GMT",
+									"description": "The date and time that the message was sent"
+								},
+								{
+									"name": "Expires",
+									"key": "Expires",
+									"value": "Wed, 31 Dec 1969 19:00:00 EST",
+									"description": "Gives the date/time after which the response is considered stale"
+								},
+								{
+									"name": "Pragma",
+									"key": "Pragma",
+									"value": "no-cache",
+									"description": "Implementation-specific headers that may have various effects anywhere along the request-response chain."
+								},
+								{
+									"name": "Transfer-Encoding",
+									"key": "Transfer-Encoding",
+									"value": "chunked",
+									"description": "The form of encoding used to safely transfer the entity to the user. Currently defined methods are: chunked, compress, deflate, gzip, identity."
+								},
+								{
+									"name": "X-Accel-Expires",
+									"key": "X-Accel-Expires",
+									"value": "0",
+									"description": "Custom header"
+								}
+							],
+							"cookie": [],
+							"responseTime": 1551,
+							"body": "{\"places\":[{\"googleId\":\"ChIJUaHNqdo0K4gRpfU4j6aQ3wo\",\"localeId\":0,\"name\":\"So Hip it Hurts\",\"address\":\"323 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJe6Iiqto0K4gRna7l_DGGtD8\",\"localeId\":0,\"name\":\"Shoppers Drug Mart\",\"address\":\"260 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJUaHNqdo0K4gRY93R0UISFKk\",\"localeId\":0,\"name\":\"groovy\",\"address\":\"323 Queen St W, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJzyW7BtA0K4gR_wZQRJm4s0c\",\"localeId\":0,\"name\":\"CHANGE Lingerie\",\"address\":\"315 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJzyW7BtA0K4gRIffeAHqrF6c\",\"localeId\":0,\"name\":\"RUDSAK Queen Street\",\"address\":\"315 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJEbyp-880K4gRD-qDqmtk9Cw\",\"localeId\":0,\"name\":\"Umbra Store\",\"address\":\"165 John Street, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJ5QB5A9A0K4gRSW0FkS1BgZ8\",\"localeId\":0,\"name\":\"The Second Cup\",\"address\":\"307 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJAyV9_c80K4gRpqYAAV4-g6Q\",\"localeId\":0,\"name\":\"Starbucks\",\"address\":\"250 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJvzNiA9A0K4gRQ8mcc5GmCQQ\",\"localeId\":0,\"name\":\"Price Roman\",\"address\":\"162 John Street, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJS3RvAdA0K4gRtkOT14B0Wvw\",\"localeId\":0,\"name\":\"Black Market Clothing\",\"address\":\"256 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJuePe_880K4gRumPjMsAnFWE\",\"localeId\":0,\"name\":\"Shortstack Records\",\"address\":\"256A Queen St W Toronto, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJcxiXqdo0K4gRpCPN8d0r0as\",\"localeId\":0,\"name\":\"Brimz Hat Boutique\",\"address\":\"311A Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJEzeGA9A0K4gRcYamcNPFvKg\",\"localeId\":0,\"name\":\"Kallone Intimi\",\"address\":\"309 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJfcGy4s80K4gRkPr8XpmNOW8\",\"localeId\":0,\"name\":\"Tribal Rhythm\",\"address\":\"248 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJhWzJqdo0K4gR5nEkm2Lk8fA\",\"localeId\":0,\"name\":\"Drama Queen\",\"address\":\"319 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJocu5qNo0K4gRIyUDyCWOKuo\",\"localeId\":0,\"name\":\"AEO & Aerie Store\",\"address\":\"327-333 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJ0yAh-M80K4gRHKdYRiz9O68\",\"localeId\":0,\"name\":\"Thien Le\",\"address\":\"176 John Street, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJ0yAh-M80K4gRdAMG0vqJmPI\",\"localeId\":0,\"name\":\"Mercy\",\"address\":\"176 John Street, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJm0X_-880K4gRgjpISgmQ1Y4\",\"localeId\":0,\"name\":\"Garden View\",\"address\":\"252 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJq6cNB9A0K4gRng8QLHKQWvI\",\"localeId\":0,\"name\":\"Flahair Inc\",\"address\":\"319 Queen Street West, Toronto\",\"phone\":\"\",\"website\":\"\",\"etc\":null}],\"promos\":null}"
+						}
+					]
 				},
 				{
 					"name": "trending",
@@ -115,7 +191,83 @@
 						},
 						"description": ""
 					},
-					"response": []
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"url": "localhost:5331/places/1",
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"enabled": true,
+										"description": "The mime type of this content"
+									},
+									{
+										"key": "Authorization",
+										"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+										"enabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "javascript",
+							"_postman_previewtype": "html",
+							"header": [
+								{
+									"name": "Cache-Control",
+									"key": "Cache-Control",
+									"value": "no-cache, private, max-age=0",
+									"description": "Tells all caching mechanisms from server to client whether they may cache this object. It is measured in seconds"
+								},
+								{
+									"name": "Content-Length",
+									"key": "Content-Length",
+									"value": "365",
+									"description": "The length of the response body in octets (8-bit bytes)"
+								},
+								{
+									"name": "Content-Type",
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8",
+									"description": "The mime type of this content"
+								},
+								{
+									"name": "Date",
+									"key": "Date",
+									"value": "Sun, 14 Aug 2016 00:59:24 GMT",
+									"description": "The date and time that the message was sent"
+								},
+								{
+									"name": "Expires",
+									"key": "Expires",
+									"value": "Wed, 31 Dec 1969 19:00:00 EST",
+									"description": "Gives the date/time after which the response is considered stale"
+								},
+								{
+									"name": "Pragma",
+									"key": "Pragma",
+									"value": "no-cache",
+									"description": "Implementation-specific headers that may have various effects anywhere along the request-response chain."
+								},
+								{
+									"name": "X-Accel-Expires",
+									"key": "X-Accel-Expires",
+									"value": "0",
+									"description": "Custom header"
+								}
+							],
+							"cookie": [],
+							"responseTime": 21,
+							"body": "{\"id\":1,\"googleId\":\"ChIJVbTUtto0K4gR-FgmHc3uCe8\",\"localeId\":1,\"name\":\"Aritzia\",\"address\":\"280 Queen St W, Toronto, ON M5V 2A1, Canada\",\"phone\":\"(416) 977-9919\",\"website\":\"http://aritzia.com/\",\"etc\":null,\"createdAt\":\"2016-08-08T23:27:02.741104Z\",\"locale\":{\"id\":1,\"name\":\"Queen Street West\",\"description\":\"Queen Street West\",\"googleId\":\"ChIJiWugbVU0K4gRIt8NP_GwOe0\"}}"
+						}
+					]
 				},
 				{
 					"name": "get recent posts from a place",
@@ -140,7 +292,191 @@
 						},
 						"description": ""
 					},
-					"response": []
+					"response": [
+						{
+							"name": "resp",
+							"originalRequest": {
+								"url": "localhost:5331/places/1/posts/recent",
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"enabled": true,
+										"description": "The mime type of this content"
+									},
+									{
+										"key": "Authorization",
+										"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+										"enabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "javascript",
+							"_postman_previewtype": "html",
+							"header": [
+								{
+									"name": "Cache-Control",
+									"key": "Cache-Control",
+									"value": "no-cache, private, max-age=0",
+									"description": "Tells all caching mechanisms from server to client whether they may cache this object. It is measured in seconds"
+								},
+								{
+									"name": "Content-Length",
+									"key": "Content-Length",
+									"value": "1929",
+									"description": "The length of the response body in octets (8-bit bytes)"
+								},
+								{
+									"name": "Content-Type",
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8",
+									"description": "The mime type of this content"
+								},
+								{
+									"name": "Date",
+									"key": "Date",
+									"value": "Sun, 14 Aug 2016 00:58:45 GMT",
+									"description": "The date and time that the message was sent"
+								},
+								{
+									"name": "Expires",
+									"key": "Expires",
+									"value": "Wed, 31 Dec 1969 19:00:00 EST",
+									"description": "Gives the date/time after which the response is considered stale"
+								},
+								{
+									"name": "Link",
+									"key": "Link",
+									"value": "</places/1/posts/recent?limit=50&page=1>;rel=\"first\",</places/1/posts/recent?limit=50&page=1>;rel=\"self\",</places/1/posts/recent?limit=50&page=0>;rel=\"prev\"",
+									"description": "Used to express a typed relationship with another resource, where the relation type is defined by RFC 5988",
+									"isLink": true
+								},
+								{
+									"name": "Pragma",
+									"key": "Pragma",
+									"value": "no-cache",
+									"description": "Implementation-specific headers that may have various effects anywhere along the request-response chain."
+								},
+								{
+									"name": "X-Accel-Expires",
+									"key": "X-Accel-Expires",
+									"value": "0",
+									"description": "Custom header"
+								}
+							],
+							"cookie": [],
+							"responseTime": 46,
+							"body": "[{\"id\":5,\"userId\":1,\"placeId\":1,\"promoId\":1,\"promoStatus\":\"claimed\",\"caption\":\"give me the reward. \",\"imageUrl\":\"https://s3.amazonaws.com/moodie/moodie/uploads/3c2ca4ab4001a7d7341709809e46dad9.jpg\",\"filter\":\"none\",\"likes\":0,\"comments\":0,\"featured\":0,\"createdAt\":\"2016-08-13T16:43:17.386494Z\",\"user\":{\"id\":1,\"username\":\"10153533745524109\",\"email\":\"xuepaul.xp@gmail.com\",\"name\":\"Paul Xue\",\"avatarUrl\":\"https://scontent.xx.fbcdn.net/v/t1.0-1/p200x200/12742104_10153352738609109_6885433129208936716_n.jpg?oh=510ac4f1732e98eeff9105185e25c32a&oe=585A2808\",\"network\":\"facebook\",\"lastLoginAt\":\"2016-08-13T17:39:17.232611Z\",\"createdAt\":\"2016-08-08T23:25:34.415501Z\"},\"place\":{\"id\":1,\"googleId\":\"ChIJVbTUtto0K4gR-FgmHc3uCe8\",\"localeId\":1,\"name\":\"Aritzia\",\"address\":\"280 Queen St W, Toronto, ON M5V 2A1, Canada\",\"phone\":\"(416) 977-9919\",\"website\":\"http://aritzia.com/\",\"etc\":null,\"createdAt\":\"2016-08-08T23:27:02.741104Z\"},\"promo\":null,\"context\":{\"commented\":false,\"liked\":true}},{\"id\":2,\"userId\":1,\"placeId\":1,\"promoId\":0,\"promoStatus\":\"claimed\",\"caption\":\"like dis plz\",\"imageUrl\":\"https://s3.amazonaws.com/moodie/moodie/uploads/1a91021186d2e77b918a934d5f9fc594.png\",\"filter\":\"none\",\"likes\":1,\"comments\":0,\"featured\":0,\"createdAt\":\"2016-08-11T09:10:22.123149Z\",\"user\":{\"id\":1,\"username\":\"10153533745524109\",\"email\":\"xuepaul.xp@gmail.com\",\"name\":\"Paul Xue\",\"avatarUrl\":\"https://scontent.xx.fbcdn.net/v/t1.0-1/p200x200/12742104_10153352738609109_6885433129208936716_n.jpg?oh=510ac4f1732e98eeff9105185e25c32a&oe=585A2808\",\"network\":\"facebook\",\"lastLoginAt\":\"2016-08-13T17:39:17.232611Z\",\"createdAt\":\"2016-08-08T23:25:34.415501Z\"},\"place\":{\"id\":1,\"googleId\":\"ChIJVbTUtto0K4gR-FgmHc3uCe8\",\"localeId\":1,\"name\":\"Aritzia\",\"address\":\"280 Queen St W, Toronto, ON M5V 2A1, Canada\",\"phone\":\"(416) 977-9919\",\"website\":\"http://aritzia.com/\",\"etc\":null,\"createdAt\":\"2016-08-08T23:27:02.741104Z\"},\"promo\":null,\"context\":{\"commented\":false,\"liked\":true}}]"
+						}
+					]
+				},
+				{
+					"name": "autocomplete",
+					"request": {
+						"url": "localhost:5331/places/autocomplete?q=Local&t=establishment",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+						},
+						"description": "Nearby places and promotions\n\nparams:\n\nt = google places types\nhttps://developers.google.com/places/supported_types"
+					},
+					"response": [
+						{
+							"name": "autocomplete",
+							"originalRequest": {
+								"url": "localhost:5331/places/autocomplete?q=Local&t=establishment",
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"enabled": true,
+										"description": "The mime type of this content"
+									},
+									{
+										"key": "Authorization",
+										"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+										"enabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "javascript",
+							"_postman_previewtype": "html",
+							"header": [
+								{
+									"name": "Cache-Control",
+									"key": "Cache-Control",
+									"value": "no-cache, private, max-age=0",
+									"description": "Tells all caching mechanisms from server to client whether they may cache this object. It is measured in seconds"
+								},
+								{
+									"name": "Content-Length",
+									"key": "Content-Length",
+									"value": "817",
+									"description": "The length of the response body in octets (8-bit bytes)"
+								},
+								{
+									"name": "Content-Type",
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8",
+									"description": "The mime type of this content"
+								},
+								{
+									"name": "Date",
+									"key": "Date",
+									"value": "Sun, 14 Aug 2016 00:55:07 GMT",
+									"description": "The date and time that the message was sent"
+								},
+								{
+									"name": "Expires",
+									"key": "Expires",
+									"value": "Wed, 31 Dec 1969 19:00:00 EST",
+									"description": "Gives the date/time after which the response is considered stale"
+								},
+								{
+									"name": "Pragma",
+									"key": "Pragma",
+									"value": "no-cache",
+									"description": "Implementation-specific headers that may have various effects anywhere along the request-response chain."
+								},
+								{
+									"name": "X-Accel-Expires",
+									"key": "X-Accel-Expires",
+									"value": "0",
+									"description": "Custom header"
+								}
+							],
+							"cookie": [],
+							"responseTime": 678,
+							"body": "[{\"googleId\":\"ChIJFY_mWd40K4gRrplv-njqGNo\",\"localeId\":0,\"name\":\"Locals Only, King Street West, Toronto, ON, Canada\",\"address\":\"\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJ3SpxhwM1K4gRGJucBXQA6yU\",\"localeId\":0,\"name\":\"LOCAL Public Eatery, Toronto, ON, Canada\",\"address\":\"\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJ9Z5gRs00K4gRozXt4PGK14o\",\"localeId\":0,\"name\":\"Locale Mercatto, Bay Street, Toronto, ON, Canada\",\"address\":\"\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJ4SKVTNnM1IkRvLmkK5yhXcQ\",\"localeId\":0,\"name\":\"LOCAL Public Eatery, Laird Drive, East York, ON, Canada\",\"address\":\"\",\"phone\":\"\",\"website\":\"\",\"etc\":null},{\"googleId\":\"ChIJ6WftyMg0K4gRq6-22Al5UvA\",\"localeId\":0,\"name\":\"The Local Charity, Simcoe Street, Toronto, ON, Canada\",\"address\":\"\",\"phone\":\"\",\"website\":\"\",\"etc\":null}]"
+						}
+					]
 				}
 			]
 		},
@@ -490,7 +826,7 @@
 		{
 			"name": "facebook login",
 			"request": {
-				"url": "localhost:5331/facebook/login",
+				"url": "localhost:5331/login/facebook",
 				"method": "POST",
 				"header": [
 					{
@@ -506,7 +842,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"token\": \"xxxx\"\n}"
+					"raw": "{\n    \"token\": \"EAAW45qx6fdsBAI8Uz2f21IGJ52EJ6AyB3QrfZA9YlhvaFbM0M8dUkyUZCkVtLtMY9ZBFnbFKLiZByaRq2iC5rgGT3LRu8GyNDJe6ZC5tQ99EktuyZBAyfJZCIeGY18nhPNJBOFxNxZCPZBGZBusbKw3ICDmhsBd6Qqoh9ZCkHVamt3DtAZDZD\"\n}"
 				},
 				"description": "Login with Facebook.\n\nexchange a temporary facebook token for a jwt auth token"
 			},
