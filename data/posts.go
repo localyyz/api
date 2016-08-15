@@ -9,7 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 
 	"upper.io/bond"
-	"upper.io/db"
+	"upper.io/db.v2"
 )
 
 type Post struct {
@@ -76,7 +76,7 @@ func (p *Post) CollectionName() string {
 }
 
 func (store *PostStore) GetFresh(cursor *ws.Page, cond db.Cond) ([]*Post, error) {
-	q := store.Find().Sort("-created_at")
+	q := store.Find().OrderBy("-created_at")
 	if len(cond) > 0 {
 		q = q.Where(cond) // filter by first
 	}
@@ -221,7 +221,7 @@ func (p *Post) Validate() error {
 
 func (store *PostStore) FindUserRecent(userID int64, optCursor ...*ws.Page) ([]*Post, error) {
 	var posts []*Post
-	q := store.Find(db.Cond{"user_id": userID}).Sort("-created_at")
+	q := store.Find(db.Cond{"user_id": userID}).OrderBy("-created_at")
 	if err := q.All(&posts); err != nil {
 		return nil, err
 	}

@@ -11,7 +11,7 @@ import (
 
 	"github.com/pressly/chi"
 
-	"upper.io/db"
+	"upper.io/db.v2"
 )
 
 func MeCtx(next http.Handler) http.Handler {

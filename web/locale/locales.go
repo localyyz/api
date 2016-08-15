@@ -34,7 +34,7 @@ func LocaleCtx(next http.Handler) http.Handler {
 
 func ListLocales(w http.ResponseWriter, r *http.Request) {
 	cursor := ws.NewPage(r)
-	q := data.DB.Locale.Find().Sort("-id")
+	q := data.DB.Locale.Find().OrderBy("-id")
 	q = cursor.UpdateQueryUpper(q)
 
 	var resp []*data.Locale

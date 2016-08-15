@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"upper.io/db"
+	"upper.io/db.v2"
 
 	"googlemaps.github.io/maps"
 

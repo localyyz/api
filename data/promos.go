@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"upper.io/bond"
-	"upper.io/db"
+	"upper.io/db.v2"
 )
 
 type Promo struct {

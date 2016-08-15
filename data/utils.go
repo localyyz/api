@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"upper.io/db"
+	"upper.io/db.v2"
 )
 
 var (
@@ -31,14 +31,14 @@ func WordLimit(s string, words int) string {
 	return strings.Join(parts[0:words], " ") + " ..."
 }
 
-func MaintainOrder(field string, customOrdering interface{}) db.Raw {
+func MaintainOrder(field string, customOrdering interface{}) db.RawValue {
 	if reflect.TypeOf(customOrdering).Kind() != reflect.Slice {
 		panic("customOrdering is not a slice")
 	}
 
 	vals := reflect.ValueOf(customOrdering)
 	if vals.Len() == 0 {
-		return db.Raw{"true"}
+		return db.Raw("true")
 	}
 
 	sort := make([]string, vals.Len()+2)
@@ -55,5 +55,5 @@ func MaintainOrder(field string, customOrdering interface{}) db.Raw {
 		panic("customOrdering is not a slice of int (any) or float (any)")
 	}
 
-	return db.Raw{strings.Join(sort, " ")}
+	return db.Raw(strings.Join(sort, " "))
 }

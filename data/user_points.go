@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"upper.io/bond"
-	"upper.io/db"
+	"upper.io/db.v2"
 )
 
 // UserPoint keeps track of points awarded to the user
@@ -49,7 +49,7 @@ func (store UserPointStore) FindByUserID(userID int64) ([]*UserPoint, error) {
 
 func (store UserPointStore) FindAll(cond db.Cond) ([]*UserPoint, error) {
 	var points []*UserPoint
-	if err := DB.UserPoint.Find(cond).Sort("-created_at").All(&points); err != nil {
+	if err := DB.UserPoint.Find(cond).OrderBy("-created_at").All(&points); err != nil {
 		return nil, err
 	}
 	return points, nil

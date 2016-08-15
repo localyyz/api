@@ -3,7 +3,7 @@ package place
 import (
 	"net/http"
 
-	"upper.io/db"
+	"upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
@@ -21,17 +21,12 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 	var placeIDs []int64
 	nearbyMap := map[int64]*data.Place{}
 	var place *data.Place
-	for {
-		err := q.Next(&place)
-		if err != nil {
-			if err != db.ErrNoMoreRows {
-				ws.Respond(w, http.StatusInternalServerError, err)
-				return
-			}
-			break
-		}
+	for q.Next(&place) {
 		placeIDs = append(placeIDs, place.ID)
 		nearbyMap[place.ID] = place
+	}
+	if err := q.Err(); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
 	}
 
 	// order list of places by post score
@@ -40,7 +35,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		Find(db.Cond{"place_id": placeIDs}).
 		Select("place_id").
 		Group("place_id").
-		Sort(db.Raw{"-SUM(score)"}).
+		OrderBy(db.Raw("-SUM(score)")).
 		All(&byScore)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
@@ -59,7 +54,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		var posts []*data.Post
 		err := data.DB.Post.
 			Find(db.Cond{"place_id": pID}).
-			Sort("-score").
+			OrderBy("-score").
 			Limit(5).
 			All(&posts)
 		if err != nil {

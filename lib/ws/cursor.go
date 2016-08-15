@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"upper.io/db"
+	"upper.io/db.v2"
 )
 
 var (
@@ -121,9 +121,9 @@ func (p *Page) UpdateQueryUpper(res db.Result) db.Result {
 	total, _ := res.Count()
 	p.TotalPages = int(math.Ceil(float64(total) / float64(p.Limit)))
 	if p.Page > 1 {
-		return res.Limit(uint(p.Limit)).Skip(uint((p.Page - 1) * p.Limit))
+		return res.Limit(p.Limit).Offset((p.Page - 1) * p.Limit)
 	}
-	return res.Limit(uint(p.Limit))
+	return res.Limit(p.Limit)
 }
 
 func (p *Page) HasFirst() bool { return true }

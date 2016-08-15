@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"upper.io/bond"
-	"upper.io/db/postgresql"
+	"upper.io/db.v2/postgresql"
 )
 
 var (

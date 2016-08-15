@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"upper.io/db"
+	"upper.io/db.v2"
 
 	"github.com/goware/geotools"
 	"github.com/goware/lg"
@@ -166,15 +166,11 @@ func GetNearby(ctx context.Context, geo *geotools.Point) ([]*Place, error) {
 	dbPlaceMap := map[string]int64{}
 	var pl *Place
 	q := DB.Place.Find(db.Cond{"google_id IN": googleIDs})
-	for {
-		err := q.Next(&pl)
-		if err != nil {
-			if err == db.ErrNoMoreRows {
-				break
-			}
-			return nil, err
-		}
+	for q.Next(&pl) {
 		dbPlaceMap[pl.GoogleID] = pl.ID
+	}
+	if err := q.Err(); err != nil {
+		return nil, err
 	}
 
 	for _, place := range places {
