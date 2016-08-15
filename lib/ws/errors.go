@@ -7,7 +7,7 @@ import (
 	"errors"
 	"net/http"
 
-	"upper.io/db"
+	"upper.io/db.v2"
 
 	"github.com/goware/errorx"
 )

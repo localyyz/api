@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"upper.io/db"
+	"upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"

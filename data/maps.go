@@ -56,6 +56,9 @@ func GetPlaceAutoComplete(ctx context.Context, geo *geotools.Point, query string
 	}
 	autocompResponse, err := mapsClient.PlaceAutocomplete(ctx, autocompReq)
 	if err != nil {
+		if strings.Contains(err.Error(), "ZERO_RESULTS") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
