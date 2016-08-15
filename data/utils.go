@@ -22,6 +22,15 @@ func GetTimeUTCPointer() *time.Time {
 	return &t
 }
 
+func WordLimit(s string, words int) string {
+	parts := strings.Fields(s)
+	if len(parts) <= words {
+		// Join again, because this can possibly create a higher quality string - Fields remove double whitespace.
+		return strings.Join(parts, " ")
+	}
+	return strings.Join(parts[0:words], " ") + " ..."
+}
+
 func MaintainOrder(field string, customOrdering interface{}) db.Raw {
 	if reflect.TypeOf(customOrdering).Kind() != reflect.Slice {
 		panic("customOrdering is not a slice")

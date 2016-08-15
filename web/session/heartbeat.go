@@ -31,6 +31,13 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// save it into user
+	user.Etc.LocaleID = locale.ID
+	if err := data.DB.User.Save(user); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
 	resp := data.LocateUser{
 		User:   user,
 		Geo:    user.Geo,

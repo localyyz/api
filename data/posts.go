@@ -75,18 +75,6 @@ func (p *Post) CollectionName() string {
 	return `posts`
 }
 
-func (store *PostStore) GetTrending(cursor *ws.Page) ([]*Post, error) {
-	q := store.Find().Sort("-score")
-	if cursor != nil {
-		q = cursor.UpdateQueryUpper(q)
-	}
-	var posts []*Post
-	if err := q.All(&posts); err != nil {
-		return nil, err
-	}
-	return posts, nil
-}
-
 func (store *PostStore) GetFresh(cursor *ws.Page, cond db.Cond) ([]*Post, error) {
 	q := store.Find().Sort("-created_at")
 	if len(cond) > 0 {
@@ -169,6 +157,10 @@ func (p *Post) UpdateCommentCount() {
 // Update score
 func (p *Post) UpdateScore() {
 	p.Score = uint64(p.CreatedAt.Unix()) + uint64(p.Likes) + uint64(p.Comments)
+	if p.PromoStatus == RewardCompleted {
+		// abituary score increase (TODO: points awarded?)
+		p.Score += 150
+	}
 	if err := DB.Save(p); err != nil {
 		lg.Errorf("failed to update post score: %v", err)
 	}

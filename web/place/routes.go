@@ -8,7 +8,7 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/trending", ListTrendingPlaces)
+	r.Get("/trending", ListTrending)
 
 	r.Group(func(r chi.Router) {
 		r.Use(PlaceTypeCtx)

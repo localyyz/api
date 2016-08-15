@@ -2,8 +2,6 @@ package place
 
 import (
 	"net/http"
-	"strings"
-	"time"
 
 	"upper.io/db"
 
@@ -11,79 +9,62 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
-type postScore struct {
-	PlaceID int64 `db:"place_id"`
-	Scores  int64 `db:"scores"`
-}
-
-func ListTrendingNearby(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("session.user").(*data.User)
-	_ = user
-}
-
-func ListTrendingPlaces(w http.ResponseWriter, r *http.Request) {
+// ListTrendingNearby returns nearby posts from nearby places ordered by score
+func ListTrending(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
 	cursor := ws.NewPage(r)
 
-	// mood type
-	// NOTE: this is not REST, but let's just pretend it is
-
-	// TRENDING
-	// 1. locale based -> get places nearby
-
-	placeCond := db.Cond{}
-	if lId := strings.TrimSpace(r.URL.Query().Get("localeId")); lId != "" {
-		placeCond["locale_id"] = lId
-	}
-
-	q := data.DB.Place.Find(placeCond)
+	q := data.DB.Place.Find(db.Cond{"locale_id": user.Etc.LocaleID})
 	q = cursor.UpdateQueryUpper(q)
 
-	var places []*data.Place
-	if err := q.All(&places); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	// get list of place ids
 	var placeIDs []int64
-	for _, p := range places {
-		placeIDs = append(placeIDs, p.ID)
+	nearbyMap := map[int64]*data.Place{}
+	var place *data.Place
+	for {
+		err := q.Next(&place)
+		if err != nil {
+			if err != db.ErrNoMoreRows {
+				ws.Respond(w, http.StatusInternalServerError, err)
+				return
+			}
+			break
+		}
+		placeIDs = append(placeIDs, place.ID)
+		nearbyMap[place.ID] = place
 	}
 
-	n := time.Now().AddDate(0, 0, -2) // 2 days rolling
-	cond := db.Cond{
-		"created_at >=": n,
-		"place_id":      placeIDs,
-	}
-
-	// order list of places by post score in the last 48h
-	var scores []postScore
-	err := data.DB.Post.Find(cond).
-		Select("place_id", db.Raw{"CAST(SUM(score) AS bigint) AS scores"}).
+	// order list of places by post score
+	var byScore []int64
+	err := data.DB.Post.
+		Find(db.Cond{"place_id": placeIDs}).
+		Select("place_id").
 		Group("place_id").
 		Sort(db.Raw{"-SUM(score)"}).
-		All(&scores)
+		All(&byScore)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	// find the venues and respond
-	var resp []*data.PlaceWithPost
+	resp := struct {
+		Nearby   []*data.PlaceWithPost `json:"nearby"`
+		Promoted []*data.PlaceWithPost `json:"promoted"`
+	}{
+		Nearby:   []*data.PlaceWithPost{},
+		Promoted: []*data.PlaceWithPost{},
+	}
 
-	for _, s := range scores {
-		p, err := data.DB.Place.FindByID(s.PlaceID)
-		if err != nil {
-			continue
-		}
-
+	for pID, place := range nearbyMap {
 		var posts []*data.Post
-		cond := db.Cond{"place_id": p.ID, "created_at >=": n}
-		err = data.DB.Post.Find(cond).Sort("-score").Limit(5).All(&posts)
+		err := data.DB.Post.
+			Find(db.Cond{"place_id": pID}).
+			Sort("-score").
+			Limit(5).
+			All(&posts)
 		if err != nil {
 			continue
 		}
-
 		postPresenters := make([]*data.PostPresenter, len(posts))
 		for i, p := range posts {
 			user, err := data.DB.User.FindByID(p.UserID)
@@ -98,8 +79,7 @@ func ListTrendingPlaces(w http.ResponseWriter, r *http.Request) {
 
 			postPresenters[i] = &data.PostPresenter{Post: p, User: user, Context: &data.UserContext{Liked: (liked > 0)}}
 		}
-
-		resp = append(resp, &data.PlaceWithPost{Place: p, Posts: postPresenters})
+		resp.Nearby = append(resp.Nearby, &data.PlaceWithPost{Place: place, Posts: postPresenters})
 	}
 
 	ws.Respond(w, http.StatusOK, resp, cursor.Update(resp))

@@ -24,10 +24,16 @@ type User struct {
 	LoggedIn    bool           `db:"logged_in" json:"-"`
 	LastLogInAt *time.Time     `db:"last_login_at" json:"lastLoginAt"`
 	Geo         geotools.Point `db:"geo" json:"-"`
+	Etc         UserEtc        `db:"etc,jsonb" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt,omitempty"`
+}
+
+type UserEtc struct {
+	// Store user's current neighbourhood whereabouts
+	LocaleID int64 `json:"localeId"`
 }
 
 type UserContext struct {

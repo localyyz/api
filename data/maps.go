@@ -61,7 +61,14 @@ func GetPlaceAutoComplete(ctx context.Context, geo *geotools.Point, query string
 
 	var places []*Place
 	for _, pred := range autocompResponse.Predictions {
-		places = append(places, &Place{Name: pred.Description, GoogleID: pred.PlaceID})
+		name := parseAddress(pred.Description)
+		for _, t := range pred.Terms {
+			if t.Offset == 0 {
+				name = t.Value
+				break
+			}
+		}
+		places = append(places, &Place{Name: WordLimit(name, 5), Address: WordLimit(pred.Description, 5), GoogleID: pred.PlaceID})
 	}
 
 	return places, nil
@@ -150,7 +157,7 @@ func GetNearby(ctx context.Context, geo *geotools.Point) ([]*Place, error) {
 	for i, p := range nearbyResponse.Results {
 		places[i] = &Place{
 			GoogleID: p.PlaceID,
-			Name:     p.Name,
+			Name:     WordLimit(p.Name, 5),
 			Address:  p.Vicinity,
 		}
 		googleIDs[i] = p.PlaceID
