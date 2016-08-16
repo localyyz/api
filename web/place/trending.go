@@ -1,9 +1,12 @@
 package place
 
 import (
+	"fmt"
 	"net/http"
 
-	"upper.io/db.v2"
+	db "upper.io/db.v2"
+
+	"github.com/pkg/errors"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
@@ -13,32 +16,18 @@ import (
 func ListTrending(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
-	cursor := ws.NewPage(r)
 
-	q := data.DB.Place.Find(db.Cond{"locale_id": user.Etc.LocaleID})
-	q = cursor.UpdateQueryUpper(q)
+	q := data.DB.Select("pl.id").
+		From("places pl").
+		Join("posts p").
+		On("pl.id = p.place_id").
+		GroupBy("pl.id").
+		OrderBy(db.Raw(fmt.Sprintf("sum(CASE WHEN pl.locale_id = %d THEN 2^32 ELSE p.score END) DESC", user.Etc.LocaleID))).
+		Limit(15)
 
-	var placeIDs []int64
-	nearbyMap := map[int64]*data.Place{}
-	var place *data.Place
-	for q.Next(&place) {
-		placeIDs = append(placeIDs, place.ID)
-		nearbyMap[place.ID] = place
-	}
-	if err := q.Err(); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-	}
-
-	// order list of places by post score
-	var byScore []int64
-	err := data.DB.Post.
-		Find(db.Cond{"place_id": placeIDs}).
-		Select("place_id").
-		Group("place_id").
-		OrderBy(db.Raw("-SUM(score)")).
-		All(&byScore)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+	var places []*data.Place
+	if err := q.All(&places); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "trending places"))
 		return
 	}
 
@@ -50,10 +39,10 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		Promoted: []*data.PlaceWithPost{},
 	}
 
-	for pID, place := range nearbyMap {
+	for _, place := range places {
 		var posts []*data.Post
 		err := data.DB.Post.
-			Find(db.Cond{"place_id": pID}).
+			Find(db.Cond{"place_id": place.ID}).
 			OrderBy("-score").
 			Limit(5).
 			All(&posts)
@@ -66,16 +55,23 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				continue
 			}
-
 			liked, err := data.DB.Like.Find(db.Cond{"user_id": p.UserID, "post_id": p.ID}).Count()
 			if err != nil {
 				continue
 			}
-
 			postPresenters[i] = &data.PostPresenter{Post: p, User: user, Context: &data.UserContext{Liked: (liked > 0)}}
 		}
-		resp.Nearby = append(resp.Nearby, &data.PlaceWithPost{Place: place, Posts: postPresenters})
+		place, err = data.DB.Place.FindByID(place.ID)
+		if err != nil {
+			continue
+		}
+		placePresenter := &data.PlaceWithPost{Place: place, Posts: postPresenters}
+		if place.LocaleID == user.Etc.LocaleID {
+			resp.Nearby = append(resp.Nearby, placePresenter)
+		} else {
+			resp.Promoted = append(resp.Promoted, placePresenter)
+		}
 	}
 
-	ws.Respond(w, http.StatusOK, resp, cursor.Update(resp))
+	ws.Respond(w, http.StatusOK, resp)
 }
