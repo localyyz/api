@@ -46,7 +46,7 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	places, err := data.GetNearby(ctx, &user.Geo)
+	places, err := data.GetNearby(ctx, &user.Geo, user.Etc.LocaleID)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return

@@ -131,7 +131,7 @@ func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
 	return place, nil
 }
 
-func GetNearby(ctx context.Context, geo *geotools.Point) ([]*Place, error) {
+func GetNearby(ctx context.Context, geo *geotools.Point, localeID int64) ([]*Place, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -155,32 +155,18 @@ func GetNearby(ctx context.Context, geo *geotools.Point) ([]*Place, error) {
 		return nil, err
 	}
 
-	places := make([]*Place, len(nearbyResponse.Results))
-	googleIDs := make([]string, len(places))
-	for i, p := range nearbyResponse.Results {
-		places[i] = &Place{
-			GoogleID: p.PlaceID,
-			Name:     WordLimit(p.Name, 5),
-			Address:  p.Vicinity,
-		}
-		googleIDs[i] = p.PlaceID
-	}
-
-	dbPlaceMap := map[string]int64{}
-	var pl *Place
-	q := DB.Place.Find(db.Cond{"google_id IN": googleIDs})
-	for q.Next(&pl) {
-		dbPlaceMap[pl.GoogleID] = pl.ID
-	}
-	if err := q.Err(); err != nil {
+	// NOTE: can't rely completely on google, find in our db first
+	places, err := DB.Place.FindByLocaleID(localeID)
+	if err != nil {
 		return nil, err
 	}
 
-	for _, place := range places {
-		plID, found := dbPlaceMap[place.GoogleID]
-		if found {
-			place.ID = plID
-		}
+	for _, p := range nearbyResponse.Results {
+		places = append(places, &Place{
+			GoogleID: p.PlaceID,
+			Name:     WordLimit(p.Name, 5),
+			Address:  p.Vicinity,
+		})
 	}
 
 	return places, nil
