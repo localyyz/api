@@ -160,8 +160,16 @@ func GetNearby(ctx context.Context, geo *geotools.Point, localeID int64) ([]*Pla
 	if err != nil {
 		return nil, err
 	}
+	// exists
+	placesMap := map[string]struct{}{}
+	for _, p := range places {
+		placesMap[p.GoogleID] = struct{}{}
+	}
 
 	for _, p := range nearbyResponse.Results {
+		if _, ok := placesMap[p.PlaceID]; ok {
+			continue
+		}
 		places = append(places, &Place{
 			GoogleID: p.PlaceID,
 			Name:     WordLimit(p.Name, 5),
