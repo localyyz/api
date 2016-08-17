@@ -51,7 +51,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		}
 		postPresenters := make([]*data.PostPresenter, len(posts))
 		for i, p := range posts {
-			user, err := data.DB.User.FindByID(p.UserID)
+			pu, err := data.DB.User.FindByID(p.UserID)
 			if err != nil {
 				continue
 			}
@@ -59,7 +59,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				continue
 			}
-			postPresenters[i] = &data.PostPresenter{Post: p, User: user, Context: &data.UserContext{Liked: (liked > 0)}}
+			postPresenters[i] = &data.PostPresenter{Post: p, User: pu, Context: &data.UserContext{Liked: (liked > 0)}}
 		}
 		place, err = data.DB.Place.FindByID(place.ID)
 		if err != nil {
