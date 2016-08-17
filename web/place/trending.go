@@ -55,7 +55,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				continue
 			}
-			liked, err := data.DB.Like.Find(db.Cond{"user_id": p.UserID, "post_id": p.ID}).Count()
+			liked, err := data.DB.Like.Find(db.Cond{"user_id": user.ID, "post_id": p.ID}).Count()
 			if err != nil {
 				continue
 			}
