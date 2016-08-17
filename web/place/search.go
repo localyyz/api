@@ -7,15 +7,17 @@ import (
 
 	"upper.io/db.v2"
 
-	"googlemaps.github.io/maps"
+	gm "googlemaps.github.io/maps"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/maps"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
+// TODO: remove and just hardcode to establishment/shops for now
 func PlaceTypeCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		placeType, err := maps.ParsePlaceType(r.URL.Query().Get("t"))
+		placeType, err := gm.ParsePlaceType(r.URL.Query().Get("t"))
 		if err != nil {
 			ws.Respond(w, http.StatusBadRequest, err)
 			return
@@ -33,7 +35,7 @@ func AutoCompletePlaces(w http.ResponseWriter, r *http.Request) {
 	user := ctx.Value("session.user").(*data.User)
 
 	queryString := strings.TrimSpace(r.URL.Query().Get("q"))
-	places, err := data.GetPlaceAutoComplete(ctx, &user.Geo, queryString)
+	places, err := maps.GetPlaceAutoComplete(ctx, &user.Geo, queryString)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
@@ -46,7 +48,7 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	places, err := data.GetNearby(ctx, &user.Geo, user.Etc.LocaleID)
+	places, err := maps.GetNearby(ctx, &user.Geo, user.Etc.LocaleID)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return

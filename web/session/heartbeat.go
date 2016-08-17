@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/maps"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
@@ -25,7 +26,7 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	locale, err := data.GetLocale(ctx, &user.Geo)
+	locale, err := maps.GetLocale(ctx, &user.Geo)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return

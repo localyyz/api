@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/maps"
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/goware/lg"
 	"github.com/zenazn/goji/graceful"
@@ -33,7 +34,7 @@ func main() {
 	}
 
 	//[geotool]
-	if err := data.SetupMapsClient(conf.Geotool.ApiKey); err != nil {
+	if err := maps.SetupMapsClient(conf.Geotool.ApiKey); err != nil {
 		lg.Fatal(err)
 	}
 

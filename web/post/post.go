@@ -8,6 +8,7 @@ import (
 	"upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/maps"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
@@ -97,12 +98,12 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
-		place, err = data.GetPlaceDetail(ctx, payload.GooglePlaceID)
+		place, err = maps.GetPlaceDetail(ctx, payload.GooglePlaceID)
 		if err != nil {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
-		locale, err := data.GetLocale(ctx, &user.Geo)
+		locale, err := maps.GetLocale(ctx, &user.Geo)
 		if err != nil {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return

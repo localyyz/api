@@ -1,10 +1,12 @@
-package data
+package maps
 
 import (
 	"context"
 	"errors"
 	"strings"
 	"time"
+
+	"bitbucket.org/moodie-app/moodie-api/data"
 
 	"upper.io/db.v2"
 
@@ -40,7 +42,7 @@ func parseAddress(address string) (parsed string) {
 	return
 }
 
-func GetPlaceAutoComplete(ctx context.Context, geo *geotools.Point, query string) ([]*Place, error) {
+func GetPlaceAutoComplete(ctx context.Context, geo *geotools.Point, query string) ([]*data.Place, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -62,7 +64,7 @@ func GetPlaceAutoComplete(ctx context.Context, geo *geotools.Point, query string
 		return nil, err
 	}
 
-	var places []*Place
+	var places []*data.Place
 	for _, pred := range autocompResponse.Predictions {
 		name := parseAddress(pred.Description)
 		for _, t := range pred.Terms {
@@ -71,13 +73,13 @@ func GetPlaceAutoComplete(ctx context.Context, geo *geotools.Point, query string
 				break
 			}
 		}
-		places = append(places, &Place{Name: WordLimit(name, 5), Address: WordLimit(pred.Description, 5), GoogleID: pred.PlaceID})
+		places = append(places, &data.Place{Name: data.WordLimit(name, 5), Address: data.WordLimit(pred.Description, 5), GoogleID: pred.PlaceID})
 	}
 
 	return places, nil
 }
 
-func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
+func GetPlaceDetail(ctx context.Context, placeID string) (*data.Place, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -117,7 +119,7 @@ func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
 	//break
 	//}
 	//}
-	place := &Place{
+	place := &data.Place{
 		GoogleID: placeID,
 		Name:     res.Name,
 		Address:  parseAddress(res.FormattedAddress),
@@ -131,7 +133,7 @@ func GetPlaceDetail(ctx context.Context, placeID string) (*Place, error) {
 	return place, nil
 }
 
-func GetNearby(ctx context.Context, geo *geotools.Point, localeID int64) ([]*Place, error) {
+func GetNearby(ctx context.Context, geo *geotools.Point, localeID int64) ([]*data.Place, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -156,7 +158,7 @@ func GetNearby(ctx context.Context, geo *geotools.Point, localeID int64) ([]*Pla
 	}
 
 	// NOTE: can't rely completely on google, find in our db first
-	places, err := DB.Place.FindByLocaleID(localeID)
+	places, err := data.DB.Place.FindByLocaleID(localeID)
 	if err != nil {
 		return nil, err
 	}
@@ -170,9 +172,9 @@ func GetNearby(ctx context.Context, geo *geotools.Point, localeID int64) ([]*Pla
 		if _, ok := placesMap[p.PlaceID]; ok {
 			continue
 		}
-		places = append(places, &Place{
+		places = append(places, &data.Place{
 			GoogleID: p.PlaceID,
-			Name:     WordLimit(p.Name, 5),
+			Name:     data.WordLimit(p.Name, 5),
 			Address:  p.Vicinity,
 		})
 	}
@@ -180,7 +182,7 @@ func GetNearby(ctx context.Context, geo *geotools.Point, localeID int64) ([]*Pla
 	return places, nil
 }
 
-func GetLocale(ctx context.Context, geo *geotools.Point) (*Locale, error) {
+func GetLocale(ctx context.Context, geo *geotools.Point) (*data.Locale, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -196,21 +198,21 @@ func GetLocale(ctx context.Context, geo *geotools.Point) (*Locale, error) {
 		return nil, err
 	}
 
-	var locale *Locale
+	var locale *data.Locale
 	for _, r := range geocodeResponse {
 		ac := r.AddressComponents[0]
 
-		locale, err = DB.Locale.FindByGoogleID(r.PlaceID)
+		locale, err = data.DB.Locale.FindByGoogleID(r.PlaceID)
 		if err != nil {
 			if err != db.ErrNoMoreRows {
 				return nil, err
 			}
-			locale = &Locale{
+			locale = &data.Locale{
 				Name:        ac.ShortName,
 				Description: ac.LongName,
 				GoogleID:    r.PlaceID,
 			}
-			DB.Locale.Save(locale) // silently fail if needed
+			data.DB.Locale.Save(locale) // silently fail if needed
 		}
 		break
 	}
