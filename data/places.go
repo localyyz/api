@@ -29,12 +29,14 @@ type PlaceWithPromo struct {
 
 type PlaceWithLocale struct {
 	*Place
-	Locale *Locale `json:"locale"`
+	Locale   *Locale `json:"locale"`
+	Distance float64 `json:"distance"`
 }
 
 type PlaceWithPost struct {
 	*Place
-	Posts []*PostPresenter `json:"posts"`
+	Posts    []*PostPresenter `json:"posts"`
+	Distance float64          `json:"distance"`
 }
 
 type PlaceEtc struct {
