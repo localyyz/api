@@ -22,7 +22,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		Join("posts p").
 		On("pl.id = p.place_id").
 		GroupBy("pl.id").
-		OrderBy(db.Raw(fmt.Sprintf("sum(CASE WHEN pl.locale_id = %d THEN 2^32 ELSE p.score END) DESC", user.Etc.LocaleID))).
+		OrderBy(db.Raw(fmt.Sprintf("sum(CASE WHEN pl.locale_id = %d THEN (p.score+2^31) ELSE p.score END) DESC", user.Etc.LocaleID))).
 		Limit(15)
 
 	var places []*data.Place

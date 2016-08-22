@@ -3,7 +3,7 @@ package data
 import (
 	"github.com/golang/geo/s2"
 	"upper.io/bond"
-	db "upper.io/db.v2"
+	"upper.io/db.v2"
 )
 
 // When a (lng, lat) pair is received, process it using google's s2 lib
@@ -14,9 +14,10 @@ import (
 //	http://blog.christianperone.com/2015/08/googles-s2-geometry-on-the-sphere-cells-and-hilbert-curve/
 
 type Cell struct {
-	ID      int64 `db:"id,pk" json:"id"`
-	LocalID int64 `db:"locale_id" json:"locale_id"`
-	Level   int32 `db:"level" json:"level"` // quick lookup of cell level
+	ID       int64 `db:"id,pk,omitempty" json:"id"`
+	CellID   int64 `db:"cell_id" json:"cell_id"`
+	LocaleID int64 `db:"locale_id" json:"locale_id"`
+	//Level   int32 `db:"level" json:"level"` // quick lookup of cell level
 	// FUTURE/TODO cityID
 }
 
@@ -34,16 +35,16 @@ func (c *Cell) CollectionName() string {
 
 func (store CellStore) FindNearby(cellID int64) ([]*Cell, error) {
 	origin := s2.CellID(cellID)
-	cellIDs := []s2.CellID{origin}
+	cellIDs := []int64{int64(origin)}
 	for _, cellID := range origin.EdgeNeighbors() {
-		cellIDs = append(cellIDs, cellID)
+		cellIDs = append(cellIDs, int64(cellID))
 	}
-	return store.FindAll(db.Cond{"id": cellIDs})
+	return store.FindAll(db.Cond{"cell_id": cellIDs})
 }
 
 func (store CellStore) FindByLatLng(lat, lng float64) (*Cell, error) {
 	origin := s2.CellIDFromLatLng(s2.LatLngFromDegrees(lat, lng)).Parent(cellIDLevel)
-	return store.FindOne(db.Cond{"id": origin})
+	return store.FindOne(db.Cond{"cell_id": int64(origin)})
 }
 
 func (store CellStore) FindOne(cond db.Cond) (*Cell, error) {

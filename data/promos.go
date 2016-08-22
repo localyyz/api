@@ -8,6 +8,7 @@ import (
 	"upper.io/db.v2"
 )
 
+// TODO: promo should be keyed on placeid and queried on cells
 type Promo struct {
 	ID         int64     `db:"id,pk,omitempty" json:"id,omitempty"`
 	PlaceID    int64     `db:"place_id" json:"placeId"`

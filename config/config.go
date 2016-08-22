@@ -20,11 +20,6 @@ type Config struct {
 	// [db]
 	DB data.DBConf `toml:"db"`
 
-	// [geotool]
-	Geotool struct { // google maps api key
-		ApiKey string `toml:"api_key"`
-	} `toml:"geotool"`
-
 	// [connect]
 	Connect connect.Configs `toml:"connect"`
 

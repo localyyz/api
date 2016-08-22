@@ -7,9 +7,6 @@ hosts             = [ "localhost" ]
 username          = "postgres"
 password          = ""
 
-[geotool]
-api_key           = "AIzaSyD7h7j2sqtu4ty-Poory0AvzVl1sWTjiB4"
-
 [jwt]
 secret            = "secret"
 

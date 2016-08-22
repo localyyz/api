@@ -8,8 +8,8 @@ import (
 type Locale struct {
 	ID          int64  `db:"id,pk,omitempty" json:"id,omitempty"`
 	Name        string `db:"name" json:"name"`
+	Shorthand   string `db:"shorthand" json:"shorthand"`
 	Description string `db:"description" json:"description"`
-	GoogleID    string `db:"google_id" json:"googleId"`
 }
 
 type LocaleStore struct {
@@ -22,10 +22,6 @@ func (n *Locale) CollectionName() string {
 
 func (store *LocaleStore) FindByName(name string) (*Locale, error) {
 	return store.FindOne(db.Cond{"name": name})
-}
-
-func (store LocaleStore) FindByGoogleID(googleID string) (*Locale, error) {
-	return store.FindOne(db.Cond{"google_id": googleID})
 }
 
 func (store LocaleStore) FindByID(localeID int64) (*Locale, error) {
