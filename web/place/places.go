@@ -10,8 +10,10 @@ import (
 	db "upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
+	"github.com/pkg/errors"
 	"github.com/pressly/chi"
 )
 
@@ -74,40 +76,43 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
 		).
 		OrderBy("distance")
-
 	var places []*data.Place
 	if err := q.All(&places); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
-	var resp struct {
-		Places []*data.Place `json:"places"`
-		Promos []*data.Promo `json:"promos"`
-	}
 
-	if len(places) == 0 {
-		resp.Places = []*data.Place{}
-		resp.Promos = []*data.Promo{}
-		ws.Respond(w, http.StatusOK, resp)
-		return
-	}
-
-	// return any active promotions
-	placeIDs := make([]int64, len(places))
-	for i, p := range places {
-		placeIDs[i] = p.ID
-	}
-
-	// query promos
-	promos, err := data.DB.Promo.FindAll(db.Cond{"place_id IN": placeIDs})
+	presented, err := presenter.NearbyPlaces(ctx, places...)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	// places with promos
-	resp.Places = places
-	resp.Promos = promos
+	ws.Respond(w, http.StatusOK, presented)
+}
 
-	ws.Respond(w, http.StatusOK, resp)
+// ListTrendingNearby returns nearby posts from nearby places ordered by score
+func ListTrending(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+
+	q := data.DB.Select(db.Raw("pl.*")).
+		From("places pl").
+		Join("posts p").
+		On("pl.id = p.place_id").
+		GroupBy("pl.id").
+		OrderBy(db.Raw(fmt.Sprintf("sum(CASE WHEN pl.locale_id = %d THEN (p.score+2^31) ELSE p.score END) DESC", user.Etc.LocaleID))).
+		Limit(15)
+	var places []*data.Place
+	if err := q.All(&places); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "trending places"))
+		return
+	}
+
+	presented, err := presenter.TrendingPlaces(ctx, places...)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	ws.Respond(w, http.StatusOK, presented)
 }

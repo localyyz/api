@@ -34,6 +34,15 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
+		neighbours, err := data.DB.Cell.FindNeighbours(payload.Latitude, payload.Longitude)
+		if err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		for _, n := range neighbours { // assign cell as first one
+			cell = n
+			break
+		}
 	}
 
 	user.Etc = data.UserEtc{} // reset locale data

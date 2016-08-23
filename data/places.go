@@ -36,12 +36,6 @@ type PlaceWithLocale struct {
 	Distance float64 `json:"distance"`
 }
 
-type PlaceWithPost struct {
-	*Place
-	Posts    []*PostPresenter `json:"posts"`
-	Distance float64          `json:"distance"`
-}
-
 func (p *Place) CollectionName() string {
 	return `places`
 }

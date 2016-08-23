@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"upper.io/db.v2"
 )
@@ -54,4 +55,27 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ws.Respond(w, http.StatusCreated, newPost)
+}
+
+func ListRecentPosts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+
+	cursor := ws.NewPage(r)
+	q := data.DB.Post.
+		Find(db.Cond{"place_id": place.ID}).
+		OrderBy("-created_at")
+	q = cursor.UpdateQueryUpper(q)
+	var posts []*data.Post
+	if err := q.All(&posts); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	presented, err := presenter.Posts(ctx, posts...)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	ws.Respond(w, http.StatusOK, presented, cursor.Update(presented))
 }

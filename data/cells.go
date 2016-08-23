@@ -47,6 +47,15 @@ func (store CellStore) FindByLatLng(lat, lng float64) (*Cell, error) {
 	return store.FindOne(db.Cond{"cell_id": int64(origin)})
 }
 
+func (store CellStore) FindNeighbours(lat, lng float64) ([]*Cell, error) {
+	origin := s2.CellIDFromLatLng(s2.LatLngFromDegrees(lat, lng)).Parent(cellIDLevel)
+	neighbours := make([]int64, 4)
+	for i, n := range origin.EdgeNeighbors() {
+		neighbours[i] = int64(n)
+	}
+	return store.FindAll(db.Cond{"cell_id": neighbours})
+}
+
 func (store CellStore) FindOne(cond db.Cond) (*Cell, error) {
 	var cell *Cell
 	if err := store.Find(cond).One(&cell); err != nil {

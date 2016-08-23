@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
@@ -33,27 +34,16 @@ func PostCtx(next http.Handler) http.Handler {
 }
 
 func GetPost(w http.ResponseWriter, r *http.Request) {
-	post := r.Context().Value("post").(*data.Post)
+	ctx := r.Context()
+	post := ctx.Value("post").(*data.Post)
 
-	place, err := data.DB.Place.FindByID(post.PlaceID)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	promo, err := data.DB.Promo.FindByID(post.PromoID)
+	presented, err := presenter.NewPost(ctx, post)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	user, err := data.DB.User.FindByID(post.UserID)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := data.PostPresenter{Post: post, Place: place, Promo: promo, User: user}
-
-	ws.Respond(w, http.StatusOK, resp)
+	ws.Respond(w, http.StatusOK, presented)
 }
 
 func UpdatePost(w http.ResponseWriter, r *http.Request) {
@@ -89,12 +79,13 @@ func UpdatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := struct {
-		*data.User
-		*data.Post
-	}{User: user, Post: updatePost}
+	presented, err := presenter.NewPost(ctx, updatePost)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
 
-	ws.Respond(w, http.StatusCreated, resp)
+	ws.Respond(w, http.StatusCreated, presented)
 }
 
 func DeletePost(w http.ResponseWriter, r *http.Request) {

@@ -133,5 +133,4 @@ func GetRecentPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ws.Respond(w, http.StatusOK, posts)
-	return
 }
