@@ -12,6 +12,7 @@ CREATE TABLE users (
     network varchar(64) NOT NULL,
     access_token varchar(512) NOT NULL,
     geo geography(POINT, 4326) DEFAULT ST_GeographyFromText('SRID=4326;POINT(0 0)'),
+    etc jsonb DEFAULT '{}' NOT NULL,
 
     logged_in bool DEFAULT false NOT NULL,
     last_login_at timestamp,
@@ -27,7 +28,15 @@ CREATE TABLE locales (
     id serial PRIMARY KEY,
     name text DEFAULT '' NOT NULL,
     description text DEFAULT '' NOT NULL,
+    shorthand text DEFAULT '' NOT NULL,
     image_url text DEFAULT '' NOT NULL,
+);
+
+CREATE TABLE cells (
+    id serial PRIMARY KEY,
+    cell_id bigint NOT NULL,
+    locale_id bigint REFERENCES locales (id) ON DELETE CASCADE,
+    CONSTRAINT unique_cell_locale UNIQUE (cell_id, locale_id)
 );
 
 CREATE TABLE places (
@@ -39,6 +48,7 @@ CREATE TABLE places (
     phone text DEFAULT '' NOT NULL,
     website text DEFAULT '' NOT NULL,
 
+    geo geography(POINT, 4326) DEFAULT ST_GeographyFromText('SRID=4326;POINT(0 0)'),
     etc jsonb,
     created_at timestamp DEFAULT now() NOT NULL
 );
