@@ -3,8 +3,9 @@ package session
 import (
 	"net/http"
 
+	"upper.io/db.v2"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/maps"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
@@ -21,19 +22,41 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//payload.Latitude = 43.6435896
+	//payload.Longitude = -79.4007429
 	if err := user.SetLocation(payload.Latitude, payload.Longitude); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	locale, err := maps.GetLocale(ctx, &user.Geo)
+	var locale *data.Locale
+	cell, err := data.DB.Cell.FindByLatLng(payload.Latitude, payload.Longitude)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
+		if err != db.ErrNoMoreRows {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		neighbours, err := data.DB.Cell.FindNeighbourByLatLng(payload.Latitude, payload.Longitude)
+		if err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		for _, n := range neighbours { // assign cell as first one
+			cell = n
+			break
+		}
 	}
 
-	// save it into user
-	user.Etc.LocaleID = locale.ID
+	user.Etc = data.UserEtc{} // reset locale data
+	if cell != nil {
+		locale, err = data.DB.Locale.FindByID(cell.LocaleID)
+		if err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		// save it into user
+		user.Etc.LocaleID = locale.ID
+	}
 	if err := data.DB.User.Save(user); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return

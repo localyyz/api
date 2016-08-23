@@ -36,14 +36,6 @@ type Post struct {
 
 type RewardStatus uint32
 
-type PostPresenter struct {
-	*Post
-	User    *User        `json:"user"`
-	Place   *Place       `json:"place"`
-	Promo   *Promo       `json:"promo"`
-	Context *UserContext `json:"context"`
-}
-
 type PostStore struct {
 	bond.Store
 }

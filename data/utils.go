@@ -3,9 +3,12 @@ package data
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/goware/geotools"
 
 	"upper.io/db.v2"
 )
@@ -16,6 +19,27 @@ var (
 	ErrPromoUsed  = errors.New("promo already used")
 	ErrPromoPlace = errors.New("promo cannot be applied to this place")
 )
+
+const earthRadiusInMeters = 6378100
+
+// DistanceTo returns distance between two geo locations using the Haversine formula
+// Reference: https://gist.github.com/cdipaolo/d3f8db3848278b49db68
+func DistanceTo(start, dst *geotools.LatLng) float64 {
+	// convert to radians
+	// must cast radius as float to multiply later
+	var la1, lo1, la2, lo2 float64
+	la1 = start.Lat * math.Pi / 180
+	lo1 = start.Lng * math.Pi / 180
+	la2 = dst.Lat * math.Pi / 180
+	lo2 = dst.Lng * math.Pi / 180
+
+	// calculate
+	dla := math.Sin(0.5 * (la2 - la1))
+	dlo := math.Sin(0.5 * (lo2 - lo1))
+	h := dla*dla + math.Cos(la1)*math.Cos(la2)*dlo*dlo
+
+	return 2 * earthRadiusInMeters * math.Asin(math.Sqrt(h))
+}
 
 func GetTimeUTCPointer() *time.Time {
 	t := time.Now().UTC()

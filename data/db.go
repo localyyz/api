@@ -23,6 +23,7 @@ type Database struct {
 
 	Place  PlaceStore
 	Locale LocaleStore
+	Cell   CellStore
 
 	Promo PromoStore
 }
@@ -60,6 +61,7 @@ func NewDBSession(conf DBConf) error {
 
 	db.Place = PlaceStore{db.Store(&Place{})}
 	db.Locale = LocaleStore{db.Store(&Locale{})}
+	db.Cell = CellStore{db.Store(&Cell{})}
 
 	db.Promo = PromoStore{db.Store(&Promo{})}
 

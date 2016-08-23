@@ -5,10 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"upper.io/db.v2"
-
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/maps"
+	"bitbucket.org/moodie-app/moodie-api/lib/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
@@ -36,104 +34,16 @@ func PostCtx(next http.Handler) http.Handler {
 }
 
 func GetPost(w http.ResponseWriter, r *http.Request) {
-	post := r.Context().Value("post").(*data.Post)
-
-	place, err := data.DB.Place.FindByID(post.PlaceID)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	promo, err := data.DB.Promo.FindByID(post.PromoID)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	user, err := data.DB.User.FindByID(post.UserID)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := data.PostPresenter{Post: post, Place: place, Promo: promo, User: user}
-
-	ws.Respond(w, http.StatusOK, resp)
-}
-
-func CreatePost(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
+	post := ctx.Value("post").(*data.Post)
 
-	var payload struct {
-		data.Post
-
-		// required...
-		// PromoID int64 ?
-		GooglePlaceID string `json:"googlePlaceId,required"`
-
-		// Ignore
-		ID          interface{} `json:"id,omitempty"`
-		PlaceID     interface{} `jsoN:"placeId,omitempty"`
-		UserID      interface{} `json:"userId,omitempty"`
-		Comments    interface{} `json:"comments,omitempty"`
-		Likes       interface{} `json:"comments,omitempty"`
-		PromoStatus interface{} `json:"promoStatus,omitempty"`
-		CreatedAt   interface{} `json:"createdAt,omitempty"`
-		UpdatedAt   interface{} `json:"updatedAt,omitempty"`
-	}
-	if err := ws.Bind(r.Body, &payload); err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
-		return
-	}
-
-	newPost := &payload.Post
-	newPost.UserID = user.ID
-
-	var (
-		place *data.Place
-		err   error
-	)
-	place, err = data.DB.Place.FindByGoogleID(payload.GooglePlaceID)
+	presented, err := presenter.NewPost(ctx, post)
 	if err != nil {
-		if err != db.ErrNoMoreRows {
-			ws.Respond(w, http.StatusInternalServerError, err)
-			return
-		}
-		place, err = maps.GetPlaceDetail(ctx, payload.GooglePlaceID)
-		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
-			return
-		}
-		locale, err := maps.GetLocale(ctx, &user.Geo)
-		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
-			return
-		}
-		place.LocaleID = locale.ID
-		if err := data.DB.Place.Save(place); err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
-			return
-		}
-	}
-
-	// TODO: frontend work flow...
-	// for now, let's just find the promo attached to the location
-	//   picked by this post. auto apply promotion
-	promo, err := data.DB.Promo.FindByPlaceID(place.ID)
-	if err != nil && err != db.ErrNoMoreRows {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	if promo != nil {
-		newPost.PromoID = promo.ID
-	}
-
-	newPost.PlaceID = place.ID
-	if err := data.DB.Post.Save(newPost); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	ws.Respond(w, http.StatusCreated, newPost)
+	ws.Respond(w, http.StatusOK, presented)
 }
 
 func UpdatePost(w http.ResponseWriter, r *http.Request) {
@@ -169,12 +79,13 @@ func UpdatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := struct {
-		*data.User
-		*data.Post
-	}{User: user, Post: updatePost}
+	presented, err := presenter.NewPost(ctx, updatePost)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
 
-	ws.Respond(w, http.StatusCreated, resp)
+	ws.Respond(w, http.StatusCreated, presented)
 }
 
 func DeletePost(w http.ResponseWriter, r *http.Request) {

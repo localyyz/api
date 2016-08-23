@@ -5,8 +5,6 @@ import "github.com/pressly/chi"
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Post("/", CreatePost)
-	r.Get("/recent", ListFreshPost)
 	r.Route("/:postID", func(r chi.Router) {
 		r.Use(PostCtx)
 

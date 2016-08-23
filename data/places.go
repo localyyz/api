@@ -1,21 +1,24 @@
 package data
 
-import "time"
+import (
+	"time"
+
+	"github.com/goware/geotools"
+)
 
 // For now, just map places to google id
 // NOTE: we would have to carry this data on our side eventually
 type Place struct {
-	ID int64 `db:"id,pk,omitempty" json:"id,omitempty"`
-	// external google places id
-	GoogleID string `db:"google_id" json:"googleId"`
-	LocaleID int64  `db:"locale_id" json:"localeId"`
+	ID       int64 `db:"id,pk,omitempty" json:"id,omitempty"`
+	LocaleID int64 `db:"locale_id" json:"localeId"`
 
 	Name    string `db:"name" json:"name"`
 	Address string `db:"address" json:"address"`
 	Phone   string `db:"phone" json:"phone"`
 	Website string `db:"website" json:"website"`
 
-	Etc *PlaceEtc `db:"etc,jsonb" json:"etc"`
+	Geo      geotools.Point `db:"geo" json:"-"`
+	Distance float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
 	// TODO: Hours
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
@@ -29,18 +32,8 @@ type PlaceWithPromo struct {
 
 type PlaceWithLocale struct {
 	*Place
-	Locale *Locale `json:"locale"`
-}
-
-type PlaceWithPost struct {
-	*Place
-	Posts []*PostPresenter `json:"posts"`
-}
-
-type PlaceEtc struct {
-	Latitude     float64 `json:"latitude"`
-	Longitude    float64 `json:"longitude"`
-	GoogleRating float64 `json:"google_rating"`
+	Locale   *Locale `json:"locale"`
+	Distance float64 `json:"distance"`
 }
 
 func (p *Place) CollectionName() string {
