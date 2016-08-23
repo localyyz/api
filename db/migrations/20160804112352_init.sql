@@ -29,7 +29,7 @@ CREATE TABLE locales (
     name text DEFAULT '' NOT NULL,
     description text DEFAULT '' NOT NULL,
     shorthand text DEFAULT '' NOT NULL,
-    image_url text DEFAULT '' NOT NULL,
+    image_url text DEFAULT '' NOT NULL
 );
 
 CREATE TABLE cells (
