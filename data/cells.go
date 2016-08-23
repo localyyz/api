@@ -33,22 +33,18 @@ func (c *Cell) CollectionName() string {
 	return `cells`
 }
 
-func (store CellStore) FindNearby(cellID int64) ([]*Cell, error) {
-	origin := s2.CellID(cellID)
-	cellIDs := []int64{int64(origin)}
-	for _, cellID := range origin.EdgeNeighbors() {
-		cellIDs = append(cellIDs, int64(cellID))
-	}
-	return store.FindAll(db.Cond{"cell_id": cellIDs})
-}
-
 func (store CellStore) FindByLatLng(lat, lng float64) (*Cell, error) {
 	origin := s2.CellIDFromLatLng(s2.LatLngFromDegrees(lat, lng)).Parent(cellIDLevel)
 	return store.FindOne(db.Cond{"cell_id": int64(origin)})
 }
 
-func (store CellStore) FindNeighbours(lat, lng float64) ([]*Cell, error) {
+func (store CellStore) FindNeighbourByLatLng(lat, lng float64) ([]*Cell, error) {
 	origin := s2.CellIDFromLatLng(s2.LatLngFromDegrees(lat, lng)).Parent(cellIDLevel)
+	return store.FindNeighbourByCellID(int64(origin))
+}
+
+func (store CellStore) FindNeighbourByCellID(cellID int64) ([]*Cell, error) {
+	origin := s2.CellID(cellID)
 	neighbours := make([]int64, 4)
 	for i, n := range origin.EdgeNeighbors() {
 		neighbours[i] = int64(n)

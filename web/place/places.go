@@ -69,20 +69,21 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	q := data.DB.Place.
+	var places []*data.Place
+	err := data.DB.Place.
 		Find(db.Cond{"locale_id": user.Etc.LocaleID}).
 		Select(
 			db.Raw("*"),
 			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
 		).
-		OrderBy("distance")
-	var places []*data.Place
-	if err := q.All(&places); err != nil {
+		OrderBy("distance").
+		All(&places)
+	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	presented, err := presenter.NearbyPlaces(ctx, places...)
+	presented, err := presenter.PlacesWithPromos(ctx, places...)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
@@ -91,17 +92,17 @@ func NearbyPlaces(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, presented)
 }
 
-// ListTrendingNearby returns nearby posts from nearby places ordered by score
+// ListTrendingNearby returns most popular places
+//  ordered by aggregated score
 func ListTrending(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
 
 	q := data.DB.Select(db.Raw("pl.*")).
 		From("places pl").
 		Join("posts p").
 		On("pl.id = p.place_id").
 		GroupBy("pl.id").
-		OrderBy(db.Raw(fmt.Sprintf("sum(CASE WHEN pl.locale_id = %d THEN (p.score+2^31) ELSE p.score END) DESC", user.Etc.LocaleID))).
+		OrderBy(db.Raw("sum(p.score) DESC")).
 		Limit(15)
 	var places []*data.Place
 	if err := q.All(&places); err != nil {
@@ -109,7 +110,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	presented, err := presenter.TrendingPlaces(ctx, places...)
+	presented, err := presenter.PlacesWithPosts(ctx, places...)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return

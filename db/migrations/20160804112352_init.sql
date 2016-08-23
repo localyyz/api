@@ -26,15 +26,12 @@ CREATE TABLE users (
 CREATE TABLE locales (
     id serial PRIMARY KEY,
     name text DEFAULT '' NOT NULL,
-    google_id text DEFAULT '' NOT NULL,
     description text DEFAULT '' NOT NULL,
     image_url text DEFAULT '' NOT NULL,
-    CONSTRAINT unique_google_id UNIQUE (google_id)
 );
 
 CREATE TABLE places (
     id serial PRIMARY KEY,
-    google_id text NOT NULL,
     locale_id bigint REFERENCES locales (id),
 
     name text DEFAULT '' NOT NULL,

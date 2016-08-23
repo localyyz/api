@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/golang/geo/s2"
 	"github.com/goware/lg"
+	"github.com/pkg/errors"
 )
 
 type Locale struct {
@@ -36,10 +38,11 @@ type Bound struct {
 type LatLng []float64
 
 var (
-	flags    = flag.NewFlagSet("locale", flag.ExitOnError)
-	doLoad   = flags.Bool("load", false, "Load a locale into db")
-	localeID = flags.Int64("id", 0, "Locale id to load")
-	locales  map[int64]Locale
+	flags      = flag.NewFlagSet("locale", flag.ExitOnError)
+	doLoad     = flags.Bool("load", false, "Load a locale into db")
+	listLocale = flags.Bool("list", false, "Print the locale list and their id")
+	localeID   = flags.Int64("id", 0, "Locale id to load")
+	locales    map[int64]Locale
 )
 
 const tmpl = `
@@ -177,21 +180,31 @@ func LocaleHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write(b.Bytes())
 }
 
-func LoadData() {
+func loadData() {
 	loc := locales[*localeID]
 
 	var dbLocale *data.Locale
 	err := data.DB.Locale.Find(db.Cond{"shorthand": loc.Shorthand}).One(&dbLocale)
 	if err != nil {
-		lg.Warn(err)
-		return
+		if err != db.ErrNoMoreRows {
+			log.Fatal(err)
+		}
+		desc, _ := url.QueryUnescape(loc.Description)
+		dbLocale = &data.Locale{
+			Shorthand:   loc.Shorthand,
+			Name:        loc.Name,
+			Description: desc,
+		}
+		if err := data.DB.Locale.Save(dbLocale); err != nil {
+			log.Fatal(err)
+		}
 	}
 	lg.Warnf("found locale(%v): %s", dbLocale.ID, dbLocale.Name)
 
 	for _, c := range getCells(&loc) {
 		cell := &data.Cell{LocaleID: dbLocale.ID, CellID: int64(c)}
 		if err := data.DB.Cell.Save(cell); err != nil {
-			lg.Warn(err)
+			lg.Warn(errors.Wrapf(err, "failed inserting cell(%v)", int64(c)))
 			break
 		}
 	}
@@ -200,7 +213,7 @@ func LoadData() {
 func main() {
 	flags.Parse(os.Args[1:])
 
-	f, err := os.Open("cmd/cells/locales/locale.json")
+	f, err := os.Open("cmd/locales/locale.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -226,7 +239,14 @@ func main() {
 	}
 
 	if *doLoad {
-		LoadData()
+		loadData()
+	} else if *listLocale {
+		localeList := ""
+		for id, loc := range locales {
+			localeList += fmt.Sprintf("\tID: %d", id)
+			localeList += fmt.Sprintf("\t\tName: %s \n", loc.Name)
+		}
+		fmt.Println(localeList)
 	} else {
 		lg.Warn("Starting server on :1234")
 		http.HandleFunc("/", LocaleHandler)

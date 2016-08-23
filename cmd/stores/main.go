@@ -55,7 +55,7 @@ func main() {
 	//}
 	//defer resp.Body.Close()
 
-	f, err := os.Open("cmd/stores/queenwest.json")
+	f, err := os.Open("cmd/stores/data/kingwest.json")
 	if err != nil {
 		log.Fatal(err, "file")
 	}

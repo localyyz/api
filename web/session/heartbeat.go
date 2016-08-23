@@ -22,6 +22,8 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//payload.Latitude = 43.6435896
+	//payload.Longitude = -79.4007429
 	if err := user.SetLocation(payload.Latitude, payload.Longitude); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
@@ -34,7 +36,7 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
-		neighbours, err := data.DB.Cell.FindNeighbours(payload.Latitude, payload.Longitude)
+		neighbours, err := data.DB.Cell.FindNeighbourByLatLng(payload.Latitude, payload.Longitude)
 		if err != nil {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
