@@ -14,7 +14,7 @@ type Trending struct {
 func TrendingPlaces(ctx context.Context, places ...*data.Place) (*Trending, error) {
 	user := ctx.Value("session.user").(*data.User)
 
-	presented := &Trending{}
+	presented := &Trending{[]*PlaceWithPost{}, []*PlaceWithPost{}}
 	placePresented, err := PlacesWithPosts(ctx, places...)
 	if err != nil {
 		return presented, err

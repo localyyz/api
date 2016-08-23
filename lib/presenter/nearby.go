@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	db "upper.io/db.v2"
+	"upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 )
