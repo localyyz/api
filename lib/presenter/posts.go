@@ -11,10 +11,9 @@ import (
 
 type Post struct {
 	*data.Post
-	User    *data.User        `json:"user"`
-	Place   *data.Place       `json:"place"`
-	Promo   *data.Promo       `json:"promo"`
-	Context *data.UserContext `json:"context"`
+	User    *data.User   `json:"user"`
+	Place   *data.Place  `json:"place"`
+	Context *UserContext `json:"context"`
 }
 
 func NewPost(ctx context.Context, post *data.Post) (*Post, error) {
@@ -23,17 +22,12 @@ func NewPost(ctx context.Context, post *data.Post) (*Post, error) {
 		return nil, errors.Wrapf(err, "failed to present post(%v) place", post.ID)
 	}
 
-	promo, err := data.DB.Promo.FindByID(post.PromoID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to present post(%v) promo", post.ID)
-	}
-
 	user, err := data.DB.User.FindByID(post.UserID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to present post(%v) user", post.ID)
 	}
 
-	return &Post{Post: post, Place: place, Promo: promo, User: user}, nil
+	return &Post{Post: post, Place: place, User: user}, nil
 }
 
 func Posts(ctx context.Context, posts ...*data.Post) ([]*Post, error) {
@@ -50,7 +44,7 @@ func Posts(ctx context.Context, posts ...*data.Post) ([]*Post, error) {
 		presented[i] = &Post{
 			Post: p,
 			User: user,
-			Context: &data.UserContext{
+			Context: &UserContext{
 				Liked: (liked > 0),
 			},
 		}

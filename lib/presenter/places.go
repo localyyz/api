@@ -20,13 +20,13 @@ type PlaceWithPost struct {
 
 type PlaceWithPromo struct {
 	*Place
-	Promo *data.Promo `json:"promo"`
+	Promo *Promo `json:"promo"`
 }
 
 func NewPlace(ctx context.Context, place *data.Place) (*Place, error) {
 	locale, err := data.DB.Locale.FindByID(place.LocaleID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to presente place(%v) locale", place.ID)
+		return nil, errors.Wrapf(err, "failed to present place(%v) locale", place.ID)
 	}
 	return &Place{
 		Place:  place,
@@ -37,11 +37,22 @@ func NewPlace(ctx context.Context, place *data.Place) (*Place, error) {
 func PlacesWithPromos(ctx context.Context, places ...*data.Place) ([]*PlaceWithPromo, error) {
 	presented := make([]*PlaceWithPromo, len(places))
 	for i, p := range places {
-		promo, err := data.DB.Promo.FindByPlaceID(p.ID)
-		if err != nil && err != db.ErrNoMoreRows {
-			return nil, errors.Wrapf(err, "failed to present place(%v) promo", p.ID)
+		presented[i] = &PlaceWithPromo{Place: &Place{Place: p}}
+		if p.Distance < data.PromoDistanceLimit {
+			var promo *data.Promo
+			// TODO: need to filter out start and end date properly
+			err := data.DB.Promo.Find(db.Cond{"place_id": p.ID}).OrderBy("type DESC, end_at ASC").One(&promo)
+			if err != nil {
+				if err == db.ErrNoMoreRows {
+					continue
+				}
+				return nil, errors.Wrapf(err, "failed to present place(%v) promo", p.ID)
+			}
+			presented[i].Promo, err = NewPromo(ctx, promo)
+			if err != nil {
+				return nil, err
+			}
 		}
-		presented[i] = &PlaceWithPromo{Place: &Place{Place: p}, Promo: promo}
 	}
 	return presented, nil
 }
@@ -57,15 +68,15 @@ func PlacesWithPosts(ctx context.Context, places ...*data.Place) ([]*PlaceWithPo
 			Limit(5).
 			All(&posts)
 		if err != nil {
-			return presented, errors.Wrapf(err, "failed to present place(%v) posts", pl.ID)
+			return nil, errors.Wrapf(err, "failed to present place(%v) posts", pl.ID)
 		}
 		postPresented, err := Posts(ctx, posts...)
 		if err != nil {
-			return presented, err
+			return nil, err
 		}
 		place, err := NewPlace(ctx, pl)
 		if err != nil {
-			return presented, err
+			return nil, err
 		}
 		presented[i] = &PlaceWithPost{
 			Place: place,

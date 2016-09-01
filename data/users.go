@@ -36,11 +36,6 @@ type UserEtc struct {
 	LocaleID int64 `json:"localeId"`
 }
 
-type UserContext struct {
-	Commented bool `json:"commented"`
-	Liked     bool `json:"liked"`
-}
-
 // Authenticated user with jwt embed
 type AuthUser struct {
 	*User

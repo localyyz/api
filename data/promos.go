@@ -18,11 +18,13 @@ type Promo struct {
 	// Amount of points rewarded
 	Reward    int64 `db:"reward" json:"reward"`
 	XToReward int64 `db:"x_to_reward" json:"xToReward"` // x amount to complete
-	// Duration is the time limit (in seconds) that the promotion must be completed in
+	// Duration is the time limit (in seconds) that the
+	// promotion must be completed in. -1 for no time limit
 	Duration int64 `db:"duration" json:"duration"`
 
-	StartAt   time.Time  `db:"start_at" json:"startAt"`
-	EndAt     time.Time  `db:"end_at" json:"endAt"`
+	// TODO: promo status
+	StartAt   *time.Time `db:"start_at,omitempty" json:"startAt"`
+	EndAt     *time.Time `db:"end_at,omitempty" json:"endAt"`
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 }
 
@@ -35,21 +37,26 @@ type PromoType uint32
 const (
 	_ PromoType = iota
 	PromoTypeReachLike
+	PromoTypeFirstVisit
+	PromoTypeFirstOfDay
 )
 
 var (
 	promoTypes = []string{
 		"-",
 		"reach_likes",
+		"first_visit",
+		"first_ofday",
 	}
+	PromoDistanceLimit = 200.0
 )
 
 func (p *Promo) CollectionName() string {
 	return `promos`
 }
 
-func (store PromoStore) FindByPlaceID(placeID int64) (*Promo, error) {
-	return store.FindOne(db.Cond{"place_id": placeID})
+func (store PromoStore) FindByPlaceID(placeID int64) ([]*Promo, error) {
+	return store.FindAll(db.Cond{"place_id": placeID})
 }
 
 func (store PromoStore) FindByID(ID int64) (*Promo, error) {

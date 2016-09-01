@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	db "upper.io/db.v2"
+	"upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/presenter"
@@ -54,6 +54,7 @@ func GetPlace(w http.ResponseWriter, r *http.Request) {
 }
 
 // AutoCompletePlaces returns matched places via a query string
+// TODO: present distance
 func AutoCompletePlaces(w http.ResponseWriter, r *http.Request) {
 	queryString := strings.TrimSpace(r.URL.Query().Get("q"))
 	places, err := data.DB.Place.Autocomplete(queryString)

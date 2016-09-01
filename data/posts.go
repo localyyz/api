@@ -17,7 +17,7 @@ type Post struct {
 	UserID  int64 `db:"user_id" json:"userId"`
 	PlaceID int64 `db:"place_id" json:"placeId"`
 
-	PromoID int64 `db:"promo_id" json:"promoId"`
+	PromoID *int64 `db:"promo_id,omitempty" json:"promoId,omitempty"`
 	// Promo status indicates if the reward was earned successfully
 	PromoStatus RewardStatus `db:"promo_status" json:"promoStatus"`
 
@@ -67,62 +67,88 @@ func (p *Post) CollectionName() string {
 	return `posts`
 }
 
-func (store *PostStore) GetFresh(cursor *ws.Page, cond db.Cond) ([]*Post, error) {
-	q := store.Find().OrderBy("-created_at")
-	if len(cond) > 0 {
-		q = q.Where(cond) // filter by first
-	}
-
-	if cursor != nil {
-		q = cursor.UpdateQueryUpper(q)
-	}
-	var posts []*Post
-	if err := q.All(&posts); err != nil {
-		return nil, err
-	}
-	return posts, nil
-}
-
 // Update promotion reward
 func (p *Post) UpdatePromoReward() {
-	if p.PromoStatus != RewardInProgress {
+	if p.PromoID == nil || p.PromoStatus != RewardInProgress {
 		return
 	}
 
-	promo, err := DB.Promo.FindByID(p.PromoID)
+	promo, err := DB.Promo.FindByID(*p.PromoID)
 	if err != nil {
 		return
 	}
 
 	// promotion ended
-	if time.Now().After(promo.EndAt) {
+	if promo.EndAt != nil && time.Now().After(*promo.EndAt) {
 		p.PromoStatus = RewardFailed
 		DB.Post.Save(p)
 		return
 	}
 	// promotion max duration elapsed
-	if time.Since(*p.CreatedAt) > time.Duration(promo.Duration)*time.Second {
+	if promo.Duration != -1 && time.Since(*p.CreatedAt) > time.Duration(promo.Duration)*time.Second {
 		p.PromoStatus = RewardFailed
 		DB.Post.Save(p)
 		return
 	}
 
+	var promoCompleted bool
 	switch promo.Type {
 	case PromoTypeReachLike:
-		if int64(p.Likes) >= promo.XToReward {
-			p.PromoStatus = RewardCompleted
-			DB.Post.Save(p)
-
-			DB.UserPoint.Save(&UserPoint{
-				UserID:  p.UserID,
-				PostID:  p.ID,
-				PlaceID: p.PlaceID,
-				PromoID: p.PromoID,
-				Reward:  promo.Reward,
-			})
-			return
-		}
+		promoCompleted = (int64(p.Likes) >= promo.XToReward)
+	case PromoTypeFirstVisit:
+		promoCompleted = true
+	default:
+		return // unprocessable promo type
 	}
+
+	if promoCompleted {
+		p.PromoStatus = RewardCompleted
+		DB.Post.Save(p)
+		DB.UserPoint.Save(&UserPoint{
+			UserID:  p.UserID,
+			PostID:  p.ID,
+			PlaceID: p.PlaceID,
+			PromoID: *p.PromoID,
+			Reward:  promo.Reward,
+		})
+	}
+}
+
+func (p *Post) validatePromo() error {
+	promo, err := DB.Promo.FindByID(*p.PromoID)
+	if err != nil {
+		return err
+	}
+	if promo.StartAt != nil && time.Now().Before(*promo.StartAt) {
+		// not started yet
+		return ErrPromoStart
+	}
+	if promo.EndAt != nil && time.Now().After(*promo.EndAt) {
+		// ended
+		return ErrPromoEnded
+	}
+	if promo.PlaceID != p.PlaceID {
+		// wrong promo
+		return ErrPromoPlace
+	}
+
+	// TODO: can promo be re-done?
+	// Check if there is already a promo for this place
+	count, err := DB.Post.Find(
+		db.Cond{
+			"user_id":  p.UserID,
+			"promo_id": p.PromoID,
+			"place_id": p.PlaceID,
+		},
+	).Count()
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		//return ErrPromoUsed
+		p.PromoID = nil
+	}
+	return nil
 }
 
 // Update likes count on the post...
@@ -169,45 +195,17 @@ func (p *Post) BeforeCreate(bond.Session) error {
 }
 
 func (p *Post) AfterCreate(sess bond.Session) error {
+	p.UpdatePromoReward()
 	return nil
 }
 
 func (p *Post) Validate() error {
 	// Validate applied promo status is valid
-	if p.PromoID != 0 && p.PromoStatus == RewardInProgress {
-		promo, err := DB.Promo.FindByID(p.PromoID)
-		if err != nil {
+	if p.PromoID != nil && p.PromoStatus == RewardInProgress {
+		if err := p.validatePromo(); err != nil {
 			return err
-		}
-		if time.Now().Before(promo.StartAt) {
-			return ErrPromoStart
-		}
-		if time.Now().After(promo.EndAt) {
-			return ErrPromoEnded
-		}
-
-		if promo.PlaceID != p.PlaceID {
-			return ErrPromoPlace
-		}
-
-		// TODO: can promo be re-done?
-		// TODO: can post be created without promotion applied?
-		// Check if there is already a promo for this place
-		count, err := DB.Post.Find(
-			db.Cond{
-				"user_id":  p.UserID,
-				"promo_id": p.PromoID,
-			},
-		).Count()
-		if err != nil {
-			return err
-		}
-		if count > 0 {
-			//return ErrPromoUsed
-			p.PromoID = 0
 		}
 	}
-
 	return nil
 }
 

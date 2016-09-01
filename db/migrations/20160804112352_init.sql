@@ -47,6 +47,7 @@ CREATE TABLE places (
     address text DEFAULT '' NOT NULL,
     phone text DEFAULT '' NOT NULL,
     website text DEFAULT '' NOT NULL,
+    description text DEFAULT '' NOT NULL,
 
     geo geography(POINT, 4326) DEFAULT ST_GeographyFromText('SRID=4326;POINT(0 0)'),
     etc jsonb,
@@ -60,9 +61,9 @@ CREATE TABLE promos (
     type smallint DEFAULT 0 NOT NULL,
     reward bigint DEFAULT 0 NOT NULL,
     x_to_reward bigint DEFAULT 0 NOT NULL,
-    duration bigint DEFAULT 86400 NOT NULL,
-    start_at timestamp NOT NULL,
-    end_at timestamp NOT NULL,
+    duration bigint DEFAULT -1 NOT NULL,
+    start_at timestamp,
+    end_at timestamp,
     created_at timestamp DEFAULT now() NOT NULL
 );
 
@@ -71,8 +72,7 @@ CREATE TABLE posts (
     user_id bigint REFERENCES users (id),
     place_id bigint REFERENCES places (id),
 
-    --promo_id bigint REFERENCES promos (id),
-    promo_id bigint,
+    promo_id bigint REFERENCES promos (id) ON DELETE SET NULL,
     promo_status smallint DEFAULT 0 NOT NULL,
     
     caption text,
@@ -88,6 +88,7 @@ CREATE TABLE posts (
     updated_at timestamp,
     deleted_at timestamp
 );
+CREATE INDEX posts_promo_idx ON posts USING BTREE (promo_id);
 
 CREATE TABLE user_points (
     id serial PRIMARY KEY,

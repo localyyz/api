@@ -17,6 +17,8 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		data.Post
 
+		PromoID int64 `json:"promoId,required"`
+
 		// Ignore
 		ID          interface{} `json:"id,omitempty"`
 		PlaceID     interface{} `jsoN:"placeId,omitempty"`
@@ -35,18 +37,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	newPost := &payload.Post
 	newPost.UserID = user.ID
 	newPost.PlaceID = place.ID
-
-	// TODO: frontend work flow...
-	// for now, let's just find the promo attached to the location
-	//   picked by this post. auto apply promotion
-	promo, err := data.DB.Promo.FindByPlaceID(place.ID)
-	if err != nil && err != db.ErrNoMoreRows {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	if promo != nil {
-		newPost.PromoID = promo.ID
-	}
+	newPost.PromoID = &payload.PromoID
 
 	newPost.PlaceID = place.ID
 	if err := data.DB.Post.Save(newPost); err != nil {
