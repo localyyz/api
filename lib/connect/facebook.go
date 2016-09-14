@@ -12,7 +12,12 @@ import (
 	fb "github.com/huandu/facebook"
 )
 
-var FB *FBConnect
+var (
+	FB *FBConnect
+	// Facebook API version
+	// See: https://developers.facebook.com/docs/apps/changelog for updates
+	FBVersion = "v2.6"
+)
 
 type FBConnect struct {
 	*fb.App

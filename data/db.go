@@ -25,7 +25,8 @@ type Database struct {
 	Locale LocaleStore
 	Cell   CellStore
 
-	Promo PromoStore
+	Promo     PromoStore
+	PromoPeek PromoPeekStore
 }
 
 type DBConf struct {
@@ -64,6 +65,7 @@ func NewDBSession(conf DBConf) error {
 	db.Cell = CellStore{db.Store(&Cell{})}
 
 	db.Promo = PromoStore{db.Store(&Promo{})}
+	db.PromoPeek = PromoPeekStore{db.Store(&PromoPeek{})}
 
 	DB = db
 	return nil

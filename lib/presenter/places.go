@@ -36,21 +36,36 @@ func NewPlace(ctx context.Context, place *data.Place) (*Place, error) {
 
 func PlacesWithPromos(ctx context.Context, places ...*data.Place) ([]*PlaceWithPromo, error) {
 	presented := make([]*PlaceWithPromo, len(places))
+	user := ctx.Value("session.user").(*data.User)
 	for i, p := range places {
 		presented[i] = &PlaceWithPromo{Place: &Place{Place: p}}
-		if p.Distance < data.PromoDistanceLimit {
-			var promo *data.Promo
-			// TODO: need to filter out start and end date properly
-			err := data.DB.Promo.Find(db.Cond{"place_id": p.ID}).OrderBy("type DESC, end_at ASC").One(&promo)
-			if err != nil {
-				if err == db.ErrNoMoreRows {
-					continue
-				}
-				return nil, errors.Wrapf(err, "failed to present place(%v) promo", p.ID)
+
+		var promo *data.Promo
+		// TODO: need to filter out start and end date properly
+		err := data.DB.Promo.Find(db.Cond{"place_id": p.ID}).OrderBy("type DESC, end_at ASC").One(&promo)
+		if err != nil {
+			if err == db.ErrNoMoreRows {
+				continue
 			}
+			return nil, errors.Wrapf(err, "failed to present place(%v) promo", p.ID)
+		}
+
+		if p.Distance < data.PromoDistanceLimit {
 			presented[i].Promo, err = NewPromo(ctx, promo)
 			if err != nil {
 				return nil, err
+			}
+		} else {
+			// user peeked at the promo, let's show it
+			count, err := data.DB.PromoPeek.Find(db.Cond{"user_id": user.ID, "promo_id": promo.ID}).Count()
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find peek for promo(%d)", promo.ID)
+			}
+			if count > 0 {
+				presented[i].Promo, err = NewPromo(ctx, promo)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}

@@ -67,6 +67,13 @@ CREATE TABLE promos (
     created_at timestamp DEFAULT now() NOT NULL
 );
 
+CREATE TABLE promo_peeks (
+    id serial PRIMARY KEY,
+    user_id bigint NOT NULL REFERENCES users (id),
+    promo_id bigint NOT NULL REFERENCES promos (id),
+    created_at timestamp DEFAULT now() NOT NULL
+);
+
 CREATE TABLE posts (
     id serial PRIMARY KEY,
     user_id bigint REFERENCES users (id),
@@ -95,8 +102,9 @@ CREATE TABLE user_points (
     user_id bigint REFERENCES users (id),
 
     post_id bigint REFERENCES posts (id) ON DELETE CASCADE,
-    place_id bigint REFERENCES places (id) ON DELETE CASCADE,
-    promo_id bigint REFERENCES promos (id) ON DELETE CASCADE,
+    place_id bigint REFERENCES places (id) ON DELETE SET NULL,
+    promo_id bigint REFERENCES promos (id) ON DELETE SET NULL,
+    peek_id bigint REFERENCES promo_peeks (id) ON DELETE SET NULL,
 
     reward bigint DEFAULT 0 NOT NULL,
     

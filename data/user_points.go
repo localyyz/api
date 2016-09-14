@@ -7,16 +7,18 @@ import (
 	"upper.io/db.v2"
 )
 
-// UserPoint keeps track of points awarded to the user
+// UserPoint keeps track of points awarded or used by the user
 type UserPoint struct {
 	ID     int64 `db:"id,pk,omitempty" json:"id"`
 	UserID int64 `db:"user_id" json:"userId"`
 
 	// Point could have been earned through posting a picture
-	// to a venue or earned through user engadgement
-	PostID  int64 `db:"post_id" json:"postId"`
-	PlaceID int64 `db:"place_id" json:"placeId"`
-	PromoID int64 `db:"promo_id" json:"promoId"`
+	//    to a venue or earned through user engadgement
+	// Point can be used by a user to peek at a promotion
+	PostID  *int64 `db:"post_id,omitempty" json:"postId,omitempty"`
+	PlaceID int64  `db:"place_id" json:"placeId"`
+	PromoID int64  `db:"promo_id" json:"promoId"`
+	PeekID  int64  `db:"peek_id" json:"peekId"`
 
 	Reward int64 `db:"reward" json:"reward"`
 

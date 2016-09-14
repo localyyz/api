@@ -69,7 +69,9 @@ func GetPointHistory(w http.ResponseWriter, r *http.Request) {
 		promoID []int64
 	)
 	for _, p := range points {
-		postID = append(postID, p.PostID)
+		if p.PostID != nil {
+			postID = append(postID, *p.PostID)
+		}
 		placeID = append(placeID, p.PlaceID)
 		promoID = append(promoID, p.PromoID)
 	}
@@ -115,7 +117,9 @@ func GetPointHistory(w http.ResponseWriter, r *http.Request) {
 			resp[i].Promo = promo
 		}
 
-		resp[i].Post = postsMap[p.PostID]
+		if p.PostID != nil {
+			resp[i].Post = postsMap[*p.PostID]
+		}
 		resp[i].Place = placesMap[p.PlaceID]
 	}
 

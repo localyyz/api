@@ -118,3 +118,46 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 	}
 	ws.Respond(w, http.StatusOK, presented)
 }
+
+// PeekPromo let's the user take a peek at the promotion
+//  that might be too far away. For a price of course.
+func PeekPromo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+	place := ctx.Value("place").(*data.Place)
+
+	promo, err := data.DB.Promo.FindOne(db.Cond{"place_id": place.ID})
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// don't need to peek
+	if place.Distance < data.PromoDistanceLimit {
+		ws.Respond(w, http.StatusOK, promo)
+		return
+	}
+
+	peek := &data.PromoPeek{UserID: user.ID, PromoID: promo.ID}
+	err = data.DB.PromoPeek.Save(peek)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = data.DB.UserPoint.Save(
+		&data.UserPoint{
+			UserID:  user.ID,
+			PlaceID: place.ID,
+			PromoID: promo.ID,
+			PeekID:  peek.ID,
+			Reward:  -promo.Reward / 10, // hardcode to 10th of the reward
+		},
+	)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusOK, promo)
+}

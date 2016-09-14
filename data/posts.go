@@ -106,7 +106,7 @@ func (p *Post) UpdatePromoReward() {
 		DB.Post.Save(p)
 		DB.UserPoint.Save(&UserPoint{
 			UserID:  p.UserID,
-			PostID:  p.ID,
+			PostID:  &p.ID,
 			PlaceID: p.PlaceID,
 			PromoID: *p.PromoID,
 			Reward:  promo.Reward,
