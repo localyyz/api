@@ -4,100 +4,71 @@ import (
 	"context"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/goware/lg"
 	"github.com/pkg/errors"
 	"upper.io/db.v2"
 )
 
 type Place struct {
 	*data.Place
-	Locale string `json:"locale"`
+	Locale *data.Locale `json:"locale"`
+	Posts  []*Post      `json:"posts"`
+	Promo  *data.Promo  `json:"promo"`
+
+	SneakReward    int64 `json:"sneakReward"`
+	PromoCompleted bool  `json:"promoCompleted"`
+
+	ctx context.Context
 }
 
-type PlaceWithPost struct {
-	*Place
-	Posts []*Post `json:"posts"`
+func NewPlace(ctx context.Context, place *data.Place) *Place {
+	return &Place{Place: place, ctx: ctx}
 }
 
-type PlaceWithPromo struct {
-	*Place
-	Promo *Promo `json:"promo"`
+// presents given place with locale detail
+func (pl *Place) WithLocale() *Place {
+	var err error
+	if pl.Locale, err = data.DB.Locale.FindByID(pl.LocaleID); err != nil {
+		lg.Error(errors.Wrapf(err, "failed to present place(%v) post", pl.ID))
+	}
+	return pl
 }
 
-func NewPlace(ctx context.Context, place *data.Place) (*Place, error) {
-	locale, err := data.DB.Locale.FindByID(place.LocaleID)
+// present the place with promotion
+func (pl *Place) WithPromo() *Place {
+	promo, err := data.DB.Promo.FindByPlaceID(pl.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to present place(%v) locale", place.ID)
+		lg.Error(errors.Wrapf(err, "failed to present place(%v) promo", pl.ID))
+		return pl
 	}
-	return &Place{
-		Place:  place,
-		Locale: locale.Name,
-	}, nil
+	pl.SneakReward = promo.Reward
+
+	// TODO: have the user taken a sneakpeek?
+
+	if pl.Distance < data.PromoDistanceLimit {
+		pl.Promo = promo
+
+		user := pl.ctx.Value("session.user").(*data.User)
+		count, err := data.DB.Post.Find(db.Cond{"promo_id": promo.ID, "user_id": user.ID}).Count()
+		if err != nil {
+			lg.Warn(errors.Wrapf(err, "failed to present promo(%v) user context", promo.ID))
+			return pl
+		}
+		pl.PromoCompleted = (count > 0)
+	}
+	return pl
 }
 
-func PlacesWithPromos(ctx context.Context, places ...*data.Place) ([]*PlaceWithPromo, error) {
-	presented := make([]*PlaceWithPromo, len(places))
-	user := ctx.Value("session.user").(*data.User)
-	for i, p := range places {
-		presented[i] = &PlaceWithPromo{Place: &Place{Place: p}}
-
-		var promo *data.Promo
-		// TODO: need to filter out start and end date properly
-		err := data.DB.Promo.Find(db.Cond{"place_id": p.ID}).OrderBy("type DESC, end_at ASC").One(&promo)
-		if err != nil {
-			if err == db.ErrNoMoreRows {
-				continue
-			}
-			return nil, errors.Wrapf(err, "failed to present place(%v) promo", p.ID)
-		}
-
-		if p.Distance < data.PromoDistanceLimit {
-			presented[i].Promo, err = NewPromo(ctx, promo)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			// user peeked at the promo, let's show it
-			count, err := data.DB.PromoPeek.Find(db.Cond{"user_id": user.ID, "promo_id": promo.ID}).Count()
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find peek for promo(%d)", promo.ID)
-			}
-			if count > 0 {
-				presented[i].Promo, err = NewPromo(ctx, promo)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-	return presented, nil
-}
-
-func PlacesWithPosts(ctx context.Context, places ...*data.Place) ([]*PlaceWithPost, error) {
-	presented := make([]*PlaceWithPost, len(places))
-
-	for i, pl := range places {
-		var posts []*data.Post
-		err := data.DB.Post.
-			Find(db.Cond{"place_id": pl.ID}).
-			OrderBy("-score").
-			Limit(5).
-			All(&posts)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to present place(%v) posts", pl.ID)
-		}
-		postPresented, err := Posts(ctx, posts...)
-		if err != nil {
-			return nil, err
-		}
-		place, err := NewPlace(ctx, pl)
-		if err != nil {
-			return nil, err
-		}
-		presented[i] = &PlaceWithPost{
-			Place: place,
-			Posts: postPresented,
-		}
+// presents the place with the post with highest score, and it's promotion
+func (pl *Place) WithPost() *Place {
+	var post *data.Post
+	err := data.DB.Post.Find(db.Cond{"place_id": pl.ID}).OrderBy("-score").One(&post)
+	if err != nil {
+		lg.Error(errors.Wrapf(err, "failed to present place(%v) post", pl.ID))
+		return pl
 	}
 
-	return presented, nil
+	// posts with user
+	pl.Posts = []*Post{NewPost(post).WithUser()}
+	return pl
 }

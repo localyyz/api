@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
+	"github.com/pkg/errors"
 	"github.com/pressly/chi"
 
 	"upper.io/db.v2"
@@ -58,7 +59,7 @@ func GetPointHistory(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("session.user").(*data.User)
 	points, err := data.DB.UserPoint.FindByUserID(user.ID)
 	if err != nil {
-		ws.Respond(w, http.StatusServiceUnavailable, err)
+		ws.Respond(w, http.StatusServiceUnavailable, errors.Wrap(err, "failed to load user points"))
 		return
 	}
 
@@ -98,7 +99,7 @@ func GetPointHistory(w http.ResponseWriter, r *http.Request) {
 
 	promos, err := data.DB.Promo.FindAll(db.Cond{"id": promoID})
 	if err != nil {
-		ws.Respond(w, http.StatusServiceUnavailable, err)
+		ws.Respond(w, http.StatusServiceUnavailable, errors.Wrap(err, "failed to load promo"))
 		return
 	}
 	promosMap := map[int64]*data.Promo{}

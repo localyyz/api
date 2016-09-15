@@ -17,8 +17,6 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		data.Post
 
-		PromoID int64 `json:"promoId,required"`
-
 		// Ignore
 		ID          interface{} `json:"id,omitempty"`
 		PlaceID     interface{} `jsoN:"placeId,omitempty"`
@@ -37,7 +35,6 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	newPost := &payload.Post
 	newPost.UserID = user.ID
 	newPost.PlaceID = place.ID
-	newPost.PromoID = &payload.PromoID
 
 	newPost.PlaceID = place.ID
 	if err := data.DB.Post.Save(newPost); err != nil {

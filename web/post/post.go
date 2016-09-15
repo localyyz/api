@@ -36,14 +36,7 @@ func PostCtx(next http.Handler) http.Handler {
 func GetPost(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	post := ctx.Value("post").(*data.Post)
-
-	presented, err := presenter.NewPost(ctx, post)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	ws.Respond(w, http.StatusOK, presented)
+	ws.Respond(w, http.StatusOK, presenter.NewPost(post))
 }
 
 func UpdatePost(w http.ResponseWriter, r *http.Request) {
@@ -79,13 +72,7 @@ func UpdatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	presented, err := presenter.NewPost(ctx, updatePost)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	ws.Respond(w, http.StatusCreated, presented)
+	ws.Respond(w, http.StatusCreated, presenter.NewPost(updatePost))
 }
 
 func DeletePost(w http.ResponseWriter, r *http.Request) {

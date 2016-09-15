@@ -1,6 +1,7 @@
 package data
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ type Post struct {
 	UserID  int64 `db:"user_id" json:"userId"`
 	PlaceID int64 `db:"place_id" json:"placeId"`
 
-	PromoID *int64 `db:"promo_id,omitempty" json:"promoId,omitempty"`
+	PromoID int64 `db:"promo_id" json:"promoId,required"`
 	// Promo status indicates if the reward was earned successfully
 	PromoStatus RewardStatus `db:"promo_status" json:"promoStatus"`
 
@@ -69,11 +70,11 @@ func (p *Post) CollectionName() string {
 
 // Update promotion reward
 func (p *Post) UpdatePromoReward() {
-	if p.PromoID == nil || p.PromoStatus != RewardInProgress {
+	if p.PromoStatus != RewardInProgress {
 		return
 	}
 
-	promo, err := DB.Promo.FindByID(*p.PromoID)
+	promo, err := DB.Promo.FindByID(p.PromoID)
 	if err != nil {
 		return
 	}
@@ -108,14 +109,14 @@ func (p *Post) UpdatePromoReward() {
 			UserID:  p.UserID,
 			PostID:  &p.ID,
 			PlaceID: p.PlaceID,
-			PromoID: *p.PromoID,
+			PromoID: p.PromoID,
 			Reward:  promo.Reward,
 		})
 	}
 }
 
 func (p *Post) validatePromo() error {
-	promo, err := DB.Promo.FindByID(*p.PromoID)
+	promo, err := DB.Promo.FindByID(p.PromoID)
 	if err != nil {
 		return err
 	}
@@ -145,8 +146,7 @@ func (p *Post) validatePromo() error {
 		return err
 	}
 	if count > 0 {
-		//return ErrPromoUsed
-		p.PromoID = nil
+		return errors.New("promo used")
 	}
 	return nil
 }
@@ -201,7 +201,7 @@ func (p *Post) AfterCreate(sess bond.Session) error {
 
 func (p *Post) Validate() error {
 	// Validate applied promo status is valid
-	if p.PromoID != nil && p.PromoStatus == RewardInProgress {
+	if p.PromoStatus == RewardInProgress {
 		if err := p.validatePromo(); err != nil {
 			return err
 		}

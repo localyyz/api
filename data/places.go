@@ -26,17 +26,6 @@ type Place struct {
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 }
 
-type PlaceWithPromo struct {
-	*Place
-	Promos []*Promo `json:"promos"`
-}
-
-type PlaceWithLocale struct {
-	*Place
-	Locale   *Locale `json:"locale"`
-	Distance float64 `json:"distance"`
-}
-
 func (p *Place) CollectionName() string {
 	return `places`
 }

@@ -18,7 +18,7 @@ type UserPoint struct {
 	PostID  *int64 `db:"post_id,omitempty" json:"postId,omitempty"`
 	PlaceID int64  `db:"place_id" json:"placeId"`
 	PromoID int64  `db:"promo_id" json:"promoId"`
-	PeekID  int64  `db:"peek_id" json:"peekId"`
+	PeekID  *int64 `db:"peek_id,omitempty" json:"peekId,omitempty"`
 
 	Reward int64 `db:"reward" json:"reward"`
 

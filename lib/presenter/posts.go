@@ -3,6 +3,7 @@ package presenter
 import (
 	"context"
 
+	"github.com/goware/lg"
 	"github.com/pkg/errors"
 	"upper.io/db.v2"
 
@@ -13,21 +14,20 @@ type Post struct {
 	*data.Post
 	User    *data.User   `json:"user"`
 	Place   *data.Place  `json:"place"`
+	Promo   *data.Promo  `json:"promo"`
 	Context *UserContext `json:"context"`
 }
 
-func NewPost(ctx context.Context, post *data.Post) (*Post, error) {
-	place, err := data.DB.Place.FindByID(post.PlaceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to present post(%v) place", post.ID)
-	}
+func NewPost(post *data.Post) *Post {
+	return &Post{Post: post}
+}
 
-	user, err := data.DB.User.FindByID(post.UserID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to present post(%v) user", post.ID)
+func (p *Post) WithUser() *Post {
+	var err error
+	if p.User, err = data.DB.User.FindByID(p.UserID); err != nil {
+		lg.Error(errors.Wrapf(err, "failed to present post(%v) user", p.ID))
 	}
-
-	return &Post{Post: post, Place: place, User: user}, nil
+	return p
 }
 
 func Posts(ctx context.Context, posts ...*data.Post) ([]*Post, error) {
