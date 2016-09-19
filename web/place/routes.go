@@ -17,7 +17,7 @@ func Routes() chi.Router {
 		r.Get("/", GetPlace)
 		r.Post("/posts", CreatePost)
 		//r.Post("/peek", PeekPromo)
-		r.Get("/posts/recent", ListRecentPosts)
+		r.Get("/posts", GetPosts)
 	})
 
 	return r

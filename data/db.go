@@ -26,7 +26,7 @@ type Database struct {
 	Cell   CellStore
 
 	Promo     PromoStore
-	PromoPeek PromoPeekStore
+	PromoPeek PromoPeekStore // TODO: change this to PromoInteractions .. dismissed/sneakpeeked/starred etc
 }
 
 type DBConf struct {

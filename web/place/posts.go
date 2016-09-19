@@ -45,14 +45,14 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusCreated, newPost)
 }
 
-func ListRecentPosts(w http.ResponseWriter, r *http.Request) {
+func GetPosts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
 
 	cursor := ws.NewPage(r)
 	q := data.DB.Post.
 		Find(db.Cond{"place_id": place.ID}).
-		OrderBy("-created_at")
+		OrderBy("-score")
 	q = cursor.UpdateQueryUpper(q)
 	var posts []*data.Post
 	if err := q.All(&posts); err != nil {
@@ -60,10 +60,9 @@ func ListRecentPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	presented, err := presenter.Posts(ctx, posts...)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
+	presented := make([]*presenter.Post, len(posts))
+	for i, p := range posts {
+		presented[i] = presenter.NewPost(p).WithUser()
 	}
 	ws.Respond(w, http.StatusOK, presented, cursor.Update(presented))
 }
