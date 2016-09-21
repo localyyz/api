@@ -139,3 +139,23 @@ func GetRecentPost(w http.ResponseWriter, r *http.Request) {
 
 	ws.Respond(w, http.StatusOK, posts)
 }
+
+func SetDeviceToken(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("session.user").(*data.User)
+
+	var payload struct {
+		Token string `json:"token,required"`
+	}
+	if err := ws.Bind(r.Body, &payload); err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+
+	user.DeviceToken = &payload.Token
+	if err := data.DB.User.Save(user); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusOK, user)
+}

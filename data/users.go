@@ -20,6 +20,7 @@ type User struct {
 	AvatarURL string `db:"avatar_url" json:"avatarUrl"`
 
 	AccessToken string         `db:"access_token" json:"-"`
+	DeviceToken *string        `db:"device_token,omitempty" json:"-"`
 	Network     string         `db:"network" json:"network"`
 	LoggedIn    bool           `db:"logged_in" json:"-"`
 	LastLogInAt *time.Time     `db:"last_login_at" json:"lastLoginAt"`

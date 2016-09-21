@@ -24,6 +24,7 @@ func UserRoutes() chi.Router {
 	r.Get("/", GetUser)
 	r.Get("/points", GetPointHistory) // self user
 	r.Get("/posts/recent", GetRecentPost)
+	r.Post("/device", SetDeviceToken)
 
 	return r
 }
