@@ -29,7 +29,7 @@ print-%: ; @echo $*=$($*)
 ## Tools
 ##
 tools:
-	go get -u github.com/pressly/sup
+	go get -u github.com/pressly/sup/cmd/sup
 	go get -u bitbucket.org/liamstask/goose/cmd/goose
 
 ##

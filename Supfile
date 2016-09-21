@@ -1,5 +1,6 @@
 # Moodie
 ---
+version: 0.5
 
 env:
   NAME: api
@@ -7,6 +8,7 @@ env:
   HOST_PORT: 5331
   CONTAINER_PORT: 5331
   CONFIG: /data/etc/api.conf
+  BINARY: /data/app/Moodie.ipa
 
 networks:
   local:
@@ -18,7 +20,7 @@ networks:
     env:
       ENV: production
     hosts:
-      - ubuntu@localyyz.com
+      - ubuntu@159.203.26.181
 
 commands:
   config:
@@ -40,6 +42,12 @@ commands:
   pull:
     desc: Pull latest Docker image
     run: docker pull $IMAGE
+
+  build-image:
+    desc: Build Docker image
+    local: >
+        ./scripts/docker-build.sh
+    once: true
 
   image:
     desc: List Docker image
@@ -88,7 +96,11 @@ commands:
     run: docker exec -i $NAME bash
 
 targets:
+  build:
+    - build-image
+    
   deploy:
+    - build-image
     - pull
     - config
     - stop
