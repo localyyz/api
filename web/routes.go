@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
@@ -92,6 +93,7 @@ func New() chi.Router {
 	})
 
 	r.Post("/login/facebook", auth.FacebookLogin)
+	r.Post("/echo", echoPush)
 
 	r.Group(func(r chi.Router) {
 		r.Use(session.SessionCtx)
@@ -103,4 +105,23 @@ func New() chi.Router {
 	})
 
 	return r
+}
+
+// test function: echo push to apns
+func echoPush(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		DeviceToken string `json:"deviceToken"`
+		Payload     string `json:"payload"`
+	}
+	if err := ws.Bind(r.Body, &payload); err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+	err := pusher.Push(payload.DeviceToken, []byte(payload.Payload))
+	if err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+
+	return
 }

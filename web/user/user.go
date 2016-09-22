@@ -144,14 +144,14 @@ func SetDeviceToken(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("session.user").(*data.User)
 
 	var payload struct {
-		Token string `json:"token,required"`
+		DeviceToken string `json:"deviceToken,required"`
 	}
 	if err := ws.Bind(r.Body, &payload); err != nil {
 		ws.Respond(w, http.StatusBadRequest, err)
 		return
 	}
 
-	user.DeviceToken = &payload.Token
+	user.DeviceToken = &payload.DeviceToken
 	if err := data.DB.User.Save(user); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return

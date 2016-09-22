@@ -15,13 +15,19 @@ var (
 )
 
 type Config struct {
-	Bind string `toml:"bind"`
+	Environment string `toml:"environment"`
+	Bind        string `toml:"bind"`
 
 	// [db]
 	DB data.DBConf `toml:"db"`
 
 	// [connect]
 	Connect connect.Configs `toml:"connect"`
+
+	// [pusher]
+	Pusher struct {
+		Topic string `tomp:"topic"`
+	} `toml:"pusher"`
 
 	// [jwt]
 	Jwt struct {

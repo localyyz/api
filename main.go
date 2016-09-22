@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/goware/lg"
 	"github.com/zenazn/goji/graceful"
@@ -17,6 +18,7 @@ import (
 var (
 	flags    = flag.NewFlagSet("api", flag.ExitOnError)
 	confFile = flags.String("config", "", "path to config file")
+	pemFile  = flags.String("pem", "", "path to apns pem file")
 )
 
 func main() {
@@ -37,6 +39,13 @@ func main() {
 
 	//[jwt]
 	data.SetupJWTAuth(conf.Jwt.Secret)
+
+	// pusher
+	if pemFile != nil {
+		if err := pusher.Setup(*pemFile, conf.Pusher.Topic, conf.Environment); err != nil {
+			lg.Fatal(err)
+		}
+	}
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.

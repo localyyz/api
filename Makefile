@@ -55,7 +55,7 @@ db-reset:
 	goose up
 
 run:
-	@(export CONFIG=$$PWD/config/api.conf && go run main.go)
+	@(export CONFIG=$$PWD/config/api.conf; export PEM=$$PWD/config/push.pem && go run main.go)
 
 build:
 	@mkdir -p ./bin

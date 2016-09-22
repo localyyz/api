@@ -10,6 +10,9 @@ password          = ""
 [jwt]
 secret            = "secret"
 
+[pusher]
+topic             = "org.moodie.toronto"
+
 [connect.facebook]
 app_id            = "1610675759250907"
 app_secret        = "47f2c12ab33da224c503173a126e7205"
