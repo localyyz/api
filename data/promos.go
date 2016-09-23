@@ -18,7 +18,10 @@ type Promo struct {
 	// Amount of points rewarded
 	Reward int64 `db:"reward" json:"reward"`
 	// After applying. how long does the user have to claim
-	Duration int64 `db:"duration" json:"duration"`
+	Duration    int64  `db:"duration" json:"duration"`
+	Description string `db:"description" json:"description"`
+	// Uploaded image accompanying the promotion
+	ImageUrl string `db:"image_url" json:"imageUrl"`
 
 	StartAt   *time.Time `db:"start_at,omitempty" json:"startAt"`
 	EndAt     *time.Time `db:"end_at,omitempty" json:"endAt"`

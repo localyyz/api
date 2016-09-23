@@ -39,7 +39,7 @@ func PlaceCtx(next http.Handler) http.Handler {
 func GetPlace(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
-	ws.Respond(w, http.StatusOK, (presenter.NewPlace(ctx, place)).WithLocale().WithPromo())
+	ws.Respond(w, http.StatusOK, (presenter.NewPlace(ctx, place)).WithLocale())
 }
 
 // Nearby returns places and promos based on user's last recorded geolocation
@@ -64,7 +64,7 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 
 	presented := make([]*presenter.Place, len(places))
 	for i, pl := range places {
-		presented[i] = presenter.NewPlace(ctx, pl).WithPromo()
+		presented[i] = presenter.NewPlace(ctx, pl).WithLocale().WithPromo()
 	}
 
 	ws.Respond(w, http.StatusOK, presented)
