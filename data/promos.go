@@ -10,35 +10,44 @@ import (
 
 // TODO: promo should be keyed on placeid and queried on cells
 type Promo struct {
-	ID         int64     `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID    int64     `db:"place_id" json:"placeId"`
-	Multiplier int32     `db:"multiplier" json:"multiplier"`
-	Type       PromoType `db:"type" json:"type"`
+	ID         int64       `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID    int64       `db:"place_id" json:"placeId"`
+	Multiplier int32       `db:"multiplier" json:"multiplier"`
+	Type       PromoType   `db:"type" json:"type"`
+	Status     PromoStatus `db:"status" json:"-"`
 
 	// Amount of points rewarded
-	Reward    int64 `db:"reward" json:"reward"`
-	XToReward int64 `db:"x_to_reward" json:"xToReward"` // x amount to complete
-	// Duration is the time limit (in seconds) that the
-	// promotion must be completed in. -1 for no time limit
+	Reward int64 `db:"reward" json:"reward"`
+	// After applying. how long does the user have to claim
 	Duration int64 `db:"duration" json:"duration"`
 
-	// TODO: promo status
 	StartAt   *time.Time `db:"start_at,omitempty" json:"startAt"`
 	EndAt     *time.Time `db:"end_at,omitempty" json:"endAt"`
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
+	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
 }
 
 type PromoStore struct {
 	bond.Store
 }
 
-type PromoType uint32
+type (
+	PromoType   uint32
+	PromoStatus uint32
+)
 
 const (
 	_ PromoType = iota
 	PromoTypeReachLike
 	PromoTypeFirstVisit
 	PromoTypeFirstOfDay
+)
+
+const (
+	_ PromoStatus = iota
+	PromoStatusActive
+	PromoStatusInactive
+	PromoStatusDeleted
 )
 
 var (
@@ -55,8 +64,8 @@ func (p *Promo) CollectionName() string {
 	return `promos`
 }
 
-func (p *Promo) CanUserApply(userID int64) (bool, error) {
-	count, err := DB.PromoPeek.Find(db.Cond{"user_id": userID, "promo_id": p.ID}).Count()
+func (p *Promo) CanUserClaim(userID int64) (bool, error) {
+	count, err := DB.Claim.Find(db.Cond{"user_id": userID, "promo_id": p.ID}).Count()
 	if err != nil {
 		return false, err
 	}

@@ -15,18 +15,14 @@ var (
 type Database struct {
 	bond.Session
 
-	User      UserStore
-	Post      PostStore
-	Like      LikeStore
-	Comment   CommentStore
-	UserPoint UserPointStore
+	User UserStore
 
 	Place  PlaceStore
 	Locale LocaleStore
 	Cell   CellStore
 
-	Promo     PromoStore
-	PromoPeek PromoPeekStore // TODO: change this to PromoInteractions .. dismissed/sneakpeeked/starred etc
+	Promo PromoStore
+	Claim ClaimStore
 }
 
 type DBConf struct {
@@ -55,17 +51,13 @@ func NewDBSession(conf DBConf) error {
 		return err
 	}
 	db.User = UserStore{db.Store(&User{})}
-	db.Post = PostStore{db.Store(&Post{})}
-	db.Like = LikeStore{db.Store(&Like{})}
-	db.Comment = CommentStore{db.Store(&Comment{})}
-	db.UserPoint = UserPointStore{db.Store(&UserPoint{})}
 
 	db.Place = PlaceStore{db.Store(&Place{})}
 	db.Locale = LocaleStore{db.Store(&Locale{})}
 	db.Cell = CellStore{db.Store(&Cell{})}
 
 	db.Promo = PromoStore{db.Store(&Promo{})}
-	db.PromoPeek = PromoPeekStore{db.Store(&PromoPeek{})}
+	db.Claim = ClaimStore{db.Store(&Claim{})}
 
 	DB = db
 	return nil

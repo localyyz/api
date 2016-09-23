@@ -9,7 +9,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
-	"bitbucket.org/moodie-app/moodie-api/web/post"
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
 
@@ -101,7 +100,6 @@ func New() chi.Router {
 		r.Mount("/session", session.Routes())
 		r.Mount("/users", user.Routes())
 		r.Mount("/places", place.Routes())
-		r.Mount("/posts", post.Routes())
 	})
 
 	return r
