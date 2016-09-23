@@ -40,6 +40,12 @@ func GetPromo(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, promo)
 }
 
+func GetClaims(w http.ResponseWriter, r *http.Request) {
+	promo := r.Context().Value("promo").(*data.Promo)
+
+	ws.Respond(w, http.StatusOK, promo)
+}
+
 func ClaimPromo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

@@ -60,10 +60,11 @@ CREATE TABLE promos (
     multiplier smallint DEFAULT 1 NOT NULL,
     type smallint DEFAULT 0 NOT NULL,
     reward bigint DEFAULT 0 NOT NULL,
+    limits bigint DEFAULT 0 NOT NULL,
     description text DEFAULT '' NOT NULL,
     image_url text DEFAULT '' NOT NULL,
     x_to_reward bigint DEFAULT 0 NOT NULL,
-    duration bigint DEFAULT -1 NOT NULL,
+    duration bigint DEFAULT 0 NOT NULL,
     start_at timestamp,
     end_at timestamp,
     created_at timestamp DEFAULT now() NOT NULL

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/goware/geotools"
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
 	"upper.io/db.v2"
@@ -15,11 +16,17 @@ type Place struct {
 	Promo  *data.Promo  `json:"promo"`
 	Claim  *data.Claim  `json:"claim"`
 
-	ctx context.Context
+	LatLng *geotools.LatLng `json:"coords"`
+	ctx    context.Context
 }
 
 func NewPlace(ctx context.Context, place *data.Place) *Place {
 	return &Place{Place: place, ctx: ctx}
+}
+
+func (pl *Place) WithGeo() *Place {
+	pl.LatLng = geotools.LatLngFromPoint(pl.Place.Geo)
+	return pl
 }
 
 // presents given place with locale detail
@@ -44,6 +51,12 @@ func (pl *Place) WithPromo() *Place {
 	}
 	if pl.Distance < data.PromoDistanceLimit {
 		pl.Promo = promo
+
+		nc, err := data.DB.Claim.Find(db.Cond{"promo_id": promo.ID}).Count()
+		if err != nil {
+			return pl
+		}
+		pl.Promo.NumClaimed = int64(nc)
 	}
 
 	claim, err := data.DB.Claim.FindOne(db.Cond{"user_id": user.ID, "promo_id": promo.ID})
