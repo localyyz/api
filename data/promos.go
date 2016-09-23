@@ -10,11 +10,10 @@ import (
 
 // TODO: promo should be keyed on placeid and queried on cells
 type Promo struct {
-	ID         int64       `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID    int64       `db:"place_id" json:"placeId"`
-	Multiplier int32       `db:"multiplier" json:"multiplier"`
-	Type       PromoType   `db:"type" json:"type"`
-	Status     PromoStatus `db:"status" json:"-"`
+	ID      int64       `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID int64       `db:"place_id" json:"placeId"`
+	Type    PromoType   `db:"type" json:"type"`
+	Status  PromoStatus `db:"status" json:"-"`
 
 	// Amount of points rewarded
 	Reward int64 `db:"reward" json:"reward"`

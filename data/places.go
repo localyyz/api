@@ -6,8 +6,6 @@ import (
 	"github.com/goware/geotools"
 )
 
-// For now, just map places to google id
-// NOTE: we would have to carry this data on our side eventually
 type Place struct {
 	ID       int64 `db:"id,pk,omitempty" json:"id,omitempty"`
 	LocaleID int64 `db:"locale_id" json:"localeId"`
@@ -20,7 +18,6 @@ type Place struct {
 
 	Geo      geotools.Point `db:"geo" json:"-"`
 	Distance float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
-	// TODO: Hours
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`

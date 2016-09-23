@@ -37,18 +37,6 @@ type UserEtc struct {
 	LocaleID int64 `json:"localeId"`
 }
 
-// Authenticated user with jwt embed
-type AuthUser struct {
-	*User
-	JWT string `json:"jwt"`
-}
-
-type LocateUser struct {
-	*User
-	Geo    geotools.Point `json:"geo"`
-	Locale *Locale        `json:"locale"`
-}
-
 type UserStore struct {
 	bond.Store
 }
@@ -86,15 +74,6 @@ func (s UserStore) FindOne(cond db.Cond) (*User, error) {
 		return nil, err
 	}
 	return a, nil
-}
-
-// AuthUser wraps a user with JWT token
-func NewAuthUser(user *User) (*AuthUser, error) {
-	token, err := GenerateToken(user.ID)
-	if err != nil {
-		return nil, err
-	}
-	return &AuthUser{User: user, JWT: token.Raw}, nil
 }
 
 // NewSessionUser returns a session user from jwt auth token

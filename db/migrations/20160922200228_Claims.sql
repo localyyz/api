@@ -8,6 +8,7 @@ CREATE TABLE claims (
     promo_id bigint REFERENCES promos (id) ON DELETE SET NULL,
     user_id bigint REFERENCES users (id),
 
+    hash text default '' NOT NULL,
     status smallint DEFAULT 0 NOT NULL,
     created_at timestamp DEFAULT now() NOT NULL
 );

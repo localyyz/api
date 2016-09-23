@@ -13,9 +13,7 @@ type Place struct {
 	*data.Place
 	Locale *data.Locale `json:"locale"`
 	Promo  *data.Promo  `json:"promo"`
-
-	SneakReward    int64 `json:"sneakReward"`
-	PromoCompleted bool  `json:"promoCompleted"`
+	Claim  *data.Claim  `json:"claim"`
 
 	ctx context.Context
 }
@@ -35,6 +33,8 @@ func (pl *Place) WithLocale() *Place {
 
 // present the place with promotion
 func (pl *Place) WithPromo() *Place {
+	user := pl.ctx.Value("session.user").(*data.User)
+
 	promo, err := data.DB.Promo.FindByPlaceID(pl.ID)
 	if err != nil {
 		if err != db.ErrNoMoreRows {
@@ -42,20 +42,18 @@ func (pl *Place) WithPromo() *Place {
 		}
 		return pl
 	}
-	pl.SneakReward = promo.Reward
-
-	// TODO: have the user taken a sneakpeek?
-
 	if pl.Distance < data.PromoDistanceLimit {
 		pl.Promo = promo
+	}
 
-		user := pl.ctx.Value("session.user").(*data.User)
-		count, err := data.DB.Claim.Find(db.Cond{"promo_id": promo.ID, "user_id": user.ID}).Count()
-		if err != nil {
-			lg.Error(errors.Wrapf(err, "failed to present promo(%v) user context", promo.ID))
+	claim, err := data.DB.Claim.FindOne(db.Cond{"user_id": user.ID, "promo_id": promo.ID})
+	if err != nil {
+		if err != db.ErrNoMoreRows {
+			lg.Error(errors.Wrapf(err, "failed to present user(%v) claim on promo(%v)", user.ID, promo.ID))
 			return pl
 		}
-		pl.PromoCompleted = (count > 0)
 	}
+	pl.Claim = claim
+
 	return pl
 }

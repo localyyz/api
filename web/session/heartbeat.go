@@ -6,6 +6,7 @@ import (
 	"upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
@@ -62,7 +63,7 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := data.LocateUser{
+	resp := presenter.User{
 		User:   user,
 		Geo:    user.Geo,
 		Locale: locale,
