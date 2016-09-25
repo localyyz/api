@@ -9,7 +9,7 @@ fi
 docker run -d \
   -p $HOST_PORT:$CONTAINER_PORT \
   -v $CONFIG:/etc/api.conf \
-  -v $BINARY:/etc/Moodie.ipa \
+  -v /data/etc/push.pem:/etc/push.pem \
   --link postgres:postgres \
   --restart=always \
   --name $NAME $IMAGE

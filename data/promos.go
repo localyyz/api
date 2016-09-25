@@ -25,9 +25,6 @@ type Promo struct {
 	// Uploaded image accompanying the promotion
 	ImageUrl string `db:"image_url" json:"imageUrl"`
 
-	// Read Only
-	NumClaimed int64 `json:"numClaimed"`
-
 	StartAt   *time.Time `db:"start_at,omitempty" json:"startAt"`
 	EndAt     *time.Time `db:"end_at,omitempty" json:"endAt"`
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`

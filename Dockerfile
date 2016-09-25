@@ -9,4 +9,4 @@ RUN mv ./bin/api /bin/api
 
 EXPOSE 5331
 
-CMD ["/bin/api", "-config=/etc/api.conf"]
+CMD ["/bin/api", "-config=/etc/api.conf", "-pem=/etc/push.pem"]

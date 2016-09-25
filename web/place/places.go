@@ -82,7 +82,7 @@ func Trending(w http.ResponseWriter, r *http.Request) {
 			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
 		).
 		From("places pl").
-		LeftJoin("claims cl").
+		RightJoin("claims cl").
 		On("pl.id = cl.place_id").
 		GroupBy("pl.id").
 		OrderBy(db.Raw("count(cl) DESC NULLS LAST")).

@@ -13,8 +13,8 @@ import (
 type Place struct {
 	*data.Place
 	Locale *data.Locale `json:"locale"`
-	Promo  *data.Promo  `json:"promo"`
 	Claim  *data.Claim  `json:"claim"`
+	Promo  *Promo       `json:"promo"`
 
 	LatLng *geotools.LatLng `json:"coords"`
 	ctx    context.Context
@@ -49,15 +49,16 @@ func (pl *Place) WithPromo() *Place {
 		}
 		return pl
 	}
+	pl.Promo = &Promo{EndAt: promo.EndAt}
 	if pl.Distance < data.PromoDistanceLimit {
-		pl.Promo = promo
-
-		nc, err := data.DB.Claim.Find(db.Cond{"promo_id": promo.ID}).Count()
-		if err != nil {
-			return pl
-		}
-		pl.Promo.NumClaimed = int64(nc)
+		pl.Promo.Promo = promo
 	}
+
+	nc, err := data.DB.Claim.Find(db.Cond{"promo_id": promo.ID}).Count()
+	if err != nil {
+		return pl
+	}
+	pl.Promo.NumClaimed = int64(nc)
 
 	claim, err := data.DB.Claim.FindOne(db.Cond{"user_id": user.ID, "promo_id": promo.ID})
 	if err != nil {

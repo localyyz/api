@@ -48,7 +48,7 @@ func New() chi.Router {
 // test function: echo push to apns
 func echoPush(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		DeviceToken string `json:"deviceToken"`
+		DeviceToken string `json:"deviceToken,required"`
 		Payload     string `json:"payload"`
 	}
 	if err := ws.Bind(r.Body, &payload); err != nil {

@@ -385,7 +385,7 @@
 					"name": "save user device",
 					"request": {
 						"url": "localhost:5331/users/device",
-						"method": "POST",
+						"method": "PUT",
 						"header": [
 							{
 								"key": "Content-Type",
