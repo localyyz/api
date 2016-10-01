@@ -23,8 +23,6 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload.Latitude = 43.6435896
-	payload.Longitude = -79.4007429
 	if err := user.SetLocation(payload.Latitude, payload.Longitude); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
