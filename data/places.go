@@ -15,6 +15,7 @@ type Place struct {
 	Phone       string `db:"phone" json:"phone"`
 	Website     string `db:"website" json:"website"`
 	Description string `db:"description" json:"description"`
+	ImageURL    string `db:"image_url" json:"imageUrl"`
 
 	Geo      geotools.Point `db:"geo" json:"-"`
 	Distance float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db

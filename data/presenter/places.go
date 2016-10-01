@@ -21,7 +21,7 @@ type Place struct {
 }
 
 func NewPlace(ctx context.Context, place *data.Place) *Place {
-	return &Place{Place: place, ctx: ctx}
+	return &Place{Place: place, Promo: &Promo{}, Claim: &data.Claim{}, ctx: ctx}
 }
 
 func (pl *Place) WithGeo() *Place {
@@ -49,7 +49,7 @@ func (pl *Place) WithPromo() *Place {
 		}
 		return pl
 	}
-	pl.Promo = &Promo{EndAt: promo.EndAt}
+	pl.Promo = &Promo{EndAt: promo.EndAt, ImageUrl: promo.ImageUrl}
 	if pl.Distance < data.PromoDistanceLimit {
 		pl.Promo.Promo = promo
 	}

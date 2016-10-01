@@ -11,5 +11,6 @@ type Promo struct {
 
 	//fields that can be viewed
 	NumClaimed int64      `json:"numClaimed"`
+	ImageUrl   string     `json:"imageUrl"`
 	EndAt      *time.Time `json:"endAt"`
 }
