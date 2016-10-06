@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"upper.io/bond"
+	db "upper.io/db.v2"
 	"upper.io/db.v2/postgresql"
 )
 
@@ -40,6 +41,10 @@ func (cf *DBConf) ConnectionUrl() string {
 }
 
 func NewDBSession(conf DBConf) error {
+	if conf.DebugQueries {
+		db.Conf.SetLogging(true)
+	}
+
 	connUrl, err := postgresql.ParseURL(conf.ConnectionUrl())
 	if err != nil {
 		return err
