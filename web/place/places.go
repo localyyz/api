@@ -62,6 +62,14 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(places) == 0 {
+		places, err = getTrending(user)
+		if err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
 	presented := make([]*presenter.Place, len(places))
 	for i, pl := range places {
 		presented[i] = presenter.NewPlace(ctx, pl).WithLocale().WithGeo().WithPromo()
@@ -70,10 +78,8 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, presented)
 }
 
-// Trending returns most popular places ordered by aggregated score
-func Trending(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
+// getTrending returns most popular places ordered by aggregated score
+func getTrending(user *data.User) ([]*data.Place, error) {
 
 	var places []*data.Place
 	q := data.DB.
@@ -86,16 +92,10 @@ func Trending(w http.ResponseWriter, r *http.Request) {
 		On("pl.id = cl.place_id").
 		GroupBy("pl.id").
 		OrderBy(db.Raw("count(cl) DESC NULLS LAST")).
-		Where(db.Cond{"pl.locale_id !=": user.Etc.LocaleID}).
 		Limit(10)
 	if err := q.All(&places); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "trending places"))
-		return
+		return nil, errors.Wrap(err, "trending places")
 	}
 
-	presented := make([]*presenter.Place, len(places))
-	for i, pl := range places {
-		presented[i] = presenter.NewPlace(ctx, pl).WithLocale().WithGeo().WithPromo()
-	}
-	ws.Respond(w, http.StatusOK, presented)
+	return places, nil
 }

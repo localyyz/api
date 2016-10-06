@@ -3,6 +3,8 @@ package session
 import (
 	"net/http"
 
+	"github.com/goware/lg"
+
 	"upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -46,7 +48,6 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user.Etc = data.UserEtc{} // reset locale data
 	if cell != nil {
 		locale, err = data.DB.Locale.FindByID(cell.LocaleID)
 		if err != nil {
@@ -55,11 +56,13 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		}
 		// save it into user
 		user.Etc.LocaleID = locale.ID
+		if err := data.DB.User.Save(user); err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		lg.Debugf("user(%d) located at %s", user.ID, locale.Name)
 	}
-	if err := data.DB.User.Save(user); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
+	// NOTE if we didn't find a valid locale, we keep user's previous
 
 	resp := presenter.User{
 		User:   user,

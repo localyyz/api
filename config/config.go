@@ -8,6 +8,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 
 	"github.com/BurntSushi/toml"
+	"github.com/goware/lg"
 )
 
 var (
@@ -48,6 +49,13 @@ func NewFromFile(fileConfig, envConfig string) (*Config, error) {
 	}
 	if _, err := toml.DecodeFile(file, &conf); err != nil {
 		return nil, err
+	}
+
+	// If development, set lg to debug
+	if conf.Environment == "development" {
+		if err := lg.SetLevelString("debug"); err != nil {
+			lg.Fatal(err)
+		}
 	}
 
 	return &conf, nil

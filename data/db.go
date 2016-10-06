@@ -26,10 +26,11 @@ type Database struct {
 }
 
 type DBConf struct {
-	Database string   `toml:"database"`
-	Hosts    []string `toml:"hosts"`
-	Username string   `toml:"username"`
-	Password string   `toml:"password"`
+	Database     string   `toml:"database"`
+	Hosts        []string `toml:"hosts"`
+	Username     string   `toml:"username"`
+	Password     string   `toml:"password"`
+	DebugQueries bool     `toml:"debug_quries"`
 }
 
 // ConnectionUrl implements db.ConnectionURL
@@ -39,7 +40,6 @@ func (cf *DBConf) ConnectionUrl() string {
 }
 
 func NewDBSession(conf DBConf) error {
-
 	connUrl, err := postgresql.ParseURL(conf.ConnectionUrl())
 	if err != nil {
 		return err

@@ -138,5 +138,5 @@ func main() {
 		log.Fatal(err, "db")
 	}
 
-	fmt.Println(writeListings("kingwest"))
+	//fmt.Println(writeListings("kingwest"))
 }

@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
 	"github.com/goware/geotools"
+	"github.com/goware/lg"
 
 	"upper.io/bond"
 	"upper.io/db.v2"
@@ -56,6 +57,7 @@ func (u *User) BeforeCreate(bond.Session) error {
 
 // SetLocation sets the user geo location
 func (u *User) SetLocation(lat, lon float64) error {
+	lg.Debugf("user(%d) update loc (%.2f,%.2f)", u.ID, lat, lon)
 	u.Geo = *geotools.NewPointFromLatLng(lat, lon)
 	return DB.Save(u)
 }
