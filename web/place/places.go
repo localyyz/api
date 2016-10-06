@@ -80,7 +80,6 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 
 // getTrending returns most popular places ordered by aggregated score
 func getTrending(user *data.User) ([]*data.Place, error) {
-
 	var places []*data.Place
 	q := data.DB.
 		Select(
@@ -88,7 +87,7 @@ func getTrending(user *data.User) ([]*data.Place, error) {
 			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
 		).
 		From("places pl").
-		RightJoin("claims cl").
+		LeftJoin("claims cl").
 		On("pl.id = cl.place_id").
 		GroupBy("pl.id").
 		OrderBy(db.Raw("count(cl) DESC NULLS LAST")).

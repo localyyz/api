@@ -31,7 +31,7 @@ type DBConf struct {
 	Hosts        []string `toml:"hosts"`
 	Username     string   `toml:"username"`
 	Password     string   `toml:"password"`
-	DebugQueries bool     `toml:"debug_quries"`
+	DebugQueries bool     `toml:"debug_queries"`
 }
 
 // ConnectionUrl implements db.ConnectionURL
