@@ -1,22 +1,12 @@
 package data
 
 import (
-	"fmt"
-
 	"upper.io/bond"
 	"upper.io/db.v2"
 )
 
 type PlaceStore struct {
 	bond.Store
-}
-
-func (store PlaceStore) Autocomplete(q string) ([]*Place, error) {
-	return store.FindAll(db.Cond{"name ILIKE": fmt.Sprint("%", q, "%")})
-}
-
-func (store PlaceStore) FindByGoogleID(gID string) (*Place, error) {
-	return store.FindOne(db.Cond{"google_id": gID})
 }
 
 func (store PlaceStore) FindByLocaleID(localeID int64) ([]*Place, error) {

@@ -1,8 +1,9 @@
 
 -- +goose Up
 -- SQL in section 'Up' is executed when this migration is applied
-ALTER TABLE users ADD COLUMN device_token varchar(64);
+ALTER TABLE places ADD COLUMN image_url text;
+
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
-ALTER TABLE users DROP COLUMN device_token;
+ALTER TABLE places DELETE COLUMN image_url;

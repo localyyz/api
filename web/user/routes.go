@@ -22,9 +22,7 @@ func UserRoutes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/", GetUser)
-	r.Get("/points", GetPointHistory) // self user
-	r.Get("/posts/recent", GetRecentPost)
-	r.Post("/device", SetDeviceToken)
+	r.Put("/device", SetDeviceToken) // me
 
 	return r
 }

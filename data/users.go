@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/utils"
 
 	"github.com/goware/geotools"
+	"github.com/goware/lg"
 
 	"upper.io/bond"
 	"upper.io/db.v2"
@@ -37,18 +38,6 @@ type UserEtc struct {
 	LocaleID int64 `json:"localeId"`
 }
 
-// Authenticated user with jwt embed
-type AuthUser struct {
-	*User
-	JWT string `json:"jwt"`
-}
-
-type LocateUser struct {
-	*User
-	Geo    geotools.Point `json:"geo"`
-	Locale *Locale        `json:"locale"`
-}
-
 type UserStore struct {
 	bond.Store
 }
@@ -68,6 +57,7 @@ func (u *User) BeforeCreate(bond.Session) error {
 
 // SetLocation sets the user geo location
 func (u *User) SetLocation(lat, lon float64) error {
+	lg.Debugf("user(%d) update loc (%.2f,%.2f)", u.ID, lat, lon)
 	u.Geo = *geotools.NewPointFromLatLng(lat, lon)
 	return DB.Save(u)
 }
@@ -86,15 +76,6 @@ func (s UserStore) FindOne(cond db.Cond) (*User, error) {
 		return nil, err
 	}
 	return a, nil
-}
-
-// AuthUser wraps a user with JWT token
-func NewAuthUser(user *User) (*AuthUser, error) {
-	token, err := GenerateToken(user.ID)
-	if err != nil {
-		return nil, err
-	}
-	return &AuthUser{User: user, JWT: token.Raw}, nil
 }
 
 // NewSessionUser returns a session user from jwt auth token

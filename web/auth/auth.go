@@ -9,6 +9,21 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
+// Authenticated user with jwt embed
+type AuthUser struct {
+	*data.User
+	JWT string `json:"jwt"`
+}
+
+// AuthUser wraps a user with JWT token
+func NewAuthUser(user *data.User) (*AuthUser, error) {
+	token, err := data.GenerateToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &AuthUser{User: user, JWT: token.Raw}, nil
+}
+
 // FacebookLogin handles both first-time login (signup) and repeated-logins from a social network
 // User is already authenticated by the frontend with network of their choice
 //  Backend stores the token and async grab the user data
@@ -32,7 +47,7 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authUser, err := data.NewAuthUser(user)
+	authUser, err := NewAuthUser(user)
 	if err != nil {
 		ws.Respond(w, http.StatusUnauthorized, err)
 		return

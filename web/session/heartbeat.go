@@ -3,9 +3,12 @@ package session
 import (
 	"net/http"
 
+	"github.com/goware/lg"
+
 	"upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
@@ -22,8 +25,6 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload.Latitude = 43.6435896
-	payload.Longitude = -79.4007429
 	if err := user.SetLocation(payload.Latitude, payload.Longitude); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
@@ -47,7 +48,6 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user.Etc = data.UserEtc{} // reset locale data
 	if cell != nil {
 		locale, err = data.DB.Locale.FindByID(cell.LocaleID)
 		if err != nil {
@@ -56,13 +56,15 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		}
 		// save it into user
 		user.Etc.LocaleID = locale.ID
+		if err := data.DB.User.Save(user); err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		lg.Debugf("user(%d) located at %s", user.ID, locale.Name)
 	}
-	if err := data.DB.User.Save(user); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
+	// NOTE if we didn't find a valid locale, we keep user's previous
 
-	resp := data.LocateUser{
+	resp := presenter.User{
 		User:   user,
 		Geo:    user.Geo,
 		Locale: locale,

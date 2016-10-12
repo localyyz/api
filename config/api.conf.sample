@@ -6,6 +6,7 @@ database          = "moodie"
 hosts             = [ "localhost" ]
 username          = "postgres"
 password          = ""
+debug_queries     = true
 
 [jwt]
 secret            = "secret"

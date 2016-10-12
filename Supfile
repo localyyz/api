@@ -8,7 +8,6 @@ env:
   HOST_PORT: 5331
   CONTAINER_PORT: 5331
   CONFIG: /data/etc/api.conf
-  BINARY: /data/app/Moodie.ipa
 
 networks:
   local:
