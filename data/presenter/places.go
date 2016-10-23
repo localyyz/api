@@ -49,10 +49,11 @@ func (pl *Place) WithPromo() *Place {
 		}
 		return pl
 	}
-	pl.Promo = &Promo{EndAt: promo.EndAt, ImageUrl: promo.ImageUrl}
-	if pl.Distance < data.PromoDistanceLimit {
-		pl.Promo.Promo = promo
-	}
+	pl.Promo = &Promo{}
+	//if pl.Distance < data.PromoDistanceLimit {
+	// TODO: for now, everything is viewable
+	pl.Promo.Promo = promo
+	//}
 
 	nc, err := data.DB.Claim.Find(db.Cond{"promo_id": promo.ID}).Count()
 	if err != nil {
