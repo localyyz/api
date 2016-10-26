@@ -10,9 +10,14 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
+
+	db "upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/cmd/blogto/locale"
+	"bitbucket.org/moodie-app/moodie-api/data"
 
+	"github.com/goware/geotools"
 	"github.com/pkg/errors"
 )
 
@@ -31,61 +36,40 @@ func LoadListing(shorthand string) error {
 		return errors.Wrap(err, "file error, try list first.")
 	}
 
+	locale, err := data.DB.Locale.FindOne(db.Cond{"shorthand": shorthand})
+	if err != nil {
+		return err
+	}
+
 	var stores []*StoreDetail
 	dec := json.NewDecoder(f)
 	if err := dec.Decode(&stores); err != nil {
 		return errors.Wrap(err, "decode error")
 	}
 
-	//for _, p := range places {
-	//var dbp *data.Place
-	//err = data.DB.Place.Find(
-	//db.Cond{"locale_id": , "name": p["name"]},
-	//).One(&dbp)
-	//if err != nil {
-	//if err == db.ErrNoMoreRows {
-	//dbp = &data.Place{
-	//Name: p["name"],
-	//}
-	//}
-	//log.Printf("%s: %v", p["name"], err)
-	//continue
-	//}
-
-	//dbp.Description = p["excerpt"].(string)
-	//dbp.ImageURL = p["image"].(string)
-	//dbp.Website = p["website"].(string)
-	//if err := data.DB.Place.Save(dbp); err != nil {
-	//log.Printf("Saving %s failed: %v\n", dbp.Name, err)
-	//continue
-	//}
-
-	//lat, _ := strconv.ParseFloat(p["latitude"].(string), 64)
-	//lng, _ := strconv.ParseFloat(p["longitude"].(string), 64)
-
-	//cell, err := data.DB.Cell.FindByLatLng(lat, lng)
-	//if err != nil {
-	//log.Printf("place(%s) loc(%v, %v) error %s", p["name"], lat, lng, err)
-	//continue
-	//}
-
-	//err = data.DB.Place.Save(&data.Place{
-	//LocaleID:    cell.LocaleID,
-	//Name:        strings.TrimSpace(p["name"].(string)),
-	//Address:     strings.TrimSpace(p["address"].(string)),
-	//Phone:       p["phone"].(string),
-	//Description: p["excerpt"].(string),
-	//ImageURL:    p["image"].(string),
-	//Website:     p["website"].(string),
-	//Geo:         *geotools.NewPointFromLatLng(lat, lng),
-	//})
-	//if err != nil {
-	//return err
-	//}
-	//}
-
 	for _, s := range stores {
-		fmt.Println(s.Name)
+		dbp, err := data.DB.Place.FindOne(db.Cond{"locale_id": locale.ID, "name": strings.TrimSpace(s.Name)})
+		if err != nil {
+			if err != db.ErrNoMoreRows {
+				log.Printf("find error(%s): %v", s.Name, err)
+				continue
+			}
+			lat, _ := strconv.ParseFloat(s.Latitude, 64)
+			lng, _ := strconv.ParseFloat(s.Longitude, 64)
+			dbp = &data.Place{
+				Name:     strings.TrimSpace(s.Name),
+				Address:  strings.TrimSpace(s.Address),
+				Geo:      *geotools.NewPointFromLatLng(lat, lng),
+				LocaleID: locale.ID,
+			}
+		}
+		dbp.Description = s.Excerpt
+		dbp.ImageURL = s.Image
+		dbp.Website = s.Website
+		dbp.Phone = s.Phone
+		if err := data.DB.Place.Save(dbp); err != nil {
+			log.Printf("save error(%s): %v", s.Name, err)
+		}
 	}
 
 	return nil
