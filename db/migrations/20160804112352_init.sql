@@ -50,7 +50,6 @@ CREATE TABLE places (
     description text DEFAULT '' NOT NULL,
 
     geo geography(POINT, 4326) DEFAULT ST_GeographyFromText('SRID=4326;POINT(0 0)'),
-    etc jsonb,
     created_at timestamp DEFAULT now() NOT NULL
 );
 
