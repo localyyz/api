@@ -12,3 +12,5 @@ config/push.pem
 *.test
 *.sw?
 .tags
+
+*.json

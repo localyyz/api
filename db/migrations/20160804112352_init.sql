@@ -56,7 +56,7 @@ CREATE TABLE places (
 
 CREATE TABLE promos (
     id serial PRIMARY KEY,
-    place_id bigint NOT NULL REFERENCES places (id),
+    place_id bigint NOT NULL REFERENCES places (id) ON DELETE CASCADE,
     multiplier smallint DEFAULT 1 NOT NULL,
     type smallint DEFAULT 0 NOT NULL,
     reward bigint DEFAULT 0 NOT NULL,
