@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/upper/bond"
 
-	"upper.io/bond"
 	"upper.io/db.v2"
 )
 

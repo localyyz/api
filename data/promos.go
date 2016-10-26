@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"upper.io/bond"
+	"github.com/upper/bond"
+
 	"upper.io/db.v2"
 )
 

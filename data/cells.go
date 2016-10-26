@@ -2,7 +2,7 @@ package data
 
 import (
 	"github.com/golang/geo/s2"
-	"upper.io/bond"
+	"github.com/upper/bond"
 	"upper.io/db.v2"
 )
 

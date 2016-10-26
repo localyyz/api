@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"upper.io/bond"
+	"github.com/upper/bond"
+
 	db "upper.io/db.v2"
 	"upper.io/db.v2/postgresql"
 )
