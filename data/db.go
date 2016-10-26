@@ -35,24 +35,20 @@ type DBConf struct {
 	DebugQueries bool     `toml:"debug_queries"`
 }
 
-// ConnectionUrl implements db.ConnectionURL
-func (cf *DBConf) ConnectionUrl() string {
-	return fmt.Sprintf("postgres://%s:%s@%s/%s",
+// String implements db.ConnectionURL
+func (cf *DBConf) String() string {
+	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
 		cf.Username, cf.Password, strings.Join(cf.Hosts, ","), cf.Database)
 }
 
-func NewDBSession(conf DBConf) error {
+func NewDBSession(conf *DBConf) error {
 	if conf.DebugQueries {
 		db.Conf.SetLogging(true)
 	}
 
-	connUrl, err := postgresql.ParseURL(conf.ConnectionUrl())
-	if err != nil {
-		return err
-	}
-
+	var err error
 	db := &Database{}
-	db.Session, err = bond.Open(postgresql.Adapter, connUrl)
+	db.Session, err = bond.Open(postgresql.Adapter, conf)
 	if err != nil {
 		return err
 	}

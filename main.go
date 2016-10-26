@@ -30,7 +30,7 @@ func main() {
 	}
 
 	//[db]
-	if err := data.NewDBSession(conf.DB); err != nil {
+	if err := data.NewDBSession(&conf.DB); err != nil {
 		lg.Fatal(err)
 	}
 
