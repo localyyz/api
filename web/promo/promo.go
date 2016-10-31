@@ -2,20 +2,25 @@ package promo
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
+	db "upper.io/db.v2"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-	"bitbucket.org/moodie-app/moodie-api/web/utils"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/pressly/chi"
 )
+
+const ClaimableDistance = 200.0
 
 func PromoCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		promoID, err := strconv.ParseInt(chi.URLParam(r, "promoID"), 10, 64)
 		if err != nil {
-			ws.Respond(w, http.StatusBadRequest, utils.ErrBadID)
+			ws.Respond(w, http.StatusBadRequest, api.ErrBadID)
 			return
 		}
 
@@ -51,6 +56,22 @@ func ClaimPromo(w http.ResponseWriter, r *http.Request) {
 
 	promo := ctx.Value("promo").(*data.Promo)
 	currentUser := ctx.Value("session.user").(*data.User)
+
+	// calculate the user's distance from the "place"
+	var place *data.Place
+	err := data.DB.Place.Find(
+		db.Cond{"id": promo.PlaceID},
+	).Select(
+		db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", currentUser.Geo)),
+	).One(&place)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	if place.Distance > ClaimableDistance {
+		ws.Respond(w, http.StatusBadRequest, api.ErrClaimDistance)
+		return
+	}
 
 	claim := &data.Claim{
 		PromoID: promo.ID,

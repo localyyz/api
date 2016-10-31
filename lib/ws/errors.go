@@ -7,16 +7,17 @@ import (
 	"errors"
 	"net/http"
 
-	"upper.io/db.v2"
-
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/goware/errorx"
+	"upper.io/db.v2"
 )
 
 var (
 	ErrUnrechable = errors.New("unreachable")
 
 	mappings = map[error]*errorx.Errorx{
-		db.ErrNoMoreRows: errorx.New(http.StatusNotFound, "ops... we couldn't find what you were looking for"),
+		db.ErrNoMoreRows:     errorx.New(http.StatusNotFound, "Ops... We couldn't find what you were looking for."),
+		api.ErrClaimDistance: errorx.New(http.StatusBadRequest, "You're too far away. Get closer!"),
 	}
 )
 
@@ -25,15 +26,16 @@ var (
 //
 // ie:
 //	InternalError: pg error no column 'name' found on table 'accounts'
-//  ExternalErorr: code 2001: failed to update
+//  ExternalError: code 2001: failed to update
 //
 //  returns wrapped errorx and proper http status code
 func WrapError(status int, err error) (int, error) {
 
-	// Look up error mapping
+	// Mapped errors are well defined situations that
+	// should provide a predefined helpful message to the user.
 	if e, ok := mappings[err]; ok {
 		e.Wrap(err)
-		return e.Code, e
+		return e.Code, errors.New(e.Message)
 	}
 
 	return status, errorx.New(1000, err.Error())

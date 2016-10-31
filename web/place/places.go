@@ -11,7 +11,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-	"bitbucket.org/moodie-app/moodie-api/web/utils"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/pkg/errors"
 	"github.com/pressly/chi"
 )
@@ -20,7 +20,7 @@ func PlaceCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		placeID, err := strconv.ParseInt(chi.URLParam(r, "placeID"), 10, 64)
 		if err != nil {
-			ws.Respond(w, http.StatusBadRequest, utils.ErrBadID)
+			ws.Respond(w, http.StatusBadRequest, api.ErrBadID)
 			return
 		}
 

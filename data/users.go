@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"bitbucket.org/moodie-app/moodie-api/web/utils"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 
 	"github.com/goware/geotools"
 	"github.com/goware/lg"
@@ -95,5 +95,5 @@ func NewSessionUser(tok string) (*User, error) {
 		// find a logged in user with the given id
 		return DB.User.FindOne(db.Cond{"id": userID, "logged_in": true})
 	}
-	return nil, utils.ErrInvalidSession
+	return nil, api.ErrInvalidSession
 }

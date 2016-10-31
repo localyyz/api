@@ -7,7 +7,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-	"bitbucket.org/moodie-app/moodie-api/web/utils"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 
 	"github.com/pressly/chi"
 )
@@ -32,7 +32,7 @@ func UserCtx(next http.Handler) http.Handler {
 
 		userID, err := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
 		if err != nil {
-			ws.Respond(w, http.StatusBadRequest, utils.ErrBadID)
+			ws.Respond(w, http.StatusBadRequest, api.ErrBadID)
 			return
 		}
 
