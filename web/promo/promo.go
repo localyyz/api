@@ -51,6 +51,32 @@ func GetClaims(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, promo)
 }
 
+func ListClaimed(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.Context().Value("session.user").(*data.User)
+
+	claims, err := data.DB.Claim.FindByUserID(currentUser.ID)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	promoIDs := make([]int64, len(claims))
+	for i, c := range claims {
+		promoIDs[i] = c.PromoID
+	}
+
+	var promos []*data.Promo
+	err = data.DB.Promo.
+		Find(db.Cond{"id": promoIDs}).
+		All(&promos)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusOK, promos)
+}
+
 func ClaimPromo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

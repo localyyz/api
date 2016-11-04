@@ -22,10 +22,6 @@ type Claim struct {
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 }
 
-type ClaimStore struct {
-	bond.Store
-}
-
 type ClaimStatus uint32
 
 const (
@@ -86,14 +82,6 @@ func (c *Claim) Validate() error {
 		}
 	}
 	return nil
-}
-
-func (store ClaimStore) FindOne(cond db.Cond) (*Claim, error) {
-	var claim *Claim
-	if err := store.Find(cond).One(&claim); err != nil {
-		return nil, err
-	}
-	return claim, nil
 }
 
 // String returns the string value of the status.
