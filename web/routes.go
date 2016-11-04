@@ -6,6 +6,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
+	"bitbucket.org/moodie-app/moodie-api/web/categories"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/promo"
 	"bitbucket.org/moodie-app/moodie-api/web/session"
@@ -37,6 +38,7 @@ func New() chi.Router {
 		r.Use(session.SessionCtx)
 
 		r.Mount("/session", session.Routes())
+		r.Mount("/categories", categories.Routes())
 		r.Mount("/users", user.Routes())
 		r.Mount("/places", place.Routes())
 		r.Mount("/promos", promo.Routes())

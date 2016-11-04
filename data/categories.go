@@ -26,7 +26,7 @@ const (
 
 var (
 	categories = []string{
-		"-",
+		"all",
 		"barber shops",
 		"beauty products",
 		"costume",
@@ -43,6 +43,7 @@ var (
 		"t-shirts",
 		"tailor and repair",
 	}
+	Categories = categories
 )
 
 // String returns the string value of the status.

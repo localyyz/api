@@ -6,7 +6,6 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/nearby", Nearby)
-	r.Post("/search", Search)
 	r.Post("/autocomplete", AutoComplete)
 
 	r.Route("/:placeID", func(r chi.Router) {

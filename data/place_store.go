@@ -19,6 +19,10 @@ func (store PlaceStore) FindLikeName(q string) ([]*Place, error) {
 	return store.FindAll(db.Cond{"name ILIKE": fmt.Sprint("%", q, "%")})
 }
 
+func (store PlaceStore) FindByCategory(category Category) ([]*Place, error) {
+	return store.FindAll(db.Cond{"category": category})
+}
+
 func (store PlaceStore) FindAll(cond db.Cond) ([]*Place, error) {
 	var places []*Place
 	if err := store.Find(cond).All(&places); err != nil {
