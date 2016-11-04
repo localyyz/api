@@ -1,6 +1,8 @@
 package data
 
 import (
+	"fmt"
+
 	"github.com/upper/bond"
 	"upper.io/db.v2"
 )
@@ -11,6 +13,10 @@ type PlaceStore struct {
 
 func (store PlaceStore) FindByLocaleID(localeID int64) ([]*Place, error) {
 	return store.FindAll(db.Cond{"locale_id": localeID})
+}
+
+func (store PlaceStore) FindLikeName(q string) ([]*Place, error) {
+	return store.FindAll(db.Cond{"name ILIKE": fmt.Sprint("%", q, "%")})
 }
 
 func (store PlaceStore) FindAll(cond db.Cond) ([]*Place, error) {

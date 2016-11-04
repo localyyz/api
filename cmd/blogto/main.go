@@ -23,7 +23,7 @@ var (
 	storeLocale  = appStore.Flag("locale", "neightbourhood shorthand").Short('l').Required().String()
 	storeListing = appStore.Command("list", "List store in a neighbourhood")
 	storeLoad    = appStore.Command("load", "Load stores into the database. Open tunnel with 'ssh -L <port>:localhost:5432 -N ubuntu@moodie'")
-	loadHost     = storeLoad.Flag("host", "Tunneled host string <host>:<port>.").Short('h').Required().String()
+	loadHost     = storeLoad.Flag("host", "Tunneled host string <host>:<port>.").Short('h').Default("localhost").String()
 )
 
 func main() {

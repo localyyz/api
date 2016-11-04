@@ -18,6 +18,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 
 	"github.com/goware/geotools"
+	"github.com/goware/lg"
 	"github.com/pkg/errors"
 )
 
@@ -48,7 +49,13 @@ func LoadListing(shorthand string) error {
 	}
 
 	for _, s := range stores {
-		dbp, err := data.DB.Place.FindOne(db.Cond{"locale_id": locale.ID, "name": strings.TrimSpace(s.Name)})
+		blogtoID, _ := strconv.ParseInt(s.ID, 10, 64)
+		dbp, err := data.DB.Place.FindOne(
+			db.Cond{
+				"locale_id": locale.ID,
+				"blogto_id": blogtoID,
+			},
+		)
 		if err != nil {
 			if err != db.ErrNoMoreRows {
 				log.Printf("find error(%s): %v", s.Name, err)
@@ -67,6 +74,27 @@ func LoadListing(shorthand string) error {
 		dbp.ImageURL = s.Image
 		dbp.Website = s.Website
 		dbp.Phone = s.Phone
+		dbp.BlogtoID = &blogtoID
+
+		// categories
+		cat := strings.ToLower(s.Category)
+		if err := dbp.Category.UnmarshalText([]byte(cat)); err != nil {
+			// see if it's men / women
+			if strings.Contains(cat, "clothing") {
+				dbp.Category = data.CategoryClothing
+			} else if strings.Contains(cat, "vintage") {
+				dbp.Category = data.CategoryVintage
+			}
+		}
+		lg.Printf("name(%s) cat(%s)", dbp.Name, dbp.Category)
+
+		// gender
+		if strings.Contains(cat, "men") {
+			dbp.Gender = data.PlaceGenderMale
+		} else if strings.Contains(cat, "women") {
+			dbp.Gender = data.PlaceGenderFemale
+		}
+
 		if err := data.DB.Place.Save(dbp); err != nil {
 			log.Printf("save error(%s): %v", s.Name, err)
 		}
@@ -110,7 +138,7 @@ func GetListing(shorthand string) error {
 		resp.Body.Close()
 	}
 
-	detailFile, err := os.Create(fmt.Sprintf("cmd/blogto/data/%s.detail.json", shorthand))
+	detailFile, err := os.Create(fmt.Sprintf("cmd/blogto/data/%s.json", shorthand))
 	if err != nil {
 		return errors.Wrap(err, "detail file")
 	}
