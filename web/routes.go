@@ -27,10 +27,6 @@ func New() chi.Router {
 		w.Write([]byte(`¯\_(ツ)_/¯`))
 	})
 
-	// App download related handlers
-	r.Get("/manifest.plist", Manifest)
-	r.Get("/Moodie.ipa", MoodieApp)
-
 	r.Post("/login/facebook", auth.FacebookLogin)
 	r.Post("/echo", echoPush)
 
