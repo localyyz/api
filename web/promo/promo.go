@@ -9,6 +9,7 @@ import (
 	db "upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/pressly/chi"
@@ -74,7 +75,13 @@ func ListClaimed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ws.Respond(w, http.StatusOK, promos)
+	res := make([]*presenter.Promo, len(promos))
+	for i, p := range promos {
+		res[i] = &presenter.Promo{Promo: p}
+		res[i].WithPlace()
+	}
+
+	ws.Respond(w, http.StatusOK, res)
 }
 
 func ClaimPromo(w http.ResponseWriter, r *http.Request) {
