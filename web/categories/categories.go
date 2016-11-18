@@ -20,7 +20,6 @@ func CategoryCtx(next http.Handler) http.Handler {
 			return
 		}
 		category := data.Category(rawCategory)
-
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "category", category)
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -35,7 +34,6 @@ func ListCategories(w http.ResponseWriter, r *http.Request) {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	}
-
 	categories := make([]category, len(data.Categories))
 	for i, cat := range data.Categories {
 		categories[i] = category{ID: i, Name: cat}

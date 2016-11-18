@@ -2,7 +2,6 @@ package promo
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -82,40 +81,4 @@ func ListClaimed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ws.Respond(w, http.StatusOK, res)
-}
-
-func ClaimPromo(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	promo := ctx.Value("promo").(*data.Promo)
-	currentUser := ctx.Value("session.user").(*data.User)
-
-	// calculate the user's distance from the "place"
-	var place *data.Place
-	err := data.DB.Place.Find(
-		db.Cond{"id": promo.PlaceID},
-	).Select(
-		db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", currentUser.Geo)),
-	).One(&place)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	if place.Distance > ClaimableDistance {
-		ws.Respond(w, http.StatusBadRequest, api.ErrClaimDistance)
-		return
-	}
-
-	claim := &data.Claim{
-		PromoID: promo.ID,
-		PlaceID: promo.PlaceID,
-		UserID:  currentUser.ID,
-		Status:  data.ClaimStatusActive,
-	}
-	if err := data.DB.Claim.Save(claim); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	ws.Respond(w, http.StatusCreated, claim)
 }

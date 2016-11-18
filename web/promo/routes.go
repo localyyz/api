@@ -11,7 +11,11 @@ func Routes() chi.Router {
 
 		r.Get("/", GetPromo)
 		r.Get("/claims", GetClaims)
-		r.Post("/claim", ClaimPromo)
+
+		r.Route("/:action", func(r chi.Router) {
+			r.Use(PromoActionCtx)
+			r.Post("/", DoPromo)
+		})
 	})
 
 	return r

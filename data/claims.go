@@ -29,6 +29,8 @@ const (
 	ClaimStatusActive
 	ClaimStatusCompleted
 	ClaimStatusExpired
+	ClaimStatusSaved
+	ClaimStatusPeeked
 )
 
 var _ interface {
@@ -37,7 +39,14 @@ var _ interface {
 } = &Claim{}
 
 var (
-	claimStatuses = []string{"unknown", "active", "completed", "expired"}
+	claimStatuses = []string{
+		"unknown",
+		"active",
+		"completed",
+		"expired",
+		"saved",
+		"peeked",
+	}
 )
 
 func (c *Claim) CollectionName() string {
