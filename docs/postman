@@ -117,6 +117,7 @@
 					},
 					"response": [
 						{
+							"id": "479952b5-f8e9-43cd-b376-ea71172c518a",
 							"name": "resp",
 							"originalRequest": {
 								"url": "localhost:5331/places/nearby?t=store",
@@ -217,6 +218,7 @@
 					},
 					"response": [
 						{
+							"id": "215625a8-484b-44ec-bb94-2bb780dc30aa",
 							"name": "resp",
 							"originalRequest": {
 								"url": "localhost:5331/places/1",
@@ -317,6 +319,7 @@
 					},
 					"response": [
 						{
+							"id": "800507f5-a7cd-472f-89eb-aed32fdb081b",
 							"name": "resp",
 							"originalRequest": {
 								"url": "localhost:5331/places/1/posts/recent",
@@ -424,6 +427,7 @@
 					},
 					"response": [
 						{
+							"id": "800d3195-80d1-4035-a439-7e378f893cb6",
 							"name": "autocomplete",
 							"originalRequest": {
 								"url": "localhost:5331/places/autocomplete?q=Local&t=establishment",
@@ -527,6 +531,81 @@
 							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
 						},
 						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "claim promotion",
+					"request": {
+						"url": "localhost:5331/promos/1/claim",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+						},
+						"description": "claim a promotion"
+					},
+					"response": []
+				},
+				{
+					"name": "save promotion",
+					"request": {
+						"url": "localhost:5331/promos/1/save",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+						},
+						"description": "save a promotion"
+					},
+					"response": []
+				},
+				{
+					"name": "peek promotion",
+					"request": {
+						"url": "localhost:5331/promos/1/save",
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+						},
+						"description": "peek at a promotion"
 					},
 					"response": []
 				}

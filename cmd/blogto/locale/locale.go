@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"sort"
+
+	"github.com/golang/geo/s2"
 )
 
 type Locale struct {
@@ -43,6 +45,28 @@ func List() {
 		localeList += fmt.Sprintf(" (%s) \n", loc.Shorthand)
 	}
 	fmt.Println(localeList)
+}
+
+func (loc *Locale) GetBoundaryCells() s2.CellUnion {
+	origin := loc.Boundaries[0]
+	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[0], origin[1]))
+	for _, p := range loc.Boundaries[1:] {
+		pp := s2.LatLngFromDegrees(p[0], p[1])
+		rect = rect.AddPoint(pp)
+	}
+
+	rc := &s2.RegionCoverer{MinLevel: 15, MaxLevel: 15, MaxCells: 35}
+	r := s2.Region(rect.CapBound())
+
+	var cells s2.CellUnion
+	for _, c := range rc.Covering(r) {
+		cell := s2.CellFromCellID(c)
+		if rect.IntersectsCell(cell) {
+			cells = append(cells, c)
+		}
+	}
+
+	return cells
 }
 
 func loadData() {

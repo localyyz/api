@@ -69,73 +69,10 @@ CREATE TABLE promos (
     created_at timestamp DEFAULT now() NOT NULL
 );
 
-CREATE TABLE promo_peeks (
-    id serial PRIMARY KEY,
-    user_id bigint NOT NULL REFERENCES users (id),
-    promo_id bigint NOT NULL REFERENCES promos (id),
-    created_at timestamp DEFAULT now() NOT NULL
-);
-
-CREATE TABLE posts (
-    id serial PRIMARY KEY,
-    user_id bigint REFERENCES users (id),
-    place_id bigint REFERENCES places (id),
-
-    promo_id bigint REFERENCES promos (id) ON DELETE SET NULL,
-    promo_status smallint DEFAULT 0 NOT NULL,
-    
-    caption text,
-    image_url text,
-    filter smallint,
-
-    likes integer DEFAULT 0 NOT NULL,
-    comments integer DEFAULT 0 NOT NULL,
-    score bigint DEFAULT 0 NOT NULL,
-    featured bigint DEFAULT 0 NOT NULL,
-
-    created_at timestamp DEFAULT now() NOT NULL,
-    updated_at timestamp,
-    deleted_at timestamp
-);
-CREATE INDEX posts_promo_idx ON posts USING BTREE (promo_id);
-
-CREATE TABLE user_points (
-    id serial PRIMARY KEY,
-    user_id bigint REFERENCES users (id),
-
-    post_id bigint REFERENCES posts (id) ON DELETE CASCADE,
-    place_id bigint REFERENCES places (id) ON DELETE SET NULL,
-    promo_id bigint REFERENCES promos (id) ON DELETE SET NULL,
-    peek_id bigint REFERENCES promo_peeks (id) ON DELETE SET NULL,
-
-    reward bigint DEFAULT 0 NOT NULL,
-    
-    created_at timestamp DEFAULT now() NOT NULL
-);
-
-CREATE TABLE comments (
-    id serial PRIMARY KEY,
-    user_id bigint REFERENCES users (id),
-    post_id bigint REFERENCES posts (id),
-    body text,
-    created_at timestamp DEFAULT now() NOT NULL
-);
-
-CREATE TABLE likes (
-    id serial PRIMARY KEY,
-    user_id bigint REFERENCES users (id),
-    post_id bigint REFERENCES posts (id),
-    created_at timestamp DEFAULT now() NOT NULL,
-    CONSTRAINT unique_user_post UNIQUE (user_id, post_id)
-);
-
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
-DROP TABLE IF EXISTS comments;
-DROP TABLE IF EXISTS likes;
-DROP TABLE IF EXISTS user_points;
-DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS promos;
 DROP TABLE IF EXISTS places;
+DROP TABLE IF EXISTS cells;
 DROP TABLE IF EXISTS locales;
 DROP TABLE IF EXISTS users;

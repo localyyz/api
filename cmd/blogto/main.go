@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
 	_ "github.com/lib/pq"
@@ -18,6 +19,7 @@ var (
 	appLocale     = app.Command("locale", "Toronto neightbourhoods")
 	localeWriteDB = appLocale.Command("load", "Load the database with cached neighbourhoods.")
 	localeList    = appLocale.Command("list", "List the neighbourhoods with their BlogTo Id.")
+	localeShow    = appLocale.Command("show", "Show neighbourhoods in a web interface <port 8080>")
 
 	appStore     = app.Command("store", "Toronto stores")
 	storeLocale  = appStore.Flag("locale", "neightbourhood shorthand").Short('l').Required().String()
@@ -28,6 +30,10 @@ var (
 
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case "locale show":
+		http.HandleFunc("/", locale.LocaleHandler)
+		log.Println("Listening on :8080")
+		log.Fatal(http.ListenAndServe(":8080", nil))
 	case "locale load":
 		//doLoad()
 	case "locale list":

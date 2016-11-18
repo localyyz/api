@@ -1,42 +1,51 @@
 package locale
 
-func ShowLocale() {
-	//loc := cache[*localeID] // liberty village
-	//origin := loc.Boundaries[0]
-	//rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[0], origin[1]))
+import (
+	"bytes"
+	"html/template"
+	"io"
+	"net/http"
 
-	//maps, err := template.New("maps").Parse(tmpl)
-	//if err != nil {
-	//io.WriteString(w, err.Error())
-	//return
-	//}
+	"github.com/golang/geo/s2"
+)
 
-	//var cellBounds []*Bound
-	//for _, c := range getCells(&loc) {
-	//cell := s2.CellFromCellID(c)
-	//cellBounds = append(cellBounds, rectToBounds(cell.RectBound()))
-	//}
+func LocaleHandler(w http.ResponseWriter, r *http.Request) {
+	loc := LocaleMap["queenwest"]
+	origin := loc.Boundaries[0]
+	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[0], origin[1]))
 
-	//z := struct {
-	//CenterLat float64
-	//CenterLng float64
-	//Rect      *Bound
-	//Cells     []*Bound
-	//}{
-	//rect.Center().Lat.Degrees(),
-	//rect.Center().Lng.Degrees(),
-	//rectToBounds(rect),
-	//cellBounds,
-	//}
+	maps, err := template.New("maps").Parse(tmpl)
+	if err != nil {
+		io.WriteString(w, err.Error())
+		return
+	}
 
-	//b := &bytes.Buffer{}
-	//if err := maps.Execute(b, z); err != nil {
-	//io.WriteString(w, err.Error())
-	//return
-	//}
+	var cellBounds []*Bound
+	for _, c := range loc.GetBoundaryCells() {
+		cell := s2.CellFromCellID(c)
+		cellBounds = append(cellBounds, rectToBounds(cell.RectBound()))
+	}
 
-	//w.Header().Set("Content-Type", "text/html")
-	//w.Write(b.Bytes())
+	z := struct {
+		CenterLat float64
+		CenterLng float64
+		Rect      *Bound
+		Cells     []*Bound
+	}{
+		rect.Center().Lat.Degrees(),
+		rect.Center().Lng.Degrees(),
+		rectToBounds(rect),
+		cellBounds,
+	}
+
+	b := &bytes.Buffer{}
+	if err := maps.Execute(b, z); err != nil {
+		io.WriteString(w, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(b.Bytes())
 }
 
 const tmpl = `
