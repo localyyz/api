@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/upper/bond"
-
-	"upper.io/db.v2"
 )
 
 type Claim struct {
@@ -76,18 +73,6 @@ func (c *Claim) Validate() error {
 		if promo.PlaceID != c.PlaceID {
 			// wrong promo
 			return ErrPromoPlace
-		}
-		count, err := DB.Claim.Find(
-			db.Cond{
-				"user_id":  c.UserID,
-				"promo_id": c.PromoID,
-			},
-		).Count()
-		if err != nil {
-			return errors.Wrap(err, "claim validate error")
-		}
-		if count > 0 {
-			return errors.New("promo used")
 		}
 	}
 	return nil

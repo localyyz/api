@@ -51,14 +51,59 @@ func GetClaims(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, promo)
 }
 
-func ListClaimed(w http.ResponseWriter, r *http.Request) {
+func ListHistory(w http.ResponseWriter, r *http.Request) {
 	currentUser := r.Context().Value("session.user").(*data.User)
 
-	claims, err := data.DB.Claim.FindByUserID(currentUser.ID)
+	claims, err := data.DB.Claim.FindAll(
+		db.Cond{
+			"user_id": currentUser.ID,
+			"status": []data.ClaimStatus{
+				data.ClaimStatusCompleted,
+				data.ClaimStatusExpired,
+			},
+		},
+	)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
+
+	promoIDs := make([]int64, len(claims))
+	for i, c := range claims {
+		promoIDs[i] = c.PromoID
+	}
+
+	var promos []*data.Promo
+	err = data.DB.Promo.
+		Find(db.Cond{"id": promoIDs}).
+		All(&promos)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	res := make([]*presenter.Promo, len(promos))
+	for i, p := range promos {
+		res[i] = &presenter.Promo{Promo: p}
+		res[i].WithPlace()
+	}
+
+	ws.Respond(w, http.StatusOK, res)
+}
+
+func ListActive(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.Context().Value("session.user").(*data.User)
+
+	claims, err := data.DB.Claim.FindAll(
+		db.Cond{
+			"user_id": currentUser.ID,
+			"status": []data.ClaimStatus{
+				data.ClaimStatusActive,
+				data.ClaimStatusSaved,
+				data.ClaimStatusPeeked,
+			},
+		},
+	)
 
 	promoIDs := make([]int64, len(claims))
 	for i, c := range claims {
