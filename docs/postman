@@ -89,6 +89,62 @@
 			]
 		},
 		{
+			"name": "locale",
+			"description": "",
+			"item": [
+				{
+					"name": "List locales",
+					"request": {
+						"url": "localhost:5331/locales",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+						},
+						"description": "List locales"
+					},
+					"response": []
+				},
+				{
+					"name": "List places by locale",
+					"request": {
+						"url": "localhost:5331/locales/1/places",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+						},
+						"description": "List places by locale"
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "places",
 			"description": "",
 			"item": [
@@ -117,7 +173,7 @@
 					},
 					"response": [
 						{
-							"id": "479952b5-f8e9-43cd-b376-ea71172c518a",
+							"id": "3929e242-e015-4edf-8441-ed67ebc07f9e",
 							"name": "resp",
 							"originalRequest": {
 								"url": "localhost:5331/places/nearby?t=store",
@@ -218,7 +274,7 @@
 					},
 					"response": [
 						{
-							"id": "215625a8-484b-44ec-bb94-2bb780dc30aa",
+							"id": "abe3cc71-10c5-4af4-b163-4663908f4a7a",
 							"name": "resp",
 							"originalRequest": {
 								"url": "localhost:5331/places/1",
@@ -319,7 +375,7 @@
 					},
 					"response": [
 						{
-							"id": "800507f5-a7cd-472f-89eb-aed32fdb081b",
+							"id": "3a946723-90be-47c2-8683-7b46bb34001c",
 							"name": "resp",
 							"originalRequest": {
 								"url": "localhost:5331/places/1/posts/recent",
@@ -427,7 +483,7 @@
 					},
 					"response": [
 						{
-							"id": "800d3195-80d1-4035-a439-7e378f893cb6",
+							"id": "e9dd6fb4-94c3-4fc0-ad02-03077b870db8",
 							"name": "autocomplete",
 							"originalRequest": {
 								"url": "localhost:5331/places/autocomplete?q=Local&t=establishment",
@@ -510,9 +566,9 @@
 			"description": "",
 			"item": [
 				{
-					"name": "list claimed promotions",
+					"name": "list active promotions",
 					"request": {
-						"url": "localhost:5331/promos/claimed",
+						"url": "localhost:5331/promos/active",
 						"method": "GET",
 						"header": [
 							{
@@ -530,7 +586,32 @@
 							"mode": "raw",
 							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
 						},
-						"description": ""
+						"description": "claimed or saved promotions"
+					},
+					"response": []
+				},
+				{
+					"name": "list promotions history",
+					"request": {
+						"url": "localhost:5331/promos/active",
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+						},
+						"description": "redeemed or expired promotions"
 					},
 					"response": []
 				},
@@ -606,6 +687,31 @@
 							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
 						},
 						"description": "peek at a promotion"
+					},
+					"response": []
+				},
+				{
+					"name": "remove saved promotion",
+					"request": {
+						"url": "localhost:5331/promos/1/save",
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"description": ""
+							},
+							{
+								"key": "Authorization",
+								"value": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.jYyRJbb0WImFoUUdcslQQfwnXTHJzne-6tsPd8Hrw0I",
+								"description": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"point\",\n    \"coordinates\": [43.652550,-79.383763]\n}"
+						},
+						"description": "remove saved promotion"
 					},
 					"response": []
 				}

@@ -42,6 +42,31 @@ func GetPlace(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, (presenter.NewPlace(ctx, place)).WithGeo().WithLocale())
 }
 
+func ListFavorite(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+
+	followings, err := data.DB.Following.FindByUserID(user.ID)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to find favorite places"))
+		return
+	}
+
+	placeIDs := make([]int64, len(followings))
+	for i, f := range followings {
+		placeIDs[i] = f.PlaceID
+	}
+
+	places, err := data.DB.Place.FindAll(db.Cond{"id": placeIDs})
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to query favorite places"))
+		return
+	}
+
+	// TODO: present
+	ws.Respond(w, http.StatusOK, places)
+}
+
 // Nearby returns places and promos based on user's last recorded geolocation
 func Nearby(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
