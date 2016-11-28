@@ -36,35 +36,31 @@ func PlaceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+// getTrending returns most popular places ordered by aggregated score
+func getTrending(user *data.User) ([]*data.Place, error) {
+	var places []*data.Place
+	q := data.DB.
+		Select(
+			db.Raw("pl.*"),
+			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
+		).
+		From("places pl").
+		LeftJoin("claims cl").
+		On("pl.id = cl.place_id").
+		GroupBy("pl.id").
+		OrderBy(db.Raw("count(cl) DESC NULLS LAST")).
+		Limit(10)
+	if err := q.All(&places); err != nil {
+		return nil, errors.Wrap(err, "trending places")
+	}
+
+	return places, nil
+}
+
 func GetPlace(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
 	ws.Respond(w, http.StatusOK, (presenter.NewPlace(ctx, place)).WithGeo().WithLocale())
-}
-
-func ListFavorite(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
-
-	followings, err := data.DB.Following.FindByUserID(user.ID)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to find favorite places"))
-		return
-	}
-
-	placeIDs := make([]int64, len(followings))
-	for i, f := range followings {
-		placeIDs[i] = f.PlaceID
-	}
-
-	places, err := data.DB.Place.FindAll(db.Cond{"id": placeIDs})
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to query favorite places"))
-		return
-	}
-
-	// TODO: present
-	ws.Respond(w, http.StatusOK, places)
 }
 
 // Nearby returns places and promos based on user's last recorded geolocation
@@ -101,25 +97,4 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ws.Respond(w, http.StatusOK, presented)
-}
-
-// getTrending returns most popular places ordered by aggregated score
-func getTrending(user *data.User) ([]*data.Place, error) {
-	var places []*data.Place
-	q := data.DB.
-		Select(
-			db.Raw("pl.*"),
-			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
-		).
-		From("places pl").
-		LeftJoin("claims cl").
-		On("pl.id = cl.place_id").
-		GroupBy("pl.id").
-		OrderBy(db.Raw("count(cl) DESC NULLS LAST")).
-		Limit(10)
-	if err := q.All(&places); err != nil {
-		return nil, errors.Wrap(err, "trending places")
-	}
-
-	return places, nil
 }

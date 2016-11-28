@@ -16,7 +16,6 @@ func Routes() chi.Router {
 		r.Group(func(r chi.Router) {
 			r.Use(ClaimCtx)
 			r.Post("/claim", ClaimPromo)
-			r.Post("/save", SavePromo)
 			r.Delete("/save", UnSavePromo)
 		})
 	})

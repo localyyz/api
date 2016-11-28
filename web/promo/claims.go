@@ -9,7 +9,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-	"bitbucket.org/moodie-app/moodie-api/web/api"
 	db "upper.io/db.v2"
 )
 
@@ -77,8 +76,10 @@ func ClaimPromo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if place.Distance > ClaimableDistance {
-		ws.Respond(w, http.StatusBadRequest, api.ErrClaimDistance)
-		return
+		//ws.Respond(w, http.StatusBadRequest, api.ErrClaimDistance)
+		//return
+		// NOTE: if out of distance, auto save
+		claim.Status = data.ClaimStatusSaved
 	}
 
 	if err := data.DB.Claim.Save(claim); err != nil {

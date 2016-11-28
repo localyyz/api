@@ -27,6 +27,14 @@ func (store FollowingStore) FindByUserID(userID int64) ([]*Following, error) {
 	return store.FindAll(db.Cond{"user_id": userID})
 }
 
+func (store FollowingStore) FindOne(cond db.Cond) (*Following, error) {
+	var following *Following
+	if err := store.Find(cond).One(&following); err != nil {
+		return nil, err
+	}
+	return following, nil
+}
+
 func (store FollowingStore) FindAll(cond db.Cond) ([]*Following, error) {
 	var followings []*Following
 	if err := store.Find(cond).All(&followings); err != nil {

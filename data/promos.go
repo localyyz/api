@@ -17,7 +17,6 @@ type Promo struct {
 	Status  PromoStatus `db:"status" json:"-"`
 
 	// Amount of points rewarded
-	Reward int64
 	// After applying. how long does the user have to claim
 	Duration int64 `db:"duration" json:"duration"`
 	// Limits
