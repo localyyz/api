@@ -6,12 +6,20 @@ import (
 	"io"
 	"net/http"
 
+	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+
 	"github.com/golang/geo/s2"
 )
 
 func LocaleHandler(w http.ResponseWriter, r *http.Request) {
 	loc := LocaleMap["queenwest"]
-	origin := loc.Boundaries[0]
+
+	coords, err := loc.GetCoords()
+	if err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+	origin := coords[0]
 	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[0], origin[1]))
 
 	maps, err := template.New("maps").Parse(tmpl)
