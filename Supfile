@@ -54,7 +54,7 @@ commands:
   
   migrate:
     desc: Migrate database
-    scripts: ./scripts/migrate.sh
+    script: ./scripts/migrate.sh
     once: true
 
   run:
