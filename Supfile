@@ -51,6 +51,11 @@ commands:
   image:
     desc: List Docker image
     run: docker images | grep $IMAGE
+  
+  migrate:
+    desc: Migrate database
+    scripts: ./scripts/migrate.sh
+    once: true
 
   run:
     desc: Run Docker container
@@ -104,6 +109,7 @@ targets:
     - config
     - stop
     - rm
+    - migrate
     - run
     - ps
     - logs

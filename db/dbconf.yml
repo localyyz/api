@@ -1,3 +1,6 @@
 development:
     driver: postgres
-    open: user=moodie dbname=moodie sslmode=disable
+    open: user=localyyz dbname=localyyz sslmode=disable
+production:
+    driver: postgres
+    open: user=localyyz host=postgres dbname=localyyz sslmode=disable

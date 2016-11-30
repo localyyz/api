@@ -6,7 +6,7 @@ if [ ! -f $CONFIG ]; then
 	exit 1
 fi
 
-docker run -d \
+docker run -d -it\
   -p $HOST_PORT:$CONTAINER_PORT \
   -v $CONFIG:/etc/api.conf \
   -v /data/etc/push.pem:/etc/push.pem \

@@ -1,9 +1,9 @@
 .DS_Store
 cmd/*/tmp/
-cmd/*/data/
 bin/
 config/api.conf
 config/push.pem
+tools/*/data
 
 *~
 \#*\#

@@ -45,18 +45,23 @@ db-down:
 	goose down
 
 db-create:
-	@./db/db.sh create moodie
+	@./db/db.sh create localyyz
 
 db-drop:
-	@./db/db.sh drop moodie
+	@./db/db.sh drop localyyz
 
 db-reset:
-	@./db/db.sh reset moodie
+	@./db/db.sh reset localyyz
 	goose up
 
 run:
 	@(export CONFIG=$$PWD/config/api.conf; export PEM=$$PWD/config/push.pem && go run cmd/api/main.go)
 
+build-goose:
+	@mkdir -p ./bin
+	GOGO=off go build -i -o ./bin/goose ./vendor/bitbucket.org/liamstask/goose/cmd/goose
+
 build:
 	@mkdir -p ./bin
 	GOGC=off go build -i -o ./bin/api ./cmd/api/main.go
+

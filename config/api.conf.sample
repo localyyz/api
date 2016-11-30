@@ -2,9 +2,9 @@ environment     = "development"
 bind            = "localhost:5331"
 
 [db]
-database          = "moodie"
+database          = "localyyz"
 hosts             = [ "localhost" ]
-username          = "postgres"
+username          = "localyyz"
 password          = ""
 debug_queries     = true
 
