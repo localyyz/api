@@ -12,7 +12,7 @@ import (
 )
 
 func LocaleHandler(w http.ResponseWriter, r *http.Request) {
-	loc := LocaleMap["queen-west"]
+	loc := LocaleMap["harbourfront"]
 
 	coords, err := loc.GetCoords()
 	if err != nil {
@@ -20,7 +20,7 @@ func LocaleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	origin := coords[0]
-	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[0], origin[1]))
+	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[1], origin[0]))
 
 	maps, err := template.New("maps").Parse(tmpl)
 	if err != nil {
