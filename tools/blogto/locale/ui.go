@@ -12,7 +12,7 @@ import (
 )
 
 func LocaleHandler(w http.ResponseWriter, r *http.Request) {
-	loc := LocaleMap["queenwest"]
+	loc := LocaleMap["queen-west"]
 
 	coords, err := loc.GetCoords()
 	if err != nil {

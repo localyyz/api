@@ -32,7 +32,7 @@ func main() {
 	// ssh -nNT -L 1234:localhost:5432 ubuntu@159.203.26.181
 	conf := &data.DBConf{
 		Database: "localyyz",
-		Hosts:    []string{"localhost:1234"},
+		Hosts:    []string{"localhost:5432"},
 		Username: "localyyz",
 	}
 	if err := data.NewDBSession(conf); err != nil {

@@ -74,9 +74,9 @@ func (loc *Locale) GetBoundaryCells() s2.CellUnion {
 	}
 
 	origin := coords[0]
-	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[0], origin[1]))
+	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[1], origin[0]))
 	for _, p := range coords[1:] {
-		pp := s2.LatLngFromDegrees(p[0], p[1])
+		pp := s2.LatLngFromDegrees(p[1], p[0])
 		rect = rect.AddPoint(pp)
 	}
 
@@ -95,26 +95,24 @@ func (loc *Locale) GetBoundaryCells() s2.CellUnion {
 }
 
 func LoadLocale() {
-
 	for sh, loc := range LocaleMap {
-		dbLocale := &data.Locale{
-			Name:        loc.Name,
-			Shorthand:   sh,
-			Description: loc.Blurb,
-		}
 		// check if already exists
-		count, err := data.DB.Locale.Find(db.Cond{"shorthand": sh}).Count()
-		if count > 0 || err != nil {
-			if err != nil {
+		dbLocale, err := data.DB.Locale.FindOne(db.Cond{"shorthand": sh})
+		if err != nil {
+			if err != db.ErrNoMoreRows {
 				log.Fatalf("loading error: %+v", err)
+				continue
 			}
-			log.Printf("skipped %s. already exists", loc.Name)
-			continue
+			dbLocale = &data.Locale{
+				Name:        loc.Name,
+				Shorthand:   sh,
+				Description: loc.Blurb,
+			}
+			if err := data.DB.Locale.Save(dbLocale); err != nil {
+				log.Fatal(err)
+			}
 		}
 
-		if err := data.DB.Locale.Save(dbLocale); err != nil {
-			log.Fatal(err)
-		}
 		for _, c := range loc.GetBoundaryCells() {
 			cell := &data.Cell{LocaleID: dbLocale.ID, CellID: int64(c)}
 			if err := data.DB.Cell.Save(cell); err != nil {
