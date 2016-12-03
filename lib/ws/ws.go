@@ -10,13 +10,15 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+
+	"github.com/goware/lg"
 )
 
 type Result map[string]interface{}
 
 // Bind is a custom json decoder that adds additional json tag such as
 // `required`
-func Bind(payload io.Reader, v interface{}) (err error) {
+func Bind(payload io.ReadCloser, v interface{}) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if _, ok := r.(runtime.Error); ok {
@@ -25,6 +27,9 @@ func Bind(payload io.Reader, v interface{}) (err error) {
 
 			err = r.(error)
 		}
+		if err != nil {
+			lg.Warn(err)
+		}
 	}()
 
 	// decode the json into a placeholder result map
@@ -32,6 +37,7 @@ func Bind(payload io.Reader, v interface{}) (err error) {
 	if err != nil {
 		return
 	}
+	defer payload.Close()
 
 	var r Result
 	err = json.Unmarshal(b, &r)
@@ -47,6 +53,32 @@ func Bind(payload io.Reader, v interface{}) (err error) {
 
 	// finally, decode into v
 	return json.Unmarshal(b, &v)
+}
+
+// BindMany is a custom json decoder that
+//  unmarshals slice types
+func BindMany(payload io.ReadCloser, v interface{}) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if _, ok := r.(runtime.Error); ok {
+				panic(r)
+			}
+
+			err = r.(error)
+		}
+		if err != nil {
+			lg.Warn(err)
+		}
+	}()
+	decoder := json.NewDecoder(payload)
+
+	err = decoder.Decode(v)
+	if err != nil {
+		return
+	}
+	payload.Close()
+
+	return nil
 }
 
 func checkRequired(r Result, v reflect.Value) error {

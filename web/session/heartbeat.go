@@ -1,43 +1,63 @@
 package session
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/goware/lg"
 
-	"upper.io/db.v2"
+	db "upper.io/db.v2"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
-func Heartbeat(w http.ResponseWriter, r *http.Request) {
+type Heartbeat struct {
+	Longitude        float64     `json:"longitude"`
+	Latitude         float64     `json:"latitude"`
+	Speed            int64       `json:"speed"`
+	Time             float64     `json:"time"`
+	LocationType     string      `json:"location_type"`
+	Accuracy         int32       `json:"accuracy"`
+	Heading          float64     `json:"heading"`
+	Altitude         json.Number `json:"altitude"`
+	AltitudeAccuracy json.Number `json:"altitudeAccuracy"`
+}
+
+func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	var payload struct {
-		Longitude float64 `json:"lng,required"`
-		Latitude  float64 `json:"lat,required"`
-	}
-	if err := ws.Bind(r.Body, &payload); err != nil {
+	var payload []*Heartbeat
+	if err := ws.BindMany(r.Body, &payload); err != nil {
 		ws.Respond(w, http.StatusBadRequest, err)
 		return
 	}
 
-	if err := user.SetLocation(payload.Latitude, payload.Longitude); err != nil {
+	// TODO: should sort by timestamp
+	// for now, just take and forget
+	if len(payload) == 0 {
+		ws.Respond(w, http.StatusOK, "")
+		return
+	}
+
+	newCoord := payload[0]
+	// save the user's location as a geohash
+	if err := user.SetLocation(newCoord.Latitude, newCoord.Longitude); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	var locale *data.Locale
-	cell, err := data.DB.Cell.FindByLatLng(payload.Latitude, payload.Longitude)
+	// find the cell the coord falls under.
+	// if we can't find one, find a neighbouring one
+	cell, err := data.DB.Cell.FindByLatLng(newCoord.Latitude, newCoord.Longitude)
 	if err != nil {
 		if err != db.ErrNoMoreRows {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
-		neighbours, err := data.DB.Cell.FindNeighbourByLatLng(payload.Latitude, payload.Longitude)
+		neighbours, err := data.DB.Cell.FindNeighbourByLatLng(newCoord.Latitude, newCoord.Longitude)
 		if err != nil {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
@@ -48,6 +68,8 @@ func Heartbeat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var locale *data.Locale
+	// if we found a cell, find the neighbourhood
 	if cell != nil {
 		locale, err = data.DB.Locale.FindByID(cell.LocaleID)
 		if err != nil {

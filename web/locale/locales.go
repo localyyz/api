@@ -38,7 +38,12 @@ func LocaleCtx(next http.Handler) http.Handler {
 
 func ListLocale(w http.ResponseWriter, r *http.Request) {
 	var locales []*data.Locale
-	if err := data.DB.Locale.Find().All(&locales); err != nil {
+
+	// TODO: for now, we're hackers
+	err := data.DB.Locale.Find(
+		data.EnabledLocales,
+	).OrderBy("shorthand").All(&locales)
+	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "list locale"))
 		return
 	}

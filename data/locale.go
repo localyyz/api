@@ -16,6 +16,16 @@ type LocaleStore struct {
 	bond.Store
 }
 
+var (
+	EnabledLocales = db.Cond{"shorthand": []string{
+		"king-west",
+		"queen-west",
+		"distillery-district",
+		"kensington-market",
+		"st-lawrence-market",
+	}}
+)
+
 func (n *Locale) CollectionName() string {
 	return `locales`
 }
