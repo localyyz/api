@@ -29,16 +29,17 @@ type Database struct {
 }
 
 type DBConf struct {
-	Database     string   `toml:"database"`
-	Hosts        []string `toml:"hosts"`
-	Username     string   `toml:"username"`
-	Password     string   `toml:"password"`
-	DebugQueries bool     `toml:"debug_queries"`
+	Database        string   `toml:"database"`
+	Hosts           []string `toml:"hosts"`
+	Username        string   `toml:"username"`
+	Password        string   `toml:"password"`
+	DebugQueries    bool     `toml:"debug_queries"`
+	ApplicationName string   `toml:"application_name"`
 }
 
 // String implements db.ConnectionURL
 func (cf *DBConf) String() string {
-	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
+	return fmt.Sprintf("postgres://%s:%s@%s/%s",
 		cf.Username, cf.Password, strings.Join(cf.Hosts, ","), cf.Database)
 }
 
@@ -47,9 +48,22 @@ func NewDBSession(conf *DBConf) error {
 		db.Conf.SetLogging(true)
 	}
 
-	var err error
+	var (
+		connURL postgresql.ConnectionURL
+		err     error
+	)
+
+	connURL, err = postgresql.ParseURL(conf.String())
+	if err != nil {
+		return err
+	}
+	// extra options
+	connURL.Options = map[string]string{
+		"application_name": conf.ApplicationName,
+	}
+
 	db := &Database{}
-	db.Session, err = bond.Open(postgresql.Adapter, conf)
+	db.Session, err = bond.Open(postgresql.Adapter, connURL)
 	if err != nil {
 		return err
 	}
