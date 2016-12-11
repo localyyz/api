@@ -1,6 +1,8 @@
 .PHONY: help run test coverage docs build dist clean tools dist-tools vendor-list vendor-update
 
 TEST_FLAGS ?=
+CONFIG := $$PWD/config/api.conf
+PEM := ./config/push.pem
 
 all:
 	@echo "****************************"
@@ -30,7 +32,8 @@ print-%: ; @echo $*=$($*)
 ##
 tools:
 	go get -u github.com/pressly/sup/cmd/sup
-	go get -u bitbucket.org/liamstask/goose/cmd/goose
+	go get -u github.com/pressly/fresh
+	GOGO=off go build -i -o ./bin/goose ./vendor/bitbucket.org/liamstask/goose/cmd/goose
 
 ##
 ## Database
@@ -55,7 +58,7 @@ db-reset:
 	goose up
 
 run:
-	@(export CONFIG=$$PWD/config/api.conf; export PEM=$$PWD/config/push.pem && go run cmd/api/main.go)
+	@(export CONFIG=${CONFIG}; export PEM=${PEM}; fresh -c runner.conf -p ./cmd/api)
 
 build-goose:
 	@mkdir -p ./bin
