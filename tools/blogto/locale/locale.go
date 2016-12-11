@@ -64,6 +64,7 @@ func (loc *Locale) GetCoords() ([]LatLng, error) {
 		return nil, errors.New("no coords")
 	}
 
+	// weird 1 element list
 	return loc.Boundaries.Coordinates[0], nil
 }
 
@@ -73,23 +74,53 @@ func (loc *Locale) GetBoundaryCells() s2.CellUnion {
 		return nil
 	}
 
-	origin := coords[0]
-	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[1], origin[0]))
-	for _, p := range coords[1:] {
-		pp := s2.LatLngFromDegrees(p[1], p[0])
-		rect = rect.AddPoint(pp)
+	cells, err := GetS2Cover(coords)
+	if err != nil {
+		panic(err)
 	}
 
-	rc := &s2.RegionCoverer{MinLevel: 15, MaxLevel: 15, MaxCells: 35}
-	r := s2.Region(rect.CapBound())
+	//var cells s2.CellUnion
+	//rc := NewFlatCoverer(15)
 
-	var cells s2.CellUnion
-	for _, c := range rc.Covering(r) {
-		cell := s2.CellFromCellID(c)
-		if rect.IntersectsCell(cell) {
-			cells = append(cells, c)
-		}
-	}
+	//for _, p := range coords {
+	//rect := s2.RectFromLatLng(s2.LatLngFromDegrees(p[1], p[0]))
+	//rect = rect.AddPoint(s2.LatLngFromDegrees(p[1], p[0]))
+	//for _, c := range rc.Covering(r) {
+	//neighbours := c.EdgeNeighbors()
+	//cells = append(cells, neighbours[0], neighbours[1], neighbours[2], neighbours[3])
+	//}
+	//r := s2.Region(rect)
+	//cells = append(cells, rc.Covering(r)...)
+	//}
+
+	// info:
+	// 1. http://blog.christianperone.com/2015/08/googles-s2-geometry-on-the-sphere-cells-and-hilbert-curve/
+	// 2. https://medium.com/@buckhx/unwinding-uber-s-most-efficient-service-406413c5871d#.msvnff7sv
+	// 3. https://github.com/buckhx/gofence
+	// 4. https://github.com/blackmad/s2map
+
+	// note: apparently. there's an api for this all.
+
+	//origin := coords[0]
+	//rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[1], origin[0]))
+	//for _, p := range coords[1:] {
+	//pp := s2.LatLngFromDegrees(p[1], p[0])
+	//rect = rect.AddPoint(pp)
+	//break
+	//}
+
+	//r := s2.Region(rect.CapBound())
+
+	//var cells s2.CellUnion
+	//for _, c := range rc.Covering(r) {
+	//cell := s2.CellFromCellID(c)
+	//if rect.IntersectsCell(cell) {
+	//cells = append(cells, c)
+	//}
+	//}
+
+	// testing region coverer
+	//return rc.Covering(r)
 
 	return cells
 }
@@ -113,6 +144,7 @@ func LoadLocale() {
 			}
 		}
 
+		lg.Infof("Loading cells for %s", sh)
 		for _, c := range loc.GetBoundaryCells() {
 			cell := &data.Cell{LocaleID: dbLocale.ID, CellID: int64(c)}
 			if err := data.DB.Cell.Save(cell); err != nil {

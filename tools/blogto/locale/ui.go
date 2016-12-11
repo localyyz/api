@@ -6,43 +6,49 @@ import (
 	"io"
 	"net/http"
 
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-
 	"github.com/golang/geo/s2"
+	"github.com/goware/lg"
+
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	db "upper.io/db.v2"
 )
 
 func LocaleHandler(w http.ResponseWriter, r *http.Request) {
-	loc := LocaleMap["harbourfront"]
-
-	coords, err := loc.GetCoords()
-	if err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
-		return
-	}
-	origin := coords[0]
-	rect := s2.RectFromLatLng(s2.LatLngFromDegrees(origin[1], origin[0]))
-
 	maps, err := template.New("maps").Parse(tmpl)
 	if err != nil {
 		io.WriteString(w, err.Error())
 		return
 	}
 
+	sh := r.URL.Query().Get("sh")
+	lg.Warnf("generating cells for %s", sh)
+	locale, err := data.DB.Locale.FindOne(db.Cond{"shorthand": sh})
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	cells, err := data.DB.Cell.FindAll(db.Cond{"locale_id": locale.ID})
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
 	var cellBounds []*Bound
-	for _, c := range loc.GetBoundaryCells() {
-		cell := s2.CellFromCellID(c)
+	for _, c := range cells {
+		cell := s2.CellFromCellID(s2.CellID(c.CellID))
 		cellBounds = append(cellBounds, rectToBounds(cell.RectBound()))
 	}
 
+	// center the map on the first point
 	z := struct {
 		CenterLat float64
 		CenterLng float64
-		Rect      *Bound
 		Cells     []*Bound
 	}{
-		rect.Center().Lat.Degrees(),
-		rect.Center().Lng.Degrees(),
-		rectToBounds(rect),
+		cellBounds[0].North,
+		cellBounds[0].East,
 		cellBounds,
 	}
 
@@ -97,20 +103,6 @@ const tmpl = `
 					}
 				});
 				{{ end }}
-				var queenwest = new google.maps.Rectangle({
-					strokeColor: '#00FF00',
-					strokeOpacity: 0.8,
-					strokeWeight: 2,
-					fillColor: '#00FF00',
-					fillOpacity: 0.35,
-					map: map,
-					bounds: {
-						north: {{ .Rect.North }},
-						south: {{ .Rect.South }},
-						east: {{ .Rect.East }},
-						west: {{ .Rect.West }}
-					}
-				});
 			}
 			</script>
 	</body>
