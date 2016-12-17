@@ -24,6 +24,7 @@ type User struct {
 	DeviceToken *string        `db:"device_token,omitempty" json:"-"`
 	Network     string         `db:"network" json:"network"`
 	LoggedIn    bool           `db:"logged_in" json:"-"`
+	IsAdmin     bool           `db:"is_admin" json:"isAdmin"`
 	LastLogInAt *time.Time     `db:"last_login_at" json:"lastLoginAt"`
 	Geo         geotools.Point `db:"geo" json:"-"`
 	Etc         UserEtc        `db:"etc,jsonb" json:"etc"`
