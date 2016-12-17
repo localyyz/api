@@ -96,7 +96,7 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
 		).
 		OrderBy("distance").
-		Limit(20).
+		//Limit(20).
 		All(&places)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)

@@ -5,6 +5,8 @@ import "github.com/pressly/chi"
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Post("/", CreatePromo)
+
 	r.Get("/history", ListHistory)
 	r.Get("/active", ListActive)
 	r.Route("/:promoID", func(r chi.Router) {
