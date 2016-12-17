@@ -38,6 +38,25 @@ func SessionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+// VerifySession can be used to do session verification
+func VerifySession(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+
+	var challenge data.User
+	if err := ws.Bind(r.Body, &challenge); err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if user.IsAdmin != challenge.IsAdmin {
+		ws.Respond(w, http.StatusBadRequest, "")
+		return
+	}
+
+	ws.Respond(w, http.StatusOK, map[string]bool{"success": true})
+}
+
 func Logout(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("session.user").(*data.User)
 

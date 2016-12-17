@@ -24,13 +24,16 @@ var (
 func main() {
 	flags.Parse(os.Args[1:])
 
+	// new handler context
+	h := &web.Handler{}
 	conf, err := config.NewFromFile(*confFile, os.Getenv("CONFIG"))
 	if err != nil {
 		lg.Fatal(err)
 	}
+	h.Debug = (conf.Environment == "development")
 
 	//[db]
-	if err := data.NewDBSession(&conf.DB); err != nil {
+	if h.DB, err = data.NewDBSession(&conf.DB); err != nil {
 		lg.Fatal(err)
 	}
 
@@ -61,7 +64,7 @@ func main() {
 
 	lg.Infof("API starting on %v", conf.Bind)
 
-	router := web.New()
+	router := web.New(h)
 	if err := graceful.ListenAndServe(conf.Bind, router); err != nil {
 		lg.Fatal(err)
 	}

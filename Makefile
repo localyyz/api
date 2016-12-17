@@ -1,7 +1,8 @@
 .PHONY: help run test coverage docs build dist clean tools dist-tools vendor-list vendor-update
 
 TEST_FLAGS ?=
-CONFIG := $$PWD/config/api.conf
+API_CONFIG := $$PWD/config/api.conf
+PROMO_CONFIG := $$PWD/config/promo.conf
 PEM := ./config/push.pem
 
 all:
@@ -58,7 +59,10 @@ db-reset:
 	goose up
 
 run:
-	@(export CONFIG=${CONFIG}; export PEM=${PEM}; fresh -c runner.conf -p ./cmd/api)
+	@(export CONFIG=${API_CONFIG}; export PEM=${PEM}; fresh -c runner.conf -p ./cmd/api)
+
+run-promo:
+	@(export CONFIG=${PROMO_CONFIG}; fresh -c runner.conf -p ./cmd/promo)
 
 build-goose:
 	@mkdir -p ./bin

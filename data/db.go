@@ -43,7 +43,7 @@ func (cf *DBConf) String() string {
 		cf.Username, cf.Password, strings.Join(cf.Hosts, ","), cf.Database)
 }
 
-func NewDBSession(conf *DBConf) error {
+func NewDBSession(conf *DBConf) (*Database, error) {
 	if conf.DebugQueries {
 		db.Conf.SetLogging(true)
 	}
@@ -55,7 +55,7 @@ func NewDBSession(conf *DBConf) error {
 
 	connURL, err = postgresql.ParseURL(conf.String())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// extra options
 	connURL.Options = map[string]string{
@@ -65,7 +65,7 @@ func NewDBSession(conf *DBConf) error {
 	db := &Database{}
 	db.Session, err = bond.Open(postgresql.Adapter, connURL)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	db.User = UserStore{db.Store(&User{})}
 	db.Following = FollowingStore{db.Store(&Following{})}
@@ -78,5 +78,5 @@ func NewDBSession(conf *DBConf) error {
 	db.Claim = ClaimStore{db.Store(&Claim{})}
 
 	DB = db
-	return nil
+	return db, nil
 }

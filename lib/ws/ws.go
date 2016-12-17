@@ -181,4 +181,9 @@ func JSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	w.Write(b)
+
+	if debug := w.Header().Get("X-Internal-Debug"); debug == "1" {
+		lg.Debug(string(b))
+	}
+	return
 }

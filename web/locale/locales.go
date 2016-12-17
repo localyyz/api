@@ -70,9 +70,14 @@ func ListPlaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	presented := make([]*presenter.Place, len(places))
-	for i, pl := range places {
-		presented[i] = presenter.NewPlace(ctx, pl).WithLocale().WithGeo().WithPromo()
+	var presented []*presenter.Place
+	for _, pl := range places {
+		// TODO: +1 here
+		p := presenter.NewPlace(ctx, pl).WithPromo()
+		if p.Promo.Promo == nil {
+			continue
+		}
+		presented = append(presented, p.WithLocale().WithGeo())
 	}
 
 	ws.Respond(w, http.StatusOK, presented)

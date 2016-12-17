@@ -57,6 +57,26 @@ func getTrending(user *data.User) ([]*data.Place, error) {
 	return places, nil
 }
 
+func ListPlaces(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	currentUser := ctx.Value("session.user").(*data.User)
+
+	var places []*data.Place
+	// if not admin, return
+	if !currentUser.IsAdmin {
+		ws.Respond(w, http.StatusOK, places)
+		return
+	}
+
+	var err error
+	places, err = data.DB.Place.FindAll(db.Cond{})
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	ws.Respond(w, http.StatusOK, places)
+}
+
 func GetPlace(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
@@ -91,9 +111,14 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	presented := make([]*presenter.Place, len(places))
-	for i, pl := range places {
-		presented[i] = presenter.NewPlace(ctx, pl).WithLocale().WithGeo().WithPromo()
+	var presented []*presenter.Place
+	for _, pl := range places {
+		// TODO: +1 here
+		p := presenter.NewPlace(ctx, pl).WithPromo()
+		if p.Promo.Promo == nil {
+			continue
+		}
+		presented = append(presented, p.WithLocale().WithGeo())
 	}
 
 	ws.Respond(w, http.StatusOK, presented)

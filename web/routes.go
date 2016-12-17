@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 
+	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
@@ -17,11 +18,26 @@ import (
 	"github.com/pressly/chi/middleware"
 )
 
-func New() chi.Router {
+type Handler struct {
+	DB    *data.Database
+	Debug bool
+}
+
+func New(h *Handler) chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.NoCache)
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			if h.Debug {
+				w.Header().Set("X-Internal-Debug", "1")
+			}
+			next.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(fn)
+	})
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

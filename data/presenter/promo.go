@@ -12,7 +12,7 @@ type Promo struct {
 	Place *data.Place `json:"place,omitempty"`
 
 	//fields that can be viewed
-	NumClaimed int64 `json:"numClaimed"`
+	NumClaimed int64 `json:"numClaimed,omitempty"`
 }
 
 func (p *Promo) WithPlace() *Promo {
