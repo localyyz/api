@@ -50,6 +50,11 @@ func main() {
 		}
 	}
 
+	// cron worker
+	//c := cron.New()
+	//c.AddFunc("@every 1m", worker.PromoWorker)
+	//c.Start()
+
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
 	graceful.PreHook(func() {

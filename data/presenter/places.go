@@ -47,7 +47,13 @@ func (pl *Place) WithLocale() *Place {
 func (pl *Place) WithPromo() *Place {
 	user := pl.ctx.Value("session.user").(*data.User)
 
-	promo, err := data.DB.Promo.FindByPlaceID(pl.ID)
+	var promo *data.Promo
+	err := data.DB.Promo.Find(
+		db.And(
+			db.Cond{"place_id": pl.ID},
+			db.Raw("end_at > NOW() AT TIME ZONE 'UTC'"),
+		),
+	).One(&promo)
 	if err != nil {
 		if err != db.ErrNoMoreRows {
 			lg.Error(errors.Wrapf(err, "failed to present place(%v) promo", pl.ID))
