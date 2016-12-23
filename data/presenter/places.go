@@ -16,17 +16,30 @@ type Place struct {
 	Claim  *data.Claim  `json:"claim"`
 	Promo  *Promo       `json:"promo"`
 
+	Following bool `json:"following"`
+
 	LatLng *geotools.LatLng `json:"coords"`
 	ctx    context.Context
 }
 
 func NewPlace(ctx context.Context, place *data.Place) *Place {
-	return &Place{
+	p := &Place{
 		Place: place,
 		Promo: &Promo{},
 		Claim: &data.Claim{},
 		ctx:   ctx,
 	}
+	return p.WithFollowing()
+}
+
+func (pl *Place) WithFollowing() *Place {
+	user := pl.ctx.Value("session.user").(*data.User)
+	count, _ := data.DB.Following.Find(
+		db.Cond{"place_id": pl.ID, "user_id": user.ID},
+	).Count()
+	pl.Following = count > 0
+
+	return pl
 }
 
 func (pl *Place) WithGeo() *Place {
