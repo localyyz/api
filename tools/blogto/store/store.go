@@ -23,17 +23,20 @@ import (
 
 const (
 	ListingURL = "http://www.blogto.com/api/v2/listings/"
-	storePath  = "./data/stores/%s.json"
 )
 
 func LoadListing() error {
-	files, err := ioutil.ReadDir("./data/stores")
+	cat := CategoryTypeService
+	catStr := categoryTypes[cat]
+	storeDirPath := fmt.Sprintf("./data/stores/%s", catStr)
+
+	files, err := ioutil.ReadDir(storeDirPath)
 	if err != nil {
 		return err
 	}
 
 	for _, finfo := range files {
-		f, err := os.Open(fmt.Sprintf("./data/stores/%s", finfo.Name()))
+		f, err := os.Open(fmt.Sprintf("%s/%s", storeDirPath, finfo.Name()))
 		if err != nil {
 			return err
 		}
@@ -53,6 +56,7 @@ func LoadListing() error {
 			if err != nil {
 				return err
 			}
+			log.Printf("inserting %s @ %s", s.Name, locale.Name)
 
 			count, err := data.DB.Place.Find(
 				db.Cond{
@@ -89,18 +93,35 @@ func LoadListing() error {
 }
 
 func GetListing() error {
-	for sh, locale := range locale.LocaleMap {
-		log.Printf("Loading stores for %s", locale.Name)
-		// check if file exists, if it does, skip
+	cat := CategoryTypeService
+	catStr := categoryTypes[cat]
 
-		if _, err := os.Stat(fmt.Sprintf(storePath, sh)); !os.IsNotExist(err) {
-			log.Println("already loaded")
+	storeDirPath := fmt.Sprintf("./data/stores/%s", catStr)
+	if _, err := os.Stat(storeDirPath); os.IsNotExist(err) {
+		if err = os.Mkdir(storeDirPath, 0755); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	for sh, locale := range locale.LocaleMap {
+		if sh != "king-west" && sh != "queen-west" {
 			continue
+		}
+		log.Printf("Loading %s for %s", catStr, locale.Name)
+
+		// check if file exists, if it does, skip
+		filePath := fmt.Sprintf("%s/%s.json", storeDirPath, sh)
+		if _, err := os.Stat(filePath); err != nil && !os.IsNotExist(err) {
+			if os.IsExist(err) {
+				log.Println("already loaded")
+				continue
+			}
+			log.Fatal(err)
 		}
 
 		u := url.Values{
 			"bundle_type":          {"large"},
-			"type":                 {"5"}, // fashion, for full list, check types.go
+			"type":                 {fmt.Sprintf("%d", cat)}, // for full list, check types.go
 			"limit":                {"500"},
 			"offset":               {"0"},
 			"ordering":             {"smart_review"},
@@ -124,7 +145,7 @@ func GetListing() error {
 		}
 		log.Printf("Found %d stores", rspWrapper.Count)
 
-		storeFile, err := os.Create(fmt.Sprintf(storePath, sh))
+		storeFile, err := os.Create(filePath)
 		if err != nil {
 			return errors.Wrap(err, "create store file")
 		}

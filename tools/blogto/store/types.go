@@ -40,17 +40,34 @@ type CategoryType uint32
 type SubcategoryType uint32
 
 const (
-	_ CategoryType = iota
-	CategoryTypeRestaurant
-	CategoryTypeBar
-	CategoryTypeCafe
-	CategoryTypeDesign
-	CategoryTypeFashion
-	CategoryTypeGrocery
-	CategoryTypeGallerie
-	CategoryTypeBookstore
-	CategoryTypeBakerie
-	CategoryTypeFitness
-	CategoryTypeHotel
-	CategoryTypeService
+	CategoryTypeRestaurant int = 1
+	CategoryTypeBar        int = 2
+	CategoryTypeCafe       int = 3
+	CategoryTypeDesign     int = 4
+	CategoryTypeFashion    int = 5
+	CategoryTypeGrocery    int = 6
+	CategoryTypeGallerie   int = 7
+	CategoryTypeBookstore  int = 8
+	CategoryTypeBakerie    int = 9
+	CategoryTypeFitness    int = 10
+	CategoryTypeHotel      int = 11
+	CategoryTypeService    int = 12
+)
+
+var (
+	categoryTypes = []string{
+		"-",
+		"restaurant",
+		"bar",
+		"cafe",
+		"design",
+		"fashion",
+		"grocery",
+		"gallerie",
+		"bookstore",
+		"bakerie",
+		"fitness",
+		"hotel",
+		"service",
+	}
 )

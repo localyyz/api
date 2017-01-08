@@ -30,13 +30,15 @@ var (
 
 func main() {
 	// ssh -nNT -L 1234:localhost:5432 ubuntu@159.203.26.181
+	// NOTE: weirdness with connURL options not respecting port
+	// parsed from hosts
 	conf := &data.DBConf{
 		Database:        "localyyz",
-		Hosts:           []string{"localhost:5432"},
+		Hosts:           []string{"localhost:1234"},
 		Username:        "localyyz",
 		ApplicationName: "tool",
 	}
-	if err := data.NewDBSession(conf); err != nil {
+	if _, err := data.NewDBSession(conf); err != nil {
 		log.Fatalf("db err: %s. Check ssh tunnel.", err)
 	}
 
