@@ -18,11 +18,13 @@ type LocaleStore struct {
 
 var (
 	EnabledLocales = db.Cond{"shorthand": []string{
-		"king-west",
-		"queen-west",
-		"distillery-district",
-		"kensington-market",
-		"st-lawrence-market",
+		//"king-west",
+		//"queen-west",
+		//"distillery-district",
+		//"kensington-market",
+		//"st-lawrence-market",
+		"west-queen-west",
+		"yorkville",
 	}}
 )
 

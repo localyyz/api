@@ -11,9 +11,9 @@ import (
 
 // TODO: promo should be keyed on placeid and queried on cells
 type Promo struct {
-	ID      int64 `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID int64 `db:"place_id" json:"placeId"`
-	Type    PromoType
+	ID      int64     `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID int64     `db:"place_id" json:"placeId"`
+	Type    PromoType `db:"type" json:"type"`
 	//Status  PromoStatus `db:"status" json:"-"`
 
 	// Amount of points rewarded
@@ -23,7 +23,8 @@ type Promo struct {
 	Limits      int64  `db:"limits" json:"limits"`
 	Description string `db:"description" json:"description"`
 	// Uploaded image accompanying the promotion
-	ImageUrl string `db:"image_url" json:"imageUrl"`
+	ImageUrl string   `db:"image_url" json:"imageUrl"`
+	Etc      PromoEtc `db:"etc,jsonb" json:"etc"`
 
 	StartAt   *time.Time `db:"start_at,omitempty" json:"startAt"`
 	EndAt     *time.Time `db:"end_at,omitempty" json:"endAt"`
@@ -35,6 +36,14 @@ type PromoStore struct {
 	bond.Store
 }
 
+type PromoEtc struct {
+	Percent     int    `json:"pct"`
+	Spend       int    `json:"spd"`
+	Item        string `json:"itm"`
+	HeaderImage string `json:"him"`
+	PlaceImage  string `json:"pim"`
+}
+
 type (
 	PromoType   uint32
 	PromoStatus uint32
@@ -42,9 +51,10 @@ type (
 
 const (
 	_ PromoType = iota
-	PromoTypeReachLike
-	PromoTypeFirstVisit
-	PromoTypeFirstOfDay
+	PromoTypePctDiscount
+	PromoTypePrice
+	PromoTypeMinSpend
+	PromoTypeFreeItem
 )
 
 const (
@@ -57,9 +67,10 @@ const (
 var (
 	promoTypes = []string{
 		"-",
-		"reach_likes",
-		"first_visit",
-		"first_ofday",
+		"pct_discount",
+		"price",
+		"min_spend",
+		"free_itm",
 	}
 	PromoDistanceLimit = 200.0
 )
