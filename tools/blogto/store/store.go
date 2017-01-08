@@ -26,7 +26,7 @@ const (
 )
 
 func LoadListing() error {
-	cat := CategoryTypeService
+	cat := CategoryTypeFashion
 	catStr := categoryTypes[cat]
 	storeDirPath := fmt.Sprintf("./data/stores/%s", catStr)
 
@@ -56,7 +56,6 @@ func LoadListing() error {
 			if err != nil {
 				return err
 			}
-			log.Printf("inserting %s @ %s", s.Name, locale.Name)
 
 			count, err := data.DB.Place.Find(
 				db.Cond{
@@ -70,6 +69,7 @@ func LoadListing() error {
 				}
 				continue
 			}
+			log.Printf("inserting %s @ %s", s.Name, locale.Name)
 
 			lat, _ := strconv.ParseFloat(s.Coordinates.Latitude, 64)
 			lng, _ := strconv.ParseFloat(s.Coordinates.Longitude, 64)
@@ -93,7 +93,7 @@ func LoadListing() error {
 }
 
 func GetListing() error {
-	cat := CategoryTypeService
+	cat := CategoryTypeFashion
 	catStr := categoryTypes[cat]
 
 	storeDirPath := fmt.Sprintf("./data/stores/%s", catStr)
@@ -104,7 +104,7 @@ func GetListing() error {
 	}
 
 	for sh, locale := range locale.LocaleMap {
-		if sh != "king-west" && sh != "queen-west" {
+		if sh != "yorkville" && sh != "west-queen-west" {
 			continue
 		}
 		log.Printf("Loading %s for %s", catStr, locale.Name)
