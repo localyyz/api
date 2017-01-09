@@ -10,6 +10,7 @@ import (
 type Promo struct {
 	*data.Promo
 	Place *data.Place `json:"place,omitempty"`
+	Claim *data.Claim `json:"claim,omitempty"`
 
 	//fields that can be viewed
 	NumClaimed int64 `json:"numClaimed,omitempty"`

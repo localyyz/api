@@ -128,10 +128,16 @@ func ListActive(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
 
 	promoIDs := make([]int64, len(claims))
+	claimMap := make(map[int64]*data.Claim, len(claims))
 	for i, c := range claims {
 		promoIDs[i] = c.PromoID
+		claimMap[c.PromoID] = c
 	}
 
 	var promos []*data.Promo
@@ -146,6 +152,7 @@ func ListActive(w http.ResponseWriter, r *http.Request) {
 	res := make([]*presenter.Promo, len(promos))
 	for i, p := range promos {
 		res[i] = (&presenter.Promo{Promo: p}).WithPlace()
+		res[i].Claim = claimMap[p.ID]
 	}
 
 	ws.Respond(w, http.StatusOK, res)
