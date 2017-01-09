@@ -71,7 +71,7 @@ func parseRecord(record []string, header []string) (*data.Promo, error) {
 			}
 			p.PlaceID = place.ID
 
-			sp := NonAlpha.ReplaceAllString(RemoveBracket.ReplaceAllString(strings.ToLower(place.Name), "_"), "")
+			sp := NonAlpha.ReplaceAllString(RemoveBracket.ReplaceAllString(strings.ToLower(place.Name), ""), "_")
 			p.Etc.PlaceImage = fmt.Sprintf("https://moodie.s3.amazonaws.com/%s.jpg", sp)
 		case "description":
 			p.Description = field
