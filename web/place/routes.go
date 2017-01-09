@@ -6,6 +6,7 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/nearby", Nearby)
+	r.Get("/recent", Recent)
 	r.Get("/following", ListFollowing)
 	r.Get("/all", ListPlaces)
 	r.Post("/autocomplete", AutoComplete)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"upper.io/db.v2"
 
@@ -57,6 +58,31 @@ func getTrending(user *data.User) ([]*data.Place, error) {
 	return places, nil
 }
 
+// getRecent returns most recent places based on most recent promotions created
+func getMostRecent(ctx context.Context, user *data.User) ([]*data.Place, error) {
+	var places []*data.Place
+	q := data.DB.
+		Select(
+			db.Raw("pl.*"),
+			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
+		).
+		From("places pl").
+		LeftJoin("promos pr").
+		On("pl.id = pr.place_id").
+		Where(db.Cond{
+			"pr.start_at <=": time.Now().UTC(),
+			"pr.end_at >":    time.Now().UTC(),
+		}).
+		GroupBy("pl.id", "pr.created_at").
+		OrderBy("-pr.created_at").
+		Limit(10)
+	if err := q.All(&places); err != nil {
+		return nil, errors.Wrap(err, "most recent places")
+	}
+
+	return places, nil
+}
+
 func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	currentUser := ctx.Value("session.user").(*data.User)
@@ -103,14 +129,6 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(places) == 0 {
-		places, err = getTrending(user)
-		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
-			return
-		}
-	}
-
 	var presented []*presenter.Place
 	for _, pl := range places {
 		// TODO: +1 here
@@ -119,6 +137,27 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		presented = append(presented, p.WithLocale().WithGeo())
+	}
+
+	ws.Respond(w, http.StatusOK, presented)
+}
+
+// Recent places returns the most recently created promotions
+func Recent(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+
+	places, err := getMostRecent(ctx, user)
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	var presented []*presenter.Place
+	for _, pl := range places {
+		// TODO: +1 here
+		p := presenter.NewPlace(ctx, pl)
+		presented = append(presented, p.WithPromo().WithLocale().WithGeo())
 	}
 
 	ws.Respond(w, http.StatusOK, presented)

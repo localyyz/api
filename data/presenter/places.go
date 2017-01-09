@@ -64,6 +64,7 @@ func (pl *Place) WithPromo() *Place {
 	err := data.DB.Promo.Find(
 		db.And(
 			db.Cond{"place_id": pl.ID},
+			db.Raw("start_at <= NOW() AT TIME ZONE 'UTC'"),
 			db.Raw("end_at > NOW() AT TIME ZONE 'UTC'"),
 		),
 	).One(&promo)
