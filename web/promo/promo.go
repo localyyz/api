@@ -144,6 +144,7 @@ func ListActive(w http.ResponseWriter, r *http.Request) {
 	var promos []*data.Promo
 	err = data.DB.Promo.
 		Find(db.Cond{"id": promoIDs}).
+		OrderBy("end_at").
 		All(&promos)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
