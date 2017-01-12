@@ -13,8 +13,8 @@ import (
 type Place struct {
 	*data.Place
 	Locale *data.Locale `json:"locale"`
-	Claim  *data.Claim  `json:"claim"`
-	Promo  *Promo       `json:"promo"`
+	Claim  *data.Claim  `json:"claim,omitempty"`
+	Promo  *Promo       `json:"promo,omitempty"`
 
 	Following bool `json:"following"`
 

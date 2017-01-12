@@ -119,19 +119,7 @@ func parseRecord(record []string, header []string) (*data.Promo, error) {
 	return p, nil
 }
 
-func main() {
-	fmt.Println("starting promotion loader")
-
-	conf := &data.DBConf{
-		Database:        "localyyz",
-		Hosts:           []string{"localhost:5432"},
-		Username:        "localyyz",
-		ApplicationName: "promo loader",
-	}
-	if _, err := data.NewDBSession(conf); err != nil {
-		log.Fatalf("db err: %s. Check ssh tunnel.", err)
-	}
-
+func LoadPromoCSV() {
 	// load csv
 	f, err := os.Open("promos.csv")
 	if err != nil {
@@ -149,4 +137,19 @@ func main() {
 			log.Printf("saving failed %+v, error: %v", p, err)
 		}
 	}
+}
+
+func main() {
+	fmt.Println("starting promotion loader")
+
+	conf := &data.DBConf{
+		Database:        "localyyz",
+		Hosts:           []string{"localhost:5432"},
+		Username:        "localyyz",
+		ApplicationName: "promo loader",
+	}
+	if _, err := data.NewDBSession(conf); err != nil {
+		log.Fatalf("db err: %s. Check ssh tunnel.", err)
+	}
+
 }

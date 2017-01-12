@@ -10,8 +10,10 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
+	"bitbucket.org/moodie-app/moodie-api/lib/worker"
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/goware/lg"
+	"github.com/robfig/cron"
 	"github.com/zenazn/goji/graceful"
 )
 
@@ -51,9 +53,9 @@ func main() {
 	}
 
 	// cron worker
-	//c := cron.New()
-	//c.AddFunc("@every 1m", worker.PromoWorker)
-	//c.Start()
+	c := cron.New()
+	c.AddFunc("@every 1m", worker.PromoWorker)
+	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.

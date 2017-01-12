@@ -1,6 +1,8 @@
 package presenter
 
 import (
+	"context"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
@@ -14,6 +16,15 @@ type Promo struct {
 
 	//fields that can be viewed
 	NumClaimed int64 `json:"numClaimed,omitempty"`
+
+	ctx context.Context
+}
+
+func NewPromo(ctx context.Context, promo *data.Promo) *Promo {
+	return &Promo{
+		Promo: promo,
+		ctx:   ctx,
+	}
 }
 
 func (p *Promo) WithPlace() *Promo {
@@ -25,5 +36,23 @@ func (p *Promo) WithPlace() *Promo {
 		}
 	}
 	// TODO: distance?
+	return p
+}
+
+func (p *Promo) WithClaim() *Promo {
+	user := p.ctx.Value("session.user").(*data.User)
+
+	var err error
+	p.Claim, err = data.DB.Claim.FindOne(
+		db.Cond{
+			"place_id": p.PlaceID,
+			"user_id":  user.ID,
+		},
+	)
+	if err != nil {
+		if err != db.ErrNoMoreRows {
+			lg.Error(errors.Wrapf(err, "failed to present promo(%v) place", p.ID))
+		}
+	}
 	return p
 }
