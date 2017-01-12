@@ -33,9 +33,13 @@ func ListFollowing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := make([]*presenter.Place, len(places))
-	for i, pl := range places {
-		response[i] = presenter.NewPlace(ctx, pl).WithPromo().WithLocale().WithGeo()
+	response := []*presenter.Place{}
+	for _, pl := range places {
+		p := presenter.NewPlace(ctx, pl).WithPromo()
+		if p.Promo.Promo == nil {
+			continue
+		}
+		response = append(response, p.WithLocale().WithGeo())
 	}
 
 	// TODO: present

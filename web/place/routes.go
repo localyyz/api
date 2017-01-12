@@ -14,6 +14,7 @@ func Routes() chi.Router {
 	r.Route("/:placeID", func(r chi.Router) {
 		r.Use(PlaceCtx)
 		r.Get("/", GetPlace)
+		r.Get("/promos", ListPromo)
 
 		r.Post("/follow", FollowPlace)
 		r.Delete("/follow", UnfollowPlace)
