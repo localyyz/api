@@ -14,6 +14,7 @@ type Promo struct {
 	ID      int64     `db:"id,pk,omitempty" json:"id,omitempty"`
 	PlaceID int64     `db:"place_id" json:"placeId"`
 	Type    PromoType `db:"type" json:"type"`
+	UserID  int64     `db:"user_id" json:"userId"`
 	//Status  PromoStatus `db:"status" json:"-"`
 
 	// Amount of points rewarded

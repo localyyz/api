@@ -60,6 +60,7 @@ func CreatePromo(w http.ResponseWriter, r *http.Request) {
 		ws.Respond(w, http.StatusBadRequest, err)
 		return
 	}
+	promo.UserID = user.ID
 
 	if err := data.DB.Promo.Save(&promo); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
