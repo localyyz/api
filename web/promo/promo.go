@@ -45,6 +45,27 @@ func GetPromo(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, promo)
 }
 
+func PreviewPromo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+
+	// NOTE: protected route
+	if !user.IsAdmin {
+		ws.Respond(w, http.StatusNotFound, "")
+		return
+	}
+
+	var promo data.Promo
+	if err := ws.Bind(r.Body, &promo); err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+	promo.UserID = user.ID
+
+	resp := &presenter.Promo{Promo: &promo}
+	ws.Respond(w, http.StatusCreated, resp.WithPlace())
+}
+
 func CreatePromo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)

@@ -6,6 +6,7 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Post("/", CreatePromo)
+	r.Post("/preview", PreviewPromo)
 
 	r.Get("/history", ListHistory)
 	r.Get("/active", ListActive)
