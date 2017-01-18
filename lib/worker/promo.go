@@ -40,3 +40,18 @@ func PromoWorker() {
 	}
 
 }
+
+func RefreshPromoWorker() {
+	lg.Info("starting refresher worker")
+
+	err := data.DB.Promo.Find().Update(
+		map[string]interface{}{
+			"start_at": db.Raw("now()"),
+			"end_at":   db.Raw("now() + (end_at - start_at)"),
+		},
+	)
+
+	if err != nil {
+		lg.Warnf("promo refresh worker: %+v", err)
+	}
+}
