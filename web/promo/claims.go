@@ -42,7 +42,9 @@ func ClaimPromo(w http.ResponseWriter, r *http.Request) {
 
 	// already claimed
 	if claim != nil {
-		if claim.Status == data.ClaimStatusActive {
+		if claim.Status == data.ClaimStatusActive ||
+			claim.Status == data.ClaimStatusSaved {
+
 			ws.Respond(w, http.StatusOK, claim)
 			return
 		}
