@@ -16,7 +16,7 @@ func (store PlaceStore) FindByLocaleID(localeID int64) ([]*Place, error) {
 }
 
 func (store PlaceStore) FindLikeName(q string) ([]*Place, error) {
-	return store.FindAll(db.Cond{"name ILIKE": fmt.Sprint(q, "%")})
+	return store.FindAll(db.Cond{"name ILIKE": fmt.Sprint("%", q, "%")})
 }
 
 func (store PlaceStore) FindByCategory(category Category) ([]*Place, error) {
