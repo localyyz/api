@@ -17,6 +17,7 @@ type Claim struct {
 	Status ClaimStatus `db:"status" json:"status"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
+	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
 }
 
 type ClaimStatus uint32
@@ -32,6 +33,7 @@ const (
 
 var _ interface {
 	bond.HasBeforeCreate
+	bond.HasBeforeUpdate
 	bond.HasValidate
 } = &Claim{}
 
@@ -52,6 +54,11 @@ func (c *Claim) CollectionName() string {
 
 func (c *Claim) BeforeCreate(bond.Session) error {
 	c.CreatedAt = GetTimeUTCPointer()
+	return nil
+}
+
+func (c *Claim) BeforeUpdate(bond.Session) error {
+	c.UpdatedAt = GetTimeUTCPointer()
 	return nil
 }
 

@@ -33,6 +33,7 @@ func PromoWorker() {
 
 	for _, exp := range expiredClaims {
 		exp.Status = data.ClaimStatusExpired
+		exp.UpdatedAt = data.GetTimeUTCPointer()
 
 		if err := data.DB.Claim.Save(exp); err != nil {
 			lg.Warn("failed to expire claim: %v", err)
