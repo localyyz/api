@@ -12,7 +12,7 @@ import (
 // AutoComplete returns list of place names based on given query input
 func AutoComplete(w http.ResponseWriter, r *http.Request) {
 	queryString := strings.TrimSpace(r.URL.Query().Get("q"))
-	places, err := data.DB.Place.FindLikeName(queryString)
+	places, err := data.DB.Place.MatchName(queryString)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
