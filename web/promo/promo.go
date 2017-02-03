@@ -14,7 +14,7 @@ import (
 	"github.com/pressly/chi"
 )
 
-const ClaimableDistance = 200.0
+const ClaimableDistance = 100.0
 
 func PromoCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {

@@ -8,6 +8,7 @@ func Routes() chi.Router {
 	r.Route("/me", func(r chi.Router) {
 		r.Use(MeCtx)
 		r.Mount("/", UserRoutes())
+		r.Post("/nda", AcceptNDA)
 	})
 
 	r.Route("/:userID", func(r chi.Router) {

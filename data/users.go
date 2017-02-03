@@ -36,7 +36,8 @@ type User struct {
 
 type UserEtc struct {
 	// Store user's current neighbourhood whereabouts
-	LocaleID int64 `json:"localeId"`
+	LocaleID     int64 `json:"localeId"`
+	HasAgreedNDA bool  `json:"hasAgreedNDA"`
 }
 
 type UserStore struct {

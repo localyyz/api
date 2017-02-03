@@ -52,6 +52,18 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, user)
 }
 
+func AcceptNDA(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("session.user").(*data.User)
+
+	user.Etc.HasAgreedNDA = true
+	if err := data.DB.User.Save(user); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusOK, user)
+}
+
 func SetDeviceToken(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("session.user").(*data.User)
 
