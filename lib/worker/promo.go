@@ -45,7 +45,9 @@ func PromoWorker() {
 func RefreshPromoWorker() {
 	lg.Info("starting refresher worker")
 
-	err := data.DB.Promo.Find().Update(
+	err := data.DB.Promo.Find(
+		db.Cond{"end_at <": db.Raw("now() - interval '1 day'")},
+	).Update(
 		map[string]interface{}{
 			"start_at": db.Raw("now()"),
 			"end_at":   db.Raw("now() + (end_at - start_at)"),

@@ -25,5 +25,5 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 		res[i].Place = place
 	}
 
-	ws.Respond(w, http.StatusOK, promos)
+	ws.Respond(w, http.StatusOK, res)
 }
