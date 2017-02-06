@@ -1,4 +1,4 @@
-FROM golang:1.7
+FROM golang:1.8rc3
 
 # API
 ADD . /go/src/bitbucket.org/moodie-app/moodie-api
