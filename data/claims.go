@@ -64,7 +64,7 @@ func (c *Claim) BeforeUpdate(bond.Session) error {
 
 // TODO: any way to double check promo distance?
 func (c *Claim) Validate() error {
-	if c.Status == ClaimStatusActive {
+	if c.Status == ClaimStatusActive || c.Status == ClaimStatusSaved {
 		promo, err := DB.Promo.FindByID(c.PromoID)
 		if err != nil {
 			return err

@@ -6,6 +6,7 @@ import (
 	db "upper.io/db.v2"
 )
 
+// PromoWorker expires promotions and claims
 func PromoWorker() {
 	lg.Info("starting promo worker")
 
@@ -42,19 +43,29 @@ func PromoWorker() {
 
 }
 
+// Find expired promotions. Recreate them.
 func RefreshPromoWorker() {
 	lg.Info("starting refresher worker")
 
-	err := data.DB.Promo.Find(
+	promos, err := data.DB.Promo.FindAll(
 		db.Cond{"end_at <": db.Raw("now() - interval '1 day'")},
-	).Update(
-		map[string]interface{}{
-			"start_at": db.Raw("now()"),
-			"end_at":   db.Raw("now() + (end_at - start_at)"),
-		},
 	)
-
 	if err != nil {
 		lg.Warnf("promo refresh worker: %+v", err)
+		return
 	}
+
+	for _, p := range promos {
+		p.ID = 0 // new promotion
+
+		dayDiff := (*p.EndAt).Sub(*p.StartAt)
+		p.StartAt = data.GetTimeUTCPointer()
+		endAt := (*p.StartAt).Add(dayDiff)
+		p.EndAt = &endAt
+
+		if err := data.DB.Promo.Save(p); err != nil {
+			lg.Warnf("promo refresh worker: %+v", err)
+		}
+	}
+
 }
