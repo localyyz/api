@@ -13,7 +13,14 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
 
-	promos, err := data.DB.Promo.FindAll(db.Cond{"place_id": place.ID})
+	var promos []*data.Promo
+	err := data.DB.Promo.Find(
+		db.And(
+			db.Cond{"place_id": place.ID},
+			db.Raw("start_at <= NOW() AT TIME ZONE 'UTC'"),
+			db.Raw("end_at > NOW() AT TIME ZONE 'UTC'"),
+		),
+	).All(&promos)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return

@@ -55,8 +55,10 @@ func main() {
 	// cron worker
 	c := cron.New()
 	c.AddFunc("@every 1m", worker.PromoWorker)
-	c.AddFunc("@every 48h", worker.RefreshPromoWorker)
+	c.AddFunc("@every 24h", worker.RefreshPromoWorker)
 	c.Start()
+	// refresh on startup
+	worker.RefreshPromoWorker()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
