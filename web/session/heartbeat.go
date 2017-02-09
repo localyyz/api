@@ -92,7 +92,7 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 			ws.Respond(w, http.StatusInternalServerError, err)
 			return
 		}
-		lg.Debugf("user(%d) located at %s", user.ID, locale.Name)
+		lg.Infof("user(%d) located at %s", user.ID, locale.Name)
 		// NOTE if we didn't find a valid locale, we keep user's previous
 		resp.Locale = locale
 	}
