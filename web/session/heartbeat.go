@@ -52,7 +52,7 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	latlng := s2.LatLngFromDegrees(newCoord.Latitude, newCoord.Longitude)
-	origin := s2.CellIDFromLatLng(latlng).Parent(16)
+	origin := s2.CellIDFromLatLng(latlng).Parent(15) // 16 for more detail?
 	// Find the reach of cells
 	cond := db.Cond{
 		"cell_id >=": int(origin.RangeMin()),
