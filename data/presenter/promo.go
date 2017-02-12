@@ -46,6 +46,7 @@ func (p *Promo) WithClaim() *Promo {
 	p.Claim, err = data.DB.Claim.FindOne(
 		db.Cond{
 			"place_id": p.PlaceID,
+			"promo_id": p.ID,
 			"user_id":  user.ID,
 		},
 	)
