@@ -2,6 +2,7 @@ package presenter
 
 import (
 	"context"
+	"fmt"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/goware/lg"
@@ -11,7 +12,7 @@ import (
 
 type Promo struct {
 	*data.Promo
-	Place *data.Place `json:"place,omitempty"`
+	Place *Place      `json:"place,omitempty"`
 	Claim *data.Claim `json:"claim,omitempty"`
 
 	//fields that can be viewed
@@ -28,14 +29,24 @@ func NewPromo(ctx context.Context, promo *data.Promo) *Promo {
 }
 
 func (p *Promo) WithPlace() *Promo {
-	var err error
-	p.Place, err = data.DB.Place.FindByID(p.PlaceID)
+	user := p.ctx.Value("session.user").(*data.User)
+
+	var place *data.Place
+	err := data.DB.Place.
+		Find(p.PlaceID).
+		Select(
+			db.Raw("*"),
+			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
+		).
+		OrderBy("distance").
+		One(&place)
 	if err != nil {
 		if err != db.ErrNoMoreRows {
 			lg.Error(errors.Wrapf(err, "failed to present promo(%v) place", p.ID))
 		}
 	}
-	// TODO: distance?
+
+	p.Place = (&Place{Place: place}).WithGeo()
 	return p
 }
 

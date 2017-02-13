@@ -174,7 +174,7 @@ func ListActive(w http.ResponseWriter, r *http.Request) {
 
 	res := make([]*presenter.Promo, len(promos))
 	for i, p := range promos {
-		res[i] = (&presenter.Promo{Promo: p}).WithPlace()
+		res[i] = presenter.NewPromo(r.Context(), p).WithPlace()
 		res[i].Claim = claimMap[p.ID]
 	}
 

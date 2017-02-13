@@ -29,7 +29,7 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 	res := make([]*presenter.Promo, len(promos))
 	for i, p := range promos {
 		res[i] = presenter.NewPromo(ctx, p).WithClaim()
-		res[i].Place = place
+		res[i].Place = presenter.NewPlace(ctx, place)
 	}
 
 	ws.Respond(w, http.StatusOK, res)
