@@ -55,7 +55,7 @@ func main() {
 	// cron worker
 	c := cron.New()
 	c.AddFunc("@every 1m", worker.PromoWorker)
-	c.AddFunc("@every 24h", worker.RefreshPromoWorker)
+	c.AddFunc("0 0 0 * * *", worker.RefreshPromoWorker)
 	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)

@@ -51,7 +51,7 @@ func RefreshPromoWorker() {
 	err := data.DB.Select(
 		db.Raw("distinct on (place_id) *"),
 	).From("promos").Where(
-		db.Cond{"end_at <": db.Raw("now() - interval '1 day'")},
+		db.Cond{"end_at between": db.Raw("now()::date - interval '1 day' and now()::date")},
 	).All(&promos)
 	if err != nil {
 		lg.Warnf("promo refresh worker: %+v", err)
