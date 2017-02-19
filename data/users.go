@@ -8,9 +8,9 @@ import (
 
 	"github.com/goware/geotools"
 	"github.com/goware/lg"
-	"github.com/upper/bond"
 
-	"upper.io/db.v2"
+	"upper.io/bond"
+	"upper.io/db.v3"
 )
 
 type User struct {

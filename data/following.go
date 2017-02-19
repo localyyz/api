@@ -3,9 +3,8 @@ package data
 import (
 	"time"
 
-	db "upper.io/db.v2"
-
-	"github.com/upper/bond"
+	"upper.io/bond"
+	"upper.io/db.v3"
 )
 
 type Following struct {

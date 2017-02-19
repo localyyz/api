@@ -10,7 +10,7 @@ import (
 
 	"github.com/goware/geotools"
 
-	"upper.io/db.v2"
+	"upper.io/db.v3"
 )
 
 var (

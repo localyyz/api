@@ -7,7 +7,7 @@ import (
 	"github.com/goware/geotools"
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
-	"upper.io/db.v2"
+	"upper.io/db.v3"
 )
 
 type Place struct {

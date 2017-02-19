@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/upper/bond"
+	"upper.io/bond"
 )
 
 type Claim struct {

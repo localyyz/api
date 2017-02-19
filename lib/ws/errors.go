@@ -9,7 +9,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/goware/errorx"
-	"upper.io/db.v2"
+	"upper.io/db.v3"
 )
 
 var (

@@ -6,7 +6,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 
-	"upper.io/db.v2"
+	"upper.io/db.v3"
 
 	"github.com/goware/lg"
 	fb "github.com/huandu/facebook"

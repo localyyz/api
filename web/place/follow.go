@@ -3,7 +3,7 @@ package place
 import (
 	"net/http"
 
-	db "upper.io/db.v2"
+	"upper.io/db.v3"
 
 	"github.com/pkg/errors"
 

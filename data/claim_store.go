@@ -1,8 +1,8 @@
 package data
 
 import (
-	"github.com/upper/bond"
-	"upper.io/db.v2"
+	"upper.io/bond"
+	"upper.io/db.v3"
 )
 
 type ClaimStore struct {

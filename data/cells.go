@@ -2,8 +2,8 @@ package data
 
 import (
 	"github.com/golang/geo/s2"
-	"github.com/upper/bond"
-	"upper.io/db.v2"
+	"upper.io/bond"
+	"upper.io/db.v3"
 )
 
 // When a (lng, lat) pair is received, process it using google's s2 lib

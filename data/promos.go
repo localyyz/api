@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/upper/bond"
-
-	"upper.io/db.v2"
+	"upper.io/bond"
+	"upper.io/db.v3"
 )
 
 // TODO: promo should be keyed on placeid and queried on cells

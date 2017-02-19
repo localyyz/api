@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/upper/bond"
-
-	db "upper.io/db.v2"
-	"upper.io/db.v2/postgresql"
+	"upper.io/bond"
+	"upper.io/db.v3"
+	"upper.io/db.v3/postgresql"
 )
 
 var (
@@ -45,7 +44,7 @@ func (cf *DBConf) String() string {
 
 func NewDBSession(conf *DBConf) (*Database, error) {
 	if conf.DebugQueries {
-		db.Conf.SetLogging(true)
+		db.DefaultSettings.SetLogging(true)
 	}
 
 	var (

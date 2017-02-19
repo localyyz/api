@@ -11,7 +11,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
-	db "upper.io/db.v2"
+	"upper.io/db.v3"
 )
 
 func LocaleHandler(w http.ResponseWriter, r *http.Request) {

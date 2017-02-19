@@ -3,7 +3,7 @@ package worker
 import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/goware/lg"
-	db "upper.io/db.v2"
+	"upper.io/db.v3"
 )
 
 // PromoWorker expires promotions and claims

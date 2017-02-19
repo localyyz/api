@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	db "upper.io/db.v2"
+	"upper.io/db.v3"
 
 	"github.com/golang/geo/s1"
 	"github.com/golang/geo/s2"
