@@ -1,6 +1,7 @@
 package data
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,11 +11,11 @@ import (
 
 // TODO: promo should be keyed on placeid and queried on cells
 type Promo struct {
-	ID      int64     `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID int64     `db:"place_id" json:"placeId"`
-	Type    PromoType `db:"type" json:"type"`
-	UserID  int64     `db:"user_id" json:"userId"`
-	//Status  PromoStatus `db:"status" json:"-"`
+	ID      int64       `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID int64       `db:"place_id" json:"placeId"`
+	Type    PromoType   `db:"type" json:"type"`
+	UserID  int64       `db:"user_id" json:"userId"`
+	Status  PromoStatus `db:"status" json:"status"`
 
 	// Amount of points rewarded
 	// After applying. how long does the user have to claim
@@ -59,10 +60,17 @@ const (
 
 const (
 	_ PromoStatus = iota
+	PromoStatusDraft
+	PromoStatusScheduled
 	PromoStatusActive
-	PromoStatusInactive
-	PromoStatusDeleted
+	PromoStatusCompleted
+	PromoStatusDisabled
 )
+
+var _ interface {
+	bond.HasBeforeCreate
+	bond.HasBeforeUpdate
+} = &Promo{}
 
 var (
 	promoTypes = []string{
@@ -77,6 +85,42 @@ var (
 
 func (p *Promo) CollectionName() string {
 	return `promos`
+}
+
+func (p *Promo) BeforeCreate(sess bond.Session) error {
+	if err := p.BeforeUpdate(sess); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Promo) BeforeUpdate(bond.Session) error {
+	if p.StartAt == nil {
+		return errors.New("invalid start date")
+	}
+	if p.EndAt == nil {
+		return errors.New("invalid end date")
+	}
+	if p.StartAt.After(*p.EndAt) {
+		return errors.New("start date must be before end date")
+	}
+
+	// check if there're any conflicting promotions
+	cond := db.Cond{
+		"start_at <":    p.EndAt,
+		"end_at >":      p.StartAt,
+		"deleted_at !=": nil,
+	}
+	count, err := DB.Promo.Find(cond).Count()
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("there are promotions running during the time period")
+	}
+
+	return nil
 }
 
 func (p *Promo) CanUserClaim(userID int64) (bool, error) {

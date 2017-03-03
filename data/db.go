@@ -16,8 +16,9 @@ var (
 type Database struct {
 	bond.Session
 
-	User      UserStore
-	Following FollowingStore
+	User       UserStore
+	UserAccess UserAccessStore
+	Following  FollowingStore
 
 	Place  PlaceStore
 	Locale LocaleStore
@@ -67,6 +68,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 		return nil, err
 	}
 	db.User = UserStore{db.Store(&User{})}
+	db.UserAccess = UserAccessStore{db.Store(&UserAccess{})}
 	db.Following = FollowingStore{db.Store(&Following{})}
 
 	db.Place = PlaceStore{db.Store(&Place{})}
