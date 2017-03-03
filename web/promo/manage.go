@@ -44,7 +44,7 @@ func ListManagable(w http.ResponseWriter, r *http.Request) {
 
 	var promos []*data.Promo
 	err := data.DB.Promo.Find(db.Cond{"place_id": placeIDs}).
-		OrderBy("end_at").All(&promos)
+		OrderBy("-end_at").All(&promos)
 	if err != nil {
 		e := errors.Wrap(err, "unable to find access promos")
 		ws.Respond(w, http.StatusInternalServerError, e)
