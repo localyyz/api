@@ -11,6 +11,10 @@ func Routes() chi.Router {
 	r.Get("/all", ListPlaces)
 	r.Post("/autocomplete", AutoComplete)
 
+	r.Route("/manage", func(r chi.Router) {
+		r.Get("/", ListManagable)
+	})
+
 	r.Route("/:placeID", func(r chi.Router) {
 		r.Use(PlaceCtx)
 		r.Get("/", GetPlace)
