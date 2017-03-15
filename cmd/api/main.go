@@ -54,7 +54,7 @@ func main() {
 
 	// cron worker
 	c := cron.New()
-	c.AddFunc("@every 1m", worker.PromoWorker)
+	c.AddFunc("@every 1m", worker.PromoEndWorker)
 	c.AddFunc("0 0 0 * * *", worker.RefreshPromoWorker)
 	c.Start()
 

@@ -15,6 +15,13 @@ func Routes() chi.Router {
 		r.Get("/", ListManagable)
 		r.Post("/", CreatePromo)
 		r.Post("/preview", PreviewPromo)
+
+		r.Route("/:promoID", func(r chi.Router) {
+			r.Use(PromoCtx)
+
+			r.Put("/", UpdatePromo)
+			r.Delete("/", DeletePromo)
+		})
 	})
 
 	r.Route("/:promoID", func(r chi.Router) {

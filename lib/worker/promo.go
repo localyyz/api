@@ -7,37 +7,65 @@ import (
 )
 
 // PromoWorker expires promotions and claims
-func PromoWorker() {
-	lg.Info("starting promo worker")
-
+func PromoEndWorker() {
+	lg.Info("starting promo ender")
 	now := data.GetTimeUTCPointer()
-	query := data.DB.
-		Select(db.Raw("cl.*")).
-		From("claims cl").
-		LeftJoin("promos p").
-		On("cl.promo_id = p.id").
-		Where(
-			db.Cond{
-				"cl.status IN": []data.ClaimStatus{
-					data.ClaimStatusActive,
-					data.ClaimStatusSaved,
-					data.ClaimStatusPeeked,
-				},
-				"p.end_at <": now,
-			})
 
-	var expiredClaims []*data.Claim
-	if err := query.All(&expiredClaims); err != nil {
-		lg.Warn("promo worker errored: %v", err)
+	promos, err := data.DB.Promo.FindAll(
+		db.Cond{
+			"end_at <": now,
+			"status":   data.PromoStatusActive,
+		},
+	)
+	if err != nil {
+		lg.Warnf("failed to query expired promos. Err: %+v", err)
 		return
 	}
 
-	for _, exp := range expiredClaims {
-		exp.Status = data.ClaimStatusExpired
-		exp.UpdatedAt = data.GetTimeUTCPointer()
+	promoIDs := make([]int64, len(promos))
+	for i, p := range promos {
+		promoIDs[i] = p.ID
+	}
+	if len(promoIDs) == 0 {
+		return
+	}
 
-		if err := data.DB.Claim.Save(exp); err != nil {
-			lg.Warn("failed to expire claim: %v", err)
+	// update claims to expired
+	q := data.DB.Update("claims").Set(
+		"status", data.ClaimStatusExpired,
+		"updated_at", now,
+	).Where("promo_id IN ?", promoIDs)
+	if _, err := q.Exec(); err != nil {
+		lg.Warnf("failed to expire claim: %v", err)
+	}
+
+	for _, p := range promos {
+		p.Status = data.PromoStatusCompleted
+		if err := data.DB.Promo.Save(p); err != nil {
+			lg.Warnf("failed to expire promotions: %v", err)
+		}
+	}
+}
+
+func PromoStartWoker() {
+	lg.Info("starting promo starter")
+	now := data.GetTimeUTCPointer()
+
+	promos, err := data.DB.Promo.FindAll(
+		db.Cond{
+			"start_at >": now,
+			"status":     data.PromoStatusScheduled,
+		},
+	)
+	if err != nil {
+		lg.Warnf("failed to query starting promos. Err: %+v", err)
+		return
+	}
+
+	for _, p := range promos {
+		p.Status = data.PromoStatusActive
+		if err := data.DB.Promo.Save(p); err != nil {
+			lg.Warnf("failed to start promotions: %v", err)
 		}
 	}
 

@@ -30,6 +30,7 @@ type Promo struct {
 	StartAt   *time.Time `db:"start_at,omitempty" json:"startAt"`
 	EndAt     *time.Time `db:"end_at,omitempty" json:"endAt"`
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
+	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
 }
 
@@ -64,7 +65,7 @@ const (
 	PromoStatusScheduled
 	PromoStatusActive
 	PromoStatusCompleted
-	PromoStatusDisabled
+	PromoStatusDeleted
 )
 
 var _ interface {
@@ -88,9 +89,31 @@ func (p *Promo) CollectionName() string {
 }
 
 func (p *Promo) BeforeCreate(sess bond.Session) error {
+	// check if there're any conflicting promotions
+	cond := db.Cond{
+		"start_at <": p.EndAt,
+		"end_at >":   p.StartAt,
+		"deleted_at": nil,
+	}
+	count, err := DB.Promo.Find(cond).Count()
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("there are promotions already scheduled during the time period")
+	}
+
+	// shared checks for updating promotion
 	if err := p.BeforeUpdate(sess); err != nil {
 		return err
 	}
+
+	if p.StartAt.Before(time.Now().UTC()) {
+		return errors.New("start date cannot be in the past")
+	}
+	p.Status = PromoStatusScheduled
+	p.UpdatedAt = nil
+	p.CreatedAt = GetTimeUTCPointer()
 
 	return nil
 }
@@ -105,20 +128,7 @@ func (p *Promo) BeforeUpdate(bond.Session) error {
 	if p.StartAt.After(*p.EndAt) {
 		return errors.New("start date must be before end date")
 	}
-
-	// check if there're any conflicting promotions
-	cond := db.Cond{
-		"start_at <":    p.EndAt,
-		"end_at >":      p.StartAt,
-		"deleted_at !=": nil,
-	}
-	count, err := DB.Promo.Find(cond).Count()
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return errors.New("there are promotions running during the time period")
-	}
+	p.UpdatedAt = GetTimeUTCPointer()
 
 	return nil
 }

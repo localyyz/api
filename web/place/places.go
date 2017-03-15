@@ -72,6 +72,7 @@ func getMostRecent(ctx context.Context, user *data.User) ([]*data.Place, error) 
 		Where(db.Cond{
 			"pr.start_at <=": time.Now().UTC(),
 			"pr.end_at >":    time.Now().UTC(),
+			"pr.status":      data.PromoStatusActive,
 		}).
 		GroupBy("pl.id", "pr.created_at").
 		OrderBy("-pr.created_at").
@@ -156,8 +157,8 @@ func Recent(w http.ResponseWriter, r *http.Request) {
 	var presented []*presenter.Place
 	for _, pl := range places {
 		// TODO: +1 here
-		p := presenter.NewPlace(ctx, pl)
-		presented = append(presented, p.WithPromo().WithLocale().WithGeo())
+		p := presenter.NewPlace(ctx, pl).WithPromo()
+		presented = append(presented, p.WithLocale().WithGeo())
 	}
 
 	ws.Respond(w, http.StatusOK, presented)

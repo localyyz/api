@@ -16,7 +16,10 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 	var promos []*data.Promo
 	err := data.DB.Promo.Find(
 		db.And(
-			db.Cond{"place_id": place.ID},
+			db.Cond{
+				"place_id": place.ID,
+				"status":   data.PromoStatusActive,
+			},
 			db.Raw("start_at <= NOW() AT TIME ZONE 'UTC'"),
 			db.Raw("end_at > NOW() AT TIME ZONE 'UTC'"),
 		),

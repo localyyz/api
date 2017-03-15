@@ -64,12 +64,49 @@ func CreatePromo(w http.ResponseWriter, r *http.Request) {
 	user := ctx.Value("session.user").(*data.User)
 	access := ctx.Value("access").([]*data.UserAccess)
 
-	var promo data.Promo
-	if err := ws.Bind(r.Body, &promo); err != nil {
+	var promoWrapper struct {
+		data.Promo
+
+		ID     interface{} `json:"id,omitempty"`
+		UserID interface{} `json:"userId,omitempty"`
+		Status interface{} `json:"status,omitempty"`
+
+		CreatedAt interface{} `json:"createdAt,omitempty"`
+		UpdatedAt interface{} `json:"updatedAt,omitempty"`
+		DeletedAt interface{} `json:"deletedAt,omitempty"`
+	}
+	if err := ws.Bind(r.Body, &promoWrapper); err != nil {
 		ws.Respond(w, http.StatusBadRequest, err)
 		return
 	}
-	promo.UserID = user.ID
+	newPromo := &promoWrapper.Promo
+	newPromo.UserID = user.ID
+
+	// check if placeID is in one of the access
+	var allowed bool
+	for _, a := range access {
+		if newPromo.PlaceID == a.PlaceID {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		ws.Respond(w, http.StatusForbidden, "")
+		return
+	}
+
+	if err := data.DB.Promo.Save(newPromo); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusCreated, newPromo)
+}
+
+func UpdatePromo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	access := ctx.Value("access").([]*data.UserAccess)
+	promo := ctx.Value("promo").(*data.Promo)
 
 	// check if placeID is in one of the access
 	var allowed bool
@@ -84,12 +121,62 @@ func CreatePromo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := data.DB.Promo.Save(&promo); err != nil {
+	promoWrapper := struct {
+		*data.Promo
+
+		ID      interface{} `json:"id,omitempty"`
+		UserID  interface{} `json:"userId,omitempty"`
+		PlaceID interface{} `json:"placeId,omitempty"`
+		Status  interface{} `json:"status,omitempty"`
+
+		CreatedAt interface{} `json:"createdAt,omitempty"`
+		UpdatedAt interface{} `json:"updatedAt,omitempty"`
+		DeletedAt interface{} `json:"deletedAt,omitempty"`
+	}{Promo: promo}
+	if err := ws.Bind(r.Body, &promoWrapper); err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := data.DB.Promo.Save(promo); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	ws.Respond(w, http.StatusCreated, promo)
+	ws.Respond(w, http.StatusOK, promo)
+}
+
+func DeletePromo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	access := ctx.Value("access").([]*data.UserAccess)
+	promo := ctx.Value("promo").(*data.Promo)
+
+	// only allow deleting promotion that's in scheduled state
+	if promo.Status != data.PromoStatusScheduled {
+		ws.Respond(w, http.StatusBadRequest, errors.New("promotion cannot be active"))
+		return
+	}
+
+	// check if placeID is in one of the access
+	var allowed bool
+	for _, a := range access {
+		if promo.PlaceID == a.PlaceID {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		ws.Respond(w, http.StatusForbidden, "")
+		return
+	}
+
+	promo.DeletedAt = data.GetTimeUTCPointer()
+	promo.Status = data.PromoStatusDeleted
+	if err := data.DB.Promo.Save(promo); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	ws.Respond(w, http.StatusNoContent, "")
 }
 
 func PreviewPromo(w http.ResponseWriter, r *http.Request) {
