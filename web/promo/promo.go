@@ -52,7 +52,8 @@ func GetClaims(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListHistory(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("session.user").(*data.User)
+	ctx := r.Context()
+	currentUser := ctx.Value("session.user").(*data.User)
 
 	claims, err := data.DB.Claim.FindAll(
 		db.Cond{
@@ -84,8 +85,7 @@ func ListHistory(w http.ResponseWriter, r *http.Request) {
 
 	res := make([]*presenter.Promo, len(promos))
 	for i, p := range promos {
-		res[i] = &presenter.Promo{Promo: p}
-		res[i].WithPlace()
+		res[i] = presenter.NewPromo(ctx, p).WithPlace()
 	}
 
 	ws.Respond(w, http.StatusOK, res)
