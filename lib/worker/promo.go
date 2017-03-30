@@ -47,13 +47,13 @@ func PromoEndWorker() {
 	}
 }
 
-func PromoStartWoker() {
+func PromoStartWorker() {
 	lg.Info("starting promo starter")
 	now := data.GetTimeUTCPointer()
 
 	promos, err := data.DB.Promo.FindAll(
 		db.Cond{
-			"start_at >": now,
+			"start_at <": now,
 			"status":     data.PromoStatusScheduled,
 		},
 	)
@@ -72,30 +72,30 @@ func PromoStartWoker() {
 }
 
 // Find expired promotions. Recreate them.
-func RefreshPromoWorker() {
-	lg.Info("starting refresher worker")
+//func RefreshPromoWorker() {
+//lg.Info("starting refresher worker")
 
-	var promos []*data.Promo
-	err := data.DB.Select(
-		db.Raw("distinct on (place_id) *"),
-	).From("promos").Where(
-		db.Cond{"end_at between": db.Raw("now()::date - interval '1 day' and now()::date")},
-	).All(&promos)
-	if err != nil {
-		lg.Warnf("promo refresh worker: %+v", err)
-		return
-	}
+//var promos []*data.Promo
+//err := data.DB.Select(
+//db.Raw("distinct on (place_id) *"),
+//).From("promos").Where(
+//db.Cond{"end_at between": db.Raw("now()::date - interval '1 day' and now()::date")},
+//).All(&promos)
+//if err != nil {
+//lg.Warnf("promo refresh worker: %+v", err)
+//return
+//}
 
-	for _, p := range promos {
-		p.ID = 0 // new promotion
+//for _, p := range promos {
+//p.ID = 0 // new promotion
 
-		dayDiff := (*p.EndAt).Sub(*p.StartAt)
-		p.StartAt = data.GetTimeUTCPointer()
-		endAt := (*p.StartAt).Add(dayDiff)
-		p.EndAt = &endAt
+//dayDiff := (*p.EndAt).Sub(*p.StartAt)
+//p.StartAt = data.GetTimeUTCPointer()
+//endAt := (*p.StartAt).Add(dayDiff)
+//p.EndAt = &endAt
 
-		if err := data.DB.Promo.Save(p); err != nil {
-			lg.Warnf("promo refresh worker: %+v", err)
-		}
-	}
-}
+//if err := data.DB.Promo.Save(p); err != nil {
+//lg.Warnf("promo refresh worker: %+v", err)
+//}
+//}
+//}
