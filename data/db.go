@@ -24,8 +24,11 @@ type Database struct {
 	Locale LocaleStore
 	Cell   CellStore
 
-	Promo PromoStore
-	Claim ClaimStore
+	Product ProductStore
+	Promo   PromoStore
+	Claim   ClaimStore
+
+	TrackList TrackListStore
 }
 
 type DBConf struct {
@@ -75,8 +78,11 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Locale = LocaleStore{db.Store(&Locale{})}
 	db.Cell = CellStore{db.Store(&Cell{})}
 
+	db.Product = ProductStore{db.Store(&Product{})}
 	db.Promo = PromoStore{db.Store(&Promo{})}
 	db.Claim = ClaimStore{db.Store(&Claim{})}
+
+	db.TrackList = TrackListStore{db.Store(&TrackList{})}
 
 	DB = db
 	return db, nil

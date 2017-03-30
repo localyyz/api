@@ -11,21 +11,21 @@ import (
 
 // TODO: promo should be keyed on placeid and queried on cells
 type Promo struct {
-	ID      int64       `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID int64       `db:"place_id" json:"placeId"`
-	Type    PromoType   `db:"type" json:"type"`
-	UserID  int64       `db:"user_id" json:"userId"`
-	Status  PromoStatus `db:"status" json:"status"`
+	ID        int64       `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID   int64       `db:"place_id" json:"placeId"`
+	Type      PromoType   `db:"type" json:"type"`
+	UserID    int64       `db:"user_id" json:"userId"`
+	ProductID int64       `db:"product_id" json:"productId"`
+	Status    PromoStatus `db:"status" json:"status"`
 
-	// Amount of points rewarded
-	// After applying. how long does the user have to claim
-	Duration int64 `db:"duration" json:"duration"`
 	// Limits
 	Limits      int64  `db:"limits" json:"limits"`
 	Description string `db:"description" json:"description"`
 	// Uploaded image accompanying the promotion
-	ImageUrl string   `db:"image_url" json:"imageUrl"`
-	Etc      PromoEtc `db:"etc,jsonb" json:"etc"`
+	ImageUrl string `db:"image_url" json:"imageUrl"`
+	// external offer id refering to specific promotion
+	OfferID int64    `db:"offer_id" json:"-"`
+	Etc     PromoEtc `db:"etc,jsonb" json:"etc"`
 
 	StartAt   *time.Time `db:"start_at,omitempty" json:"startAt"`
 	EndAt     *time.Time `db:"end_at,omitempty" json:"endAt"`
@@ -39,11 +39,13 @@ type PromoStore struct {
 }
 
 type PromoEtc struct {
-	Percent     int    `json:"pct"`
-	Spend       int    `json:"spd"`
-	Item        string `json:"itm"`
-	HeaderImage string `json:"him"`
-	PlaceImage  string `json:"pim"`
+	Percent     int     `json:"pct"`
+	Spend       int     `json:"spd"`
+	Price       float64 `json:"prc"`
+	Item        string  `json:"itm"`
+	HeaderImage string  `json:"him"`
+	PlaceImage  string  `json:"pim"`
+	Sku         string  `json:"sku"`
 }
 
 type (
@@ -89,20 +91,6 @@ func (p *Promo) CollectionName() string {
 }
 
 func (p *Promo) BeforeCreate(sess bond.Session) error {
-	// check if there're any conflicting promotions
-	cond := db.Cond{
-		"start_at <": p.EndAt,
-		"end_at >":   p.StartAt,
-		"deleted_at": nil,
-	}
-	count, err := DB.Promo.Find(cond).Count()
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return errors.New("there are promotions already scheduled during the time period")
-	}
-
 	// shared checks for updating promotion
 	if err := p.BeforeUpdate(sess); err != nil {
 		return err
@@ -147,6 +135,10 @@ func (store PromoStore) FindByPlaceID(placeID int64) (*Promo, error) {
 
 func (store PromoStore) FindByID(ID int64) (*Promo, error) {
 	return store.FindOne(db.Cond{"id": ID})
+}
+
+func (store PromoStore) FindByOfferID(offerID int64) (*Promo, error) {
+	return store.FindOne(db.Cond{"offer_id": offerID})
 }
 
 func (store PromoStore) FindOne(cond db.Cond) (*Promo, error) {

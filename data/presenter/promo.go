@@ -12,8 +12,9 @@ import (
 
 type Promo struct {
 	*data.Promo
-	Place *Place      `json:"place,omitempty"`
-	Claim *data.Claim `json:"claim,omitempty"`
+	Place   *Place        `json:"place,omitempty"`
+	Product *data.Product `json:"product,omitempty"`
+	Claim   *data.Claim   `json:"claim,omitempty"`
 
 	//fields that can be viewed
 	NumClaimed int64 `json:"numClaimed,omitempty"`
@@ -47,6 +48,16 @@ func (p *Promo) WithPlace() *Promo {
 	}
 
 	p.Place = (&Place{Place: place}).WithGeo()
+	return p
+}
+
+func (p *Promo) WithProduct() *Promo {
+	product, err := data.DB.Product.FindByID(p.ProductID)
+	if err != nil {
+		return p
+	}
+	p.Product = product
+
 	return p
 }
 
