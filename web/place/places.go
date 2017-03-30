@@ -58,32 +58,6 @@ func getTrending(user *data.User) ([]*data.Place, error) {
 	return places, nil
 }
 
-// getRecent returns most recent places based on most recent promotions created
-func getMostRecent(ctx context.Context, user *data.User) ([]*data.Place, error) {
-	var places []*data.Place
-	q := data.DB.
-		Select(
-			db.Raw("pl.*"),
-			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
-		).
-		From("places pl").
-		LeftJoin("promos pr").
-		On("pl.id = pr.place_id").
-		Where(db.Cond{
-			"pr.start_at <=": time.Now().UTC(),
-			"pr.end_at >":    time.Now().UTC(),
-			"pr.status":      data.PromoStatusActive,
-		}).
-		GroupBy("pl.id", "pr.created_at").
-		OrderBy("-pr.created_at").
-		Limit(10)
-	if err := q.All(&places); err != nil {
-		return nil, errors.Wrap(err, "most recent places")
-	}
-
-	return places, nil
-}
-
 func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	currentUser := ctx.Value("session.user").(*data.User)
@@ -123,7 +97,7 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
 		).
 		OrderBy("distance").
-		//Limit(20).
+		Limit(20).
 		All(&places)
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
@@ -134,10 +108,7 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 	for _, pl := range places {
 		// TODO: +1 here
 		p := presenter.NewPlace(ctx, pl).WithPromo()
-		if p.Promo.Promo == nil {
-			continue
-		}
-		presented = append(presented, p.WithLocale().WithGeo())
+		presented = append(presented, p.WithGeo())
 	}
 
 	ws.Respond(w, http.StatusOK, presented)
@@ -148,9 +119,25 @@ func Recent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	places, err := getMostRecent(ctx, user)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+	var places []*data.Place
+	q := data.DB.
+		Select(
+			db.Raw("distinct on (pl.id) pl.*"),
+			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
+		).
+		From("places pl").
+		LeftJoin("promos pr").
+		On("pl.id = pr.place_id").
+		Where(db.Cond{
+			"pr.start_at <=": time.Now().UTC(),
+			"pr.end_at >":    time.Now().UTC(),
+			"pr.status":      data.PromoStatusActive,
+		}).
+		GroupBy("pl.id", "pr.start_at").
+		OrderBy("pl.id", "-pr.start_at").
+		Limit(10)
+	if err := q.All(&places); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "recent promotions"))
 		return
 	}
 
@@ -158,7 +145,7 @@ func Recent(w http.ResponseWriter, r *http.Request) {
 	for _, pl := range places {
 		// TODO: +1 here
 		p := presenter.NewPlace(ctx, pl).WithPromo()
-		presented = append(presented, p.WithLocale().WithGeo())
+		presented = append(presented, p.WithGeo())
 	}
 
 	ws.Respond(w, http.StatusOK, presented)
