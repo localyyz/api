@@ -55,17 +55,19 @@ func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	locale := ctx.Value("locale").(*data.Locale)
 	user := ctx.Value("session.user").(*data.User)
 
+	cursor := ws.NewPage(r)
+
 	var places []*data.Place
-	err := data.DB.Place.
+	query := data.DB.Place.
 		Find(db.Cond{"locale_id": locale.ID}).
 		Select(
 			db.Raw("*"),
 			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
 		).
-		OrderBy("distance").
-		//Limit(20).
-		All(&places)
-	if err != nil {
+		OrderBy("distance")
+
+	query = cursor.UpdateQueryUpper(query)
+	if err := query.All(&places); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "list place"))
 		return
 	}
@@ -74,8 +76,8 @@ func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	for _, pl := range places {
 		// TODO: +1 here
 		p := presenter.NewPlace(ctx, pl).WithPromo()
-		presented = append(presented, p.WithLocale().WithGeo())
+		presented = append(presented, p)
 	}
 
-	ws.Respond(w, http.StatusOK, presented)
+	ws.Respond(w, http.StatusOK, presented, cursor.Update(places))
 }
