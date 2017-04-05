@@ -97,11 +97,6 @@ func TrackShopifySales() {
 			}
 
 			for _, o := range p.Offers {
-				if !o.InStock {
-					// skip if not in stock
-					continue
-				}
-
 				// look for offer
 				promo, err := data.DB.Promo.FindByOfferID(o.OfferID)
 				if err != nil && err != db.ErrNoMoreRows {
@@ -111,6 +106,11 @@ func TrackShopifySales() {
 
 				if promo != nil {
 					// TODO: mark as not in stock
+					// check category data
+					if !o.InStock {
+						promo.Status = data.PromoStatusCompleted
+						data.DB.Promo.Save(promo)
+					}
 					continue
 				}
 
