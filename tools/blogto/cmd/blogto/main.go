@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 
-	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/tools/blogto/locale"
 	"bitbucket.org/moodie-app/moodie-api/tools/blogto/store"
 
@@ -32,15 +31,15 @@ func main() {
 	// ssh -nNT -L 1234:localhost:5432 ubuntu@159.203.26.181
 	// NOTE: weirdness with connURL options not respecting port
 	// parsed from hosts
-	conf := &data.DBConf{
-		Database:        "localyyz",
-		Hosts:           []string{"localhost:1234"},
-		Username:        "localyyz",
-		ApplicationName: "tool",
-	}
-	if _, err := data.NewDBSession(conf); err != nil {
-		log.Fatalf("db err: %s. Check ssh tunnel.", err)
-	}
+	//conf := &data.DBConf{
+	//Database:        "localyyz",
+	//Hosts:           []string{"localhost:1234"},
+	//Username:        "localyyz",
+	//ApplicationName: "tool",
+	//}
+	//if _, err := data.NewDBSession(conf); err != nil {
+	//log.Fatalf("db err: %s. Check ssh tunnel.", err)
+	//}
 
 	var err error
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
