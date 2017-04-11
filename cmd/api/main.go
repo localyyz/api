@@ -57,7 +57,6 @@ func main() {
 	c.AddFunc("@every 1m", worker.PromoStartWorker)
 	c.AddFunc("@every 1m", worker.PromoEndWorker)
 	c.AddFunc("@every 1h", worker.TrackShopifySales)
-	worker.TrackShopifySales()
 	//c.AddFunc("0 0 0 * * *", worker.RefreshPromoWorker)
 	c.Start()
 

@@ -2,6 +2,7 @@ package worker
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/goware/lg"
+	"github.com/pkg/errors"
 )
 
 type Offer struct {
@@ -50,7 +52,7 @@ func TrackShopifySales() {
 			continue
 		}
 
-		resp, err := http.Get(t.SalesUrl)
+		resp, err := http.Get(fmt.Sprintf("%s.oembed", t.SalesUrl))
 		if err != nil {
 			lg.Warn(err)
 			continue
@@ -62,6 +64,27 @@ func TrackShopifySales() {
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&wrapper); err != nil {
 			lg.Fatal(err)
+		}
+
+		type listedPromo struct {
+			*data.Promo
+			IsValid bool
+		}
+		// get list of existing promotions that's active
+		var existingPromos []*listedPromo
+		if err := data.DB.Promo.Find(db.And(
+			db.Cond{"place_id": place.ID},
+			db.Or(
+				db.Cond{"status": data.PromoStatusActive},
+				db.Cond{"status": data.PromoStatusScheduled},
+			),
+		)).All(&existingPromos); err != nil {
+			lg.Warn(errors.Wrap(err, "failed to fetch existing promotions"))
+		}
+		existingPromoMap := map[int64]*listedPromo{}
+		for _, ep := range existingPromos {
+			// mapped by offer id
+			existingPromoMap[ep.OfferID] = ep
 		}
 
 		for _, p := range wrapper.Products {
@@ -97,27 +120,23 @@ func TrackShopifySales() {
 			}
 
 			for _, o := range p.Offers {
-				// look for offer
-				promo, err := data.DB.Promo.FindByOfferID(o.OfferID)
-				if err != nil && err != db.ErrNoMoreRows {
-					lg.Warn(err)
-					continue
-				}
-
-				if promo != nil {
-					// TODO: mark as not in stock
-					// check category data
-					if !o.InStock {
-						promo.Status = data.PromoStatusCompleted
-						data.DB.Promo.Save(promo)
+				if promoWrapper, ok := existingPromoMap[o.OfferID]; ok {
+					if o.InStock {
+						// mark as still valid
+						promoWrapper.IsValid = true
 					}
 					continue
 				}
 
+				if !o.InStock {
+					continue
+				}
+
+				// new promotion
 				now := time.Now().UTC()
 				start := now.Add(5 * time.Minute)
 				end := now.Add(30 * 24 * time.Hour)
-				promo = &data.Promo{
+				promo := &data.Promo{
 					PlaceID:     place.ID,
 					Type:        data.PromoTypePrice,
 					OfferID:     o.OfferID,
@@ -132,14 +151,28 @@ func TrackShopifySales() {
 					StartAt: &start,
 					EndAt:   &end, // 1 month
 				}
+				lg.Warnf("inserting %+v", promo)
 
 				if err := data.DB.Promo.Save(promo); err != nil {
 					lg.Warn(err)
 					continue
 				}
+			}
+		}
 
-				// TODO: parse more offers for details
-				break
+		var offerIDs []int64
+		for _, p := range existingPromoMap {
+			if !p.IsValid {
+				offerIDs = append(offerIDs, p.OfferID)
+			}
+		}
+		if len(offerIDs) > 0 {
+			lg.Infof("Expiring offers: %+v", offerIDs)
+			updateQuery := data.DB.Update("promos").
+				Set(db.Cond{"status": data.PromoStatusCompleted}).
+				Where(db.Cond{"offer_id": offerIDs})
+			if _, err := updateQuery.Exec(); err != nil {
+				lg.Warn(err)
 			}
 		}
 

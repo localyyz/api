@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"os"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/goware/lg"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -37,7 +37,6 @@ type Config struct {
 }
 
 func NewFromFile(fileConfig, envConfig string) (*Config, error) {
-
 	file := fileConfig
 	if file == "" {
 		file = envConfig
@@ -45,10 +44,10 @@ func NewFromFile(fileConfig, envConfig string) (*Config, error) {
 
 	var conf Config
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return nil, err
+		return nil, errors.Wrap(err, "invalid config file given")
 	}
 	if _, err := toml.DecodeFile(file, &conf); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to load config file")
 	}
 
 	// If development, set lg to debug

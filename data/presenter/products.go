@@ -11,7 +11,8 @@ import (
 
 type Product struct {
 	*data.Product
-	Promos []*Promo `json:"promos"`
+	Promos  []*Promo `json:"promos"`
+	ShopUrl string   `json:"shopUrl"`
 
 	CreateAt  *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
@@ -41,6 +42,7 @@ func (p *Product) WithPromo() *Product {
 
 	for _, pr := range promos {
 		p.Promos = append(p.Promos, NewPromo(p.ctx, pr))
+		break // TODO: just return 1 for now
 	}
 
 	return p

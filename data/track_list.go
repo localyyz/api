@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"upper.io/bond"
+	db "upper.io/db.v3"
 )
 
 type TrackList struct {
@@ -20,4 +21,16 @@ type TrackListStore struct {
 
 func (t *TrackList) CollectionName() string {
 	return `track_list`
+}
+
+func (store TrackListStore) FindByPlaceID(placeID int64) (*TrackList, error) {
+	return store.FindOne(db.Cond{"place_id": placeID})
+}
+
+func (store TrackListStore) FindOne(cond db.Cond) (*TrackList, error) {
+	var trackList *TrackList
+	if err := store.Find(cond).One(&trackList); err != nil {
+		return nil, err
+	}
+	return trackList, nil
 }

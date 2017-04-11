@@ -4,8 +4,9 @@
 package ws
 
 import (
-	"errors"
 	"net/http"
+
+	"github.com/pkg/errors"
 
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/goware/errorx"
@@ -30,7 +31,6 @@ var (
 //
 //  returns wrapped errorx and proper http status code
 func WrapError(status int, err error) (int, error) {
-
 	// Mapped errors are well defined situations that
 	// should provide a predefined helpful message to the user.
 	if e, ok := mappings[err]; ok {
@@ -38,5 +38,8 @@ func WrapError(status int, err error) (int, error) {
 		return e.Code, errors.New(e.Message)
 	}
 
+	_ = errors.Wrap(err, "")
+
+	// check if pq error
 	return status, errorx.New(1000, err.Error())
 }
