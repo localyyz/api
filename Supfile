@@ -47,6 +47,12 @@ commands:
     local: >
         ./scripts/docker-build.sh
     once: true
+  
+  generate-docs:
+    desc: Generate api docs with chi docgen
+    local: >
+        make docs
+    once: true
 
   image:
     desc: List Docker image
@@ -68,10 +74,6 @@ commands:
   tail-logs:
     desc: Tail Docker logs
     run: docker logs --tail=20 -f $NAME 2>&1
-
-  health:
-    desc: Application health check
-    run: curl localhost:$HOST_PORT
 
   start:
     desc: Start Docker container
@@ -102,9 +104,10 @@ commands:
 targets:
   build:
     - build-image
+    - generate-docs
     
   deploy:
-    - build-image
+    - build
     - pull
     - config
     - stop
@@ -113,4 +116,3 @@ targets:
     - run
     - ps
     - logs
-    - health

@@ -15,6 +15,7 @@ all:
 	@echo "  run                   - run API in dev mode"
 	@echo "  build                 - build api into bin/ directory"
 	@echo "  build-all             - build all binaries into bin/ directory"
+	@echo "  docs                  - generate api documentation"
 	@echo "  tools                 - go get's a bunch of tools for dev"
 	@echo ""
 	@echo "  db-create             - create dev db"
@@ -35,6 +36,9 @@ tools:
 	go get -u github.com/pressly/sup/cmd/sup
 	go get -u github.com/pressly/fresh
 	GOGO=off go build -i -o ./bin/goose ./vendor/bitbucket.org/liamstask/goose/cmd/goose
+
+docs:
+	go run ./docs/main.go
 
 ##
 ## Database
@@ -60,9 +64,6 @@ db-reset:
 
 run:
 	@(export CONFIG=${API_CONFIG}; export PEM=${PEM}; fresh -c runner.conf -p ./cmd/api)
-
-run-promo:
-	@(export CONFIG=${PROMO_CONFIG}; fresh -c runner.conf -p ./cmd/promo)
 
 build-goose:
 	@mkdir -p ./bin
