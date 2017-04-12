@@ -104,10 +104,10 @@ commands:
 targets:
   build:
     - build-image
-    - generate-docs
     
   deploy:
-    - build
+    - build-image
+    - generate-docs
     - pull
     - config
     - stop

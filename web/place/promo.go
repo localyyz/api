@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	set "gopkg.in/fatih/set.v0"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
@@ -33,12 +35,16 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productIDs := make([]int64, len(promos))
-	for i, p := range promos {
-		productIDs[i] = p.ProductID
+	productIDs := set.New()
+	for _, p := range promos {
+		productIDs.Add(p.ProductID)
+	}
+	if productIDs.Size() == 0 {
+		ws.Respond(w, http.StatusOK, []struct{}{})
+		return
 	}
 
-	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
+	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs.List()})
 	if err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
