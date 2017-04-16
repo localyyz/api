@@ -336,10 +336,10 @@
 	- **/manage**
 		- [PromoManageCtx]()
 		- **/**
-			- _POST_
-				- [CreatePromo]()
 			- _GET_
 				- [ListManagable]()
+			- _POST_
+				- [CreatePromo]()
 
 </details>
 <details>
@@ -355,10 +355,10 @@
 		- **/:promoID**
 			- [PromoCtx]()
 			- **/**
-				- _DELETE_
-					- [DeletePromo]()
 				- _PUT_
 					- [UpdatePromo]()
+				- _DELETE_
+					- [DeletePromo]()
 
 </details>
 <details>

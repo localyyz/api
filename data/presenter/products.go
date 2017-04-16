@@ -2,6 +2,7 @@ package presenter
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"upper.io/db.v3"
@@ -29,21 +30,27 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	}
 }
 
+func (p *Product) WithShopUrl() *Product {
+	track, ok := p.ctx.Value("track").(*data.TrackList)
+	if !ok {
+		return p
+	}
+	p.ShopUrl = fmt.Sprintf("%s/products/%s", track.SalesUrl, p.ExternalID)
+	return p
+}
+
 func (p *Product) WithPromo() *Product {
-	promos, err := data.DB.Promo.FindAll(
+	var promo *data.Promo
+	err := data.DB.Promo.Find(
 		db.Cond{
 			"product_id": p.ID,
 			"status":     data.PromoStatusActive,
 		},
-	)
+	).OrderBy("id").One(&promo)
 	if err != nil {
 		return p
 	}
 
-	for _, pr := range promos {
-		p.Promos = append(p.Promos, NewPromo(p.ctx, pr))
-		break // TODO: just return 1 for now
-	}
-
+	p.Promos = []*Promo{NewPromo(p.ctx, promo)}
 	return p
 }

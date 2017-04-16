@@ -1,7 +1,7 @@
 package place
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"time"
 
@@ -55,11 +55,11 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
+	ctx = context.WithValue(ctx, "track", track)
 
 	res := make([]*presenter.Product, len(products))
 	for i, p := range products {
-		res[i] = presenter.NewProduct(ctx, p).WithPromo()
-		res[i].ShopUrl = fmt.Sprintf("%s/products/%s", track.SalesUrl, p.ExternalID)
+		res[i] = presenter.NewProduct(ctx, p).WithPromo().WithShopUrl()
 	}
 
 	ws.Respond(w, http.StatusOK, res, cursor.Update(products))
