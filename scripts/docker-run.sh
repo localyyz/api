@@ -7,7 +7,7 @@ if [ ! -f $CONFIG ]; then
 fi
 
 docker run -d -it\
-  -p $HOST_PORT:$CONTAINER_PORT \
+  -p 127.0.0.1:$HOST_PORT:$CONTAINER_PORT \
   -v $CONFIG:/etc/api.conf \
   -v /data/etc/push.pem:/etc/push.pem \
   --link postgres:postgres \

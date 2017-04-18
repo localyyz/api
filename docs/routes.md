@@ -238,6 +238,21 @@
 
 </details>
 <details>
+<summary>`/products/:productID/claim`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/products**
+	- **/:productID**
+		- [ProductCtx]()
+		- **/claim**
+			- _POST_
+				- [ClaimProduct]()
+
+</details>
+<details>
 <summary>`/promos/:promoID`</summary>
 
 - [NoCache]()
@@ -336,10 +351,10 @@
 	- **/manage**
 		- [PromoManageCtx]()
 		- **/**
-			- _GET_
-				- [ListManagable]()
 			- _POST_
 				- [CreatePromo]()
+			- _GET_
+				- [ListManagable]()
 
 </details>
 <details>
@@ -448,6 +463,22 @@
 
 </details>
 <details>
+<summary>`/users/:userID/*/shoppinglist`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/:userID**
+		- [UserCtx]()
+		- **/***
+			- **/shoppinglist**
+				- _GET_
+					- [GetShoppingList]()
+
+</details>
+<details>
 <summary>`/users/me/*`</summary>
 
 - [NoCache]()
@@ -480,6 +511,22 @@
 
 </details>
 <details>
+<summary>`/users/me/*/shoppinglist`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/me**
+		- [MeCtx]()
+		- **/***
+			- **/shoppinglist**
+				- _GET_
+					- [GetShoppingList]()
+
+</details>
+<details>
 <summary>`/users/me/nda`</summary>
 
 - [NoCache]()
@@ -495,4 +542,4 @@
 
 </details>
 
-Total # of routes: 34
+Total # of routes: 37
