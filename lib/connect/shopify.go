@@ -32,12 +32,13 @@ func SetupShopify(conf Config) {
 }
 
 func (s *Shopify) getConfig(shopifyID string) *oauth2.Config {
+	shopUrl := fmt.Sprintf("https://%s.myshopify.com", shopifyID)
 	return &oauth2.Config{
 		ClientID:     s.clientID,
 		ClientSecret: s.clientSecret,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  fmt.Sprintf("https://%s.myshopify.com/admin/oauth/authorize", shopifyID),
-			TokenURL: fmt.Sprintf("https://%s.myshopify.com/admin/oauth/access_token", shopifyID),
+			AuthURL:  fmt.Sprintf("%s/admin/oauth/authorize", shopUrl),
+			TokenURL: fmt.Sprintf("%s/admin/oauth/access_token", shopUrl),
 		},
 		RedirectURL: s.redirectURL,
 		Scopes:      []string{"read_products"},
