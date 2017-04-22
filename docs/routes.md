@@ -13,7 +13,7 @@
 - [New.func1]()
 - **/**
 	- _GET_
-		- [New.func2]()
+		- [New.func2.1]()
 
 </details>
 <details>
@@ -112,6 +112,18 @@
 
 </details>
 <details>
+<summary>`/oauth/shopify/callback`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/oauth/shopify/callback**
+	- _GET_
+		- [ShopifyOAuthCb]()
+
+</details>
+<details>
 <summary>`/places/:placeID`</summary>
 
 - [NoCache]()
@@ -127,6 +139,21 @@
 
 </details>
 <details>
+<summary>`/places/:placeID/connect/shopify`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places**
+	- **/:placeID**
+		- [PlaceCtx]()
+		- **/connect/shopify**
+			- _GET_
+				- [ConnectShopify]()
+
+</details>
+<details>
 <summary>`/places/:placeID/follow`</summary>
 
 - [NoCache]()
@@ -137,10 +164,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _DELETE_
-				- [UnfollowPlace]()
 			- _POST_
 				- [FollowPlace]()
+			- _DELETE_
+				- [UnfollowPlace]()
 
 </details>
 <details>
@@ -542,4 +569,4 @@
 
 </details>
 
-Total # of routes: 37
+Total # of routes: 39

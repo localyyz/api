@@ -12,6 +12,7 @@ In developer tools, `copy(neighbourhoods)` and paste into
 
 ###Listing stores in a Neighbourhood
 `GET http://www.blogto.com/api/v2/listings/`
+`http://api.blogto.com/listings.json/11387?k=d4UKy3LrxPXA`
 
 with url parameters:
 
