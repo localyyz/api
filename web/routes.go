@@ -5,6 +5,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
+	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/categories"
@@ -40,15 +41,22 @@ func New(h *Handler) chi.Router {
 		return http.HandlerFunc(fn)
 	})
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`¯\_(ツ)_/¯`))
+	// Public Routes
+	r.Group(func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`( ͡° ͜ʖ ͡°)`))
+		})
+
+		r.Post("/login/facebook", auth.FacebookLogin)
+		r.Get("/oauth/shopify/callback", auth.ShopifyOAuthCb)
+
+		r.Post("/echo", echoPush)
 	})
 
-	r.Post("/login/facebook", auth.FacebookLogin)
-	r.Post("/echo", echoPush)
-
+	// Authed Routes
 	r.Group(func(r chi.Router) {
+		r.Use(token.Verify())
 		r.Use(session.SessionCtx)
 
 		r.Mount("/session", session.Routes())

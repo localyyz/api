@@ -13,6 +13,7 @@ import (
 type Product struct {
 	*data.Product
 	Promos  []*Promo `json:"promos"`
+	Place   *Place   `json:"place"`
 	ShopUrl string   `json:"shopUrl"`
 
 	CreateAt  *time.Time `json:"createdAt,omitempty"`
@@ -52,5 +53,15 @@ func (p *Product) WithPromo() *Product {
 	}
 
 	p.Promos = []*Promo{NewPromo(p.ctx, promo)}
+	return p
+}
+
+func (p *Product) WithPlace() *Product {
+	place, err := data.DB.Place.FindByID(p.PlaceID)
+	if err != nil {
+		return p
+	}
+	p.Place = NewPlace(p.ctx, place)
+
 	return p
 }

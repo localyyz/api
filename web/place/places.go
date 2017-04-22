@@ -108,7 +108,7 @@ func Nearby(w http.ResponseWriter, r *http.Request) {
 	var presented []*presenter.Place
 	for _, pl := range places {
 		// TODO: +1 here
-		p := presenter.NewPlace(ctx, pl).WithPromo()
+		p := presenter.NewPlace(ctx, pl).WithPromo().WithFollowing()
 		presented = append(presented, p.WithGeo())
 	}
 
@@ -146,7 +146,7 @@ func Recent(w http.ResponseWriter, r *http.Request) {
 	var presented []*presenter.Place
 	for _, pl := range places {
 		// TODO: +1 here
-		p := presenter.NewPlace(ctx, pl).WithPromo()
+		p := presenter.NewPlace(ctx, pl).WithPromo().WithFollowing()
 		presented = append(presented, p.WithGeo())
 	}
 

@@ -1,17 +1,18 @@
 package connect
 
 type Config struct {
-	AppId     string `toml:"app_id"`
-	AppSecret string `toml:"app_secret"`
+	AppId         string `toml:"app_id"`
+	AppSecret     string `toml:"app_secret"`
+	OAuthCallback string `toml:"oauth_callback"`
 }
 
 type Configs struct {
-	Facebook *Config `toml:"facebook"`
+	Facebook Config `toml:"facebook"`
+	Shopify  Config `toml:"shopify"`
 }
 
 // Configure loads the connect configs from config file
 func Configure(confs Configs) {
-	if confs.Facebook != nil {
-		SetupFB(confs.Facebook)
-	}
+	SetupFacebook(confs.Facebook)
+	SetupShopify(confs.Shopify)
 }

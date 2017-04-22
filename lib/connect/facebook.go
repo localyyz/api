@@ -13,18 +13,18 @@ import (
 )
 
 var (
-	FB *FBConnect
+	FB *Facebook
 	// Facebook API version
 	// See: https://developers.facebook.com/docs/apps/changelog for updates
 	FBVersion = "v2.6"
 )
 
-type FBConnect struct {
+type Facebook struct {
 	*fb.App
 }
 
-func SetupFB(conf *Config) {
-	FB = &FBConnect{
+func SetupFacebook(conf Config) {
+	FB = &Facebook{
 		App: &fb.App{
 			AppId:     conf.AppId,
 			AppSecret: conf.AppSecret,
@@ -32,7 +32,7 @@ func SetupFB(conf *Config) {
 	}
 }
 
-func (f *FBConnect) Login(token string) (*data.User, error) {
+func (f *Facebook) Login(token string) (*data.User, error) {
 	sess := f.App.Session(token)
 
 	userID, err := sess.User()
@@ -62,7 +62,7 @@ func (f *FBConnect) Login(token string) (*data.User, error) {
 		}
 
 		// first time login, exchange for long-lived token
-		token, _, err := FB.ExchangeToken(token)
+		token, _, err := f.ExchangeToken(token)
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +80,7 @@ func (f *FBConnect) Login(token string) (*data.User, error) {
 	return user, nil
 }
 
-func (f *FBConnect) GetUser(u *data.User) error {
+func (f *Facebook) GetUser(u *data.User) error {
 	if u.AccessToken == "" {
 		return errors.New("invalid token")
 	}

@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
+	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/lib/worker"
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/goware/lg"
@@ -43,7 +44,7 @@ func main() {
 	connect.Configure(conf.Connect)
 
 	//[jwt]
-	data.SetupJWTAuth(conf.Jwt.Secret)
+	token.SetupJWTAuth(conf.Jwt.Secret)
 
 	// pusher
 	if pemFile != nil {

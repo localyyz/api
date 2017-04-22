@@ -4,8 +4,11 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/goware/jwtauth"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 )
 
@@ -17,7 +20,7 @@ type AuthUser struct {
 
 // AuthUser wraps a user with JWT token
 func NewAuthUser(user *data.User) (*AuthUser, error) {
-	token, err := data.GenerateToken(user.ID)
+	token, err := token.Encode(jwtauth.Claims{"user_id": user.ID})
 	if err != nil {
 		return nil, err
 	}

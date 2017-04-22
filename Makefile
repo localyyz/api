@@ -23,6 +23,7 @@ all:
 	@echo "  db-reset              - reset dev db (drop, create, migrate)"
 	@echo "  db-up                 - migrate dev DB to latest version"
 	@echo "  db-down               - roll back dev DB to a previous version"
+	@echo "  db-migrate            - create new db migration"
 	@echo "  db-status             - status of current dev DB version"
 	@echo ""
 
@@ -51,6 +52,9 @@ db-up:
 
 db-down:
 	goose down
+
+db-migrate:
+	goose create ${NAME} sql
 
 db-create:
 	@./db/db.sh create localyyz

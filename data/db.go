@@ -24,9 +24,10 @@ type Database struct {
 	Locale LocaleStore
 	Cell   CellStore
 
-	Product ProductStore
-	Promo   PromoStore
-	Claim   ClaimStore
+	ShopifyCred ShopifyCredStore
+	Product     ProductStore
+	Promo       PromoStore
+	Claim       ClaimStore
 
 	TrackList TrackListStore
 }
@@ -78,6 +79,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Locale = LocaleStore{db.Store(&Locale{})}
 	db.Cell = CellStore{db.Store(&Cell{})}
 
+	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}
 	db.Product = ProductStore{db.Store(&Product{})}
 	db.Promo = PromoStore{db.Store(&Promo{})}
 	db.Claim = ClaimStore{db.Store(&Claim{})}

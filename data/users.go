@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 
 	"github.com/goware/geotools"
@@ -82,7 +83,7 @@ func (s UserStore) FindOne(cond db.Cond) (*User, error) {
 
 // NewSessionUser returns a session user from jwt auth token
 func NewSessionUser(tok string) (*User, error) {
-	token, err := DecodeToken(tok)
+	token, err := token.Decode(tok)
 	if err != nil {
 		return nil, err
 	}

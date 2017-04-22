@@ -18,12 +18,12 @@ type Place struct {
 	Description string `db:"description" json:"description"`
 	ImageURL    string `db:"image_url" json:"imageUrl"`
 
-	Gender   PlaceGender `db:"gender" json:"gender"`
-	Category Category    `db:"category" json:"category"`
+	Category Category `db:"category" json:"category"`
 
-	BlogtoID *int64         `db:"blogto_id,omitempty" json:"-"`
-	Geo      geotools.Point `db:"geo" json:"-"`
-	Distance float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
+	ShopifyID string         `db:"shopify_id,omitempty" json:"-"`
+	BlogtoID  *int64         `db:"blogto_id,omitempty" json:"-"`
+	Geo       geotools.Point `db:"geo" json:"-"`
+	Distance  float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`

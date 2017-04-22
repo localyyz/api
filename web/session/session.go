@@ -2,9 +2,9 @@ package session
 
 import (
 	"context"
-	"errors"
 	"net/http"
-	"strings"
+
+	jwt "github.com/dgrijalva/jwt-go"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
@@ -14,24 +14,17 @@ func SessionCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		// check Authorization header for jwt
-		auth := r.Header.Get("Authorization")
-		if auth == "" {
-			ws.Respond(w, http.StatusUnauthorized, errors.New("no authorization header"))
+		token, _ := ctx.Value("jwt").(*jwt.Token)
+		if token == nil {
+			ws.Respond(w, http.StatusUnauthorized, "")
 			return
 		}
-
-		const prefix = "BEARER "
-		if !strings.HasPrefix(auth, prefix) {
-			ws.Respond(w, http.StatusUnauthorized, errors.New("invalid authorization header"))
-			return
-		}
-
-		user, err := data.NewSessionUser(auth[len(prefix):])
+		user, err := data.NewSessionUser(token.Raw)
 		if err != nil {
-			ws.Respond(w, http.StatusUnauthorized, err)
+			ws.Respond(w, http.StatusUnauthorized, "")
 			return
 		}
+
 		ctx = context.WithValue(ctx, "session.user", user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}

@@ -68,7 +68,7 @@ func GetShoppingList(w http.ResponseWriter, r *http.Request) {
 		}
 		ctx = context.WithValue(ctx, "track", track)
 
-		res[i] = presenter.NewProduct(ctx, p).WithShopUrl()
+		res[i] = presenter.NewProduct(ctx, p).WithShopUrl().WithPlace()
 		res[i].Promos = promoMap[p.ID]
 	}
 

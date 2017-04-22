@@ -18,3 +18,8 @@ topic             = "org.moodie.toronto"
 [connect.facebook]
 app_id            = "1610675759250907"
 app_secret        = "47f2c12ab33da224c503173a126e7205"
+
+[shopify]
+app_id            = "587f3e8910f3f46f31dd614d0d48080e"
+app_secret        = "804c34391f23167435d5274db4536235"
+oauth_callback    = "http://localhost:5331/oauth/shopify/callback"
