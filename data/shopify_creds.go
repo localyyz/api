@@ -11,6 +11,8 @@ type ShopifyCred struct {
 	ID      int64 `db:"id,pk,omitempty" json:"id,omitempty"`
 	PlaceID int64 `db:"place_id" json:"placeId"`
 
+	// NOTE: because shopify is stupid
+	ApiURL      string `db:"api_url" json:"api_url"`
 	AccessToken string `db:"auth_access_token" json:"-"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`

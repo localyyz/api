@@ -7,6 +7,7 @@ CREATE TABLE shopify_creds (
 
     place_id bigint NOT NULL REFERENCES places (id) ON DELETE CASCADE,
     auth_access_token text NOT NULL,
+    api_url text NOT NULL,
 
     created_at timestamp DEFAULT now() NOT NULL,
     updated_at timestamp

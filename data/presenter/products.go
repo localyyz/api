@@ -32,11 +32,11 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 }
 
 func (p *Product) WithShopUrl() *Product {
-	track, ok := p.ctx.Value("track").(*data.TrackList)
+	place, ok := p.ctx.Value("place").(*data.Place)
 	if !ok {
 		return p
 	}
-	p.ShopUrl = fmt.Sprintf("%s/products/%s", track.SalesUrl, p.ExternalID)
+	p.ShopUrl = fmt.Sprintf("%s/products/%s", place.Website, p.ExternalID)
 	return p
 }
 

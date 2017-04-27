@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
@@ -13,6 +14,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/product"
 	"bitbucket.org/moodie-app/moodie-api/web/promo"
+	"bitbucket.org/moodie-app/moodie-api/web/search"
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
 
@@ -49,7 +51,7 @@ func New(h *Handler) chi.Router {
 		})
 
 		r.Post("/login/facebook", auth.FacebookLogin)
-		r.Get("/oauth/shopify/callback", auth.ShopifyOAuthCb)
+		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)
 
 		r.Post("/echo", echoPush)
 	})
@@ -66,6 +68,7 @@ func New(h *Handler) chi.Router {
 		r.Mount("/promos", promo.Routes())
 		r.Mount("/locales", locale.Routes())
 		r.Mount("/products", product.Routes())
+		r.Mount("/search", search.Routes())
 	})
 
 	return r

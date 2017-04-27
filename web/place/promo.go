@@ -1,7 +1,6 @@
 package place
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -49,13 +48,6 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
-
-	track, err := data.DB.TrackList.FindByPlaceID(place.ID)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-	ctx = context.WithValue(ctx, "track", track)
 
 	res := make([]*presenter.Product, len(products))
 	for i, p := range products {
