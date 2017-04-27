@@ -92,6 +92,7 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 	cred := &data.ShopifyCred{
 		PlaceID:     place.ID,
 		AccessToken: tok.AccessToken,
+		ApiURL:      fmt.Sprintf("https://%s.myshopify.com", place.ShopifyID),
 	}
 	if err := data.DB.ShopifyCred.Save(cred); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
