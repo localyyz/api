@@ -120,7 +120,7 @@
 - [New.func1]()
 - **/oauth/shopify/callback**
 	- _GET_
-		- [ShopifyOAuthCb]()
+		- [bitbucket.org/moodie-app/moodie-api/lib/connect.(*Shopify).OAuthCb-fm]()
 
 </details>
 <details>
@@ -139,21 +139,6 @@
 
 </details>
 <details>
-<summary>`/places/:placeID/connect/shopify`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places**
-	- **/:placeID**
-		- [PlaceCtx]()
-		- **/connect/shopify**
-			- _GET_
-				- [ConnectShopify]()
-
-</details>
-<details>
 <summary>`/places/:placeID/follow`</summary>
 
 - [NoCache]()
@@ -164,10 +149,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _POST_
-				- [FollowPlace]()
 			- _DELETE_
 				- [UnfollowPlace]()
+			- _POST_
+				- [FollowPlace]()
 
 </details>
 <details>
@@ -186,6 +171,40 @@
 
 </details>
 <details>
+<summary>`/places/:placeID/shopify/connect`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places**
+	- **/:placeID**
+		- [PlaceCtx]()
+		- **/shopify**
+			- **/connect**
+				- _GET_
+					- [Connect]()
+
+</details>
+<details>
+<summary>`/places/:placeID/shopify/sync`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places**
+	- **/:placeID**
+		- [PlaceCtx]()
+		- **/shopify**
+			- **/sync**
+				- _POST_
+					- [CredCtx]()
+					- [ClientCtx]()
+					- [SyncProduct]()
+
+</details>
+<details>
 <summary>`/places/all`</summary>
 
 - [NoCache]()
@@ -196,19 +215,6 @@
 	- **/all**
 		- _GET_
 			- [ListPlaces]()
-
-</details>
-<details>
-<summary>`/places/autocomplete`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places**
-	- **/autocomplete**
-		- _POST_
-			- [AutoComplete]()
 
 </details>
 <details>
@@ -419,6 +425,19 @@
 
 </details>
 <details>
+<summary>`/search`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/search**
+	- **/**
+		- _POST_
+			- [OmniSearch]()
+
+</details>
+<details>
 <summary>`/session`</summary>
 
 - [NoCache]()
@@ -569,4 +588,4 @@
 
 </details>
 
-Total # of routes: 39
+Total # of routes: 40
