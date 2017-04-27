@@ -3,11 +3,13 @@ package connect
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/goware/jwtauth"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
+	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 
 	"golang.org/x/oauth2"
 )
@@ -31,6 +33,7 @@ func SetupShopify(conf Config) {
 	}
 }
 
+// NOTE: added ".myshopify.com" to oauth2 vendored lib
 func (s *Shopify) getConfig(shopifyID string) *oauth2.Config {
 	shopUrl := fmt.Sprintf("https://%s.myshopify.com", shopifyID)
 	return &oauth2.Config{
@@ -43,6 +46,59 @@ func (s *Shopify) getConfig(shopifyID string) *oauth2.Config {
 		RedirectURL: s.redirectURL,
 		Scopes:      []string{"read_products"},
 	}
+}
+
+// callback from initiating AuthCodeURL
+func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	// TODO: check HMAC signature
+
+	//code := q.Get("code")
+	state := q.Get("state")
+	shop := q.Get("shop")
+
+	token, err := token.Decode(state)
+	if err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+
+	pId, ok := token.Claims["place_id"].(string)
+	if !ok {
+		ws.Respond(w, http.StatusBadRequest, ErrInvalidState)
+		return
+	}
+
+	placeId, _ := strconv.ParseInt(pId, 10, 64)
+	place, err := data.DB.Place.FindByID(placeId)
+
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if fmt.Sprintf("%s.myshopify.com", place.ShopifyID) != shop {
+		ws.Respond(w, http.StatusBadRequest, "")
+		return
+	}
+
+	tok, err := s.Exchange(place, r)
+	if err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+
+	// save authorization
+	cred := &data.ShopifyCred{
+		PlaceID:     place.ID,
+		AccessToken: tok.AccessToken,
+	}
+	if err := data.DB.ShopifyCred.Save(cred); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusCreated, "shopify connected.")
 }
 
 func (s *Shopify) AuthCodeURL(r *http.Request) string {
@@ -58,4 +114,17 @@ func (s *Shopify) Exchange(place *data.Place, r *http.Request) (*oauth2.Token, e
 
 	config := s.getConfig(place.ShopifyID)
 	return config.Exchange(r.Context(), code)
+}
+
+// NOTE: this doesn't work unless we implement our own
+// http transport and token and make it play nice with oauth2 lib
+func (s *Shopify) ClientFromCred(r *http.Request) *http.Client {
+	ctx := r.Context()
+	cred := ctx.Value("creds").(*data.ShopifyCred)
+
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: cred.AccessToken},
+	)
+
+	return oauth2.NewClient(ctx, ts)
 }
