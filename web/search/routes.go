@@ -28,7 +28,10 @@ func Routes() chi.Router {
 // json search results
 func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
 
+	var distPlaces []*data.Place
 	s := omniSearch{}
 
 	places, err := data.DB.Place.MatchName(q)
@@ -38,7 +41,9 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Places = make([]*presenter.Place, len(places))
 	for i, pl := range places {
-		s.Places[i] = presenter.NewPlace(r.Context(), pl).WithLocale()
+		place := presenter.NewPlace(ctx, pl).WithLocale()
+		s.Places[i] = place
+		distPlaces = append(distPlaces, pl)
 	}
 
 	products, err := data.DB.Product.MatchTags(q)
@@ -48,10 +53,13 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Products = make([]*presenter.Product, len(products))
 	for i, p := range products {
-		pp := presenter.NewProduct(r.Context(), p).WithPromo().WithPlace()
+		pp := presenter.NewProduct(ctx, p).WithPromo().WithPlace()
 		pp.ShopUrl = fmt.Sprintf("%s/products/%s", pp.Place.Website, p.ExternalID)
 		s.Products[i] = pp
+		distPlaces = append(distPlaces, pp.Place.Place)
 	}
+
+	user.DistanceToPlaces(distPlaces...)
 
 	ws.Respond(w, http.StatusOK, s)
 }

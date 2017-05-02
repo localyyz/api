@@ -14,6 +14,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/worker"
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/goware/lg"
+	"github.com/pkg/errors"
 	"github.com/robfig/cron"
 	"github.com/zenazn/goji/graceful"
 )
@@ -37,7 +38,7 @@ func main() {
 
 	//[db]
 	if h.DB, err = data.NewDBSession(&conf.DB); err != nil {
-		lg.Fatal(err)
+		lg.Fatal(errors.Wrap(err, "database connection failed"))
 	}
 
 	//[connect]

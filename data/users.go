@@ -20,6 +20,7 @@ type User struct {
 	Email     string `db:"email" json:"email" facebook:"email"`
 	Name      string `db:"name" json:"name" facebook:"name"`
 	AvatarURL string `db:"avatar_url" json:"avatarUrl"`
+	FirstName string `db:"-" facebook:"first_name"`
 
 	AccessToken string         `db:"access_token" json:"-"`
 	DeviceToken *string        `db:"device_token,omitempty" json:"-"`
@@ -37,8 +38,9 @@ type User struct {
 
 type UserEtc struct {
 	// Store user's current neighbourhood whereabouts
-	LocaleID     int64 `json:"localeId"`
-	HasAgreedNDA bool  `json:"hasAgreedNDA"`
+	LocaleID     int64  `json:"localeId"`
+	HasAgreedNDA bool   `json:"hasAgreedNDA"`
+	FirstName    string `json:"firstName"`
 }
 
 type UserStore struct {
@@ -63,6 +65,14 @@ func (u *User) SetLocation(lat, lon float64) error {
 	lg.Infof("user(%d) update loc (%f,%f)", u.ID, lat, lon)
 	u.Geo = *geotools.NewPointFromLatLng(lat, lon)
 	return DB.Save(u)
+}
+
+func (u *User) DistanceToPlaces(places ...*Place) {
+	userLoc := geotools.LatLngFromPoint(u.Geo)
+	for _, p := range places {
+		pLoc := geotools.LatLngFromPoint(p.Geo)
+		p.Distance = DistanceTo(userLoc, pLoc)
+	}
 }
 
 func (s UserStore) FindByUsername(username string) (*User, error) {

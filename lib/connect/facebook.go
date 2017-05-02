@@ -2,6 +2,7 @@ package connect
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -57,9 +58,6 @@ func (f *Facebook) Login(token string) (*data.User, error) {
 			AccessToken: token,
 			Network:     `facebook`,
 		}
-		if err := f.GetUser(user); err != nil {
-			return nil, err
-		}
 
 		// first time login, exchange for long-lived token
 		token, _, err := f.ExchangeToken(token)
@@ -67,6 +65,10 @@ func (f *Facebook) Login(token string) (*data.User, error) {
 			return nil, err
 		}
 		user.AccessToken = token
+	}
+	// always refetch facebook detail on login
+	if err := f.GetUser(user); err != nil {
+		return nil, err
 	}
 
 	t := time.Now()
@@ -88,7 +90,7 @@ func (f *Facebook) GetUser(u *data.User) error {
 	var resp fb.Result
 	var err error
 	params := fb.Params{
-		"fields":       "id,name,email,picture.type(large),timezone,link",
+		"fields":       "id,first_name,name,email,timezone,link",
 		"access_token": u.AccessToken,
 	}
 	resp, err = fb.Get(`me`, params)
@@ -101,11 +103,8 @@ func (f *Facebook) GetUser(u *data.User) error {
 		lg.Warnf("fb decode error: %v", err)
 		return err
 	}
-
-	// picture -> avatarurl
-	if url := resp.GetField("picture", "data", "url"); url != nil {
-		u.AvatarURL = url.(string)
-	}
+	u.AvatarURL = fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", u.Username)
+	u.Etc.FirstName = u.FirstName
 
 	return nil
 }
