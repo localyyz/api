@@ -1,7 +1,10 @@
 package data
 
 import (
+	"strings"
 	"time"
+
+	set "gopkg.in/fatih/set.v0"
 
 	"upper.io/bond"
 	db "upper.io/db.v3"
@@ -16,7 +19,7 @@ type Product struct {
 	Title       string     `db:"title" json:"title"`
 	Description string     `db:"description" json:"description"`
 	ImageUrl    string     `db:"image_url" json:"imageUrl"`
-	Tags        []string   `db:"tags,stringarray" json:"tags"`
+	Tags        []string   `db:"tags,stringarray,omitempty" json:"tags"`
 	Etc         ProductEtc `db:"etc,jsonb" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
@@ -24,8 +27,9 @@ type Product struct {
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
 }
 
-type ProductEtc struct {
-}
+type Tags []string
+
+type ProductEtc struct{}
 
 type ProductStore struct {
 	bond.Store
@@ -33,6 +37,18 @@ type ProductStore struct {
 
 func (p *Product) CollectionName() string {
 	return `products`
+}
+
+func (p *Product) ParseTags(tagStr string, optTags ...string) {
+	tt := strings.FieldsFunc(tagStr, tagSplit)
+	tagSet := set.New()
+	for _, t := range tt {
+		tagSet.Add(strings.ToLower(strings.TrimSpace(t)))
+	}
+	for _, t := range optTags {
+		tagSet.Add(strings.ToLower(t))
+	}
+	p.Tags = set.StringSlice(tagSet)
 }
 
 func (store ProductStore) MatchTags(q string) ([]*Product, error) {
@@ -50,6 +66,10 @@ func (store ProductStore) FindByID(ID int64) (*Product, error) {
 	return store.FindOne(db.Cond{"id": ID})
 }
 
+func (store ProductStore) FindByExternalID(extID string) (*Product, error) {
+	return store.FindOne(db.Cond{"external_id": extID})
+}
+
 func (store ProductStore) FindOne(cond db.Cond) (*Product, error) {
 	var product *Product
 	if err := store.Find(cond).One(&product); err != nil {
@@ -64,4 +84,8 @@ func (store ProductStore) FindAll(cond db.Cond) ([]*Product, error) {
 		return nil, err
 	}
 	return products, nil
+}
+
+func tagSplit(r rune) bool {
+	return r == ',' || r == ' '
 }

@@ -16,6 +16,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/promo"
 	"bitbucket.org/moodie-app/moodie-api/web/search"
 	"bitbucket.org/moodie-app/moodie-api/web/session"
+	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
 
 	"github.com/pressly/chi"
@@ -52,6 +53,7 @@ func New(h *Handler) chi.Router {
 
 		r.Post("/login/facebook", auth.FacebookLogin)
 		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)
+		r.Post("/webhooks/shopify", shopify.WebhookHandler)
 
 		r.Post("/echo", echoPush)
 	})

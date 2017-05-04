@@ -1,7 +1,7 @@
 package place
 
 import (
-	"bitbucket.org/moodie-app/moodie-api/web/place/shopify"
+	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"github.com/pressly/chi"
 )
 

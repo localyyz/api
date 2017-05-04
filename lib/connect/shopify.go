@@ -102,6 +102,10 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusCreated, "shopify connected.")
 }
 
+func (s *Shopify) createWebhook(cred *data.ShopifyCred) error {
+	return nil
+}
+
 func (s *Shopify) AuthCodeURL(r *http.Request) string {
 	place := r.Context().Value("place").(*data.Place)
 

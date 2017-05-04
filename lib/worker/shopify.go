@@ -32,7 +32,7 @@ type Product struct {
 	Offers       []*Offer `json:"offers"`
 }
 
-func TrackShopifySales() {
+func ShopifyPuller() {
 	q := data.DB.TrackList.Find()
 	for {
 		var t *data.TrackList

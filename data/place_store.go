@@ -15,6 +15,10 @@ func (store PlaceStore) FindByLocaleID(localeID int64) ([]*Place, error) {
 	return store.FindAll(db.Cond{"locale_id": localeID})
 }
 
+func (store PlaceStore) FindByShopifyID(shopID string) (*Place, error) {
+	return store.FindOne(db.Cond{"shopify_id": shopID})
+}
+
 func (store PlaceStore) MatchName(q string) ([]*Place, error) {
 	return store.FindAll(db.Cond{"name ~*": fmt.Sprint("\\m(", q, ")")})
 }
