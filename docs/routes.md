@@ -60,6 +60,18 @@
 
 </details>
 <details>
+<summary>`/connect/:shopID`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/connect/:shopID**
+	- _GET_
+		- [Connect]()
+
+</details>
+<details>
 <summary>`/echo`</summary>
 
 - [NoCache]()
@@ -149,10 +161,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _POST_
-				- [FollowPlace]()
 			- _DELETE_
 				- [UnfollowPlace]()
+			- _POST_
+				- [FollowPlace]()
 
 </details>
 <details>
@@ -168,22 +180,6 @@
 		- **/promos**
 			- _GET_
 				- [ListPromo]()
-
-</details>
-<details>
-<summary>`/places/:placeID/shopify/connect`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places**
-	- **/:placeID**
-		- [PlaceCtx]()
-		- **/shopify**
-			- **/connect**
-				- _GET_
-					- [Connect]()
 
 </details>
 <details>
@@ -384,10 +380,10 @@
 	- **/manage**
 		- [PromoManageCtx]()
 		- **/**
-			- _POST_
-				- [CreatePromo]()
 			- _GET_
 				- [ListManagable]()
+			- _POST_
+				- [CreatePromo]()
 
 </details>
 <details>
@@ -403,10 +399,10 @@
 		- **/:promoID**
 			- [PromoCtx]()
 			- **/**
-				- _DELETE_
-					- [DeletePromo]()
 				- _PUT_
 					- [UpdatePromo]()
+				- _DELETE_
+					- [DeletePromo]()
 
 </details>
 <details>
@@ -587,5 +583,17 @@
 				- [AcceptNDA]()
 
 </details>
+<details>
+<summary>`/webhooks/shopify`</summary>
 
-Total # of routes: 40
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/webhooks/shopify**
+	- _POST_
+		- [WebhookHandler]()
+
+</details>
+
+Total # of routes: 41
