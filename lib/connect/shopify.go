@@ -135,6 +135,8 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 				localeID = c.LocaleID
 			}
 		}
+		u, _ := url.Parse(shop.Domain)
+		u.Scheme = "https"
 		place = &data.Place{
 			ShopifyID: shopID,
 			LocaleID:  localeID,
@@ -142,7 +144,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			Name:      shop.Name,
 			Address:   fmt.Sprintf("%s, %s", shop.Address1, shop.City),
 			Phone:     shop.Phone,
-			Website:   shop.Domain,
+			Website:   u.String(),
 		}
 	}
 	if err := data.DB.Place.Save(place); err != nil {
