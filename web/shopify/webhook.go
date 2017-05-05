@@ -47,6 +47,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 		for _, v := range promos {
 			if err := data.DB.Promo.Save(v); err != nil {
+				v.ProductID = product.ID
 				ws.Respond(w, http.StatusInternalServerError, err)
 				return
 			}

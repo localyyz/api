@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/pressly/chi"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
@@ -45,18 +47,29 @@ func ClientCtx(next http.Handler) http.Handler {
 }
 
 func Connect(w http.ResponseWriter, r *http.Request) {
-	place := r.Context().Value("place").(*data.Place)
-	count, err := data.DB.ShopifyCred.Find(db.Cond{"place_id": place.ID}).Count()
-	if err != nil {
+	shopID := chi.URLParam(r, "shopID")
+	place, err := data.DB.Place.FindByShopifyID(shopID)
+	if err != nil && err != db.ErrNoMoreRows {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
-	if count > 0 {
-		ws.Respond(w, http.StatusConflict, "shopify store already connected")
-		return
+
+	if place != nil {
+		count, err := data.DB.ShopifyCred.Find(db.Cond{"place_id": place.ID}).Count()
+		if err != nil {
+			ws.Respond(w, http.StatusInternalServerError, err)
+			return
+		}
+		if count > 0 {
+			ws.Respond(w, http.StatusConflict, "shopify store already connected")
+			return
+		}
+	} else {
+		place = &data.Place{ShopifyID: shopID}
 	}
 
-	url := connect.SH.AuthCodeURL(r)
+	ctx := context.WithValue(r.Context(), "place", place)
+	url := connect.SH.AuthCodeURL(ctx)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
@@ -80,6 +93,7 @@ func SyncProduct(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, v := range promos {
+			v.ProductID = product.ID
 			if err := data.DB.Promo.Save(v); err != nil {
 				ws.Respond(w, http.StatusInternalServerError, err)
 				return

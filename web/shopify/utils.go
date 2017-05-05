@@ -34,7 +34,6 @@ func getProductPromo(ctx context.Context, p *shopify.Product) (*data.Product, []
 		price, _ := strconv.ParseFloat(v.Price, 64)
 		promo := &data.Promo{
 			PlaceID:     place.ID,
-			ProductID:   product.ID,
 			Type:        data.PromoTypePrice,
 			OfferID:     v.ID,
 			Status:      data.PromoStatusActive,
