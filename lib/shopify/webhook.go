@@ -85,19 +85,21 @@ const (
 )
 
 type Webhook struct {
-	ID                  int       `json:"id"`
+	ID                  int       `json:"id,omitempty"`
 	Address             string    `json:"address"`
 	Topic               Topic     `json:"topic"`
 	Format              string    `json:"format"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
-	Fields              []string  `json:"fields"`
-	MetafieldNamespaces []string  `json:"metafield_namespaces"`
+	CreatedAt           time.Time `json:"created_at,omitempty"`
+	UpdatedAt           time.Time `json:"updated_at,omitempty"`
+	Fields              []string  `json:"fields,omitempty"`
+	MetafieldNamespaces []string  `json:"metafield_namespaces,omitempty"`
 }
 
 // WebhookRequest represents a request to create/edit a webhook.
 // It is just an alias of Webhook struct
-type WebhookRequest Webhook
+type WebhookRequest struct {
+	Webhook *Webhook `json:"webhook"`
+}
 
 func (w *WebhookService) Create(ctx context.Context, webhook *WebhookRequest) (*Webhook, *http.Response, error) {
 	req, err := w.client.NewRequest("POST", "/admin/webhooks.json", webhook)
@@ -111,5 +113,5 @@ func (w *WebhookService) Create(ctx context.Context, webhook *WebhookRequest) (*
 		return nil, resp, err
 	}
 
-	return ww, resp, nil
+	return new(Webhook), resp, nil
 }

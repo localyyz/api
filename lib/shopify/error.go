@@ -2,16 +2,20 @@ package shopify
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
 
 type ErrorResponse struct {
-	Errors string `json:"errors"` // more detail on individual errors
+	Errors map[string]interface{} `json:"errors"` // more detail on individual errors
 }
 
 func (r *ErrorResponse) Error() string {
-	return r.Errors
+	for k, v := range r.Errors {
+		return fmt.Sprintf("%s: %s", k, v)
+	}
+	return "unknown error"
 }
 
 // CheckResponse checks the API response for errors, and returns them if
