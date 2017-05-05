@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/pressly/chi"
 
@@ -47,7 +48,7 @@ func ClientCtx(next http.Handler) http.Handler {
 }
 
 func Connect(w http.ResponseWriter, r *http.Request) {
-	shopID := chi.URLParam(r, "shopID")
+	shopID := strings.ToLower(chi.URLParam(r, "shopID"))
 	place, err := data.DB.Place.FindByShopifyID(shopID)
 	if err != nil && err != db.ErrNoMoreRows {
 		ws.Respond(w, http.StatusInternalServerError, err)
