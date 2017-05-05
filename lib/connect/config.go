@@ -4,6 +4,7 @@ type Config struct {
 	AppId         string `toml:"app_id"`
 	AppSecret     string `toml:"app_secret"`
 	OAuthCallback string `toml:"oauth_callback"`
+	WebhookURL    string `toml:"webhook_url,omitempty"`
 }
 
 type Configs struct {
