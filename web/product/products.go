@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
+	"github.com/goware/lg"
 	"github.com/pressly/chi"
 )
 
@@ -55,12 +56,18 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cond := db.Cond{"product_id": product.ID}
+	cond := db.Cond{
+		"product_id": product.ID,
+		"status":     data.PromoStatusActive,
+	}
 	if variant := u.Query().Get("variant"); len(variant) > 0 {
 		cond["offer_id"], _ = strconv.ParseInt(variant, 10, 64)
 	}
 	promo, err := data.DB.Promo.FindOne(cond)
 	if err != nil {
+		if err == db.ErrNoMoreRows {
+			lg.Warnf("no promo found with %+v", cond)
+		}
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}

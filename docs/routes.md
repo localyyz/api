@@ -489,6 +489,22 @@
 
 </details>
 <details>
+<summary>`/users/:userID/*/cart`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/:userID**
+		- [UserCtx]()
+		- **/***
+			- **/cart**
+				- _GET_
+					- [GetCart]()
+
+</details>
+<details>
 <summary>`/users/:userID/*/device`</summary>
 
 - [NoCache]()
@@ -502,22 +518,6 @@
 			- **/device**
 				- _PUT_
 					- [SetDeviceToken]()
-
-</details>
-<details>
-<summary>`/users/:userID/*/shoppinglist`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/:userID**
-		- [UserCtx]()
-		- **/***
-			- **/shoppinglist**
-				- _GET_
-					- [GetShoppingList]()
 
 </details>
 <details>
@@ -537,6 +537,22 @@
 
 </details>
 <details>
+<summary>`/users/me/*/cart`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/me**
+		- [MeCtx]()
+		- **/***
+			- **/cart**
+				- _GET_
+					- [GetCart]()
+
+</details>
+<details>
 <summary>`/users/me/*/device`</summary>
 
 - [NoCache]()
@@ -550,22 +566,6 @@
 			- **/device**
 				- _PUT_
 					- [SetDeviceToken]()
-
-</details>
-<details>
-<summary>`/users/me/*/shoppinglist`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/me**
-		- [MeCtx]()
-		- **/***
-			- **/shoppinglist**
-				- _GET_
-					- [GetShoppingList]()
 
 </details>
 <details>
