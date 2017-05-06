@@ -3,6 +3,7 @@ package presenter
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"upper.io/db.v3"
@@ -34,9 +35,22 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 func (p *Product) WithShopUrl() *Product {
 	place, ok := p.ctx.Value("place").(*data.Place)
 	if !ok {
-		return p
+		place = p.Place.Place
 	}
-	p.ShopUrl = fmt.Sprintf("%s/products/%s", place.Website, p.ExternalID)
+
+	var u *url.URL
+	if place.ShopifyID != "" {
+		u = &url.URL{
+			Host: fmt.Sprintf("%s.myshopify.com", place.ShopifyID),
+		}
+	} else if place.Website != "" {
+		u, _ = url.Parse(place.Website)
+	}
+
+	u.Scheme = "https"
+	u.Path = fmt.Sprintf("products/%s", p.ExternalID)
+
+	p.ShopUrl = u.String()
 	return p
 }
 

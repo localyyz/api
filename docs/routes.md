@@ -399,10 +399,10 @@
 		- **/:promoID**
 			- [PromoCtx]()
 			- **/**
-				- _PUT_
-					- [UpdatePromo]()
 				- _DELETE_
 					- [DeletePromo]()
+				- _PUT_
+					- [UpdatePromo]()
 
 </details>
 <details>

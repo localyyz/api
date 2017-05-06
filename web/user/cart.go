@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -11,7 +10,7 @@ import (
 )
 
 // TODO: shopping list concept
-func GetShoppingList(w http.ResponseWriter, r *http.Request) {
+func GetCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	currentUser := ctx.Value("session.user").(*data.User)
 	claims, err := data.DB.Claim.FindAll(
@@ -61,14 +60,7 @@ func GetShoppingList(w http.ResponseWriter, r *http.Request) {
 
 	res := make([]*presenter.Product, len(products))
 	for i, p := range products {
-		track, err := data.DB.TrackList.FindByPlaceID(p.PlaceID)
-		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
-			return
-		}
-		ctx = context.WithValue(ctx, "track", track)
-
-		res[i] = presenter.NewProduct(ctx, p).WithShopUrl().WithPlace()
+		res[i] = presenter.NewProduct(ctx, p).WithPlace().WithShopUrl()
 		res[i].Promos = promoMap[p.ID]
 	}
 

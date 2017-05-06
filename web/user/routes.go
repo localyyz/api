@@ -23,7 +23,7 @@ func UserRoutes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/", GetUser)
-	r.Get("/shoppinglist", GetShoppingList)
+	r.Get("/cart", GetCart)
 	r.Put("/device", SetDeviceToken) // me
 
 	return r
