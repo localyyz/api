@@ -45,12 +45,6 @@ func GetPromo(w http.ResponseWriter, r *http.Request) {
 	ws.Respond(w, http.StatusOK, promo)
 }
 
-func GetClaims(w http.ResponseWriter, r *http.Request) {
-	promo := r.Context().Value("promo").(*data.Promo)
-
-	ws.Respond(w, http.StatusOK, promo)
-}
-
 func ListHistory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	currentUser := ctx.Value("session.user").(*data.User)
@@ -97,11 +91,7 @@ func ListActive(w http.ResponseWriter, r *http.Request) {
 	claims, err := data.DB.Claim.FindAll(
 		db.Cond{
 			"user_id": currentUser.ID,
-			"status": []data.ClaimStatus{
-				data.ClaimStatusActive,
-				data.ClaimStatusSaved,
-				data.ClaimStatusPeeked,
-			},
+			"status":  data.ClaimStatusActive,
 		},
 	)
 	if err != nil {

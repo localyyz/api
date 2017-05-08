@@ -1,4 +1,4 @@
-.PHONY: help run test coverage docs build dist clean tools dist-tools vendor-list vendor-update
+.PHONY: help run docs build tools db-migrate
 
 TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf

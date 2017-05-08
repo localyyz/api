@@ -2,7 +2,6 @@ package promo
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -22,8 +21,13 @@ func ClaimCtx(next http.Handler) http.Handler {
 		err := data.DB.Claim.Find(db.Cond{
 			"promo_id": promo.ID,
 			"user_id":  currentUser.ID,
+			"status":   data.ClaimStatusActive,
 		}).One(&claim)
-		if err != nil && err != db.ErrNoMoreRows {
+		if err != nil {
+			if err == db.ErrNoMoreRows {
+				ws.Respond(w, http.StatusNotFound, "")
+				return
+			}
 			ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to query claim"))
 			return
 		}
@@ -34,105 +38,31 @@ func ClaimCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ClaimPromo(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	claim := ctx.Value("claim").(*data.Claim)
-	promo := ctx.Value("promo").(*data.Promo)
-	currentUser := ctx.Value("session.user").(*data.User)
-
-	// already claimed
-	if claim != nil {
-		if claim.Status == data.ClaimStatusActive ||
-			claim.Status == data.ClaimStatusSaved {
-
-			ws.Respond(w, http.StatusOK, claim)
-			return
-		}
-
-		// previously claimed
-		if claim.Status == data.ClaimStatusExpired ||
-			claim.Status == data.ClaimStatusCompleted {
-			ws.Respond(w, http.StatusConflict, errors.New("promotion already claimed"))
-			return
-		}
-	}
-
-	// update the status
-	claim = &data.Claim{
-		PromoID: promo.ID,
-		PlaceID: promo.PlaceID,
-		UserID:  currentUser.ID,
-		Status:  data.ClaimStatusActive,
-	}
-
-	// calculate the user's distance from the "place"
-	var place *data.Place
-	err := data.DB.Place.Find(
-		db.Cond{"id": promo.PlaceID},
-	).Select(
-		db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", currentUser.Geo)),
-	).One(&place)
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	if place.Distance > ClaimableDistance {
-		//ws.Respond(w, http.StatusBadRequest, api.ErrClaimDistance)
-		//return
-		// NOTE: if out of distance, auto save
-		claim.Status = data.ClaimStatusSaved
-	}
-
-	if err := data.DB.Claim.Save(claim); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	ws.Respond(w, http.StatusCreated, claim)
+func GetClaims(w http.ResponseWriter, r *http.Request) {
+	claim := r.Context().Value("claim").(*data.Claim)
+	ws.Respond(w, http.StatusOK, claim)
 }
 
-func SavePromo(w http.ResponseWriter, r *http.Request) {
+func CompleteClaim(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	claim := ctx.Value("claim").(*data.Claim)
-	promo := ctx.Value("promo").(*data.Promo)
-	currentUser := ctx.Value("session.user").(*data.User)
 
-	if claim != nil {
-		// can't save already existing claim
-		ws.Respond(w, http.StatusBadRequest, errors.New("already saved/claimed"))
-		return
-	}
-
-	// update the status
-	claim = &data.Claim{
-		PromoID: promo.ID,
-		PlaceID: promo.PlaceID,
-		UserID:  currentUser.ID,
-		Status:  data.ClaimStatusSaved,
-	}
-
+	claim.Status = data.ClaimStatusCompleted
 	if err := data.DB.Claim.Save(claim); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "complete"))
 		return
 	}
-
-	ws.Respond(w, http.StatusCreated, claim)
+	ws.Respond(w, http.StatusOK, claim)
 }
 
-func UnSavePromo(w http.ResponseWriter, r *http.Request) {
+func RemoveClaim(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	claim := ctx.Value("claim").(*data.Claim)
 
-	if claim.Status != data.ClaimStatusSaved {
-		ws.Respond(w, http.StatusBadRequest, errors.New("unable to remove claimed promotion."))
+	claim.Status = data.ClaimStatusRemoved
+	if err := data.DB.Claim.Save(claim); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "remove"))
 		return
 	}
-
-	if err := data.DB.Claim.Delete(claim); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "remove promotion db error"))
-		return
-	}
-
 	ws.Respond(w, http.StatusNoContent, "")
 }

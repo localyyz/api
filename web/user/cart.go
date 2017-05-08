@@ -18,7 +18,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 			"user_id": currentUser.ID,
 			"status": []data.ClaimStatus{
 				data.ClaimStatusActive,
-				data.ClaimStatusSaved,
+				data.ClaimStatusCompleted,
 			},
 		},
 	)
@@ -34,8 +34,10 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 
 	// claim -> promotions
 	promoIDs := make([]int64, len(claims))
+	claimsMap := make(map[int64]*data.Claim, len(claims))
 	for i, c := range claims {
 		promoIDs[i] = c.PromoID
+		claimsMap[c.PromoID] = c
 	}
 
 	promos, err := data.DB.Promo.FindAll(db.Cond{"id": promoIDs})
@@ -61,7 +63,9 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	res := make([]*presenter.Product, len(products))
 	for i, p := range products {
 		res[i] = presenter.NewProduct(ctx, p).WithPlace().WithShopUrl()
-		res[i].Promos = promoMap[p.ID]
+		promo := promoMap[p.ID]
+		res[i].Promos = promo
+		res[i].UserClaimStatus = claimsMap[promo[0].ID].Status
 	}
 
 	ws.Respond(w, http.StatusOK, res)

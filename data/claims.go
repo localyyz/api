@@ -25,10 +25,9 @@ type ClaimStatus uint32
 const (
 	_ ClaimStatus = iota
 	ClaimStatusActive
-	ClaimStatusCompleted
-	ClaimStatusExpired
-	ClaimStatusSaved
-	ClaimStatusPeeked
+	ClaimStatusCompleted // user marked as purchased
+	ClaimStatusExpired   // expired by store
+	ClaimStatusRemoved   // removed by user
 )
 
 var _ interface {
@@ -43,8 +42,6 @@ var (
 		"active",
 		"completed",
 		"expired",
-		"saved",
-		"peeked",
 	}
 )
 
@@ -64,7 +61,7 @@ func (c *Claim) BeforeUpdate(bond.Session) error {
 
 // TODO: any way to double check promo distance?
 func (c *Claim) Validate() error {
-	if c.Status == ClaimStatusActive || c.Status == ClaimStatusSaved {
+	if c.Status == ClaimStatusActive {
 		promo, err := DB.Promo.FindByID(c.PromoID)
 		if err != nil {
 			return err

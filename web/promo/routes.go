@@ -28,12 +28,12 @@ func Routes() chi.Router {
 		r.Use(PromoCtx)
 
 		r.Get("/", GetPromo)
-		r.Get("/claims", GetClaims)
 
-		r.Group(func(r chi.Router) {
+		r.Route("/claims", func(r chi.Router) {
 			r.Use(ClaimCtx)
-			r.Post("/claim", ClaimPromo)
-			r.Delete("/save", UnSavePromo)
+			r.Get("/", GetClaims)
+			r.Put("/complete", CompleteClaim)
+			r.Delete("/", RemoveClaim)
 		})
 	})
 

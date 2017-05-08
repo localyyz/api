@@ -13,9 +13,12 @@ import (
 
 type Product struct {
 	*data.Product
-	Promos  []*Promo `json:"promos"`
-	Place   *Place   `json:"place"`
-	ShopUrl string   `json:"shopUrl"`
+	Promos []*Promo `json:"promos"`
+	Place  *Place   `json:"place"`
+
+	ShopUrl string `json:"shopUrl"`
+	//session user's claim status
+	UserClaimStatus data.ClaimStatus `json:"userClaimStatus,omitempty"`
 
 	CreateAt  *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
