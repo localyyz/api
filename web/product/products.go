@@ -78,6 +78,22 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 		PlaceID: promo.PlaceID,
 		Status:  data.ClaimStatusActive,
 	}
+
+	// check if claim already exists
+	count, err := data.DB.Claim.Find(db.Cond{
+		"promo_id": promo.ID,
+		"user_id":  user.ID,
+		"status":   data.ClaimStatusActive,
+	}).Count()
+	if err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+	if count > 0 {
+		ws.Respond(w, http.StatusOK, newClaim)
+		return
+	}
+
 	if err := data.DB.Claim.Save(newClaim); err != nil {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
