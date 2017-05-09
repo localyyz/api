@@ -20,8 +20,6 @@ type Product struct {
 	Place  *Place   `json:"place"`
 
 	ShopUrl string `json:"shopUrl"`
-	//session user's claim status
-	UserClaimStatus data.ClaimStatus `json:"userClaimStatus,omitempty"`
 
 	CreateAt  *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
@@ -61,12 +59,10 @@ func NewSearchProductList(ctx context.Context, products []*data.Product) SearchP
 
 func NewCartProductList(ctx context.Context, products []*data.Product) CartProductList {
 	list := CartProductList{}
-	claims := ctx.Value("claims").(map[int64]*data.Claim)
 	promos := ctx.Value("promos").(map[int64]*data.Promo)
 	for _, product := range products {
 		p := NewProduct(ctx, product)
 		p.Promos = []*Promo{NewPromo(ctx, promos[p.ID])}
-		p.UserClaimStatus = claims[p.Promos[0].ID].Status
 		list = append(list, p)
 	}
 	return list

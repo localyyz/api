@@ -31,7 +31,14 @@ type Shopify struct {
 }
 
 var (
-	SH *Shopify
+	SH     *Shopify
+	Scopes = []string{
+		"read_products",
+		"read_product_listings",
+		"read_collection_listings",
+		"read_checkouts",
+		"write_checkouts",
+	}
 )
 
 func SetupShopify(conf Config) {
@@ -144,7 +151,8 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	// create the webhook
 	wh := &shopify.WebhookRequest{
 		&shopify.Webhook{
-			Topic:   shopify.TopicProductsCreate,
+			// TODO: create more webhooks
+			Topic:   shopify.TopicProductListingsAdd,
 			Address: s.webhookURL,
 			Format:  "json",
 		},
@@ -173,7 +181,8 @@ func (s *Shopify) Exchange(shopID string, r *http.Request) (*oauth2.Token, error
 	return config.Exchange(r.Context(), code)
 }
 
-// NOTE: added ".myshopify.com" to oauth2 vendored lib
+// NOTE: added ".myshopify.com" to oauth2 vendored lib (internal/token.go -> brokenAuthHeaderDomains)
+// NOTE: changed AuthCodeURL scope to be comma deliminated
 func (s *Shopify) getConfig(shopifyID string) *oauth2.Config {
 	shopUrl := fmt.Sprintf("https://%s.myshopify.com", shopifyID)
 	return &oauth2.Config{
@@ -184,7 +193,7 @@ func (s *Shopify) getConfig(shopifyID string) *oauth2.Config {
 			TokenURL: fmt.Sprintf("%s/admin/oauth/access_token", shopUrl),
 		},
 		RedirectURL: s.redirectURL,
-		Scopes:      []string{"read_products"},
+		Scopes:      Scopes,
 	}
 }
 

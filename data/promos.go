@@ -87,14 +87,6 @@ func (p *Promo) BeforeUpdate(bond.Session) error {
 	return nil
 }
 
-func (p *Promo) CanUserClaim(userID int64) (bool, error) {
-	count, err := DB.Claim.Find(db.Cond{"user_id": userID, "promo_id": p.ID}).Count()
-	if err != nil {
-		return false, err
-	}
-	return (count > 0), nil
-}
-
 func (store PromoStore) FindByPlaceID(placeID int64) (*Promo, error) {
 	return store.FindOne(db.Cond{"place_id": placeID})
 }

@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -27,6 +28,9 @@ func (r *ErrorResponse) Error() string {
 func CheckResponse(r *http.Response) error {
 	if r.StatusCode == http.StatusAccepted {
 		return nil
+	}
+	if r.StatusCode == http.StatusForbidden {
+		return errors.New("forbidden")
 	}
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil

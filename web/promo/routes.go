@@ -37,13 +37,7 @@ func Routes() chi.Router {
 
 	r.Route("/:promoID", func(r chi.Router) {
 		r.Use(PromoCtx)
-
-		r.Route("/claims", func(r chi.Router) {
-			r.Use(ClaimCtx)
-			r.Get("/", GetClaims)
-			r.Put("/complete", CompleteClaim)
-			r.Delete("/", RemoveClaim)
-		})
+		r.Get("/", GetPromo)
 	})
 
 	return r

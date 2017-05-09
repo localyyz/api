@@ -113,5 +113,5 @@ func (w *WebhookService) Create(ctx context.Context, webhook *WebhookRequest) (*
 		return nil, resp, err
 	}
 
-	return new(Webhook), resp, nil
+	return ww, resp, nil
 }
