@@ -28,6 +28,7 @@ type Database struct {
 	Product     ProductStore
 	Promo       PromoStore
 	Claim       ClaimStore
+	Share       ShareStore
 
 	TrackList TrackListStore
 }
@@ -83,6 +84,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Product = ProductStore{db.Store(&Product{})}
 	db.Promo = PromoStore{db.Store(&Promo{})}
 	db.Claim = ClaimStore{db.Store(&Claim{})}
+	db.Share = ShareStore{db.Store(&Share{})}
 
 	db.TrackList = TrackListStore{db.Store(&TrackList{})}
 

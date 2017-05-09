@@ -17,7 +17,7 @@ var (
 	FB *Facebook
 	// Facebook API version
 	// See: https://developers.facebook.com/docs/apps/changelog for updates
-	FBVersion = "v2.6"
+	FBVersion = "v2.9"
 )
 
 type Facebook struct {
@@ -54,18 +54,18 @@ func (f *Facebook) Login(token string) (*data.User, error) {
 	}
 
 	if user == nil {
-		user = &data.User{
-			AccessToken: token,
-			Network:     `facebook`,
-		}
+		user = &data.User{Network: `facebook`}
+	}
 
-		// first time login, exchange for long-lived token
-		token, _, err := f.ExchangeToken(token)
+	if token != "" {
+		// first time login, or new login, exchange for long-lived token
+		newToken, _, err := f.ExchangeToken(token)
 		if err != nil {
 			return nil, err
 		}
-		user.AccessToken = token
+		user.AccessToken = newToken
 	}
+
 	// always refetch facebook detail on login
 	if err := f.GetUser(user); err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (f *Facebook) GetUser(u *data.User) error {
 	var resp fb.Result
 	var err error
 	params := fb.Params{
-		"fields":       "id,first_name,name,email,timezone,link",
+		"fields":       "id,first_name,name,email,timezone,link,friends",
 		"access_token": u.AccessToken,
 	}
 	resp, err = fb.Get(`me`, params)
@@ -103,8 +103,10 @@ func (f *Facebook) GetUser(u *data.User) error {
 		lg.Warnf("fb decode error: %v", err)
 		return err
 	}
+	lg.Warnf("%+v", u.Friends)
 	u.AvatarURL = fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", u.Username)
 	u.Etc.FirstName = u.FirstName
+	u.Etc.FbFriendCount = u.Friends.Summary.TotalCount
 
 	return nil
 }

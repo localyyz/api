@@ -161,10 +161,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _DELETE_
-				- [UnfollowPlace]()
 			- _POST_
 				- [FollowPlace]()
+			- _DELETE_
+				- [UnfollowPlace]()
 
 </details>
 <details>
@@ -297,22 +297,6 @@
 
 </details>
 <details>
-<summary>`/promos/:promoID/claim`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/:promoID**
-		- [PromoCtx]()
-		- **/claim**
-			- _POST_
-				- [ClaimCtx]()
-				- [ClaimPromo]()
-
-</details>
-<details>
 <summary>`/promos/:promoID/claims`</summary>
 
 - [NoCache]()
@@ -323,12 +307,16 @@
 	- **/:promoID**
 		- [PromoCtx]()
 		- **/claims**
-			- _GET_
-				- [GetClaims]()
+			- [ClaimCtx]()
+			- **/**
+				- _DELETE_
+					- [RemoveClaim]()
+				- _GET_
+					- [GetClaims]()
 
 </details>
 <details>
-<summary>`/promos/:promoID/save`</summary>
+<summary>`/promos/:promoID/claims/complete`</summary>
 
 - [NoCache]()
 - [Logger]()
@@ -337,10 +325,11 @@
 - **/promos**
 	- **/:promoID**
 		- [PromoCtx]()
-		- **/save**
-			- _DELETE_
-				- [ClaimCtx]()
-				- [UnSavePromo]()
+		- **/claims**
+			- [ClaimCtx]()
+			- **/complete**
+				- _PUT_
+					- [CompleteClaim]()
 
 </details>
 <details>
@@ -380,10 +369,10 @@
 	- **/manage**
 		- [PromoManageCtx]()
 		- **/**
-			- _GET_
-				- [ListManagable]()
 			- _POST_
 				- [CreatePromo]()
+			- _GET_
+				- [ListManagable]()
 
 </details>
 <details>
@@ -399,10 +388,10 @@
 		- **/:promoID**
 			- [PromoCtx]()
 			- **/**
-				- _DELETE_
-					- [DeletePromo]()
 				- _PUT_
 					- [UpdatePromo]()
+				- _DELETE_
+					- [DeletePromo]()
 
 </details>
 <details>
@@ -596,4 +585,4 @@
 
 </details>
 
-Total # of routes: 41
+Total # of routes: 40

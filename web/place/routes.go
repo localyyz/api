@@ -24,6 +24,7 @@ func Routes() chi.Router {
 
 		r.Get("/", GetPlace)
 		r.Get("/promos", ListPromo)
+		r.Post("/share", Share)
 		r.Post("/follow", FollowPlace)
 		r.Delete("/follow", UnfollowPlace)
 	})

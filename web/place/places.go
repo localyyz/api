@@ -152,3 +152,36 @@ func Recent(w http.ResponseWriter, r *http.Request) {
 
 	ws.Respond(w, http.StatusOK, presented)
 }
+
+// Share a place on social media
+func Share(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+	place := ctx.Value("place").(*data.Place)
+
+	var shareWrapper struct {
+		data.Share
+
+		NetworkShareID string      `json:"networkShareId"`
+		ID             interface{} `json:"id,omitempty"`
+		UserID         interface{} `json:"userId,omitempty"`
+		PlaceID        interface{} `json:"userId,omitempty"`
+		CreatedAt      interface{} `json:"createdAt,omitempty"`
+	}
+	if err := ws.Bind(r.Body, &shareWrapper); err != nil {
+		ws.Respond(w, http.StatusBadRequest, err)
+		return
+	}
+	newShare := &shareWrapper.Share
+	newShare.UserID = user.ID
+	newShare.PlaceID = place.ID
+	newShare.Reach = user.Etc.FbFriendCount
+	newShare.NetworkShareID = shareWrapper.NetworkShareID
+
+	if err := data.DB.Share.Save(newShare); err != nil {
+		ws.Respond(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	ws.Respond(w, http.StatusOK, newShare)
+}

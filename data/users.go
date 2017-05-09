@@ -20,7 +20,14 @@ type User struct {
 	Email     string `db:"email" json:"email" facebook:"email"`
 	Name      string `db:"name" json:"name" facebook:"name"`
 	AvatarURL string `db:"avatar_url" json:"avatarUrl"`
-	FirstName string `db:"-" facebook:"first_name"`
+
+	// facebook related friends
+	FirstName string `db:"-" json:"-" facebook:"first_name"`
+	Friends   struct {
+		Summary struct {
+			TotalCount int32 `facebook:"total_count"`
+		} `facebook:"summary"`
+	} `db:"-" json:"-" facebook:"friends"`
 
 	AccessToken string         `db:"access_token" json:"-"`
 	DeviceToken *string        `db:"device_token,omitempty" json:"-"`
@@ -38,9 +45,10 @@ type User struct {
 
 type UserEtc struct {
 	// Store user's current neighbourhood whereabouts
-	LocaleID     int64  `json:"localeId"`
-	HasAgreedNDA bool   `json:"hasAgreedNDA"`
-	FirstName    string `json:"firstName"`
+	LocaleID      int64  `json:"localeId"`
+	HasAgreedNDA  bool   `json:"hasAgreedNDA"`
+	FirstName     string `json:"firstName"`
+	FbFriendCount int32  `json:"fbFriendCount"`
 }
 
 type UserStore struct {
