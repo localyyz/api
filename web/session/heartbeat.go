@@ -97,5 +97,12 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 		resp.Locale = locale
 	}
 
+	// save location history
+	ul := &data.UserLocation{
+		UserID: user.ID,
+		Geo:    user.Geo,
+	}
+	data.DB.UserLocation.Save(ul)
+
 	ws.Respond(w, http.StatusCreated, resp)
 }

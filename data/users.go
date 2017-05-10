@@ -72,6 +72,7 @@ func (u *User) BeforeCreate(bond.Session) error {
 func (u *User) SetLocation(lat, lon float64) error {
 	lg.Infof("user(%d) update loc (%f,%f)", u.ID, lat, lon)
 	u.Geo = *geotools.NewPointFromLatLng(lat, lon)
+
 	return DB.Save(u)
 }
 

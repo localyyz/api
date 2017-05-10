@@ -183,6 +183,21 @@
 
 </details>
 <details>
+<summary>`/places/:placeID/share`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places**
+	- **/:placeID**
+		- [PlaceCtx]()
+		- **/share**
+			- _POST_
+				- [Share]()
+
+</details>
+<details>
 <summary>`/places/:placeID/shopify/sync`</summary>
 
 - [NoCache]()
@@ -309,10 +324,10 @@
 		- **/claims**
 			- [ClaimCtx]()
 			- **/**
-				- _DELETE_
-					- [RemoveClaim]()
 				- _GET_
 					- [GetClaims]()
+				- _DELETE_
+					- [RemoveClaim]()
 
 </details>
 <details>
@@ -369,10 +384,10 @@
 	- **/manage**
 		- [PromoManageCtx]()
 		- **/**
-			- _POST_
-				- [CreatePromo]()
 			- _GET_
 				- [ListManagable]()
+			- _POST_
+				- [CreatePromo]()
 
 </details>
 <details>
@@ -462,55 +477,7 @@
 
 </details>
 <details>
-<summary>`/users/:userID/*`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/:userID**
-		- [UserCtx]()
-		- **/***
-			- **/**
-				- _GET_
-					- [GetUser]()
-
-</details>
-<details>
-<summary>`/users/:userID/*/cart`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/:userID**
-		- [UserCtx]()
-		- **/***
-			- **/cart**
-				- _GET_
-					- [GetCart]()
-
-</details>
-<details>
-<summary>`/users/:userID/*/device`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/:userID**
-		- [UserCtx]()
-		- **/***
-			- **/device**
-				- _PUT_
-					- [SetDeviceToken]()
-
-</details>
-<details>
-<summary>`/users/me/*`</summary>
+<summary>`/users/me/cart`</summary>
 
 - [NoCache]()
 - [Logger]()
@@ -519,14 +486,13 @@
 - **/users**
 	- **/me**
 		- [MeCtx]()
-		- **/***
-			- **/**
-				- _GET_
-					- [GetUser]()
+		- **/cart**
+			- _GET_
+				- [GetCart]()
 
 </details>
 <details>
-<summary>`/users/me/*/cart`</summary>
+<summary>`/users/me/device`</summary>
 
 - [NoCache]()
 - [Logger]()
@@ -535,26 +501,9 @@
 - **/users**
 	- **/me**
 		- [MeCtx]()
-		- **/***
-			- **/cart**
-				- _GET_
-					- [GetCart]()
-
-</details>
-<details>
-<summary>`/users/me/*/device`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/me**
-		- [MeCtx]()
-		- **/***
-			- **/device**
-				- _PUT_
-					- [SetDeviceToken]()
+		- **/device**
+			- _PUT_
+				- [SetDeviceToken]()
 
 </details>
 <details>
@@ -585,4 +534,4 @@
 
 </details>
 
-Total # of routes: 40
+Total # of routes: 37
