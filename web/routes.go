@@ -51,7 +51,9 @@ func New(h *Handler) chi.Router {
 			w.Write([]byte(`( ͡° ͜ʖ ͡°)`))
 		})
 
+		r.Post("/login", auth.EmailLogin)
 		r.Post("/login/facebook", auth.FacebookLogin)
+		r.Post("/signup", auth.EmailSignup)
 
 		r.Get("/connect/:shopID", shopify.Connect)
 		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)

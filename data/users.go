@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
@@ -29,26 +30,37 @@ type User struct {
 		} `facebook:"summary"`
 	} `db:"-" json:"-" facebook:"friends"`
 
-	AccessToken string         `db:"access_token" json:"-"`
-	DeviceToken *string        `db:"device_token,omitempty" json:"-"`
-	Network     string         `db:"network" json:"network"`
-	LoggedIn    bool           `db:"logged_in" json:"-"`
-	IsAdmin     bool           `db:"is_admin" json:"isAdmin"`
-	LastLogInAt *time.Time     `db:"last_login_at" json:"lastLoginAt"`
-	Geo         geotools.Point `db:"geo" json:"-"`
-	Etc         UserEtc        `db:"etc,jsonb" json:"etc"`
+	AccessToken  string         `db:"access_token" json:"-"`
+	PasswordHash string         `db:"password_hash,omitempty" json:"-"`
+	DeviceToken  *string        `db:"device_token,omitempty" json:"-"`
+	Network      string         `db:"network" json:"network"`
+	LoggedIn     bool           `db:"logged_in" json:"-"`
+	IsAdmin      bool           `db:"is_admin" json:"isAdmin"`
+	LastLogInAt  *time.Time     `db:"last_login_at" json:"lastLoginAt"`
+	Geo          geotools.Point `db:"geo" json:"-"`
+	Etc          UserEtc        `db:"etc,jsonb" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt,omitempty"`
 }
 
+type UserGender uint
+
+const (
+	UserGenderUnknown UserGender = iota
+	UserGenderMale
+	UserGenderFemale
+)
+
 type UserEtc struct {
 	// Store user's current neighbourhood whereabouts
-	LocaleID      int64  `json:"localeId"`
-	HasAgreedNDA  bool   `json:"hasAgreedNDA"`
-	FirstName     string `json:"firstName"`
-	FbFriendCount int32  `json:"fbFriendCount"`
+	LocaleID      int64      `json:"localeId"`
+	HasAgreedNDA  bool       `json:"hasAgreedNDA"`
+	FirstName     string     `json:"firstName"`
+	FbFriendCount int32      `json:"fbFriendCount"`
+	Dob           time.Time  `json:"dob"`
+	Gender        UserGender `json:"gender"`
 }
 
 type UserStore struct {
@@ -58,6 +70,10 @@ type UserStore struct {
 var _ interface {
 	bond.HasBeforeCreate
 } = &User{}
+
+var (
+	userGenders = []string{"unknown", "male", "female"}
+)
 
 func (u *User) CollectionName() string {
 	return `users`
@@ -118,4 +134,26 @@ func NewSessionUser(tok string) (*User, error) {
 		return DB.User.FindOne(db.Cond{"id": userID, "logged_in": true})
 	}
 	return nil, api.ErrInvalidSession
+}
+
+// String returns the string value of the status.
+func (s UserGender) String() string {
+	return userGenders[s]
+}
+
+// MarshalText satisfies TextMarshaler
+func (s UserGender) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (s *UserGender) UnmarshalText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(userGenders); i++ {
+		if enum == userGenders[i] {
+			*s = UserGender(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown user gender %s", enum)
 }

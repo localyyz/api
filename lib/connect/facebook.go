@@ -3,7 +3,6 @@ package connect
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 
@@ -71,9 +70,8 @@ func (f *Facebook) Login(token string) (*data.User, error) {
 		return nil, err
 	}
 
-	t := time.Now()
 	user.LoggedIn = true
-	user.LastLogInAt = &t
+	user.LastLogInAt = data.GetTimeUTCPointer()
 
 	if err := data.DB.User.Save(user); err != nil {
 		return nil, err
