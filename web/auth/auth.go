@@ -57,7 +57,7 @@ func verifyPassword(hash, password string) bool {
 
 func EmailLogin(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		Username string `json:"username,required"`
+		Email    string `json:"email,required"`
 		Password string `json:"password,required"`
 	}
 	if err := ws.Bind(r.Body, &payload); err != nil {
@@ -65,7 +65,12 @@ func EmailLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := data.DB.User.FindByUsername(payload.Username)
+	if len(payload.Password) < MinPasswordLength {
+		ws.Respond(w, http.StatusBadRequest, ErrPasswordLength)
+		return
+	}
+
+	user, err := data.DB.User.FindByUsername(payload.Email)
 	if err != nil {
 		if err == db.ErrNoMoreRows {
 			ws.Respond(w, http.StatusUnauthorized, ErrInvalidLogin)

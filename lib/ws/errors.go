@@ -41,5 +41,5 @@ func WrapError(status int, err error) (int, error) {
 	_ = errors.Wrap(err, "")
 
 	// check if pq error
-	return status, errorx.New(1000, err.Error())
+	return status, err
 }
