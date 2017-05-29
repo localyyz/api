@@ -75,7 +75,7 @@ func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	var presented []*presenter.Place
 	for _, pl := range places {
 		// TODO: +1 here
-		p := presenter.NewPlace(ctx, pl).WithPromo()
+		p := presenter.NewPlace(ctx, pl).WithPromo().WithGeo()
 		presented = append(presented, p)
 	}
 
