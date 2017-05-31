@@ -112,6 +112,18 @@
 
 </details>
 <details>
+<summary>`/login`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/login**
+	- _POST_
+		- [EmailLogin]()
+
+</details>
+<details>
 <summary>`/login/facebook`</summary>
 
 - [NoCache]()
@@ -161,10 +173,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _POST_
-				- [FollowPlace]()
 			- _DELETE_
 				- [UnfollowPlace]()
+			- _POST_
+				- [FollowPlace]()
 
 </details>
 <details>
@@ -384,10 +396,10 @@
 	- **/manage**
 		- [PromoManageCtx]()
 		- **/**
-			- _GET_
-				- [ListManagable]()
 			- _POST_
 				- [CreatePromo]()
+			- _GET_
+				- [ListManagable]()
 
 </details>
 <details>
@@ -477,6 +489,18 @@
 
 </details>
 <details>
+<summary>`/signup`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/signup**
+	- _POST_
+		- [EmailSignup]()
+
+</details>
+<details>
 <summary>`/users/me/cart`</summary>
 
 - [NoCache]()
@@ -534,4 +558,4 @@
 
 </details>
 
-Total # of routes: 37
+Total # of routes: 39
