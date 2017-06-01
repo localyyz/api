@@ -1,7 +1,6 @@
 package search
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -53,8 +52,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Products = make([]*presenter.Product, len(products))
 	for i, p := range products {
-		pp := presenter.NewProduct(ctx, p).WithPromo().WithPlace()
-		pp.ShopUrl = fmt.Sprintf("%s/products/%s", pp.Place.Website, p.ExternalID)
+		pp := presenter.NewProduct(ctx, p).WithPromo().WithPlace().WithShopUrl()
 		s.Products[i] = pp
 		distPlaces = append(distPlaces, pp.Place.Place)
 	}
