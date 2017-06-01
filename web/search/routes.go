@@ -40,7 +40,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Places = make([]*presenter.Place, len(places))
 	for i, pl := range places {
-		place := presenter.NewPlace(ctx, pl).WithLocale()
+		place := presenter.NewPlace(ctx, pl)
 		s.Places[i] = place
 		distPlaces = append(distPlaces, pl)
 	}
@@ -50,13 +50,12 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		ws.Respond(w, http.StatusInternalServerError, err)
 		return
 	}
-	s.Products = make([]*presenter.Product, len(products))
+	s.Products = NewProductList(ctx, products)
 	for i, p := range products {
 		pp := presenter.NewProduct(ctx, p).WithPromo().WithPlace().WithShopUrl()
 		s.Products[i] = pp
 		distPlaces = append(distPlaces, pp.Place.Place)
 	}
-
 	user.DistanceToPlaces(distPlaces...)
 
 	ws.Respond(w, http.StatusOK, s)

@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"upper.io/db.v3"
+	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
-	"github.com/pkg/errors"
 	"github.com/pressly/chi"
+	"github.com/pressly/chi/render"
 )
 
 func LocaleCtx(next http.Handler) http.Handler {
@@ -26,7 +26,7 @@ func LocaleCtx(next http.Handler) http.Handler {
 
 		locale, err := data.DB.Locale.FindByID(localeID)
 		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
+			render.Render(w, r, api.WrapErr(err))
 			return
 		}
 		ctx := r.Context()
@@ -37,17 +37,20 @@ func LocaleCtx(next http.Handler) http.Handler {
 }
 
 func ListLocale(w http.ResponseWriter, r *http.Request) {
-	var locales []*data.Locale
-
 	// TODO: for now, we're hackers
+	var locales []*data.Locale
 	err := data.DB.Locale.Find(
 		data.EnabledLocales,
 	).OrderBy("shorthand").All(&locales)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "list locale"))
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
-	ws.Respond(w, http.StatusOK, locales)
+
+	presented := presenter.NewLocaleList(r.Context(), locales)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Render(w, r, api.WrapErr(err))
+	}
 }
 
 func ListPlaces(w http.ResponseWriter, r *http.Request) {
@@ -68,16 +71,12 @@ func ListPlaces(w http.ResponseWriter, r *http.Request) {
 
 	query = cursor.UpdateQueryUpper(query)
 	if err := query.All(&places); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "list place"))
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
-	var presented []*presenter.Place
-	for _, pl := range places {
-		// TODO: +1 here
-		p := presenter.NewPlace(ctx, pl).WithPromo().WithGeo()
-		presented = append(presented, p)
+	presented := presenter.NewPlaceList(ctx, places)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Render(w, r, nil)
 	}
-
-	ws.Respond(w, http.StatusOK, presented, cursor.Update(places))
 }

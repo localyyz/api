@@ -9,11 +9,13 @@ import (
 	db "upper.io/db.v3"
 
 	"github.com/goware/jwtauth"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 // Authenticated user with jwt embed
@@ -28,17 +30,18 @@ var (
 	timingHash []byte = []byte("$2a$10$4Kys.PIxpCIoUmlcY6D7QOTuMPgk27lpmV74OWCWfqjwnG/JN4kcu")
 )
 
-var (
-	ErrInvalidLogin = errors.New("invalid login credentials, check username and/or password")
-)
-
 // AuthUser wraps a user with JWT token
-func NewAuthUser(user *data.User) (*AuthUser, error) {
-	token, err := token.Encode(jwtauth.Claims{"user_id": user.ID})
+func NewAuthUser(user *data.User) *AuthUser {
+	return &AuthUser{User: user}
+}
+
+func (u *AuthUser) Render(w http.ResponseWriter, r *http.Request) error {
+	token, err := token.Encode(jwtauth.Claims{"user_id": u.ID})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &AuthUser{User: user, JWT: token.Raw}, nil
+	u.JWT = token.Raw
+	return nil
 }
 
 // bcrypt compare hash with given password
@@ -61,37 +64,34 @@ func EmailLogin(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password,required"`
 	}
 	if err := ws.Bind(r.Body, &payload); err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
 	if len(payload.Password) < MinPasswordLength {
-		ws.Respond(w, http.StatusBadRequest, ErrPasswordLength)
+		render.Render(w, r, api.WrapErr(api.ErrPasswordLength))
 		return
 	}
 
 	user, err := data.DB.User.FindByUsername(payload.Email)
 	if err != nil {
 		if err == db.ErrNoMoreRows {
-			ws.Respond(w, http.StatusUnauthorized, ErrInvalidLogin)
+			render.Render(w, r, api.WrapErr(api.ErrInvalidLogin))
 			return
 		}
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
 	if !verifyPassword(user.PasswordHash, payload.Password) {
-		ws.Respond(w, http.StatusUnauthorized, ErrInvalidLogin)
+		render.Render(w, r, api.WrapErr(api.ErrInvalidLogin))
 		return
 	}
 
-	authUser, err := NewAuthUser(user)
-	if err != nil {
-		ws.Respond(w, http.StatusUnauthorized, err)
-		return
+	authUser := NewAuthUser(user)
+	if err := render.Render(w, r, authUser); err != nil {
+		render.Render(w, r, api.WrapErr(err))
 	}
-
-	ws.Respond(w, http.StatusOK, authUser)
 }
 
 // FacebookLogin handles both first-time login (signup) and repeated-logins from a social network
@@ -102,7 +102,7 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 		Token string `json:"token,required"`
 	}
 	if err := ws.Bind(r.Body, &payload); err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
@@ -117,11 +117,8 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authUser, err := NewAuthUser(user)
-	if err != nil {
-		ws.Respond(w, http.StatusUnauthorized, err)
-		return
+	authUser := NewAuthUser(user)
+	if err := render.Render(w, r, authUser); err != nil {
+		render.Render(w, r, api.WrapErr(err))
 	}
-
-	ws.Respond(w, http.StatusOK, authUser)
 }

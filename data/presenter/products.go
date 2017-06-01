@@ -3,8 +3,11 @@ package presenter
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/pressly/chi/render"
 
 	"upper.io/db.v3"
 
@@ -28,57 +31,51 @@ type Product struct {
 }
 
 func NewProduct(ctx context.Context, product *data.Product) *Product {
-	return &Product{
+	p := &Product{
 		Product: product,
-		Promos:  make([]*Promo, 0),
 		ctx:     ctx,
 	}
-}
 
-func (p *Product) WithShopUrl() *Product {
 	place, ok := p.ctx.Value("place").(*data.Place)
 	if !ok {
-		place = p.Place.Place
+		place, _ = data.DB.Place.FindByID(p.PlaceID)
 	}
+	p.Place = &Place{Place: place}
 
+	var promo *data.Promo
+	data.DB.Promo.Find(
+		db.Cond{
+			"product_id": p.ID,
+			"status":     data.PromoStatusActive,
+		},
+	).OrderBy("id").One(&promo)
+	p.Promos = []*Promo{{Promo: promo}}
+
+	return p
+}
+
+func NewProductList(ctx context.Context, products []*data.Product) []render.Renderer {
+	list := []render.Renderer{}
+	for _, product := range products {
+		list = append(list, NewProduct(ctx, product))
+	}
+	return list
+}
+
+func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	var u *url.URL
-	if place.ShopifyID != "" {
+	if p.Place.ShopifyID != "" {
 		u = &url.URL{
-			Host: fmt.Sprintf("%s.myshopify.com", place.ShopifyID),
+			Host: fmt.Sprintf("%s.myshopify.com", p.Place.ShopifyID),
 		}
-	} else if place.Website != "" {
-		u, _ = url.Parse(place.Website)
+	} else if p.Place.Website != "" {
+		u, _ = url.Parse(p.Place.Website)
 	}
 
 	u.Scheme = "https"
 	u.Path = fmt.Sprintf("products/%s", p.ExternalID)
 
 	p.ShopUrl = u.String()
-	return p
-}
 
-func (p *Product) WithPromo() *Product {
-	var promo *data.Promo
-	err := data.DB.Promo.Find(
-		db.Cond{
-			"product_id": p.ID,
-			"status":     data.PromoStatusActive,
-		},
-	).OrderBy("id").One(&promo)
-	if err != nil {
-		return p
-	}
-
-	p.Promos = []*Promo{NewPromo(p.ctx, promo)}
-	return p
-}
-
-func (p *Product) WithPlace() *Product {
-	place, err := data.DB.Place.FindByID(p.PlaceID)
-	if err != nil {
-		return p
-	}
-	p.Place = NewPlace(p.ctx, place)
-
-	return p
+	return nil
 }

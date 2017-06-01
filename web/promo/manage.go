@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/pressly/chi/render"
 
 	db "upper.io/db.v3"
 
@@ -51,12 +52,11 @@ func ListManagable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := make([]*presenter.Promo, len(promos))
-	for i, p := range promos {
-		res[i] = presenter.NewPromo(r.Context(), p).WithPlace()
+	presented := presenter.NewPromoList(ctx, promos)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Render(w, r, nil)
+		return
 	}
-
-	ws.Respond(w, http.StatusOK, res)
 }
 
 func CreatePromo(w http.ResponseWriter, r *http.Request) {
@@ -204,6 +204,9 @@ func PreviewPromo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := presenter.NewPromo(ctx, &promo)
-	ws.Respond(w, http.StatusCreated, resp.WithPlace())
+	presented := presenter.NewPromo(ctx, &promo)
+	if err := render.Render(w, r, presented); err != nil {
+		render.Render(w, r, nil)
+		return
+	}
 }

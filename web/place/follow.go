@@ -5,11 +5,11 @@ import (
 
 	"upper.io/db.v3"
 
-	"github.com/pkg/errors"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 func ListFollowing(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +18,7 @@ func ListFollowing(w http.ResponseWriter, r *http.Request) {
 
 	followings, err := data.DB.Following.FindByUserID(user.ID)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to find favorite places"))
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
@@ -29,19 +29,15 @@ func ListFollowing(w http.ResponseWriter, r *http.Request) {
 
 	places, err := data.DB.Place.FindAll(db.Cond{"id": placeIDs})
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to query favorite places"))
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
-	response := []*presenter.Place{}
-	for _, pl := range places {
-		p := presenter.NewPlace(ctx, pl).WithPromo()
-		p.Following = true
-		response = append(response, p.WithLocale().WithGeo())
+	presented := presenter.NewPlaceList(ctx, places)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Render(w, r, api.WrapErr(err))
+		return
 	}
-
-	// TODO: present
-	ws.Respond(w, http.StatusOK, response)
 }
 
 func FollowPlace(w http.ResponseWriter, r *http.Request) {
@@ -54,11 +50,12 @@ func FollowPlace(w http.ResponseWriter, r *http.Request) {
 		PlaceID: place.ID,
 	}
 	if err := data.DB.Following.Save(follow); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "following place"))
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
-	ws.Respond(w, http.StatusCreated, follow)
+	render.Status(r, http.StatusCreated)
+	render.Respond(w, r, follow)
 }
 
 func UnfollowPlace(w http.ResponseWriter, r *http.Request) {
@@ -72,14 +69,15 @@ func UnfollowPlace(w http.ResponseWriter, r *http.Request) {
 	}
 	following, err := data.DB.Following.FindOne(cond)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
 	if err := data.DB.Following.Delete(following); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
-	ws.Respond(w, http.StatusNoContent, "")
+	render.Status(r, http.StatusNoContent)
+	render.Respond(w, r, "")
 }

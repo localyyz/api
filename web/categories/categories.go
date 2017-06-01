@@ -1,5 +1,7 @@
 package categories
 
+/****
+
 import (
 	"context"
 	"net/http"
@@ -74,3 +76,4 @@ func ListPlaces(w http.ResponseWriter, r *http.Request) {
 
 	ws.Respond(w, http.StatusOK, presented)
 }
+***/

@@ -12,6 +12,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/pressly/chi"
+	"github.com/pressly/chi/render"
 )
 
 const ClaimableDistance = 100.0
@@ -29,7 +30,7 @@ func PromoCtx(next http.Handler) http.Handler {
 
 		promo, err := data.DB.Promo.FindByID(promoID)
 		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
+			render.Render(w, r, api.WrapErr(err))
 			return
 		}
 		ctx := r.Context()
@@ -41,8 +42,9 @@ func PromoCtx(next http.Handler) http.Handler {
 }
 
 func GetPromo(w http.ResponseWriter, r *http.Request) {
-	promo := r.Context().Value("promo").(*data.Promo)
-	ws.Respond(w, http.StatusOK, promo)
+	ctx := r.Context()
+	promo := ctx.Value("promo").(*data.Promo)
+	render.Render(w, r, presenter.NewPromo(ctx, promo))
 }
 
 func ListHistory(w http.ResponseWriter, r *http.Request) {
@@ -77,16 +79,16 @@ func ListHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := make([]*presenter.Promo, len(promos))
-	for i, p := range promos {
-		res[i] = presenter.NewPromo(ctx, p).WithPlace()
+	presented := presenter.NewPromoList(ctx, promos)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Render(w, r, nil)
+		return
 	}
-
-	ws.Respond(w, http.StatusOK, res)
 }
 
 func ListActive(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("session.user").(*data.User)
+	ctx := r.Context()
+	currentUser := ctx.Value("session.user").(*data.User)
 
 	claims, err := data.DB.Claim.FindAll(
 		db.Cond{
@@ -116,11 +118,9 @@ func ListActive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := make([]*presenter.Promo, len(promos))
-	for i, p := range promos {
-		res[i] = presenter.NewPromo(r.Context(), p).WithPlace()
-		res[i].Claim = claimMap[p.ID]
+	presented := presenter.NewPromoList(ctx, promos)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Render(w, r, nil)
+		return
 	}
-
-	ws.Respond(w, http.StatusOK, res)
 }
