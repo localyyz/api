@@ -21,9 +21,9 @@ type ApiError struct {
 }
 
 var (
-	ErrBadID          = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "bad or invalid id"}
+	ErrBadID          = &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "bad or invalid id"}
 	ErrBadAction      = errors.New("can't do this")
-	ErrInvalidSession = &ApiError{StatusCode: http.StatusUnauthorized, StatusText: "invalid session"}
+	ErrInvalidSession = &ApiError{StatusCode: http.StatusUnauthorized, ErrorText: "invalid session"}
 
 	/** Auth **/
 	// Password and Confirmation must match
@@ -35,10 +35,13 @@ var (
 	// Invalid login
 	ErrInvalidLogin = errors.New("invalid login credentials, check username and/or password")
 
+	/* Shopify */
+	ErrConflictStore = &ApiError{StatusCode: http.StatusConflict, ErrorText: "store already connected"}
+
 	/* Permission */
 	ErrPermissionDenied = &ApiError{StatusCode: http.StatusUnauthorized}
 
-	// Claims
+	/* Claims */
 	ErrClaimDistance = errors.New("claim distance")
 
 	// Cart

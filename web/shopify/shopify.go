@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/pressly/chi"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	db "upper.io/db.v3"
 )
 
@@ -22,7 +23,7 @@ func CredCtx(next http.Handler) http.Handler {
 
 		creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
 		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
+			render.Render(w, r, api.WrapErr(err))
 			return
 		}
 
@@ -51,18 +52,18 @@ func Connect(w http.ResponseWriter, r *http.Request) {
 	shopID := strings.ToLower(chi.URLParam(r, "shopID"))
 	place, err := data.DB.Place.FindByShopifyID(shopID)
 	if err != nil && err != db.ErrNoMoreRows {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
 	if place != nil {
 		count, err := data.DB.ShopifyCred.Find(db.Cond{"place_id": place.ID}).Count()
 		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
+			render.Render(w, r, api.WrapErr(err))
 			return
 		}
 		if count > 0 {
-			ws.Respond(w, http.StatusConflict, "shopify store already connected")
+			render.Render(w, r, api.ErrConflictStore)
 			return
 		}
 	} else {
@@ -77,10 +78,10 @@ func Connect(w http.ResponseWriter, r *http.Request) {
 func SyncProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	api := ctx.Value("api").(*shopify.Client)
-	productList, _, err := api.Product.List(ctx)
+	shopApi := ctx.Value("api").(*shopify.Client)
+	productList, _, err := shopApi.Product.List(ctx)
 	if err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
@@ -89,18 +90,17 @@ func SyncProduct(w http.ResponseWriter, r *http.Request) {
 		product, promos := getProductPromo(ctx, p)
 
 		if err := data.DB.Product.Save(product); err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
+			render.Render(w, r, api.WrapErr(err))
 			return
 		}
 
 		for _, v := range promos {
 			v.ProductID = product.ID
 			if err := data.DB.Promo.Save(v); err != nil {
-				ws.Respond(w, http.StatusInternalServerError, err)
+				render.Render(w, r, api.WrapErr(err))
 				return
 			}
 		}
 	}
-
-	ws.Respond(w, http.StatusOK, productList)
+	render.Respond(w, r, productList)
 }

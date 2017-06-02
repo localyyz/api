@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
@@ -14,7 +13,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
@@ -22,6 +20,15 @@ import (
 type AuthUser struct {
 	*data.User
 	JWT string `json:"jwt"`
+}
+
+type emailLogin struct {
+	Email    string `json:"email,required"`
+	Password string `json:"password,required"`
+}
+
+type fbLogin struct {
+	Token string `json:"token,required"`
 }
 
 var (
@@ -44,9 +51,19 @@ func (u *AuthUser) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+func (l *emailLogin) Bind(r *http.Request) error {
+	if len(l.Password) < MinPasswordLength {
+		return api.ErrPasswordLength
+	}
+	return nil
+}
+
+func (l *fbLogin) Bind(r *http.Request) error {
+	return nil
+}
+
 // bcrypt compare hash with given password
 func verifyPassword(hash, password string) bool {
-
 	// incase either hash or password is empty, compare
 	// something and return false to mask the timing
 	if len(hash) == 0 || len(password) == 0 {
@@ -59,17 +76,9 @@ func verifyPassword(hash, password string) bool {
 }
 
 func EmailLogin(w http.ResponseWriter, r *http.Request) {
-	var payload struct {
-		Email    string `json:"email,required"`
-		Password string `json:"password,required"`
-	}
-	if err := ws.Bind(r.Body, &payload); err != nil {
+	payload := &emailLogin{}
+	if err := render.Bind(r, payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	if len(payload.Password) < MinPasswordLength {
-		render.Render(w, r, api.WrapErr(api.ErrPasswordLength))
 		return
 	}
 
@@ -98,10 +107,8 @@ func EmailLogin(w http.ResponseWriter, r *http.Request) {
 // User is already authenticated by the frontend with network of their choice
 //  Backend stores the token and async grab the user data
 func FacebookLogin(w http.ResponseWriter, r *http.Request) {
-	var payload struct {
-		Token string `json:"token,required"`
-	}
-	if err := ws.Bind(r.Body, &payload); err != nil {
+	payload := &fbLogin{}
+	if err := render.Bind(r, payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
@@ -110,10 +117,12 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 	user, err := connect.FB.Login(payload.Token)
 	if err != nil {
 		if err == connect.ErrTokenExpired {
-			ws.Respond(w, http.StatusUnauthorized, errors.New("token expired"))
+			render.Status(r, http.StatusUnauthorized)
+			render.Respond(w, r, connect.ErrTokenExpired)
 			return
 		}
-		ws.Respond(w, http.StatusServiceUnavailable, err)
+		render.Status(r, http.StatusServiceUnavailable)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 

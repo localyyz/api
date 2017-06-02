@@ -20,7 +20,7 @@ func LocaleCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		localeID, err := strconv.ParseInt(chi.URLParam(r, "localeID"), 10, 64)
 		if err != nil {
-			ws.Respond(w, http.StatusBadRequest, api.ErrBadID)
+			render.Render(w, r, api.ErrBadID)
 			return
 		}
 

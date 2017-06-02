@@ -6,8 +6,8 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"github.com/pressly/chi"
+	"github.com/pressly/chi/render"
 )
 
 type omniSearch struct {
@@ -35,7 +35,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 
 	places, err := data.DB.Place.MatchName(q)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 	s.Places = make([]*presenter.Place, len(places))
@@ -47,16 +47,16 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 
 	products, err := data.DB.Product.MatchTags(q)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
-	s.Products = NewProductList(ctx, products)
+	s.Products = make([]*presenter.Product, len(products))
 	for i, p := range products {
-		pp := presenter.NewProduct(ctx, p).WithPromo().WithPlace().WithShopUrl()
+		pp := presenter.NewProduct(ctx, p)
 		s.Products[i] = pp
 		distPlaces = append(distPlaces, pp.Place.Place)
 	}
 	user.DistanceToPlaces(distPlaces...)
 
-	ws.Respond(w, http.StatusOK, s)
+	render.Respond(w, r, s)
 }

@@ -13,7 +13,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
@@ -29,24 +28,21 @@ type Heartbeat struct {
 	AltitudeAccuracy json.Number `json:"altitudeAccuracy"`
 }
 
+func (*Heartbeat) Bind(r *http.Request) error {
+	return nil
+}
+
 func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	var payload []*Heartbeat
-	if err := ws.BindMany(r.Body, &payload); err != nil {
+	payload := &Heartbeat{}
+	if err := render.Bind(r, payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
-	// TODO: should sort by timestamp
-	// for now, just take and forget
-	if len(payload) == 0 {
-		render.Render(w, r, nil)
-		return
-	}
-
-	newCoord := payload[0]
+	newCoord := payload
 	// save the user's location as a geohash
 	if err := user.SetLocation(newCoord.Latitude, newCoord.Longitude); err != nil {
 		render.Render(w, r, api.WrapErr(err))

@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
@@ -29,9 +28,13 @@ const (
 	bCryptCost        int = 10
 )
 
+func (u *userSignup) Bind(r *http.Request) error {
+	return nil
+}
+
 func EmailSignup(w http.ResponseWriter, r *http.Request) {
-	var newSignup userSignup
-	if err := ws.Bind(r.Body, &newSignup); err != nil {
+	newSignup := &userSignup{}
+	if err := render.Bind(r, newSignup); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}

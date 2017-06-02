@@ -12,6 +12,12 @@ import (
 )
 
 // TODO: shopping list concept
+// claim -> product -> place is too complicated
+//
+// The architecture should be:
+// - products can be added to shopping carts
+//    at "checkout" pick the promotion if available
+// - multiple shopping carts? would that become "collections"?
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	currentUser := ctx.Value("session.user").(*data.User)
@@ -30,7 +36,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(claims) == 0 {
-		render.Render(w, r, api.ErrEmptyCart)
+		render.Render(w, r, api.EmptyListResp)
 		return
 	}
 
@@ -50,8 +56,10 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 
 	// promo -> products
 	var productIDs []int64
+	promoMap := map[int64][]*presenter.Promo{}
 	for _, p := range promos {
 		productIDs = append(productIDs, p.ProductID)
+		promoMap[p.ProductID] = append(promoMap[p.ProductID], presenter.NewPromo(ctx, p))
 	}
 
 	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
@@ -60,8 +68,13 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	presented := presenter.NewProductList(ctx, products)
-	if err := render.RenderList(w, r, presented); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+	res := make([]*presenter.Product, len(products))
+	for i, p := range products {
+		res[i] = presenter.NewProduct(ctx, p)
+		promo := promoMap[p.ID]
+		res[i].Promos = promo
+		res[i].UserClaimStatus = claimsMap[promo[0].ID].Status
 	}
+
+	render.Respond(w, r, res)
 }

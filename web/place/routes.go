@@ -12,10 +12,6 @@ func Routes() chi.Router {
 	r.Get("/recent", ListRecent)
 	r.Get("/following", ListFollowing)
 
-	r.Route("/manage", func(r chi.Router) {
-		r.Get("/", ListManagable)
-	})
-
 	r.Route("/:placeID", func(r chi.Router) {
 		r.Use(PlaceCtx)
 

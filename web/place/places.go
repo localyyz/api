@@ -17,6 +17,20 @@ import (
 	"github.com/pressly/chi/render"
 )
 
+type shareWrapper struct {
+	data.Share
+
+	NetworkShareID string      `json:"networkShareId"`
+	ID             interface{} `json:"id,omitempty"`
+	UserID         interface{} `json:"userId,omitempty"`
+	PlaceID        interface{} `json:"userId,omitempty"`
+	CreatedAt      interface{} `json:"createdAt,omitempty"`
+}
+
+func (s *shareWrapper) Bind(r *http.Request) error {
+	return nil
+}
+
 func PlaceCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		placeID, err := strconv.ParseInt(chi.URLParam(r, "placeID"), 10, 64)
@@ -110,24 +124,16 @@ func Share(w http.ResponseWriter, r *http.Request) {
 	user := ctx.Value("session.user").(*data.User)
 	place := ctx.Value("place").(*data.Place)
 
-	var shareWrapper struct {
-		data.Share
-
-		NetworkShareID string      `json:"networkShareId"`
-		ID             interface{} `json:"id,omitempty"`
-		UserID         interface{} `json:"userId,omitempty"`
-		PlaceID        interface{} `json:"userId,omitempty"`
-		CreatedAt      interface{} `json:"createdAt,omitempty"`
-	}
-	if err := ws.Bind(r.Body, &shareWrapper); err != nil {
+	payload := &shareWrapper{}
+	if err := render.Bind(r, payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
-	newShare := &shareWrapper.Share
+	newShare := &payload.Share
 	newShare.UserID = user.ID
 	newShare.PlaceID = place.ID
 	newShare.Reach = user.Etc.FbFriendCount
-	newShare.NetworkShareID = shareWrapper.NetworkShareID
+	newShare.NetworkShareID = payload.NetworkShareID
 
 	if err := data.DB.Share.Save(newShare); err != nil {
 		render.Render(w, r, api.WrapErr(err))

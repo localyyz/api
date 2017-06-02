@@ -4,11 +4,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pressly/chi/render"
+
 	set "gopkg.in/fatih/set.v0"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"upper.io/db.v3"
 )
 
@@ -30,7 +33,7 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 
 	query = cursor.UpdateQueryUpper(query)
 	if err := query.All(&promos); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
@@ -39,20 +42,19 @@ func ListPromo(w http.ResponseWriter, r *http.Request) {
 		productIDs.Add(p.ProductID)
 	}
 	if productIDs.Size() == 0 {
-		ws.Respond(w, http.StatusOK, []struct{}{})
+		render.Respond(w, r, []struct{}{})
 		return
 	}
 
 	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs.List()})
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Render(w, r, api.WrapErr(err))
 		return
 	}
 
-	res := make([]*presenter.Product, len(products))
-	for i, p := range products {
-		res[i] = presenter.NewProduct(ctx, p).WithPromo().WithShopUrl()
+	presented := presenter.NewProductList(ctx, products)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Render(w, r, api.WrapErr(err))
 	}
 
-	ws.Respond(w, http.StatusOK, res, cursor.Update(products))
 }

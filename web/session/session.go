@@ -12,9 +12,7 @@ import (
 	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
@@ -63,25 +61,6 @@ func SessionCtx(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
-}
-
-// VerifySession can be used to do session verification
-func VerifySession(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
-
-	var challenge data.User
-	if err := ws.Bind(r.Body, &challenge); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	if user.IsAdmin != challenge.IsAdmin {
-		render.Render(w, r, api.ErrPermissionDenied)
-		return
-	}
-
-	render.Render(w, r, presenter.NewUser(ctx, user))
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {

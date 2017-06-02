@@ -7,9 +7,8 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
-	"bitbucket.org/moodie-app/moodie-api/web/categories"
 	"bitbucket.org/moodie-app/moodie-api/web/locale"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/product"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/middleware"
+	"github.com/pressly/chi/render"
 )
 
 type Handler struct {
@@ -68,7 +68,6 @@ func New(h *Handler) chi.Router {
 		r.Use(session.SessionCtx)
 
 		r.Mount("/session", session.Routes())
-		r.Mount("/categories", categories.Routes())
 		r.Mount("/users", user.Routes())
 		r.Mount("/places", place.Routes())
 		r.Mount("/promos", promo.Routes())
@@ -80,21 +79,26 @@ func New(h *Handler) chi.Router {
 	return r
 }
 
+type pushRequest struct {
+	DeviceToken string `json:"deviceToken,required"`
+	Payload     string `json:"payload"`
+}
+
+func (*pushRequest) Bind(r *http.Request) error {
+	return nil
+}
+
 // test function: echo push to apns
 func echoPush(w http.ResponseWriter, r *http.Request) {
-	var payload struct {
-		DeviceToken string `json:"deviceToken,required"`
-		Payload     string `json:"payload"`
-	}
-	if err := ws.Bind(r.Body, &payload); err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
-		return
-	}
-	err := pusher.Push(payload.DeviceToken, []byte(payload.Payload))
-	if err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+	payload := &pushRequest{}
+	if err := render.Bind(r, payload); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
-	return
+	b := []byte(payload.Payload)
+	t := payload.DeviceToken
+	if err := pusher.Push(t, b); err != nil {
+		render.Render(w, r, api.WrapErr(err))
+	}
 }

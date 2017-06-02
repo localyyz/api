@@ -173,10 +173,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _DELETE_
-				- [UnfollowPlace]()
 			- _POST_
 				- [FollowPlace]()
+			- _DELETE_
+				- [UnfollowPlace]()
 
 </details>
 <details>
@@ -336,10 +336,10 @@
 		- **/claims**
 			- [ClaimCtx]()
 			- **/**
-				- _GET_
-					- [GetClaims]()
 				- _DELETE_
 					- [RemoveClaim]()
+				- _GET_
+					- [GetClaims]()
 
 </details>
 <details>
@@ -396,10 +396,10 @@
 	- **/manage**
 		- [PromoManageCtx]()
 		- **/**
-			- _POST_
-				- [CreatePromo]()
 			- _GET_
 				- [ListManagable]()
+			- _POST_
+				- [CreatePromo]()
 
 </details>
 <details>
