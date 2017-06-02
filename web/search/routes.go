@@ -35,7 +35,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 
 	places, err := data.DB.Place.MatchName(q)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 	s.Places = make([]*presenter.Place, len(places))
@@ -47,7 +47,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 
 	products, err := data.DB.Product.MatchTags(q)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 	s.Products = make([]*presenter.Product, len(products))

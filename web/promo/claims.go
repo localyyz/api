@@ -25,7 +25,7 @@ func ClaimCtx(next http.Handler) http.Handler {
 			"status":   data.ClaimStatusActive,
 		}).One(&claim)
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 
@@ -47,7 +47,7 @@ func CompleteClaim(w http.ResponseWriter, r *http.Request) {
 
 	claim.Status = data.ClaimStatusCompleted
 	if err := data.DB.Claim.Save(claim); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 	render.Render(w, r, presenter.NewClaim(ctx, claim))
@@ -58,7 +58,7 @@ func RemoveClaim(w http.ResponseWriter, r *http.Request) {
 	claim := ctx.Value("claim").(*data.Claim)
 	claim.Status = data.ClaimStatusRemoved
 	if err := data.DB.Claim.Save(claim); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 	render.Render(w, r, api.NoContentResp)

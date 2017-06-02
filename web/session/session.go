@@ -69,7 +69,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	// logout the user
 	user.LoggedIn = false
 	if err := data.DB.User.Save(user); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 

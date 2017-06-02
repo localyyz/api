@@ -9,7 +9,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 func ListFollowing(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +17,7 @@ func ListFollowing(w http.ResponseWriter, r *http.Request) {
 
 	followings, err := data.DB.Following.FindByUserID(user.ID)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -29,13 +28,13 @@ func ListFollowing(w http.ResponseWriter, r *http.Request) {
 
 	places, err := data.DB.Place.FindAll(db.Cond{"id": placeIDs})
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	presented := presenter.NewPlaceList(ctx, places)
 	if err := render.RenderList(w, r, presented); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 }
@@ -50,7 +49,7 @@ func FollowPlace(w http.ResponseWriter, r *http.Request) {
 		PlaceID: place.ID,
 	}
 	if err := data.DB.Following.Save(follow); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -69,12 +68,12 @@ func UnfollowPlace(w http.ResponseWriter, r *http.Request) {
 	}
 	following, err := data.DB.Following.FindOne(cond)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	if err := data.DB.Following.Delete(following); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 

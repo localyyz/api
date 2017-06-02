@@ -11,7 +11,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/render"
@@ -41,7 +40,7 @@ func PlaceCtx(next http.Handler) http.Handler {
 
 		place, err := data.DB.Place.FindByID(placeID)
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 		ctx := r.Context()
@@ -61,7 +60,7 @@ func GetPlace(w http.ResponseWriter, r *http.Request) {
 func ListNearby(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
-	cursor := ws.NewPage(r)
+	cursor := api.NewPage(r)
 
 	query := data.DB.Place.
 		Find(db.Cond{"locale_id": user.Etc.LocaleID}).
@@ -74,13 +73,13 @@ func ListNearby(w http.ResponseWriter, r *http.Request) {
 
 	var places []*data.Place
 	if err := query.All(&places); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	presented := presenter.NewPlaceList(ctx, places)
 	if err := render.RenderList(w, r, presented); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 	}
 }
 
@@ -108,7 +107,7 @@ func ListRecent(w http.ResponseWriter, r *http.Request) {
 		Limit(10)
 
 	if err := q.All(&places); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -136,7 +135,7 @@ func Share(w http.ResponseWriter, r *http.Request) {
 	newShare.NetworkShareID = payload.NetworkShareID
 
 	if err := data.DB.Share.Save(newShare); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 

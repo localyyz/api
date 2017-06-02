@@ -45,7 +45,7 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	newCoord := payload
 	// save the user's location as a geohash
 	if err := user.SetLocation(newCoord.Latitude, newCoord.Longitude); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -58,7 +58,7 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	}
 	cells, err := data.DB.Cell.FindAll(cond)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -78,13 +78,13 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	if localeID != 0 {
 		user.Etc.LocaleID = localeID
 		if err := data.DB.User.Save(user); err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 
 		locale, err := data.DB.Locale.FindByID(localeID)
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 		lg.Infof("user(%d) located at %s", user.ID, locale.Name)

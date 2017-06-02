@@ -10,7 +10,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/render"
@@ -26,7 +25,7 @@ func LocaleCtx(next http.Handler) http.Handler {
 
 		locale, err := data.DB.Locale.FindByID(localeID)
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 		ctx := r.Context()
@@ -43,13 +42,13 @@ func ListLocale(w http.ResponseWriter, r *http.Request) {
 		data.EnabledLocales,
 	).OrderBy("shorthand").All(&locales)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	presented := presenter.NewLocaleList(r.Context(), locales)
 	if err := render.RenderList(w, r, presented); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 	}
 }
 
@@ -58,7 +57,7 @@ func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	locale := ctx.Value("locale").(*data.Locale)
 	user := ctx.Value("session.user").(*data.User)
 
-	cursor := ws.NewPage(r)
+	cursor := api.NewPage(r)
 
 	var places []*data.Place
 	query := data.DB.Place.
@@ -71,12 +70,12 @@ func ListPlaces(w http.ResponseWriter, r *http.Request) {
 
 	query = cursor.UpdateQueryUpper(query)
 	if err := query.All(&places); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	presented := presenter.NewPlaceList(ctx, places)
 	if err := render.RenderList(w, r, presented); err != nil {
-		render.Render(w, r, nil)
+		render.Respond(w, r, err)
 	}
 }

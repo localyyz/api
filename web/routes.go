@@ -99,6 +99,6 @@ func echoPush(w http.ResponseWriter, r *http.Request) {
 	b := []byte(payload.Payload)
 	t := payload.DeviceToken
 	if err := pusher.Push(t, b); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 	}
 }

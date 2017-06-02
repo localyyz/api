@@ -35,17 +35,17 @@ func (u *userSignup) Bind(r *http.Request) error {
 func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	newSignup := &userSignup{}
 	if err := render.Bind(r, newSignup); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
+		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
 	if newSignup.Password != newSignup.PasswordConfirm {
-		render.Respond(w, r, api.WrapErr(api.ErrPasswordMismatch))
+		render.Respond(w, r, api.ErrPasswordMismatch)
 		return
 	}
 
 	if len(newSignup.Password) < MinPasswordLength {
-		render.Respond(w, r, api.WrapErr(api.ErrPasswordLength))
+		render.Respond(w, r, api.ErrPasswordLength)
 		return
 	}
 
@@ -53,7 +53,7 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	epw, err := bcrypt.GenerateFromPassword([]byte(newSignup.Password), bCryptCost)
 	if err != nil {
 		// mask the encryption error and return
-		render.Respond(w, r, api.WrapErr(api.ErrEncryptinError))
+		render.Respond(w, r, api.ErrEncryptinError)
 		lg.Alert(errors.Wrap(err, "encryption error"))
 		return
 	}
@@ -67,13 +67,13 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 		LoggedIn:     true,
 	}
 	if err := data.DB.User.Save(newUser); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	// TODO: email verification
 	authUser := NewAuthUser(newUser)
 	if err := render.Render(w, r, authUser); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 	}
 }

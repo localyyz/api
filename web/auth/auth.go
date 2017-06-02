@@ -85,21 +85,21 @@ func EmailLogin(w http.ResponseWriter, r *http.Request) {
 	user, err := data.DB.User.FindByUsername(payload.Email)
 	if err != nil {
 		if err == db.ErrNoMoreRows {
-			render.Render(w, r, api.WrapErr(api.ErrInvalidLogin))
+			render.Respond(w, r, api.ErrInvalidLogin)
 			return
 		}
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	if !verifyPassword(user.PasswordHash, payload.Password) {
-		render.Render(w, r, api.WrapErr(api.ErrInvalidLogin))
+		render.Respond(w, r, api.ErrInvalidLogin)
 		return
 	}
 
 	authUser := NewAuthUser(user)
 	if err := render.Render(w, r, authUser); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 	}
 }
 
@@ -122,12 +122,12 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		render.Status(r, http.StatusServiceUnavailable)
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	authUser := NewAuthUser(user)
 	if err := render.Render(w, r, authUser); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 	}
 }

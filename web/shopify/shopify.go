@@ -23,7 +23,7 @@ func CredCtx(next http.Handler) http.Handler {
 
 		creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 
@@ -52,14 +52,14 @@ func Connect(w http.ResponseWriter, r *http.Request) {
 	shopID := strings.ToLower(chi.URLParam(r, "shopID"))
 	place, err := data.DB.Place.FindByShopifyID(shopID)
 	if err != nil && err != db.ErrNoMoreRows {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	if place != nil {
 		count, err := data.DB.ShopifyCred.Find(db.Cond{"place_id": place.ID}).Count()
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 		if count > 0 {
@@ -81,7 +81,7 @@ func SyncProduct(w http.ResponseWriter, r *http.Request) {
 	shopApi := ctx.Value("api").(*shopify.Client)
 	productList, _, err := shopApi.Product.List(ctx)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -90,14 +90,14 @@ func SyncProduct(w http.ResponseWriter, r *http.Request) {
 		product, promos := getProductPromo(ctx, p)
 
 		if err := data.DB.Product.Save(product); err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 
 		for _, v := range promos {
 			v.ProductID = product.ID
 			if err := data.DB.Promo.Save(v); err != nil {
-				render.Render(w, r, api.WrapErr(err))
+				render.Respond(w, r, err)
 				return
 			}
 		}

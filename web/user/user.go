@@ -31,7 +31,7 @@ func AcceptNDA(w http.ResponseWriter, r *http.Request) {
 
 	user.Etc.HasAgreedNDA = true
 	if err := data.DB.User.Save(user); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -58,7 +58,7 @@ func SetDeviceToken(w http.ResponseWriter, r *http.Request) {
 
 	user.DeviceToken = &payload.DeviceToken
 	if err := data.DB.User.Save(user); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 

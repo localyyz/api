@@ -21,7 +21,7 @@ func PromoCtx(next http.Handler) http.Handler {
 
 		promo, err := data.DB.Promo.FindByID(promoID)
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 		ctx := r.Context()

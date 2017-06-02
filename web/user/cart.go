@@ -31,7 +31,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -50,7 +50,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 
 	promos, err := data.DB.Promo.FindAll(db.Cond{"id": promoIDs})
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -64,7 +64,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 
 	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 

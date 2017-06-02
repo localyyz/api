@@ -13,8 +13,8 @@ import (
 	"github.com/pressly/chi/render"
 )
 
-// inject and override defaults in the render package
-
+// Result is the intermediate data type to decode
+// the incoming request body into
 type Result map[string]interface{}
 
 // requiredDecoder checks v struct tags and
@@ -100,6 +100,18 @@ func checkRequired(r Result, v reflect.Value) error {
 	return nil
 }
 
+func renderResponder(w http.ResponseWriter, r *http.Request, v interface{}) {
+	if err, ok := v.(error); ok {
+		lg.Infof("api error: %+v", err)
+		render.DefaultResponder(w, r, WrapErr(err))
+
+		return
+	}
+	render.DefaultResponder(w, r, v)
+}
+
 func init() {
+	// inject and override defaults in the render package
 	render.Decode = requiredDecoder
+	render.Respond = renderResponder
 }

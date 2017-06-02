@@ -34,7 +34,7 @@ func ProductCtx(next http.Handler) http.Handler {
 
 		product, err := data.DB.Product.FindByID(productID)
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 		ctx := r.Context()
@@ -59,7 +59,7 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 	// find the promotion we're claiming
 	u, err := url.Parse(payload.ProductUrl)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -75,7 +75,7 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 		if err == db.ErrNoMoreRows {
 			lg.Warnf("no promo found with %+v", cond)
 		}
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -93,7 +93,7 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 		"status":   data.ClaimStatusActive,
 	}).Count()
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -104,7 +104,7 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := data.DB.Claim.Save(newClaim); err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 

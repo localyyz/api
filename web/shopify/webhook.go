@@ -26,14 +26,14 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	shopDomain := h.Get("X-Shopify-Shop-Domain")
 	u, err := url.Parse(shopDomain)
 	if err != nil {
-		render.Render(w, r, api.WrapErr(err))
+		render.Respond(w, r, err)
 		return
 	}
 
 	go func() { // return right away
 		place, err := data.DB.Place.FindByShopifyID(u.Host)
 		if err != nil {
-			render.Render(w, r, api.WrapErr(err))
+			render.Respond(w, r, err)
 			return
 		}
 
@@ -51,27 +51,27 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 			product, promos := getProductPromo(ctx, p.Product)
 			if err := data.DB.Product.Save(product); err != nil {
-				render.Render(w, r, api.WrapErr(err))
+				render.Respond(w, r, err)
 				return
 			}
 
 			for _, v := range promos {
 				if err := data.DB.Promo.Save(v); err != nil {
 					v.ProductID = product.ID
-					render.Render(w, r, api.WrapErr(err))
+					render.Respond(w, r, err)
 					return
 				}
 			}
 		case shopify.TopicProductsUpdate:
 			p := &shopifyWebhookRequest{}
 			if err := render.Bind(r, p); err != nil {
-				render.Render(w, r, api.WrapErr(err))
+				render.Respond(w, r, err)
 				return
 			}
 			// look up by external id
 			_, err := data.DB.Product.FindByExternalID(p.Handle)
 			if err != nil {
-				render.Render(w, r, api.WrapErr(err))
+				render.Respond(w, r, err)
 				return
 			}
 
