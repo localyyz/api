@@ -11,8 +11,12 @@ import (
 )
 
 type omniSearch struct {
-	Places   []*presenter.Place   `json:"places"`
-	Products []*presenter.Product `json:"products"`
+	Places   []*presenter.Place          `json:"places"`
+	Products presenter.SearchProductList `json:"products"`
+}
+
+func (*omniSearch) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
 }
 
 func Routes() chi.Router {
@@ -28,10 +32,10 @@ func Routes() chi.Router {
 func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
 	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
+	//user := ctx.Value("session.user").(*data.User)
 
-	var distPlaces []*data.Place
-	s := omniSearch{}
+	//var distPlaces []*data.Place
+	s := &omniSearch{}
 
 	places, err := data.DB.Place.MatchName(q)
 	if err != nil {
@@ -42,7 +46,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	for i, pl := range places {
 		place := presenter.NewPlace(ctx, pl)
 		s.Places[i] = place
-		distPlaces = append(distPlaces, pl)
+		//distPlaces = append(distPlaces, pl)
 	}
 
 	products, err := data.DB.Product.MatchTags(q)
@@ -50,13 +54,9 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
-	s.Products = make([]*presenter.Product, len(products))
-	for i, p := range products {
-		pp := presenter.NewProduct(ctx, p)
-		s.Products[i] = pp
-		distPlaces = append(distPlaces, pp.Place.Place)
-	}
-	user.DistanceToPlaces(distPlaces...)
+	s.Products = presenter.NewSearchProductList(ctx, products)
+	//distPlaces = append(distPlaces, pp.Place.Place)
+	//user.DistanceToPlaces(distPlaces...)
 
-	render.Respond(w, r, s)
+	render.Render(w, r, s)
 }

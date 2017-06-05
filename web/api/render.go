@@ -107,6 +107,7 @@ func renderResponder(w http.ResponseWriter, r *http.Request, v interface{}) {
 
 		return
 	}
+
 	render.DefaultResponder(w, r, v)
 }
 

@@ -6,7 +6,7 @@ import (
 
 	db "upper.io/db.v3"
 
-	"github.com/containous/traefik/log"
+	"github.com/goware/lg"
 	"github.com/pressly/chi/render"
 )
 
@@ -84,7 +84,7 @@ func WrapErr(err error) *ApiError {
 		return &a
 	}
 
-	log.Errorf("encountered internal error: %+v", err)
+	lg.Errorf("encountered internal error: %+v", err)
 	return errGeneric
 }
 

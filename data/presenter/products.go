@@ -30,6 +30,33 @@ type Product struct {
 	ctx context.Context
 }
 
+type SearchProductList []*Product
+
+func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error {
+	for _, v := range l {
+		if err := v.Render(w, r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func NewSearchProductList(ctx context.Context, products []*data.Product) SearchProductList {
+	list := SearchProductList{}
+	for _, product := range products {
+		list = append(list, NewProduct(ctx, product))
+	}
+	return list
+}
+
+func NewProductList(ctx context.Context, products []*data.Product) []render.Renderer {
+	list := []render.Renderer{}
+	for _, product := range products {
+		list = append(list, NewProduct(ctx, product))
+	}
+	return list
+}
+
 func NewProduct(ctx context.Context, product *data.Product) *Product {
 	p := &Product{
 		Product: product,
@@ -52,14 +79,6 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	p.Promos = []*Promo{{Promo: promo}}
 
 	return p
-}
-
-func NewProductList(ctx context.Context, products []*data.Product) []render.Renderer {
-	list := []render.Renderer{}
-	for _, product := range products {
-		list = append(list, NewProduct(ctx, product))
-	}
-	return list
 }
 
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
