@@ -17,49 +17,6 @@
 
 </details>
 <details>
-<summary>`/categories`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/categories**
-	- **/**
-		- _GET_
-			- [ListCategories]()
-
-</details>
-<details>
-<summary>`/categories/:category`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/categories**
-	- **/:category**
-		- [CategoryCtx]()
-		- **/**
-			- _GET_
-				- [GetCategory]()
-
-</details>
-<details>
-<summary>`/categories/:category/places`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/categories**
-	- **/:category**
-		- [CategoryCtx]()
-		- **/places**
-			- _GET_
-				- [ListPlaces]()
-
-</details>
-<details>
 <summary>`/connect/:shopID`</summary>
 
 - [NoCache]()
@@ -228,19 +185,6 @@
 
 </details>
 <details>
-<summary>`/places/all`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places**
-	- **/all**
-		- _GET_
-			- [ListPlaces]()
-
-</details>
-<details>
 <summary>`/places/following`</summary>
 
 - [NoCache]()
@@ -254,20 +198,6 @@
 
 </details>
 <details>
-<summary>`/places/manage`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places**
-	- **/manage**
-		- **/**
-			- _GET_
-				- [ListManagable]()
-
-</details>
-<details>
 <summary>`/places/nearby`</summary>
 
 - [NoCache]()
@@ -277,7 +207,7 @@
 - **/places**
 	- **/nearby**
 		- _GET_
-			- [Nearby]()
+			- [ListNearby]()
 
 </details>
 <details>
@@ -290,7 +220,7 @@
 - **/places**
 	- **/recent**
 		- _GET_
-			- [Recent]()
+			- [ListRecent]()
 
 </details>
 <details>
@@ -309,21 +239,6 @@
 
 </details>
 <details>
-<summary>`/promos/:promoID`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/:promoID**
-		- [PromoCtx]()
-		- **/**
-			- _GET_
-				- [GetPromo]()
-
-</details>
-<details>
 <summary>`/promos/:promoID/claims`</summary>
 
 - [NoCache]()
@@ -336,10 +251,10 @@
 		- **/claims**
 			- [ClaimCtx]()
 			- **/**
-				- _DELETE_
-					- [RemoveClaim]()
 				- _GET_
 					- [GetClaims]()
+				- _DELETE_
+					- [RemoveClaim]()
 
 </details>
 <details>
@@ -357,83 +272,6 @@
 			- **/complete**
 				- _PUT_
 					- [CompleteClaim]()
-
-</details>
-<details>
-<summary>`/promos/active`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/active**
-		- _GET_
-			- [ListActive]()
-
-</details>
-<details>
-<summary>`/promos/history`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/history**
-		- _GET_
-			- [ListHistory]()
-
-</details>
-<details>
-<summary>`/promos/manage`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/manage**
-		- [PromoManageCtx]()
-		- **/**
-			- _GET_
-				- [ListManagable]()
-			- _POST_
-				- [CreatePromo]()
-
-</details>
-<details>
-<summary>`/promos/manage/:promoID`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/manage**
-		- [PromoManageCtx]()
-		- **/:promoID**
-			- [PromoCtx]()
-			- **/**
-				- _PUT_
-					- [UpdatePromo]()
-				- _DELETE_
-					- [DeletePromo]()
-
-</details>
-<details>
-<summary>`/promos/manage/preview`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/manage**
-		- [PromoManageCtx]()
-		- **/preview**
-			- _POST_
-				- [PreviewPromo]()
 
 </details>
 <details>
@@ -473,19 +311,6 @@
 	- **/heartbeat**
 		- _POST_
 			- [PostHeartbeat]()
-
-</details>
-<details>
-<summary>`/session/verify`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/session**
-	- **/verify**
-		- _POST_
-			- [VerifySession]()
 
 </details>
 <details>
@@ -558,4 +383,4 @@
 
 </details>
 
-Total # of routes: 39
+Total # of routes: 27

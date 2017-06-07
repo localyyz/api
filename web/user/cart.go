@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/pressly/chi/render"
@@ -56,10 +57,12 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 
 	// promo -> products
 	var productIDs []int64
-	promoMap := map[int64][]*presenter.Promo{}
+	promosMap := make(map[int64]*data.Promo)
 	for _, p := range promos {
-		productIDs = append(productIDs, p.ProductID)
-		promoMap[p.ProductID] = append(promoMap[p.ProductID], presenter.NewPromo(ctx, p))
+		if _, found := promosMap[p.ProductID]; !found {
+			productIDs = append(productIDs, p.ProductID)
+			promosMap[p.ProductID] = p
+		}
 	}
 
 	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
@@ -68,13 +71,8 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := make([]*presenter.Product, len(products))
-	for i, p := range products {
-		res[i] = presenter.NewProduct(ctx, p)
-		promo := promoMap[p.ID]
-		res[i].Promos = promo
-		res[i].UserClaimStatus = claimsMap[promo[0].ID].Status
-	}
-
-	render.Respond(w, r, res)
+	ctx = context.WithValue(ctx, "claims", claimsMap)
+	ctx = context.WithValue(ctx, "promos", promosMap)
+	presented := presenter.NewCartProductList(ctx, products)
+	render.Render(w, r, presented)
 }

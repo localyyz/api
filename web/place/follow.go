@@ -1,6 +1,7 @@
 package place
 
 import (
+	"fmt"
 	"net/http"
 
 	"upper.io/db.v3"
@@ -9,11 +10,13 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 func ListFollowing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
+	cursor := api.NewPage(r)
 
 	followings, err := data.DB.Following.FindByUserID(user.ID)
 	if err != nil {
@@ -26,8 +29,17 @@ func ListFollowing(w http.ResponseWriter, r *http.Request) {
 		placeIDs[i] = f.PlaceID
 	}
 
-	places, err := data.DB.Place.FindAll(db.Cond{"id": placeIDs})
-	if err != nil {
+	query := data.DB.Place.
+		Find(db.Cond{"id": placeIDs}).
+		Select(
+			db.Raw("*"),
+			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
+		).
+		OrderBy("distance")
+	query = cursor.UpdateQueryUpper(query)
+
+	var places []*data.Place
+	if err := query.All(&places); err != nil {
 		render.Respond(w, r, err)
 		return
 	}

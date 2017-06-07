@@ -31,8 +31,18 @@ type Product struct {
 }
 
 type SearchProductList []*Product
+type CartProductList []*Product
 
 func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error {
+	for _, v := range l {
+		if err := v.Render(w, r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (l CartProductList) Render(w http.ResponseWriter, r *http.Request) error {
 	for _, v := range l {
 		if err := v.Render(w, r); err != nil {
 			return err
@@ -45,6 +55,19 @@ func NewSearchProductList(ctx context.Context, products []*data.Product) SearchP
 	list := SearchProductList{}
 	for _, product := range products {
 		list = append(list, NewProduct(ctx, product))
+	}
+	return list
+}
+
+func NewCartProductList(ctx context.Context, products []*data.Product) CartProductList {
+	list := CartProductList{}
+	claims := ctx.Value("claims").(map[int64]*data.Claim)
+	promos := ctx.Value("promos").(map[int64]*data.Promo)
+	for _, product := range products {
+		p := NewProduct(ctx, product)
+		p.Promos = []*Promo{NewPromo(ctx, promos[p.ID])}
+		p.UserClaimStatus = claims[p.Promos[0].ID].Status
+		list = append(list, p)
 	}
 	return list
 }
