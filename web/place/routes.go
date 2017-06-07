@@ -8,14 +8,9 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/nearby", Nearby)
-	r.Get("/recent", Recent)
+	r.Get("/nearby", ListNearby)
+	r.Get("/recent", ListRecent)
 	r.Get("/following", ListFollowing)
-	r.Get("/all", ListPlaces)
-
-	r.Route("/manage", func(r chi.Router) {
-		r.Get("/", ListManagable)
-	})
 
 	r.Route("/:placeID", func(r chi.Router) {
 		r.Use(PlaceCtx)
@@ -25,6 +20,7 @@ func Routes() chi.Router {
 		r.Get("/", GetPlace)
 		r.Get("/promos", ListPromo)
 		r.Post("/share", Share)
+
 		r.Post("/follow", FollowPlace)
 		r.Delete("/follow", UnfollowPlace)
 	})

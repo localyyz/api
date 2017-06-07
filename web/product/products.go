@@ -9,23 +9,32 @@ import (
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/goware/lg"
 	"github.com/pressly/chi"
+	"github.com/pressly/chi/render"
 )
+
+type claimRequest struct {
+	ProductUrl string `json:"url"`
+}
+
+func (*claimRequest) Bind(r *http.Request) error {
+	return nil
+}
 
 func ProductCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		productID, err := strconv.ParseInt(chi.URLParam(r, "productID"), 10, 64)
 		if err != nil {
-			ws.Respond(w, http.StatusBadRequest, api.ErrBadID)
+			render.Render(w, r, api.ErrBadID)
 			return
 		}
 
 		product, err := data.DB.Product.FindByID(productID)
 		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
+			render.Respond(w, r, err)
 			return
 		}
 		ctx := r.Context()
@@ -41,18 +50,16 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 	product := ctx.Value("product").(*data.Product)
 	user := ctx.Value("session.user").(*data.User)
 
-	var payload struct {
-		ProductUrl string `json:"url"`
-	}
-	if err := ws.Bind(r.Body, &payload); err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+	payload := &claimRequest{}
+	if err := render.Bind(r, payload); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
 	// find the promotion we're claiming
 	u, err := url.Parse(payload.ProductUrl)
 	if err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -68,7 +75,7 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 		if err == db.ErrNoMoreRows {
 			lg.Warnf("no promo found with %+v", cond)
 		}
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -86,18 +93,21 @@ func ClaimProduct(w http.ResponseWriter, r *http.Request) {
 		"status":   data.ClaimStatusActive,
 	}).Count()
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
+
+	presented := presenter.NewClaim(ctx, newClaim)
 	if count > 0 {
-		ws.Respond(w, http.StatusOK, newClaim)
+		render.Render(w, r, presented)
 		return
 	}
 
 	if err := data.DB.Claim.Save(newClaim); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
-	ws.Respond(w, http.StatusCreated, newClaim)
+	render.Status(r, http.StatusCreated)
+	render.Render(w, r, presented)
 }

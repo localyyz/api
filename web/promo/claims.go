@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"upper.io/db.v3"
 )
 
@@ -24,11 +25,7 @@ func ClaimCtx(next http.Handler) http.Handler {
 			"status":   data.ClaimStatusActive,
 		}).One(&claim)
 		if err != nil {
-			if err == db.ErrNoMoreRows {
-				ws.Respond(w, http.StatusNotFound, "")
-				return
-			}
-			ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to query claim"))
+			render.Respond(w, r, err)
 			return
 		}
 
@@ -39,8 +36,9 @@ func ClaimCtx(next http.Handler) http.Handler {
 }
 
 func GetClaims(w http.ResponseWriter, r *http.Request) {
-	claim := r.Context().Value("claim").(*data.Claim)
-	ws.Respond(w, http.StatusOK, claim)
+	ctx := r.Context()
+	claim := ctx.Value("claim").(*data.Claim)
+	render.Render(w, r, presenter.NewClaim(ctx, claim))
 }
 
 func CompleteClaim(w http.ResponseWriter, r *http.Request) {
@@ -49,20 +47,19 @@ func CompleteClaim(w http.ResponseWriter, r *http.Request) {
 
 	claim.Status = data.ClaimStatusCompleted
 	if err := data.DB.Claim.Save(claim); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "complete"))
+		render.Respond(w, r, err)
 		return
 	}
-	ws.Respond(w, http.StatusOK, claim)
+	render.Render(w, r, presenter.NewClaim(ctx, claim))
 }
 
 func RemoveClaim(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	claim := ctx.Value("claim").(*data.Claim)
-
 	claim.Status = data.ClaimStatusRemoved
 	if err := data.DB.Claim.Save(claim); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "remove"))
+		render.Respond(w, r, err)
 		return
 	}
-	ws.Respond(w, http.StatusNoContent, "")
+	render.Render(w, r, api.NoContentResp)
 }

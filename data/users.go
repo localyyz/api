@@ -1,12 +1,8 @@
 package data
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
-
-	"bitbucket.org/moodie-app/moodie-api/lib/token"
-	"bitbucket.org/moodie-app/moodie-api/web/api"
 
 	"github.com/goware/geotools"
 	"github.com/goware/lg"
@@ -114,26 +110,6 @@ func (s UserStore) FindOne(cond db.Cond) (*User, error) {
 		return nil, err
 	}
 	return a, nil
-}
-
-// NewSessionUser returns a session user from jwt auth token
-func NewSessionUser(tok string) (*User, error) {
-	token, err := token.Decode(tok)
-	if err != nil {
-		return nil, err
-	}
-
-	rawUserID, ok := token.Claims["user_id"].(json.Number)
-	if ok {
-		userID, err := rawUserID.Int64()
-		if err != nil {
-			return nil, err
-		}
-
-		// find a logged in user with the given id
-		return DB.User.FindOne(db.Cond{"id": userID, "logged_in": true})
-	}
-	return nil, api.ErrInvalidSession
 }
 
 // String returns the string value of the status.

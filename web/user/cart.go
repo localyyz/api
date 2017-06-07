@@ -1,15 +1,24 @@
 package user
 
 import (
+	"context"
 	"net/http"
+
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	db "upper.io/db.v3"
 )
 
 // TODO: shopping list concept
+// claim -> product -> place is too complicated
+//
+// The architecture should be:
+// - products can be added to shopping carts
+//    at "checkout" pick the promotion if available
+// - multiple shopping carts? would that become "collections"?
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	currentUser := ctx.Value("session.user").(*data.User)
@@ -23,12 +32,12 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
 	if len(claims) == 0 {
-		ws.Respond(w, http.StatusOK, []struct{}{})
+		render.Render(w, r, api.EmptyListResp)
 		return
 	}
 
@@ -42,31 +51,28 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 
 	promos, err := data.DB.Promo.FindAll(db.Cond{"id": promoIDs})
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
 	// promo -> products
 	var productIDs []int64
-	promoMap := map[int64][]*presenter.Promo{}
+	promosMap := make(map[int64]*data.Promo)
 	for _, p := range promos {
-		productIDs = append(productIDs, p.ProductID)
-		promoMap[p.ProductID] = append(promoMap[p.ProductID], presenter.NewPromo(ctx, p))
+		if _, found := promosMap[p.ProductID]; !found {
+			productIDs = append(productIDs, p.ProductID)
+			promosMap[p.ProductID] = p
+		}
 	}
 
 	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
-	res := make([]*presenter.Product, len(products))
-	for i, p := range products {
-		res[i] = presenter.NewProduct(ctx, p).WithPlace().WithShopUrl()
-		promo := promoMap[p.ID]
-		res[i].Promos = promo
-		res[i].UserClaimStatus = claimsMap[promo[0].ID].Status
-	}
-
-	ws.Respond(w, http.StatusOK, res)
+	ctx = context.WithValue(ctx, "claims", claimsMap)
+	ctx = context.WithValue(ctx, "promos", promosMap)
+	presented := presenter.NewCartProductList(ctx, products)
+	render.Render(w, r, presented)
 }

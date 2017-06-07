@@ -2,26 +2,58 @@ package session
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
+	db "upper.io/db.v3"
+
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/goware/lg"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/lib/token"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 func SessionCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		token, _ := ctx.Value("jwt").(*jwt.Token)
-		if token == nil {
-			ws.Respond(w, http.StatusUnauthorized, "")
+		tok, _ := ctx.Value("jwt").(*jwt.Token)
+		if tok == nil {
+			render.Render(w, r, api.ErrInvalidSession)
 			return
 		}
-		user, err := data.NewSessionUser(token.Raw)
+
+		token, err := token.Decode(tok.Raw)
 		if err != nil {
-			ws.Respond(w, http.StatusUnauthorized, "")
+			lg.Errorf("invalid session token: %+v", err)
+			render.Render(w, r, api.ErrInvalidSession)
+		}
+
+		rawUserID, ok := token.Claims["user_id"].(json.Number)
+		if !ok {
+			lg.Error("invalid session token, no user_id found")
+			render.Render(w, r, api.ErrInvalidSession)
+		}
+
+		userID, err := rawUserID.Int64()
+		if err != nil {
+			lg.Errorf("invalid session token: %+v", err)
+			render.Render(w, r, api.ErrInvalidSession)
+		}
+
+		// find a logged in user with the given id
+		user, err := data.DB.User.FindOne(
+			db.Cond{
+				"id":        userID,
+				"logged_in": true,
+			},
+		)
+		if err != nil {
+			lg.Error("invalid session user: %+v", err)
+			render.Render(w, r, api.ErrInvalidSession)
 			return
 		}
 
@@ -31,34 +63,16 @@ func SessionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-// VerifySession can be used to do session verification
-func VerifySession(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
-
-	var challenge data.User
-	if err := ws.Bind(r.Body, &challenge); err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if user.IsAdmin != challenge.IsAdmin {
-		ws.Respond(w, http.StatusBadRequest, "")
-		return
-	}
-
-	ws.Respond(w, http.StatusOK, map[string]bool{"success": true})
-}
-
 func Logout(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("session.user").(*data.User)
 
 	// logout the user
 	user.LoggedIn = false
 	if err := data.DB.User.Save(user); err != nil {
-		ws.Respond(w, http.StatusServiceUnavailable, err)
+		render.Respond(w, r, err)
 		return
 	}
 
-	ws.Respond(w, http.StatusNoContent, "")
+	render.Status(r, http.StatusNoContent)
+	render.Respond(w, r, "")
 }

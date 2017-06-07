@@ -16,11 +16,11 @@ import (
 	"github.com/goware/jwtauth"
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 
 	"golang.org/x/oauth2"
 )
@@ -61,24 +61,28 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 
 	token, err := token.Decode(q.Get("state"))
 	if err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+		render.Status(r, http.StatusBadRequest)
+		render.Respond(w, r, err)
 		return
 	}
 
 	shopID, ok := token.Claims["place_shop_id"].(string)
 	if !ok {
-		ws.Respond(w, http.StatusBadRequest, ErrInvalidState)
+		render.Status(r, http.StatusBadRequest)
+		render.Respond(w, r, ErrInvalidState)
 		return
 	}
 
 	if fmt.Sprintf("%s.myshopify.com", shopID) != q.Get("shop") {
-		ws.Respond(w, http.StatusBadRequest, ErrMismathShop)
+		render.Status(r, http.StatusBadRequest)
+		render.Respond(w, r, ErrMismathShop)
 		return
 	}
 
 	tok, err := s.Exchange(shopID, r)
 	if err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+		render.Status(r, http.StatusBadRequest)
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -88,11 +92,13 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.finalizeCallback(r.Context(), shopID, creds); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Status(r, http.StatusInternalServerError)
+		render.Respond(w, r, err)
 		return
 	}
 
-	ws.Respond(w, http.StatusCreated, "shopify connected.")
+	render.Status(r, http.StatusCreated)
+	render.Respond(w, r, "shopify connected.")
 }
 
 func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *data.ShopifyCred) error {

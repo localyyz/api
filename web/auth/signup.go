@@ -6,11 +6,12 @@ import (
 
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
+	"github.com/pressly/chi/render"
 
 	"golang.org/x/crypto/bcrypt"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 type userSignup struct {
@@ -27,29 +28,24 @@ const (
 	bCryptCost        int = 10
 )
 
-var (
-	// Password and Confirmation must match
-	ErrPasswordMismatch = errors.New("password mismatch")
-	// Minimum length requirement for password
-	ErrPasswordLength = errors.New("password must be at least 8 characters long")
-	// Unknown encryption error
-	ErrEncryptinError = errors.New("internal error")
-)
+func (u *userSignup) Bind(r *http.Request) error {
+	return nil
+}
 
 func EmailSignup(w http.ResponseWriter, r *http.Request) {
-	var newSignup userSignup
-	if err := ws.Bind(r.Body, &newSignup); err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+	newSignup := &userSignup{}
+	if err := render.Bind(r, newSignup); err != nil {
+		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
 	if newSignup.Password != newSignup.PasswordConfirm {
-		ws.Respond(w, http.StatusBadRequest, ErrPasswordMismatch)
+		render.Respond(w, r, api.ErrPasswordMismatch)
 		return
 	}
 
 	if len(newSignup.Password) < MinPasswordLength {
-		ws.Respond(w, http.StatusBadRequest, ErrPasswordLength)
+		render.Respond(w, r, api.ErrPasswordLength)
 		return
 	}
 
@@ -57,7 +53,7 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	epw, err := bcrypt.GenerateFromPassword([]byte(newSignup.Password), bCryptCost)
 	if err != nil {
 		// mask the encryption error and return
-		ws.Respond(w, http.StatusInternalServerError, ErrEncryptinError)
+		render.Respond(w, r, api.ErrEncryptinError)
 		lg.Alert(errors.Wrap(err, "encryption error"))
 		return
 	}
@@ -71,16 +67,13 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 		LoggedIn:     true,
 	}
 	if err := data.DB.User.Save(newUser); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
 	// TODO: email verification
-	authUser, err := NewAuthUser(newUser)
-	if err != nil {
-		ws.Respond(w, http.StatusUnauthorized, err)
-		return
+	authUser := NewAuthUser(newUser)
+	if err := render.Render(w, r, authUser); err != nil {
+		render.Respond(w, r, err)
 	}
-
-	ws.Respond(w, http.StatusOK, authUser)
 }

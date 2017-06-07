@@ -8,9 +8,9 @@ import (
 
 	"github.com/golang/geo/s2"
 	"github.com/goware/lg"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
 	"upper.io/db.v3"
 )
 
@@ -25,13 +25,13 @@ func LocaleHandler(w http.ResponseWriter, r *http.Request) {
 	lg.Warnf("generating cells for %s", sh)
 	locale, err := data.DB.Locale.FindOne(db.Cond{"shorthand": sh})
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
 	cells, err := data.DB.Cell.FindAll(db.Cond{"locale_id": locale.ID})
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 

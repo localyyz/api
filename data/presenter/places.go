@@ -2,20 +2,20 @@ package presenter
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/goware/geotools"
-	"github.com/goware/lg"
-	"github.com/pkg/errors"
+	"github.com/pressly/chi/render"
 	"upper.io/db.v3"
 )
 
 type Place struct {
 	*data.Place
-	Locale     *data.Locale `json:"locale"`
-	PromoCount uint64       `json:"promoCount"`
-	Following  bool         `json:"following"`
+	Locale     *Locale `json:"locale"`
+	PromoCount uint64  `json:"promoCount"`
+	Following  bool    `json:"following"`
 
 	LatLng *geotools.LatLng `json:"coords"`
 	ctx    context.Context
@@ -26,51 +26,45 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 		Place: place,
 		ctx:   ctx,
 	}
+
+	{ // promotion count
+		query := data.DB.Promo.Find(
+			db.Cond{
+				"place_id":    p.ID,
+				"start_at <=": time.Now().UTC(),
+				"end_at >":    time.Now().UTC(),
+				"status":      data.PromoStatusActive,
+			},
+		).Select(db.Raw("count(distinct product_id) as count"))
+
+		var c struct {
+			Count uint64 `db:"count"`
+		}
+		if err := query.One(&c); err != nil {
+			return p
+		}
+		p.PromoCount = c.Count
+	}
+
+	locale, _ := data.DB.Locale.FindByID(p.LocaleID)
+	p.Locale = NewLocale(ctx, locale)
+	p.Following = data.DB.Following.IsFollowing(ctx, p.ID)
+
 	return p
 }
 
-func (pl *Place) WithFollowing() *Place {
-	user := pl.ctx.Value("session.user").(*data.User)
-	count, _ := data.DB.Following.Find(
-		db.Cond{"place_id": pl.ID, "user_id": user.ID},
-	).Count()
-	pl.Following = count > 0
-
-	return pl
+func NewPlaceList(ctx context.Context, places []*data.Place) []render.Renderer {
+	list := []render.Renderer{}
+	for _, place := range places {
+		list = append(list, NewPlace(ctx, place))
+	}
+	return list
 }
 
-func (pl *Place) WithGeo() *Place {
-	pl.LatLng = geotools.LatLngFromPoint(pl.Place.Geo)
-	return pl
-}
-
-// presents given place with locale detail
-func (pl *Place) WithLocale() *Place {
-	var err error
-	if pl.Locale, err = data.DB.Locale.FindByID(pl.LocaleID); err != nil && err != db.ErrNoMoreRows {
-		lg.Error(errors.Wrapf(err, "failed to present place(%v) locale", pl.ID))
+// Place implements render.Renderer interface
+func (pl *Place) Render(w http.ResponseWriter, r *http.Request) error {
+	if len(pl.Geo.Coordinates) > 1 {
+		pl.LatLng = geotools.LatLngFromPoint(pl.Geo)
 	}
-	return pl
-}
-
-// Count number of active promotions for a place
-func (pl *Place) WithPromo() *Place {
-	query := data.DB.Promo.Find(
-		db.Cond{
-			"place_id":    pl.ID,
-			"start_at <=": time.Now().UTC(),
-			"end_at >":    time.Now().UTC(),
-			"status":      data.PromoStatusActive,
-		},
-	).Select(db.Raw("count(distinct product_id) as count"))
-
-	var c struct {
-		Count uint64 `db:"count"`
-	}
-	if err := query.One(&c); err != nil {
-		return pl
-	}
-	pl.PromoCount = c.Count
-
-	return pl
+	return nil
 }

@@ -1,24 +1,26 @@
 package place
 
 import (
+	"fmt"
 	"net/http"
 
 	"upper.io/db.v3"
 
-	"github.com/pkg/errors"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 func ListFollowing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
+	cursor := api.NewPage(r)
 
 	followings, err := data.DB.Following.FindByUserID(user.ID)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to find favorite places"))
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -27,21 +29,26 @@ func ListFollowing(w http.ResponseWriter, r *http.Request) {
 		placeIDs[i] = f.PlaceID
 	}
 
-	places, err := data.DB.Place.FindAll(db.Cond{"id": placeIDs})
-	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "failed to query favorite places"))
+	query := data.DB.Place.
+		Find(db.Cond{"id": placeIDs}).
+		Select(
+			db.Raw("*"),
+			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
+		).
+		OrderBy("distance")
+	query = cursor.UpdateQueryUpper(query)
+
+	var places []*data.Place
+	if err := query.All(&places); err != nil {
+		render.Respond(w, r, err)
 		return
 	}
 
-	response := []*presenter.Place{}
-	for _, pl := range places {
-		p := presenter.NewPlace(ctx, pl).WithPromo()
-		p.Following = true
-		response = append(response, p.WithLocale().WithGeo())
+	presented := presenter.NewPlaceList(ctx, places)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+		return
 	}
-
-	// TODO: present
-	ws.Respond(w, http.StatusOK, response)
 }
 
 func FollowPlace(w http.ResponseWriter, r *http.Request) {
@@ -54,11 +61,12 @@ func FollowPlace(w http.ResponseWriter, r *http.Request) {
 		PlaceID: place.ID,
 	}
 	if err := data.DB.Following.Save(follow); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, errors.Wrap(err, "following place"))
+		render.Respond(w, r, err)
 		return
 	}
 
-	ws.Respond(w, http.StatusCreated, follow)
+	render.Status(r, http.StatusCreated)
+	render.Respond(w, r, follow)
 }
 
 func UnfollowPlace(w http.ResponseWriter, r *http.Request) {
@@ -72,14 +80,15 @@ func UnfollowPlace(w http.ResponseWriter, r *http.Request) {
 	}
 	following, err := data.DB.Following.FindOne(cond)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
 	if err := data.DB.Following.Delete(following); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
-	ws.Respond(w, http.StatusNoContent, "")
+	render.Status(r, http.StatusNoContent)
+	render.Respond(w, r, "")
 }

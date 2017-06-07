@@ -9,10 +9,11 @@ import (
 	"github.com/golang/geo/s1"
 	"github.com/golang/geo/s2"
 	"github.com/goware/lg"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/ws"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 type Heartbeat struct {
@@ -27,27 +28,24 @@ type Heartbeat struct {
 	AltitudeAccuracy json.Number `json:"altitudeAccuracy"`
 }
 
+func (*Heartbeat) Bind(r *http.Request) error {
+	return nil
+}
+
 func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	var payload []*Heartbeat
-	if err := ws.BindMany(r.Body, &payload); err != nil {
-		ws.Respond(w, http.StatusBadRequest, err)
+	payload := &Heartbeat{}
+	if err := render.Bind(r, payload); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
-	// TODO: should sort by timestamp
-	// for now, just take and forget
-	if len(payload) == 0 {
-		ws.Respond(w, http.StatusOK, "")
-		return
-	}
-
-	newCoord := payload[0]
+	newCoord := payload
 	// save the user's location as a geohash
 	if err := user.SetLocation(newCoord.Latitude, newCoord.Longitude); err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -60,7 +58,7 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	}
 	cells, err := data.DB.Cell.FindAll(cond)
 	if err != nil {
-		ws.Respond(w, http.StatusInternalServerError, err)
+		render.Respond(w, r, err)
 		return
 	}
 
@@ -76,25 +74,22 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp := presenter.User{
-		User: user,
-		Geo:  user.Geo,
-	}
+	presented := presenter.NewUser(ctx, user)
 	if localeID != 0 {
 		user.Etc.LocaleID = localeID
 		if err := data.DB.User.Save(user); err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
+			render.Respond(w, r, err)
 			return
 		}
 
 		locale, err := data.DB.Locale.FindByID(localeID)
 		if err != nil {
-			ws.Respond(w, http.StatusInternalServerError, err)
+			render.Respond(w, r, err)
 			return
 		}
 		lg.Infof("user(%d) located at %s", user.ID, locale.Name)
 		// NOTE if we didn't find a valid locale, we keep user's previous
-		resp.Locale = locale
+		presented.Locale = locale
 	}
 
 	// save location history
@@ -104,5 +99,5 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	}
 	data.DB.UserLocation.Save(ul)
 
-	ws.Respond(w, http.StatusCreated, resp)
+	render.Render(w, r, presented)
 }

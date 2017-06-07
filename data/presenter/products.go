@@ -3,8 +3,11 @@ package presenter
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/pressly/chi/render"
 
 	"upper.io/db.v3"
 
@@ -27,58 +30,94 @@ type Product struct {
 	ctx context.Context
 }
 
-func NewProduct(ctx context.Context, product *data.Product) *Product {
-	return &Product{
-		Product: product,
-		Promos:  make([]*Promo, 0),
-		ctx:     ctx,
+type SearchProductList []*Product
+type CartProductList []*Product
+
+func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error {
+	for _, v := range l {
+		if err := v.Render(w, r); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (p *Product) WithShopUrl() *Product {
-	place, ok := p.ctx.Value("place").(*data.Place)
-	if !ok {
-		place = p.Place.Place
+func (l CartProductList) Render(w http.ResponseWriter, r *http.Request) error {
+	for _, v := range l {
+		if err := v.Render(w, r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func NewSearchProductList(ctx context.Context, products []*data.Product) SearchProductList {
+	list := SearchProductList{}
+	for _, product := range products {
+		list = append(list, NewProduct(ctx, product))
+	}
+	return list
+}
+
+func NewCartProductList(ctx context.Context, products []*data.Product) CartProductList {
+	list := CartProductList{}
+	claims := ctx.Value("claims").(map[int64]*data.Claim)
+	promos := ctx.Value("promos").(map[int64]*data.Promo)
+	for _, product := range products {
+		p := NewProduct(ctx, product)
+		p.Promos = []*Promo{NewPromo(ctx, promos[p.ID])}
+		p.UserClaimStatus = claims[p.Promos[0].ID].Status
+		list = append(list, p)
+	}
+	return list
+}
+
+func NewProductList(ctx context.Context, products []*data.Product) []render.Renderer {
+	list := []render.Renderer{}
+	for _, product := range products {
+		list = append(list, NewProduct(ctx, product))
+	}
+	return list
+}
+
+func NewProduct(ctx context.Context, product *data.Product) *Product {
+	p := &Product{
+		Product: product,
+		ctx:     ctx,
 	}
 
+	place, ok := p.ctx.Value("place").(*data.Place)
+	if !ok {
+		place, _ = data.DB.Place.FindByID(p.PlaceID)
+	}
+	p.Place = &Place{Place: place}
+
+	var promo *data.Promo
+	data.DB.Promo.Find(
+		db.Cond{
+			"product_id": p.ID,
+			"status":     data.PromoStatusActive,
+		},
+	).OrderBy("id").One(&promo)
+	p.Promos = []*Promo{{Promo: promo}}
+
+	return p
+}
+
+func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	var u *url.URL
-	if place.ShopifyID != "" {
+	if p.Place.ShopifyID != "" {
 		u = &url.URL{
-			Host: fmt.Sprintf("%s.myshopify.com", place.ShopifyID),
+			Host: fmt.Sprintf("%s.myshopify.com", p.Place.ShopifyID),
 		}
-	} else if place.Website != "" {
-		u, _ = url.Parse(place.Website)
+	} else if p.Place.Website != "" {
+		u, _ = url.Parse(p.Place.Website)
 	}
 
 	u.Scheme = "https"
 	u.Path = fmt.Sprintf("products/%s", p.ExternalID)
 
 	p.ShopUrl = u.String()
-	return p
-}
 
-func (p *Product) WithPromo() *Product {
-	var promo *data.Promo
-	err := data.DB.Promo.Find(
-		db.Cond{
-			"product_id": p.ID,
-			"status":     data.PromoStatusActive,
-		},
-	).OrderBy("id").One(&promo)
-	if err != nil {
-		return p
-	}
-
-	p.Promos = []*Promo{NewPromo(p.ctx, promo)}
-	return p
-}
-
-func (p *Product) WithPlace() *Product {
-	place, err := data.DB.Place.FindByID(p.PlaceID)
-	if err != nil {
-		return p
-	}
-	p.Place = NewPlace(p.ctx, place)
-
-	return p
+	return nil
 }

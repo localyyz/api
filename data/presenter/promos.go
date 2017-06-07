@@ -3,10 +3,12 @@ package presenter
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
+	"github.com/pressly/chi/render"
 	"upper.io/db.v3"
 )
 
@@ -23,32 +25,45 @@ type Promo struct {
 }
 
 func NewPromo(ctx context.Context, promo *data.Promo) *Promo {
-	return &Promo{
+	p := &Promo{
 		Promo: promo,
 		ctx:   ctx,
 	}
-}
 
-func (p *Promo) WithPlace() *Promo {
-	user := p.ctx.Value("session.user").(*data.User)
+	if p.Place == nil {
+		user := ctx.Value("session.user").(*data.User)
 
-	var place *data.Place
-	err := data.DB.Place.
-		Find(p.PlaceID).
-		Select(
-			db.Raw("*"),
-			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
-		).
-		OrderBy("distance").
-		One(&place)
-	if err != nil {
-		if err != db.ErrNoMoreRows {
-			lg.Error(errors.Wrapf(err, "failed to present promo(%v) place", p.ID))
+		var place *data.Place
+		err := data.DB.Place.
+			Find(p.PlaceID).
+			Select(
+				db.Raw("*"),
+				db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
+			).
+			OrderBy("distance").
+			One(&place)
+		if err != nil {
+			if err != db.ErrNoMoreRows {
+				lg.Error(errors.Wrapf(err, "failed to present promo(%v) place", p.ID))
+			}
 		}
+		p.Place = NewPlace(ctx, place)
 	}
 
-	p.Place = (&Place{Place: place}).WithGeo()
 	return p
+}
+
+func NewPromoList(ctx context.Context, promos []*data.Promo) []render.Renderer {
+	list := []render.Renderer{}
+	for _, promo := range promos {
+		list = append(list, NewPromo(ctx, promo))
+	}
+	return list
+}
+
+// Promo implements render.Renderer interface
+func (p *Promo) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
 }
 
 func (p *Promo) WithProduct() *Promo {
