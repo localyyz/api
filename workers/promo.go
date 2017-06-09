@@ -1,4 +1,4 @@
-package worker
+package workers
 
 import (
 	"bitbucket.org/moodie-app/moodie-api/data"
