@@ -13,6 +13,7 @@ type Share struct {
 
 	Network        string `db:"network" json:"network"`
 	NetworkShareID string `db:"network_share_id" json:"-"`
+	Hash           string `db:"hash" json:"hash"`
 	Reach          int32  `db:"reach" json:"reach"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
