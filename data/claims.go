@@ -66,14 +66,12 @@ func (c *Claim) Validate() error {
 		if err != nil {
 			return err
 		}
-		if promo.StartAt != nil && time.Now().Before(*promo.StartAt) {
-			// not started yet
-			return ErrPromoStart
-		}
-		if promo.EndAt != nil && time.Now().After(*promo.EndAt) {
-			// ended
-			return ErrPromoEnded
-		}
+		//if promo.StartAt != nil && time.Now().Before(*promo.StartAt) {
+		//return ErrPromoStart
+		//}
+		//if promo.EndAt != nil && time.Now().After(*promo.EndAt) {
+		//return ErrPromoEnded
+		//}
 		if promo.PlaceID != c.PlaceID {
 			// wrong promo
 			return ErrPromoPlace

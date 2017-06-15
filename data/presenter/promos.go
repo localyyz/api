@@ -21,6 +21,15 @@ type Promo struct {
 	//fields that can be viewed
 	NumClaimed int64 `json:"numClaimed,omitempty"`
 
+	// Hide fields
+	ProductID interface{} `json:"productId,omitempty"`
+	PlaceID   interface{} `json:"placeId,omitempty"`
+	UserID    interface{} `json:"userId,omitempty"`
+	Status    interface{} `json:"status,omitempty"`
+	CreatedAt interface{} `json:"createdAt,omitempty"`
+	UpdatedAt interface{} `json:"updatedAt,omitempty"`
+	DeletedAt interface{} `json:"deletedAt,omitempty"`
+
 	ctx context.Context
 }
 
@@ -64,33 +73,4 @@ func NewPromoList(ctx context.Context, promos []*data.Promo) []render.Renderer {
 // Promo implements render.Renderer interface
 func (p *Promo) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
-}
-
-func (p *Promo) WithProduct() *Promo {
-	product, err := data.DB.Product.FindByID(p.ProductID)
-	if err != nil {
-		return p
-	}
-	p.Product = product
-
-	return p
-}
-
-func (p *Promo) WithClaim() *Promo {
-	user := p.ctx.Value("session.user").(*data.User)
-
-	var err error
-	p.Claim, err = data.DB.Claim.FindOne(
-		db.Cond{
-			"place_id": p.PlaceID,
-			"promo_id": p.ID,
-			"user_id":  user.ID,
-		},
-	)
-	if err != nil {
-		if err != db.ErrNoMoreRows {
-			lg.Error(errors.Wrapf(err, "failed to present promo(%v) place", p.ID))
-		}
-	}
-	return p
 }

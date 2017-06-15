@@ -1,8 +1,6 @@
 package data
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"upper.io/bond"
@@ -13,7 +11,6 @@ import (
 type Promo struct {
 	ID        int64       `db:"id,pk,omitempty" json:"id,omitempty"`
 	PlaceID   int64       `db:"place_id" json:"placeId"`
-	Type      PromoType   `db:"type" json:"type"`
 	UserID    int64       `db:"user_id" json:"userId"`
 	ProductID int64       `db:"product_id" json:"productId"`
 	Status    PromoStatus `db:"status" json:"status"`
@@ -21,14 +18,10 @@ type Promo struct {
 	// Limits
 	Limits      int64  `db:"limits" json:"limits"`
 	Description string `db:"description" json:"description"`
-	// Uploaded image accompanying the promotion
-	ImageUrl string `db:"image_url" json:"imageUrl"`
 	// external offer id refering to specific promotion
 	OfferID int64    `db:"offer_id" json:"-"`
 	Etc     PromoEtc `db:"etc,jsonb" json:"etc"`
 
-	StartAt   *time.Time `db:"start_at,omitempty" json:"startAt"`
-	EndAt     *time.Time `db:"end_at,omitempty" json:"endAt"`
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
@@ -39,26 +32,12 @@ type PromoStore struct {
 }
 
 type PromoEtc struct {
-	Percent     int     `json:"pct"`
-	Spend       int     `json:"spd"`
-	Price       float64 `json:"prc"`
-	Item        string  `json:"itm"`
-	HeaderImage string  `json:"him"`
-	PlaceImage  string  `json:"pim"`
-	Sku         string  `json:"sku"`
+	Price float64 `json:"prc"`
+	Sku   string  `json:"sku"`
 }
 
 type (
-	PromoType   uint32
 	PromoStatus uint32
-)
-
-const (
-	_ PromoType = iota
-	PromoTypePctDiscount
-	PromoTypePrice
-	PromoTypeMinSpend
-	PromoTypeFreeItem
 )
 
 const (
@@ -96,10 +75,10 @@ func (p *Promo) BeforeCreate(sess bond.Session) error {
 		return err
 	}
 
-	if p.StartAt.Before(time.Now().UTC()) {
-		return errors.New("start date cannot be in the past")
-	}
-	p.Status = PromoStatusScheduled
+	//if p.StartAt.Before(time.Now().UTC()) {
+	//return errors.New("start date cannot be in the past")
+	//}
+	//p.Status = PromoStatusScheduled
 	p.UpdatedAt = nil
 	p.CreatedAt = GetTimeUTCPointer()
 
@@ -107,15 +86,15 @@ func (p *Promo) BeforeCreate(sess bond.Session) error {
 }
 
 func (p *Promo) BeforeUpdate(bond.Session) error {
-	if p.StartAt == nil {
-		return errors.New("invalid start date")
-	}
-	if p.EndAt == nil {
-		return errors.New("invalid end date")
-	}
-	if p.StartAt.After(*p.EndAt) {
-		return errors.New("start date must be before end date")
-	}
+	//if p.StartAt == nil {
+	//return errors.New("invalid start date")
+	//}
+	//if p.EndAt == nil {
+	//return errors.New("invalid end date")
+	//}
+	//if p.StartAt.After(*p.EndAt) {
+	//return errors.New("start date must be before end date")
+	//}
 	p.UpdatedAt = GetTimeUTCPointer()
 
 	return nil
@@ -155,26 +134,4 @@ func (store PromoStore) FindAll(cond db.Cond) ([]*Promo, error) {
 		return nil, err
 	}
 	return promos, nil
-}
-
-// String returns the string value of the status.
-func (pt PromoType) String() string {
-	return promoTypes[pt]
-}
-
-// MarshalText satisfies TextMarshaler
-func (pt PromoType) MarshalText() ([]byte, error) {
-	return []byte(pt.String()), nil
-}
-
-// UnmarshalText satisfies TextUnmarshaler
-func (pt *PromoType) UnmarshalText(text []byte) error {
-	enum := string(text)
-	for i := 0; i < len(promoTypes); i++ {
-		if enum == promoTypes[i] {
-			*pt = PromoType(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("unknown promotion type %s", enum)
 }

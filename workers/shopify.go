@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
+	"strings"
 
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/goware/lg"
+	"github.com/mmcdole/gofeed"
 	"github.com/pkg/errors"
 )
 
@@ -30,6 +31,34 @@ type Product struct {
 	Description  string   `json:"description"`
 	ThumbnailURL string   `json:"thumbnail_url"`
 	Offers       []*Offer `json:"offers"`
+}
+
+func getProductTags(salesURL string) map[string][]string {
+	// we have to get the tags from atom feed.
+	fp := gofeed.NewParser()
+	feed, _ := fp.ParseURL(fmt.Sprintf("%s.atom", salesURL))
+
+	productTags := make(map[string][]string)
+	for _, it := range feed.Items {
+		pu, _ := url.Parse(it.Link)
+
+		var tags []string
+		for _, ext := range it.Extensions {
+			for _, tag := range ext["tag"] {
+				tags = append(tags, strings.ToLower(tag.Value))
+			}
+			if t, ok := ext["type"]; ok && len(t) > 0 {
+				tags = append(tags, strings.ToLower(t[0].Value))
+			}
+			if t, ok := ext["vendor"]; ok && len(t) > 0 {
+				tags = append(tags, strings.ToLower(t[0].Value))
+			}
+		}
+		eID := strings.TrimPrefix(pu.Path, "/products/")
+		productTags[eID] = tags
+	}
+
+	return productTags
 }
 
 func ShopifyPuller() {
@@ -52,7 +81,7 @@ func ShopifyPuller() {
 			continue
 		}
 
-		resp, err := http.Get(fmt.Sprintf("%s.oembed", t.SalesUrl))
+		resp, err := http.Get(fmt.Sprintf("%s.oembed", t.SalesURL))
 		if err != nil {
 			lg.Warn(err)
 			continue
@@ -63,29 +92,11 @@ func ShopifyPuller() {
 			Provider string     `json:"provider"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&wrapper); err != nil {
-			lg.Fatal(err)
+			lg.Fatal(errors.Wrapf(err, "oembed parse error"))
 		}
 
-		type listedPromo struct {
-			*data.Promo
-			IsValid bool
-		}
-		// get list of existing promotions that's active
-		var existingPromos []*listedPromo
-		if err := data.DB.Promo.Find(db.And(
-			db.Cond{"place_id": place.ID},
-			db.Or(
-				db.Cond{"status": data.PromoStatusActive},
-				db.Cond{"status": data.PromoStatusScheduled},
-			),
-		)).All(&existingPromos); err != nil {
-			lg.Warn(errors.Wrap(err, "failed to fetch existing promotions"))
-		}
-		existingPromoMap := map[int64]*listedPromo{}
-		for _, ep := range existingPromos {
-			// mapped by offer id
-			existingPromoMap[ep.OfferID] = ep
-		}
+		// get product tags from atom feed
+		productTags := getProductTags(t.SalesURL)
 
 		for _, p := range wrapper.Products {
 			// check if product already exists
@@ -93,9 +104,11 @@ func ShopifyPuller() {
 				"place_id":    place.ID,
 				"external_id": p.ProductID,
 			})
+
 			if err != nil {
 				if err != db.ErrNoMoreRows {
 					lg.Warn(err)
+					continue
 				}
 
 				u, err := url.Parse(p.ThumbnailURL)
@@ -112,18 +125,52 @@ func ShopifyPuller() {
 					Title:       p.Title,
 					Description: p.Description,
 					ImageUrl:    u.String(),
+					Etc: data.ProductEtc{
+						Brand: strings.ToLower(p.Brand),
+					},
 				}
 				if err := data.DB.Product.Save(product); err != nil {
 					lg.Warn(err)
 					continue
 				}
+
+				// batch insert tags
+				tags, found := productTags[product.ExternalID]
+				if !found {
+					tags = []string{product.Etc.Brand}
+				}
+
+				q := data.DB.InsertInto("product_tags").Columns("product_id", "value")
+				b := q.Batch(len(tags))
+				go func() {
+					defer b.Done()
+					for _, t := range tags {
+						b.Values(product.ID, t)
+					}
+				}()
+				if err := b.Wait(); err != nil {
+					lg.Warn(err)
+				}
 			}
 
+			promos, err := data.DB.Product.FindPromos(product.ID)
+			if err != nil {
+				lg.Warn(errors.Wrapf(err, "prodocut(%d) promotions", product.ID))
+				continue
+			}
+			dbPromoMap := make(map[int64]*data.Promo)
+			for _, ep := range promos {
+				// mapped by offer id
+				ep.Status = data.PromoStatusCompleted
+				dbPromoMap[ep.OfferID] = ep
+			}
+
+			// update promotions/offers/variants
 			for _, o := range p.Offers {
-				if promoWrapper, ok := existingPromoMap[o.OfferID]; ok {
+				if p, ok := dbPromoMap[o.OfferID]; ok {
 					if o.InStock {
 						// mark as still valid
-						promoWrapper.IsValid = true
+						p.Status = data.PromoStatusActive
 					}
 					continue
 				}
@@ -133,23 +180,17 @@ func ShopifyPuller() {
 				}
 
 				// new promotion
-				now := time.Now().UTC()
-				start := now.Add(5 * time.Minute)
-				end := now.Add(30 * 24 * time.Hour)
 				promo := &data.Promo{
 					PlaceID:     place.ID,
-					Type:        data.PromoTypePrice,
 					OfferID:     o.OfferID,
 					ProductID:   product.ID,
 					Status:      data.PromoStatusActive,
-					Description: o.Title,
+					Description: strings.ToLower(o.Title),
 					UserID:      0, // admin
 					Etc: data.PromoEtc{
 						Price: o.Price,
 						Sku:   o.Sku,
 					},
-					StartAt: &start,
-					EndAt:   &end, // 1 month
 				}
 				lg.Warnf("inserting %+v", promo)
 
@@ -158,21 +199,21 @@ func ShopifyPuller() {
 					continue
 				}
 			}
-		}
 
-		var offerIDs []int64
-		for _, p := range existingPromoMap {
-			if !p.IsValid {
-				offerIDs = append(offerIDs, p.OfferID)
+			// save expired promotions
+			var expiredPromoIDs []int64
+			for _, p := range dbPromoMap {
+				if p.Status == data.PromoStatusCompleted {
+					expiredPromoIDs = append(expiredPromoIDs, p.ID)
+				}
 			}
-		}
-		if len(offerIDs) > 0 {
-			lg.Infof("Expiring offers: %+v", offerIDs)
-			updateQuery := data.DB.Update("promos").
-				Set(db.Cond{"status": data.PromoStatusCompleted}).
-				Where(db.Cond{"offer_id": offerIDs})
-			if _, err := updateQuery.Exec(); err != nil {
-				lg.Warn(err)
+			if len(expiredPromoIDs) > 0 {
+				updateQuery := data.DB.Update("promos").
+					Set(db.Cond{"status": data.PromoStatusCompleted}).
+					Where(db.Cond{"offer_id": expiredPromoIDs})
+				if _, err := updateQuery.Exec(); err != nil {
+					lg.Warn(err)
+				}
 			}
 		}
 

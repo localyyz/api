@@ -10,7 +10,7 @@ import (
 type TrackList struct {
 	ID            int64      `db:"id"`
 	PlaceID       int64      `db:"place_id"`
-	SalesUrl      string     `db:"sales_url"`
+	SalesURL      string     `db:"sales_url"`
 	LastTrackedAt *time.Time `db:"last_tracked_at"`
 	CreatedAt     *time.Time `db:"created_at"`
 }

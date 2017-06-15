@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"upper.io/db.v3"
+	db "upper.io/db.v3"
 
-	"github.com/golang/geo/s1"
-	"github.com/golang/geo/s2"
 	"github.com/goware/lg"
 	"github.com/pressly/chi/render"
 
@@ -49,44 +47,20 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	latlng := s2.LatLngFromDegrees(newCoord.Latitude, newCoord.Longitude)
-	origin := s2.CellIDFromLatLng(latlng).Parent(15) // 16 for more detail?
-	// Find the reach of cells
-	cond := db.Cond{
-		"cell_id >=": int(origin.RangeMin()),
-		"cell_id <=": int(origin.RangeMax()),
-	}
-	cells, err := data.DB.Cell.FindAll(cond)
-	if err != nil {
+	locale, err := data.DB.Locale.FromLatLng(newCoord.Latitude, newCoord.Longitude)
+	if err != nil && err != db.ErrNoMoreRows {
 		render.Respond(w, r, err)
 		return
 	}
 
-	// Find the minimum distance cell
-	min := s1.InfAngle()
-	var localeID int64
-	for _, c := range cells {
-		cell := s2.CellID(c.CellID)
-		d := latlng.Distance(cell.LatLng())
-		if d < min {
-			min = d
-			localeID = c.LocaleID
-		}
-	}
-
 	presented := presenter.NewUser(ctx, user)
-	if localeID != 0 {
-		user.Etc.LocaleID = localeID
+	if locale != nil {
+		user.Etc.LocaleID = locale.ID
 		if err := data.DB.User.Save(user); err != nil {
 			render.Respond(w, r, err)
 			return
 		}
 
-		locale, err := data.DB.Locale.FindByID(localeID)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
 		lg.Infof("user(%d) located at %s", user.ID, locale.Name)
 		// NOTE if we didn't find a valid locale, we keep user's previous
 		presented.Locale = locale

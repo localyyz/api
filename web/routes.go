@@ -73,7 +73,7 @@ func New(h *Handler) chi.Router {
 		r.Mount("/promos", promo.Routes())
 		r.Mount("/locales", locale.Routes())
 		r.Mount("/products", product.Routes())
-		r.Mount("/search", search.Routes())
+		r.Post("/search", search.OmniSearch)
 	})
 
 	return r

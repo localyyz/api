@@ -1,6 +1,8 @@
 package data
 
 import (
+	"github.com/golang/geo/s1"
+	"github.com/golang/geo/s2"
 	"upper.io/bond"
 	"upper.io/db.v3"
 )
@@ -32,7 +34,36 @@ func (n *Locale) CollectionName() string {
 	return `locales`
 }
 
-func (store *LocaleStore) FindByName(name string) (*Locale, error) {
+func (store LocaleStore) FromLatLng(lat, lng float64) (*Locale, error) {
+	// find locale from latlng
+	latlng := s2.LatLngFromDegrees(lat, lng)
+	origin := s2.CellIDFromLatLng(latlng).Parent(15) // 16 for more detail?
+	// Find the reach of cells
+	cond := db.Cond{
+		"cell_id >=": int(origin.RangeMin()),
+		"cell_id <=": int(origin.RangeMax()),
+	}
+	cells, err := DB.Cell.FindAll(cond)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the minimum distance cell
+	min := s1.InfAngle()
+	var localeID int64
+	for _, c := range cells {
+		cell := s2.CellID(c.CellID)
+		d := latlng.Distance(cell.LatLng())
+		if d < min {
+			min = d
+			localeID = c.LocaleID
+		}
+	}
+
+	return store.FindByID(localeID)
+}
+
+func (store LocaleStore) FindByName(name string) (*Locale, error) {
 	return store.FindOne(db.Cond{"name": name})
 }
 

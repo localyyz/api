@@ -6,12 +6,9 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
 	db "upper.io/db.v3"
 
-	"github.com/golang/geo/s1"
-	"github.com/golang/geo/s2"
 	"github.com/goware/geotools"
 	"github.com/goware/jwtauth"
 	"github.com/goware/lg"
@@ -117,35 +114,16 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 
 	if place == nil {
-		// find locale from latlng
-		latlng := s2.LatLngFromDegrees(shop.Longitude, shop.Longitude)
-		origin := s2.CellIDFromLatLng(latlng).Parent(15) // 16 for more detail?
-		// Find the reach of cells
-		cond := db.Cond{
-			"cell_id >=": int(origin.RangeMin()),
-			"cell_id <=": int(origin.RangeMax()),
-		}
-		cells, err := data.DB.Cell.FindAll(cond)
+		locale, err := data.DB.Locale.FromLatLng(shop.Latitude, shop.Longitude)
 		if err != nil {
 			return err
 		}
 
-		// Find the minimum distance cell
-		min := s1.InfAngle()
-		var localeID int64
-		for _, c := range cells {
-			cell := s2.CellID(c.CellID)
-			d := latlng.Distance(cell.LatLng())
-			if d < min {
-				min = d
-				localeID = c.LocaleID
-			}
-		}
 		u, _ := url.Parse(shop.Domain)
 		u.Scheme = "https"
 		place = &data.Place{
 			ShopifyID: shopID,
-			LocaleID:  localeID,
+			LocaleID:  locale.ID,
 			Geo:       *geotools.NewPointFromLatLng(shop.Latitude, shop.Longitude),
 			Name:      shop.Name,
 			Address:   fmt.Sprintf("%s, %s", shop.Address1, shop.City),
@@ -194,17 +172,12 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			Description: p.BodyHTML,
 			ImageUrl:    imgUrl.String(),
 		}
-		product.ParseTags(p.Tags, p.ProductType, p.Vendor)
 		var promos []*data.Promo
 		for _, v := range p.Variants {
-			now := time.Now().UTC()
-			start := now.Add(1 * time.Minute)
-			end := now.Add(30 * 24 * time.Hour)
 			price, _ := strconv.ParseFloat(v.Price, 64)
 			promo := &data.Promo{
 				PlaceID:     place.ID,
 				ProductID:   product.ID,
-				Type:        data.PromoTypePrice,
 				OfferID:     v.ID,
 				Status:      data.PromoStatusActive,
 				Description: v.Title,
@@ -214,8 +187,6 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 					Price: price,
 					Sku:   v.Sku,
 				},
-				StartAt: &start,
-				EndAt:   &end, // 1 month
 			}
 			promos = append(promos, promo)
 		}
@@ -230,6 +201,19 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 				lg.Warn(errors.Wrap(err, "failed to save promotion"))
 				continue
 			}
+		}
+
+		tags := product.ParseTags(p.Tags, p.ProductType, p.Vendor)
+		q := data.DB.InsertInto("product_tags").Columns("product_id", "value")
+		b := q.Batch(len(tags))
+		go func() {
+			defer b.Done()
+			for _, t := range tags {
+				b.Values(product.ID, t)
+			}
+		}()
+		if err := b.Wait(); err != nil {
+			lg.Warn(err)
 		}
 	}
 

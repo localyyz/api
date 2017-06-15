@@ -27,6 +27,7 @@ type Database struct {
 
 	ShopifyCred ShopifyCredStore
 	Product     ProductStore
+	ProductTag  ProductTagStore
 	Promo       PromoStore
 	Claim       ClaimStore
 	Share       ShareStore
@@ -84,6 +85,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 
 	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}
 	db.Product = ProductStore{db.Store(&Product{})}
+	db.ProductTag = ProductTagStore{db.Store(&ProductTag{})}
 	db.Promo = PromoStore{db.Store(&Promo{})}
 	db.Claim = ClaimStore{db.Store(&Claim{})}
 	db.Share = ShareStore{db.Store(&Share{})}

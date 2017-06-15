@@ -55,6 +55,19 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			tags := product.ParseTags(p.Tags, p.ProductType, p.Vendor)
+			q := data.DB.InsertInto("product_tags").Columns("product_id", "value")
+			b := q.Batch(len(tags))
+			go func() {
+				defer b.Done()
+				for _, t := range tags {
+					b.Values(product.ID, t)
+				}
+			}()
+			if err := b.Wait(); err != nil {
+				lg.Warn(err)
+			}
+
 			for _, v := range promos {
 				if err := data.DB.Promo.Save(v); err != nil {
 					v.ProductID = product.ID

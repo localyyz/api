@@ -28,13 +28,14 @@ var (
 func main() {
 	flags.Parse(os.Args[1:])
 
-	// new handler context
-	h := &web.Handler{}
 	conf, err := config.NewFromFile(*confFile, os.Getenv("CONFIG"))
 	if err != nil {
 		lg.Fatal(err)
 	}
-	h.Debug = (conf.Environment == "development")
+	// new web handler
+	h := &web.Handler{
+		Debug: (conf.Environment == "development"),
+	}
 
 	//[db]
 	if h.DB, err = data.NewDBSession(&conf.DB); err != nil {
@@ -56,10 +57,7 @@ func main() {
 
 	// cron worker
 	c := cron.New()
-	c.AddFunc("@every 1m", workers.PromoStartWorker)
-	c.AddFunc("@every 1m", workers.PromoEndWorker)
 	c.AddFunc("@every 1h", workers.ShopifyPuller)
-	//c.AddFunc("0 0 0 * * *", worker.RefreshPromoWorker)
 	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)

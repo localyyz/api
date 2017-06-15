@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -11,15 +12,13 @@ import (
 )
 
 type Product struct {
-	ID      int64 `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID int64 `db:"place_id" json:"placeId"`
-	// external id (ie SKU)
+	ID         int64  `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID    int64  `db:"place_id" json:"placeId"`
 	ExternalID string `db:"external_id" json:"-"`
 
 	Title       string     `db:"title" json:"title"`
 	Description string     `db:"description" json:"description"`
 	ImageUrl    string     `db:"image_url" json:"imageUrl"`
-	Tags        []string   `db:"tags,stringarray,omitempty" json:"tags"`
 	Etc         ProductEtc `db:"etc,jsonb" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
@@ -27,9 +26,10 @@ type Product struct {
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
 }
 
-type Tags []string
-
-type ProductEtc struct{}
+type ProductEtc struct {
+	Brand string `json:"brand"`
+	Type  string `json:"type"`
+}
 
 type ProductStore struct {
 	bond.Store
@@ -39,7 +39,7 @@ func (p *Product) CollectionName() string {
 	return `products`
 }
 
-func (p *Product) ParseTags(tagStr string, optTags ...string) {
+func (p *Product) ParseTags(tagStr string, optTags ...string) []string {
 	tt := strings.FieldsFunc(tagStr, tagSplit)
 	tagSet := set.New()
 	for _, t := range tt {
@@ -48,18 +48,44 @@ func (p *Product) ParseTags(tagStr string, optTags ...string) {
 	for _, t := range optTags {
 		tagSet.Add(strings.ToLower(t))
 	}
-	p.Tags = set.StringSlice(tagSet)
+	return set.StringSlice(tagSet)
 }
 
-func (store ProductStore) MatchTags(q string) ([]*Product, error) {
-	cond := db.Raw("? = any (tags)", q)
-
-	var products []*Product
-	if err := store.Find(cond).All(&products); err != nil {
+// TODO parse item title into tags
+func (store ProductStore) Fuzzy(q string) ([]*Product, error) {
+	tags, err := DB.ProductTag.FindAll(db.Cond{
+		"value ~*": fmt.Sprint("\\m(", q, ")"),
+	})
+	if err != nil {
 		return nil, err
 	}
 
+	byTitle, err := store.FindAll(db.Cond{
+		"title ~*": fmt.Sprint("\\m(", q, ")"),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	productIDs := make([]int64, len(tags))
+	for i, t := range tags {
+		productIDs[i] = t.ProductID
+	}
+
+	products, err := store.FindAll(db.Cond{"id": productIDs})
+	if err != nil {
+		return nil, err
+	}
+
+	products = append(products, byTitle...)
 	return products, nil
+}
+
+func (store ProductStore) FindPromos(productID int64) ([]*Promo, error) {
+	return DB.Promo.FindAll(db.Cond{
+		"product_id": productID,
+		"status":     PromoStatusActive,
+	})
 }
 
 func (store ProductStore) FindByID(ID int64) (*Product, error) {
