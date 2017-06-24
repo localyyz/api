@@ -2,10 +2,7 @@ package data
 
 import (
 	"fmt"
-	"strings"
 	"time"
-
-	set "gopkg.in/fatih/set.v0"
 
 	"upper.io/bond"
 	db "upper.io/db.v3"
@@ -37,18 +34,6 @@ type ProductStore struct {
 
 func (p *Product) CollectionName() string {
 	return `products`
-}
-
-func (p *Product) ParseTags(tagStr string, optTags ...string) []string {
-	tt := strings.FieldsFunc(tagStr, tagSplit)
-	tagSet := set.New()
-	for _, t := range tt {
-		tagSet.Add(strings.ToLower(strings.TrimSpace(t)))
-	}
-	for _, t := range optTags {
-		tagSet.Add(strings.ToLower(t))
-	}
-	return set.StringSlice(tagSet)
 }
 
 // TODO parse item title into tags
@@ -110,8 +95,4 @@ func (store ProductStore) FindAll(cond db.Cond) ([]*Product, error) {
 		return nil, err
 	}
 	return products, nil
-}
-
-func tagSplit(r rune) bool {
-	return r == ',' || r == ' '
 }

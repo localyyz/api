@@ -75,10 +75,6 @@ func (p *Promo) BeforeCreate(sess bond.Session) error {
 		return err
 	}
 
-	//if p.StartAt.Before(time.Now().UTC()) {
-	//return errors.New("start date cannot be in the past")
-	//}
-	//p.Status = PromoStatusScheduled
 	p.UpdatedAt = nil
 	p.CreatedAt = GetTimeUTCPointer()
 
@@ -86,15 +82,6 @@ func (p *Promo) BeforeCreate(sess bond.Session) error {
 }
 
 func (p *Promo) BeforeUpdate(bond.Session) error {
-	//if p.StartAt == nil {
-	//return errors.New("invalid start date")
-	//}
-	//if p.EndAt == nil {
-	//return errors.New("invalid end date")
-	//}
-	//if p.StartAt.After(*p.EndAt) {
-	//return errors.New("start date must be before end date")
-	//}
 	p.UpdatedAt = GetTimeUTCPointer()
 
 	return nil

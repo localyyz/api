@@ -3,7 +3,6 @@ package presenter
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/goware/geotools"
@@ -30,10 +29,8 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 	{ // promotion count
 		query := data.DB.Promo.Find(
 			db.Cond{
-				"place_id":    p.ID,
-				"start_at <=": time.Now().UTC(),
-				"end_at >":    time.Now().UTC(),
-				"status":      data.PromoStatusActive,
+				"place_id": p.ID,
+				"status":   data.PromoStatusActive,
 			},
 		).Select(db.Raw("count(distinct product_id) as count"))
 
