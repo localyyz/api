@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	db "upper.io/db.v3"
 
@@ -17,6 +16,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 
 	"golang.org/x/oauth2"
@@ -160,64 +160,10 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		return errors.Wrap(err, "shopify list products")
 	}
 
-	// initial sync up
-	for _, p := range productList {
-		imgUrl, _ := url.Parse(p.Image.Src)
-		imgUrl.Scheme = "https"
+	ctx = context.WithValue(ctx, "sync.list", productList)
+	ctx = context.WithValue(ctx, "sync.place", place)
 
-		product := &data.Product{
-			PlaceID:     place.ID,
-			ExternalID:  p.Handle,
-			Title:       p.Title,
-			Description: p.BodyHTML,
-			ImageUrl:    imgUrl.String(),
-		}
-		var promos []*data.Promo
-		for _, v := range p.Variants {
-			price, _ := strconv.ParseFloat(v.Price, 64)
-			promo := &data.Promo{
-				PlaceID:     place.ID,
-				ProductID:   product.ID,
-				OfferID:     v.ID,
-				Status:      data.PromoStatusActive,
-				Description: v.Title,
-				UserID:      0, // admin
-				Limits:      int64(v.InventoryQuantity),
-				Etc: data.PromoEtc{
-					Price: price,
-					Sku:   v.Sku,
-				},
-			}
-			promos = append(promos, promo)
-		}
-
-		if err := data.DB.Product.Save(product); err != nil {
-			return errors.Wrap(err, "failed to save promotion")
-		}
-
-		for _, v := range promos {
-			v.ProductID = product.ID
-			if err := data.DB.Promo.Save(v); err != nil {
-				lg.Warn(errors.Wrap(err, "failed to save promotion"))
-				continue
-			}
-		}
-
-		tags := product.ParseTags(p.Tags, p.ProductType, p.Vendor)
-		q := data.DB.InsertInto("product_tags").Columns("product_id", "value")
-		b := q.Batch(len(tags))
-		go func() {
-			defer b.Done()
-			for _, t := range tags {
-				b.Values(product.ID, t)
-			}
-		}()
-		if err := b.Wait(); err != nil {
-			lg.Warn(err)
-		}
-	}
-
-	return nil
+	return sync.ShopifyProducts(ctx)
 }
 
 func (s *Shopify) Exchange(shopID string, r *http.Request) (*oauth2.Token, error) {
