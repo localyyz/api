@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"upper.io/db.v3"
 
@@ -98,9 +97,7 @@ func ListRecent(w http.ResponseWriter, r *http.Request) {
 		LeftJoin("promos pr").
 		On("pl.id = pr.place_id").
 		Where(db.Cond{
-			"pr.start_at <=": time.Now().UTC(),
-			"pr.end_at >":    time.Now().UTC(),
-			"pr.status":      data.PromoStatusActive,
+			"pr.status": data.PromoStatusActive,
 		}).
 		GroupBy("pl.id", "pr.start_at").
 		OrderBy("pl.id", "-pr.start_at").

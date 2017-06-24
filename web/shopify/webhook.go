@@ -10,6 +10,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
@@ -38,7 +39,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "place", place)
+		ctx = context.WithValue(ctx, "sync.place", place)
 
 		topic := h.Get(shopify.WebhookHeaderTopic)
 		switch shopify.Topic(topic) {
@@ -49,31 +50,10 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			product, promos := getProductPromo(ctx, p.Product)
-			if err := data.DB.Product.Save(product); err != nil {
+			ctx = context.WithValue(ctx, "sync.list", []*shopify.Product{p.Product})
+			if err := sync.ShopifyProducts(ctx); err != nil {
 				render.Respond(w, r, err)
 				return
-			}
-
-			tags := product.ParseTags(p.Tags, p.ProductType, p.Vendor)
-			q := data.DB.InsertInto("product_tags").Columns("product_id", "value")
-			b := q.Batch(len(tags))
-			go func() {
-				defer b.Done()
-				for _, t := range tags {
-					b.Values(product.ID, t)
-				}
-			}()
-			if err := b.Wait(); err != nil {
-				lg.Warn(err)
-			}
-
-			for _, v := range promos {
-				if err := data.DB.Promo.Save(v); err != nil {
-					v.ProductID = product.ID
-					render.Respond(w, r, err)
-					return
-				}
 			}
 		case shopify.TopicProductsUpdate:
 			p := &shopifyWebhookRequest{}
@@ -87,7 +67,6 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 				render.Respond(w, r, err)
 				return
 			}
-
 		default:
 			lg.Infof("ignoring webhook topic %s for %s", topic, h.Get(shopify.WebhookHeaderShopDomain))
 		}
