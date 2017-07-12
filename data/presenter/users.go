@@ -11,8 +11,9 @@ import (
 type User struct {
 	*data.User
 
-	Geo    geotools.Point `json:"geo"`
-	Locale *data.Locale   `json:"locale"`
+	Geo       geotools.Point `json:"geo"`
+	Locale    *data.Locale   `json:"locale"`
+	InviteURL string         `json:"inviteUrl"`
 }
 
 func NewUser(ctx context.Context, user *data.User) *User {

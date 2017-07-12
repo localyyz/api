@@ -1,6 +1,7 @@
 package data
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -74,7 +75,7 @@ func (c *Claim) Validate() error {
 		//}
 		if promo.PlaceID != c.PlaceID {
 			// wrong promo
-			return ErrPromoPlace
+			return errors.New("mismatch place id")
 		}
 	}
 	return nil

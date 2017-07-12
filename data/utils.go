@@ -1,9 +1,9 @@
 package data
 
 import (
-	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"reflect"
 	"strings"
 	"time"
@@ -13,14 +13,8 @@ import (
 	"upper.io/db.v3"
 )
 
-var (
-	ErrPromoStart = errors.New("promo have not started")
-	ErrPromoEnded = errors.New("promo ended")
-	ErrPromoUsed  = errors.New("promo already used")
-	ErrPromoPlace = errors.New("promo cannot be applied to this place")
-)
-
 const earthRadiusInMeters = 6378100
+const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 // DistanceTo returns distance between two geo locations using the Haversine formula
 // Reference: https://gist.github.com/cdipaolo/d3f8db3848278b49db68
@@ -80,4 +74,12 @@ func MaintainOrder(field string, customOrdering interface{}) db.RawValue {
 	}
 
 	return db.Raw(strings.Join(sort, " "))
+}
+
+func RandString(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Int63()%int64(len(letters))]
+	}
+	return string(b)
 }

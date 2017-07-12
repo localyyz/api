@@ -21,6 +21,7 @@ type userSignup struct {
 	PasswordConfirm string          `json:"passwordConfirm,required"`
 	Dob             time.Time       `json:"dob,required"`
 	Gender          data.UserGender `json:"gender,required"`
+	InviteCode      string          `json:"inviteCode"`
 }
 
 const (
@@ -62,10 +63,25 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 		Username:     newSignup.Email,
 		Email:        newSignup.Email,
 		Name:         newSignup.FullName,
+		Network:      "email",
 		PasswordHash: string(epw),
 		LastLogInAt:  data.GetTimeUTCPointer(),
 		LoggedIn:     true,
 	}
+
+	// check if invite code exists
+	if newSignup.InviteCode != "" {
+		invitor, err := data.DB.User.FindByInviteCode(newSignup.InviteCode)
+		if err != nil {
+			lg.Alertf("invitor with code %s lookup error: %v", newSignup.InviteCode, err)
+		}
+		lg.Info("new user invited by: %d", invitor.ID)
+		newUser.Etc = data.UserEtc{
+			InvitedBy: invitor.ID,
+		}
+		// TODO return invalid code error?
+	}
+
 	if err := data.DB.User.Save(newUser); err != nil {
 		render.Respond(w, r, err)
 		return

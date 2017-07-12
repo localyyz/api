@@ -28,7 +28,8 @@ type emailLogin struct {
 }
 
 type fbLogin struct {
-	Token string `json:"token,required"`
+	Token      string `json:"token,required"`
+	InviteCode string `json:"inviteCode"`
 }
 
 var (
@@ -114,7 +115,7 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// inspect the token for userId and expiry
-	user, err := connect.FB.Login(payload.Token)
+	user, err := connect.FB.Login(payload.Token, payload.InviteCode)
 	if err != nil {
 		if err == connect.ErrTokenExpired {
 			render.Status(r, http.StatusUnauthorized)

@@ -29,6 +29,7 @@ type User struct {
 	AccessToken  string         `db:"access_token" json:"-"`
 	PasswordHash string         `db:"password_hash,omitempty" json:"-"`
 	DeviceToken  *string        `db:"device_token,omitempty" json:"-"`
+	InviteCode   string         `db:"invite_code" json:"inviteCode"` // Auto generated invite hash
 	Network      string         `db:"network" json:"network"`
 	LoggedIn     bool           `db:"logged_in" json:"-"`
 	IsAdmin      bool           `db:"is_admin" json:"isAdmin"`
@@ -57,6 +58,7 @@ type UserEtc struct {
 	FbFriendCount int32      `json:"fbFriendCount"`
 	Dob           time.Time  `json:"dob"`
 	Gender        UserGender `json:"gender"`
+	InvitedBy     int64      `json:"invitedBy"`
 }
 
 type UserStore struct {
@@ -77,6 +79,9 @@ func (u *User) CollectionName() string {
 
 func (u *User) BeforeCreate(bond.Session) error {
 	u.Geo = *geotools.NewPointFromLatLng(0, 0) // set to zero location
+	u.InviteCode = RandString(5)               // random user invite_code hash
+	//TODO: unlikely event of conflict, do something
+
 	return nil
 }
 
@@ -98,6 +103,10 @@ func (u *User) DistanceToPlaces(places ...*Place) {
 
 func (s UserStore) FindByUsername(username string) (*User, error) {
 	return s.FindOne(db.Cond{"username": username})
+}
+
+func (s UserStore) FindByInviteCode(code string) (*User, error) {
+	return s.FindOne(db.Cond{"invite_code": code})
 }
 
 func (s UserStore) FindByID(ID int64) (*User, error) {

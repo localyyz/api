@@ -32,7 +32,7 @@ func SetupFacebook(conf Config) {
 	}
 }
 
-func (f *Facebook) Login(token string) (*data.User, error) {
+func (f *Facebook) Login(token, inviteCode string) (*data.User, error) {
 	sess := f.App.Session(token)
 
 	userID, err := sess.User()
@@ -72,6 +72,18 @@ func (f *Facebook) Login(token string) (*data.User, error) {
 
 	user.LoggedIn = true
 	user.LastLogInAt = data.GetTimeUTCPointer()
+
+	if inviteCode != "" {
+		invitor, err := data.DB.User.FindByInviteCode(inviteCode)
+		if err != nil {
+			lg.Alertf("invitor with code %s lookup error: %v", inviteCode, err)
+		}
+		lg.Info("new user invited by: %d", invitor.ID)
+		user.Etc = data.UserEtc{
+			InvitedBy: invitor.ID,
+		}
+		// TODO return invalid code error?
+	}
 
 	if err := data.DB.User.Save(user); err != nil {
 		return nil, err

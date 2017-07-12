@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"math/rand"
 	"os"
 	"syscall"
 	"time"
@@ -36,6 +37,9 @@ func main() {
 	h := &web.Handler{
 		Debug: (conf.Environment == "development"),
 	}
+
+	// initialize seed
+	rand.Seed(time.Now().Unix())
 
 	//[db]
 	if h.DB, err = data.NewDBSession(&conf.DB); err != nil {
