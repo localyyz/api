@@ -103,7 +103,9 @@ func checkRequired(r Result, v reflect.Value) error {
 func renderResponder(w http.ResponseWriter, r *http.Request, v interface{}) {
 	if err, ok := v.(error); ok {
 		lg.Infof("api error: %+v", err)
-		render.DefaultResponder(w, r, WrapErr(err))
+		werr := WrapErr(err)
+		w.WriteHeader(werr.StatusCode)
+		render.DefaultResponder(w, r, werr)
 
 		return
 	}
