@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"github.com/goware/lg"
 )
 
 type Client struct {
 	client *http.Client // HTTP client used to communicate with the API.
 
 	BaseURL *url.URL
+	Debug   bool // turn on debugging
 
 	// User agent used when communicating with the Shopify API.
 	UserAgent string
@@ -142,9 +142,14 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		if w, ok := v.(io.Writer); ok {
 			io.Copy(w, resp.Body)
 		} else {
-			b, _ := ioutil.ReadAll(resp.Body)
-			lg.Warnf("\n\ndebugging shop response: %s\n\n", string(b))
-			err = json.Unmarshal(b, v)
+			if c.Debug {
+				b, _ := ioutil.ReadAll(resp.Body)
+				fmt.Printf("[shopify]: %s\n", string(b))
+				err = json.Unmarshal(b, v)
+			} else {
+				err = json.NewDecoder(resp.Body).Decode(v)
+			}
+
 			if err == io.EOF {
 				err = nil // ignore EOF errors caused by empty response body
 			}

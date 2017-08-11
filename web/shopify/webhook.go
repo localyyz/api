@@ -3,6 +3,7 @@ package shopify
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/goware/lg"
 	"github.com/pressly/chi/render"
@@ -41,6 +42,19 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 				render.Respond(w, r, err)
 				return
 			}
+		case shopify.TopicAppUninstalled:
+			lg.Infof("app uninstalled for place(id=%d)", place.ID)
+			cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
+			if err != nil {
+				render.Respond(w, r, err)
+				return
+			}
+			api := shopify.NewClient(nil, cred.AccessToken)
+			api.BaseURL, _ = url.Parse(cred.ApiURL)
+
+			// remove all webhooks
+			//webhooks, _, _ := api.Webhook.List(ctx)
+
 		default:
 			lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
 		}

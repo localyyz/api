@@ -39,6 +39,7 @@ var (
 		"write_checkouts",
 	}
 	WebhookTopics = []shopify.Topic{
+		shopify.TopicAppUninstalled,
 		shopify.TopicProductListingsAdd,
 		shopify.TopicProductListingsUpdate,
 		shopify.TopicProductListingsRemove,
