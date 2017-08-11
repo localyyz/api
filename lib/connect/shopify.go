@@ -16,7 +16,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
-	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 
 	"golang.org/x/oauth2"
@@ -31,7 +30,23 @@ type Shopify struct {
 }
 
 var (
-	SH *Shopify
+	SH     *Shopify
+	Scopes = []string{
+		"read_products",
+		"read_product_listings",
+		"read_collection_listings",
+		"read_checkouts",
+		"write_checkouts",
+	}
+	WebhookTopics = []shopify.Topic{
+		shopify.TopicAppUninstalled,
+		shopify.TopicProductListingsAdd,
+		shopify.TopicProductListingsUpdate,
+		shopify.TopicProductListingsRemove,
+		shopify.TopicCollectionListingsAdd,
+		shopify.TopicCollectionListingsUpdate,
+		shopify.TopicCollectionListingsRemove,
+	}
 )
 
 func SetupShopify(conf Config) {
@@ -142,28 +157,30 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 
 	// create the webhook
-	wh := &shopify.WebhookRequest{
-		&shopify.Webhook{
-			Topic:   shopify.TopicProductsCreate,
-			Address: s.webhookURL,
-			Format:  "json",
-		},
+	for _, topic := range WebhookTopics {
+		wh, _, err := api.Webhook.Create(
+			ctx,
+			&shopify.WebhookRequest{
+				&shopify.Webhook{
+					Topic:   topic,
+					Address: s.webhookURL,
+					Format:  "json",
+				},
+			})
+		if err != nil {
+			lg.Alert(errors.Wrapf(err, "failed to create shopify %s webhook", topic))
+			continue
+		}
+		err = data.DB.Webhook.Save(&data.Webhook{
+			PlaceID:    place.ID,
+			Topic:      string(topic),
+			ExternalID: int64(wh.ID),
+		})
+		if err != nil {
+			lg.Alert(errors.Wrapf(err, "failed to save webhook"))
+		}
 	}
-	_, _, err = api.Webhook.Create(ctx, wh)
-	if err != nil {
-		lg.Alert(errors.Wrap(err, "shopify webhook"))
-	}
-
-	// fetch the product list
-	productList, _, err := api.Product.List(ctx)
-	if err != nil {
-		return errors.Wrap(err, "shopify list products")
-	}
-
-	ctx = context.WithValue(ctx, "sync.list", productList)
-	ctx = context.WithValue(ctx, "sync.place", place)
-
-	return sync.ShopifyProducts(ctx)
+	return nil
 }
 
 func (s *Shopify) Exchange(shopID string, r *http.Request) (*oauth2.Token, error) {
@@ -173,7 +190,8 @@ func (s *Shopify) Exchange(shopID string, r *http.Request) (*oauth2.Token, error
 	return config.Exchange(r.Context(), code)
 }
 
-// NOTE: added ".myshopify.com" to oauth2 vendored lib
+// NOTE: added ".myshopify.com" to oauth2 vendored lib (internal/token.go -> brokenAuthHeaderDomains)
+// NOTE: changed AuthCodeURL scope to be comma deliminated
 func (s *Shopify) getConfig(shopifyID string) *oauth2.Config {
 	shopUrl := fmt.Sprintf("https://%s.myshopify.com", shopifyID)
 	return &oauth2.Config{
@@ -184,7 +202,7 @@ func (s *Shopify) getConfig(shopifyID string) *oauth2.Config {
 			TokenURL: fmt.Sprintf("%s/admin/oauth/access_token", shopUrl),
 		},
 		RedirectURL: s.redirectURL,
-		Scopes:      []string{"read_products"},
+		Scopes:      Scopes,
 	}
 }
 

@@ -3,26 +3,15 @@ package product
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
-	"github.com/goware/lg"
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/render"
 )
-
-type claimRequest struct {
-	ProductUrl string `json:"url"`
-}
-
-func (*claimRequest) Bind(r *http.Request) error {
-	return nil
-}
 
 func ProductCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -45,69 +34,23 @@ func ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ClaimProduct(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	product := ctx.Value("product").(*data.Product)
-	user := ctx.Value("session.user").(*data.User)
+func GetVariant(w http.ResponseWriter, r *http.Request) {
+	product := r.Context().Value("product").(*data.Product)
+	q := r.URL.Query()
 
-	payload := &claimRequest{}
-	if err := render.Bind(r, payload); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	// find the promotion we're claiming
-	u, err := url.Parse(payload.ProductUrl)
+	// look up variant by color and size
+	var variant *data.Promo
+	err := data.DB.Promo.Find(
+		db.And(
+			db.Cond{"product_id": product.ID},
+			db.Raw("lower(etc->>'color') = ?", q.Get("color")),
+			db.Raw("lower(etc->>'size') = ?", q.Get("size")),
+		),
+	).One(&variant)
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
-	cond := db.Cond{
-		"product_id": product.ID,
-		"status":     data.PromoStatusActive,
-	}
-	if variant := u.Query().Get("variant"); len(variant) > 0 {
-		cond["offer_id"], _ = strconv.ParseInt(variant, 10, 64)
-	}
-	promo, err := data.DB.Promo.FindOne(cond)
-	if err != nil {
-		if err == db.ErrNoMoreRows {
-			lg.Warnf("no promo found with %+v", cond)
-		}
-		render.Respond(w, r, err)
-		return
-	}
-
-	newClaim := &data.Claim{
-		PromoID: promo.ID,
-		UserID:  user.ID,
-		PlaceID: promo.PlaceID,
-		Status:  data.ClaimStatusActive,
-	}
-
-	// check if claim already exists
-	count, err := data.DB.Claim.Find(db.Cond{
-		"promo_id": promo.ID,
-		"user_id":  user.ID,
-		"status":   data.ClaimStatusActive,
-	}).Count()
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	presented := presenter.NewClaim(ctx, newClaim)
-	if count > 0 {
-		render.Render(w, r, presented)
-		return
-	}
-
-	if err := data.DB.Claim.Save(newClaim); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	render.Status(r, http.StatusCreated)
-	render.Render(w, r, presented)
+	render.Respond(w, r, variant)
 }

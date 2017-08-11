@@ -17,6 +17,19 @@
 
 </details>
 <details>
+<summary>`/carts`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/**
+		- _POST_
+			- [CreateCart]()
+
+</details>
+<details>
 <summary>`/connect/:shopID`</summary>
 
 - [NoCache]()
@@ -38,6 +51,18 @@
 - **/echo**
 	- _POST_
 		- [echoPush]()
+
+</details>
+<details>
+<summary>`/leaderboard`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/leaderboard**
+	- _GET_
+		- [leaderBoard]()
 
 </details>
 <details>
@@ -130,10 +155,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _POST_
-				- [FollowPlace]()
 			- _DELETE_
 				- [UnfollowPlace]()
+			- _POST_
+				- [FollowPlace]()
 
 </details>
 <details>
@@ -164,24 +189,6 @@
 		- **/share**
 			- _POST_
 				- [Share]()
-
-</details>
-<details>
-<summary>`/places/:placeID/shopify/sync`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places**
-	- **/:placeID**
-		- [PlaceCtx]()
-		- **/shopify**
-			- **/sync**
-				- _POST_
-					- [CredCtx]()
-					- [ClientCtx]()
-					- [SyncProduct]()
 
 </details>
 <details>
@@ -224,57 +231,6 @@
 
 </details>
 <details>
-<summary>`/products/:productID/claim`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/products**
-	- **/:productID**
-		- [ProductCtx]()
-		- **/claim**
-			- _POST_
-				- [ClaimProduct]()
-
-</details>
-<details>
-<summary>`/promos/:promoID/claims`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/:promoID**
-		- [PromoCtx]()
-		- **/claims**
-			- [ClaimCtx]()
-			- **/**
-				- _GET_
-					- [GetClaims]()
-				- _DELETE_
-					- [RemoveClaim]()
-
-</details>
-<details>
-<summary>`/promos/:promoID/claims/complete`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/promos**
-	- **/:promoID**
-		- [PromoCtx]()
-		- **/claims**
-			- [ClaimCtx]()
-			- **/complete**
-				- _PUT_
-					- [CompleteClaim]()
-
-</details>
-<details>
 <summary>`/search`</summary>
 
 - [NoCache]()
@@ -282,9 +238,10 @@
 - [Recoverer]()
 - [New.func1]()
 - **/search**
-	- **/**
-		- _POST_
-			- [OmniSearch]()
+	- _POST_
+		- [(*JwtAuth).Verify.func1]()
+		- [SessionCtx]()
+		- [OmniSearch]()
 
 </details>
 <details>
@@ -323,6 +280,8 @@
 - **/signup**
 	- _POST_
 		- [EmailSignup]()
+	- _GET_
+		- [GetSignupPage]()
 
 </details>
 <details>
@@ -383,4 +342,4 @@
 
 </details>
 
-Total # of routes: 27
+Total # of routes: 25

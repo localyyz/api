@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -101,17 +102,45 @@ type WebhookRequest struct {
 	Webhook *Webhook `json:"webhook"`
 }
 
-func (w *WebhookService) Create(ctx context.Context, webhook *WebhookRequest) (*Webhook, *http.Response, error) {
-	req, err := w.client.NewRequest("POST", "/admin/webhooks.json", webhook)
+func (s *WebhookService) List(ctx context.Context) ([]*Webhook, *http.Response, error) {
+	req, err := s.client.NewRequest("GET", "/admin/webhooks.json", nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	var webhooksWrapper struct {
+		Webhooks []*Webhook `json:"webhooks"`
+	}
+	resp, err := s.client.Do(ctx, req, &webhooksWrapper)
+	if err != nil {
+		return nil, resp, err
+	}
+	return webhooksWrapper.Webhooks, resp, nil
+}
+
+func (s *WebhookService) Create(ctx context.Context, webhook *WebhookRequest) (*Webhook, *http.Response, error) {
+	req, err := s.client.NewRequest("POST", "/admin/webhooks.json", webhook)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	ww := new(Webhook)
-	resp, err := w.client.Do(ctx, req, ww)
+	ww := new(WebhookRequest)
+	resp, err := s.client.Do(ctx, req, ww)
 	if err != nil {
 		return nil, resp, err
 	}
+	return ww.Webhook, resp, nil
+}
 
-	return new(Webhook), resp, nil
+func (s WebhookService) Delete(ctx context.Context, ID int64) (*http.Response, error) {
+	req, err := s.client.NewRequest("DELETE", fmt.Sprintf("/admin/webhooks/%d.json", ID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(ctx, req, nil)
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }

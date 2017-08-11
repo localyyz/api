@@ -19,6 +19,7 @@ type Database struct {
 	User         UserStore
 	UserAccess   UserAccessStore
 	UserLocation UserLocationStore
+	UserAddress  UserAddressStore
 	Following    FollowingStore
 
 	Place  PlaceStore
@@ -29,10 +30,11 @@ type Database struct {
 	Product     ProductStore
 	ProductTag  ProductTagStore
 	Promo       PromoStore
-	Claim       ClaimStore
 	Share       ShareStore
+	Webhook     WebhookStore
 
-	TrackList TrackListStore
+	Cart     CartStore
+	CartItem CartItemStore
 }
 
 type DBConf struct {
@@ -77,6 +79,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.User = UserStore{db.Store(&User{})}
 	db.UserAccess = UserAccessStore{db.Store(&UserAccess{})}
 	db.UserLocation = UserLocationStore{db.Store(&UserLocation{})}
+	db.UserAddress = UserAddressStore{db.Store(&UserAddress{})}
 	db.Following = FollowingStore{db.Store(&Following{})}
 
 	db.Place = PlaceStore{db.Store(&Place{})}
@@ -87,10 +90,11 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Product = ProductStore{db.Store(&Product{})}
 	db.ProductTag = ProductTagStore{db.Store(&ProductTag{})}
 	db.Promo = PromoStore{db.Store(&Promo{})}
-	db.Claim = ClaimStore{db.Store(&Claim{})}
 	db.Share = ShareStore{db.Store(&Share{})}
+	db.Webhook = WebhookStore{db.Store(&Webhook{})}
 
-	db.TrackList = TrackListStore{db.Store(&TrackList{})}
+	db.Cart = CartStore{db.Store(&Cart{})}
+	db.CartItem = CartItemStore{db.Store(&CartItem{})}
 
 	DB = db
 	return db, nil

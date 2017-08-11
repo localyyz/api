@@ -15,7 +15,7 @@ import (
 )
 
 type shopifyWebhookRequest struct {
-	*shopify.Product
+	ProductListing *shopify.ProductList `json:"product_listing"`
 }
 
 func (*shopifyWebhookRequest) Bind(r *http.Request) error {
@@ -23,55 +23,53 @@ func (*shopifyWebhookRequest) Bind(r *http.Request) error {
 }
 
 func WebhookHandler(w http.ResponseWriter, r *http.Request) {
-	h := r.Header
-	shopDomain := h.Get("X-Shopify-Shop-Domain")
-	u, err := url.Parse(shopDomain)
-	if err != nil {
-		render.Respond(w, r, err)
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+	topic := ctx.Value("sync.topic").(string)
+
+	wrapper := new(shopifyWebhookRequest)
+	if err := render.Bind(r, wrapper); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
-	go func() { // return right away
-		place, err := data.DB.Place.FindByShopifyID(u.Host)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "sync.place", place)
-
-		topic := h.Get(shopify.WebhookHeaderTopic)
+	go func(wrapper *shopifyWebhookRequest) { // return right away
+		// TODO: implement other webhooks
 		switch shopify.Topic(topic) {
-		case shopify.TopicProductsCreate:
-			p := &shopifyWebhookRequest{}
-			if err := render.Bind(r, p); err != nil {
-				render.Render(w, r, api.ErrInvalidRequest(err))
-				return
-			}
-
-			ctx = context.WithValue(ctx, "sync.list", []*shopify.Product{p.Product})
-			if err := sync.ShopifyProducts(ctx); err != nil {
+		case shopify.TopicProductListingsAdd:
+			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
+			if err := sync.ShopifyProductListings(ctx); err != nil {
 				render.Respond(w, r, err)
 				return
 			}
-		case shopify.TopicProductsUpdate:
-			p := &shopifyWebhookRequest{}
-			if err := render.Bind(r, p); err != nil {
-				render.Respond(w, r, err)
-				return
-			}
-			// look up by external id
-			_, err := data.DB.Product.FindByExternalID(p.Handle)
+		case shopify.TopicAppUninstalled:
+			lg.Infof("app uninstalled for place(id=%d)", place.ID)
+			cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
 			if err != nil {
 				render.Respond(w, r, err)
 				return
 			}
-		default:
-			lg.Infof("ignoring webhook topic %s for %s", topic, h.Get(shopify.WebhookHeaderShopDomain))
-		}
+			api := shopify.NewClient(nil, cred.AccessToken)
+			api.BaseURL, _ = url.Parse(cred.ApiURL)
 
-	}()
+			webhooks, err := data.DB.Webhook.FindByPlaceID(place.ID)
+			if err != nil {
+				render.Respond(w, r, err)
+				return
+			}
+
+			for _, wh := range webhooks {
+				api.Webhook.Delete(ctx, wh.ExternalID)
+				data.DB.Webhook.Delete(wh)
+			}
+
+			// TODO: archive the place?
+			// remove the credential
+			data.DB.ShopifyCred.Delete(cred)
+		default:
+			lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
+		}
+	}(wrapper)
 
 	return
 }

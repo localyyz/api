@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
@@ -39,7 +40,7 @@ var (
 )
 
 // AuthUser wraps a user with JWT token
-func NewAuthUser(user *data.User) *AuthUser {
+func NewAuthUser(ctx context.Context, user *data.User) *AuthUser {
 	return &AuthUser{User: user}
 }
 
@@ -98,7 +99,8 @@ func EmailLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authUser := NewAuthUser(user)
+	ctx := r.Context()
+	authUser := NewAuthUser(ctx, user)
 	if err := render.Render(w, r, authUser); err != nil {
 		render.Respond(w, r, err)
 	}
@@ -127,7 +129,8 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authUser := NewAuthUser(user)
+	ctx := r.Context()
+	authUser := NewAuthUser(ctx, user)
 	if err := render.Render(w, r, authUser); err != nil {
 		render.Respond(w, r, err)
 	}

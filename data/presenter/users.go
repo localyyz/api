@@ -11,6 +11,8 @@ import (
 type User struct {
 	*data.User
 
+	Addresses []*data.UserAddress `json:"addresses"`
+
 	Geo       geotools.Point `json:"geo"`
 	Locale    *data.Locale   `json:"locale"`
 	InviteURL string         `json:"inviteUrl"`
@@ -18,8 +20,14 @@ type User struct {
 
 func NewUser(ctx context.Context, user *data.User) *User {
 	u := &User{
-		User: user,
+		User:      user,
+		Addresses: make([]*data.UserAddress, 0, 0),
 	}
+
+	if dbAddresses, _ := data.DB.UserAddress.FindByUserID(user.ID); dbAddresses != nil {
+		u.Addresses = dbAddresses
+	}
+
 	return u
 }
 

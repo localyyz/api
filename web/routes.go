@@ -15,7 +15,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/locale"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/product"
-	"bitbucket.org/moodie-app/moodie-api/web/promo"
 	"bitbucket.org/moodie-app/moodie-api/web/search"
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/shopify"
@@ -61,8 +60,9 @@ func New(h *Handler) chi.Router {
 		r.Get("/leaderboard", leaderBoard)
 
 		r.Get("/connect/:shopID", shopify.Connect)
+		r.Get("/sync/:shopID", shopify.SyncProductList)
 		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)
-		r.Post("/webhooks/shopify", shopify.WebhookHandler)
+		r.With(shopify.ShopifyStoreWhCtx).Post("/webhooks/shopify", shopify.WebhookHandler)
 
 		r.Post("/echo", echoPush)
 	})
@@ -75,7 +75,6 @@ func New(h *Handler) chi.Router {
 		r.Mount("/session", session.Routes())
 		r.Mount("/users", user.Routes())
 		r.Mount("/places", place.Routes())
-		r.Mount("/promos", promo.Routes())
 		r.Mount("/locales", locale.Routes())
 		r.Mount("/products", product.Routes())
 		r.Mount("/carts", cart.Routes())

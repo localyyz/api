@@ -9,52 +9,72 @@ import (
 	set "gopkg.in/fatih/set.v0"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/gedex/inflector"
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
 )
 
-func ShopifyProducts(ctx context.Context) error {
-	list := ctx.Value("sync.list").([]*shopify.Product)
+func ShopifyProductListings(ctx context.Context) error {
+	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)
 
 	for _, p := range list {
-		imgUrl, _ := url.Parse(p.Image.Src)
-		imgUrl.Scheme = "https"
-
 		product := &data.Product{
 			PlaceID:     place.ID,
 			ExternalID:  p.Handle,
 			Title:       p.Title,
-			Description: p.BodyHTML,
-			ImageUrl:    imgUrl.String(),
+			Description: strings.TrimSpace(htmlx.StripTags(p.BodyHTML)),
+			Etc:         data.ProductEtc{},
 		}
-		var promos []*data.Promo
+		// parse product images
+		for _, img := range p.Images {
+			imgUrl, _ := url.Parse(img.Src)
+			imgUrl.Scheme = "https"
+			if img.Position == 1 {
+				product.ImageUrl = imgUrl.String()
+			}
+			// always add to etc
+			product.Etc.Images = append(product.Etc.Images, imgUrl.String())
+		}
 
-		for _, v := range p.Variants {
+		variants := make([]*data.Promo, len(p.Variants))
+		for i, v := range p.Variants {
 			price, _ := strconv.ParseFloat(v.Price, 64)
-			promo := &data.Promo{
+			etc := data.PromoEtc{
+				Price: price,
+				Sku:   v.Sku,
+			}
+			// variant option values
+			for _, o := range v.OptionValues {
+				v := strings.ToLower(o.Value)
+				switch o.Name {
+				case "Size":
+					etc.Size = v
+				case "Color":
+					etc.Color = v
+				default:
+					// pass
+				}
+			}
+			variants[i] = &data.Promo{
 				PlaceID:     place.ID,
 				ProductID:   product.ID,
 				OfferID:     v.ID,
 				Status:      data.PromoStatusActive,
 				Description: v.Title,
-				UserID:      0, // admin
 				Limits:      int64(v.InventoryQuantity),
-				Etc: data.PromoEtc{
-					Price: price,
-					Sku:   v.Sku,
-				},
+				Etc:         etc,
 			}
-			promos = append(promos, promo)
+
 		}
 
 		if err := data.DB.Product.Save(product); err != nil {
 			return errors.Wrap(err, "failed to save promotion")
 		}
 
-		for _, v := range promos {
+		for _, v := range variants {
 			v.ProductID = product.ID
 			if err := data.DB.Promo.Save(v); err != nil {
 				lg.Warn(errors.Wrap(err, "failed to save promotion"))
@@ -67,10 +87,10 @@ func ShopifyProducts(ctx context.Context) error {
 		b := q.Batch(len(tags))
 		go func() {
 			defer b.Done()
-			// General product tags
 			for _, t := range tags {
 				// detect if one of "man" or "woman"
 				// TODO: let's do this some other way
+				// and detect more product tag types
 				typ := data.ProductTagTypeGeneral
 				if t == "man" || t == "woman" {
 					typ = data.ProductTagTypeGender
@@ -83,8 +103,14 @@ func ShopifyProducts(ctx context.Context) error {
 				var typ data.ProductTagType
 				typ.UnmarshalText([]byte(strings.ToLower(o.Name)))
 
+				optSet := set.New()
 				for _, v := range o.Values {
-					b.Values(product.ID, strings.ToLower(v), typ)
+					vv := strings.ToLower(v)
+					if optSet.Has(vv) {
+						continue
+					}
+					b.Values(product.ID, vv, typ)
+					optSet.Add(vv)
 				}
 			}
 		}()

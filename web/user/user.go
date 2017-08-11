@@ -25,19 +25,6 @@ func MeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func AcceptNDA(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
-
-	user.Etc.HasAgreedNDA = true
-	if err := data.DB.User.Save(user); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	render.Render(w, r, presenter.NewUser(ctx, user))
-}
-
 type deviceTokenRequst struct {
 	DeviceToken string `json:"deviceToken,required"`
 }

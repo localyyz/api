@@ -16,10 +16,8 @@ type Promo struct {
 	*data.Promo
 	Place   *Place        `json:"place,omitempty"`
 	Product *data.Product `json:"product,omitempty"`
-	Claim   *data.Claim   `json:"claim,omitempty"`
 
-	//fields that can be viewed
-	NumClaimed int64 `json:"numClaimed,omitempty"`
+	Price float64 `json:"price"`
 
 	// Hide fields
 	ProductID interface{} `json:"productId,omitempty"`
@@ -36,6 +34,7 @@ type Promo struct {
 func NewPromo(ctx context.Context, promo *data.Promo) *Promo {
 	p := &Promo{
 		Promo: promo,
+		Price: promo.Etc.Price,
 		ctx:   ctx,
 	}
 

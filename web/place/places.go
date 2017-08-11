@@ -99,8 +99,8 @@ func ListRecent(w http.ResponseWriter, r *http.Request) {
 		Where(db.Cond{
 			"pr.status": data.PromoStatusActive,
 		}).
-		GroupBy("pl.id", "pr.start_at").
-		OrderBy("pl.id", "-pr.start_at").
+		GroupBy("pl.id").
+		OrderBy("pl.id").
 		Limit(10)
 
 	if err := q.All(&places); err != nil {

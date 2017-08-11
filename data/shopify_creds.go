@@ -38,3 +38,11 @@ func (store ShopifyCredStore) FindOne(cond db.Cond) (*ShopifyCred, error) {
 	}
 	return cred, nil
 }
+
+func (store ShopifyCredStore) FindAll(cond db.Cond) ([]*ShopifyCred, error) {
+	var creds []*ShopifyCred
+	if err := store.Find(cond).All(&creds); err != nil {
+		return nil, err
+	}
+	return creds, nil
+}

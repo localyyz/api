@@ -23,10 +23,6 @@ func (store PlaceStore) MatchName(q string) ([]*Place, error) {
 	return store.FindAll(db.Cond{"name ~*": fmt.Sprint("\\m(", q, ")")})
 }
 
-func (store PlaceStore) FindByCategory(category Category) ([]*Place, error) {
-	return store.FindAll(db.Cond{"category": category})
-}
-
 func (store PlaceStore) FindAll(cond db.Cond) ([]*Place, error) {
 	var places []*Place
 	if err := store.Find(cond).OrderBy("name").All(&places); err != nil {

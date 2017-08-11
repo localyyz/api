@@ -4,22 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 )
 
-const (
-	userAgent = `go-shopify`
-
-	authHeader = `X-Shopify-Access-Token`
-)
-
 type Client struct {
 	client *http.Client // HTTP client used to communicate with the API.
 
 	BaseURL *url.URL
+	Debug   bool // turn on debugging
 
 	// User agent used when communicating with the Shopify API.
 	UserAgent string
@@ -30,14 +26,22 @@ type Client struct {
 
 	common service
 
-	Product *ProductService
-	Webhook *WebhookService
-	Shop    *ShopService
+	Product     *ProductService
+	Webhook     *WebhookService
+	Shop        *ShopService
+	Checkout    *CheckoutService
+	ProductList *ProductListService
 }
 
 type service struct {
 	client *Client
 }
+
+const (
+	userAgent = `go-shopify`
+
+	authHeader = `X-Shopify-Access-Token`
+)
 
 func NewClient(httpClient *http.Client, token string) *Client {
 	if httpClient == nil {
@@ -49,6 +53,8 @@ func NewClient(httpClient *http.Client, token string) *Client {
 	c.Product = (*ProductService)(&c.common)
 	c.Webhook = (*WebhookService)(&c.common)
 	c.Shop = (*ShopService)(&c.common)
+	c.Checkout = (*CheckoutService)(&c.common)
+	c.ProductList = (*ProductListService)(&c.common)
 	return c
 }
 
@@ -136,7 +142,14 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		if w, ok := v.(io.Writer); ok {
 			io.Copy(w, resp.Body)
 		} else {
-			err = json.NewDecoder(resp.Body).Decode(v)
+			if c.Debug {
+				b, _ := ioutil.ReadAll(resp.Body)
+				fmt.Printf("[shopify]: %s\n", string(b))
+				err = json.Unmarshal(b, v)
+			} else {
+				err = json.NewDecoder(resp.Body).Decode(v)
+			}
+
 			if err == io.EOF {
 				err = nil // ignore EOF errors caused by empty response body
 			}

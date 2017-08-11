@@ -1,6 +1,9 @@
 package user
 
-import "github.com/pressly/chi"
+import (
+	"bitbucket.org/moodie-app/moodie-api/web/cart"
+	"github.com/pressly/chi"
+)
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
@@ -8,9 +11,18 @@ func Routes() chi.Router {
 	r.Route("/me", func(r chi.Router) {
 		r.Use(MeCtx)
 
-		r.Get("/cart", GetCart)
+		r.Route("/carts/:scope", func(r chi.Router) {
+			r.Use(cart.CartScopeCtx)
+			r.Get("/", cart.ListCarts)
+		})
+		r.Get("/carts", cart.ListCarts)
+
 		r.Put("/device", SetDeviceToken)
-		r.Post("/nda", AcceptNDA)
+
+		r.Route("/address", func(r chi.Router) {
+			r.Post("/", CreateAddress)
+			r.Get("/", ListAddresses)
+		})
 	})
 
 	return r
