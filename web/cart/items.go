@@ -46,7 +46,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	var variant *data.ProductVariant
 	err := data.DB.ProductVariant.Find(
 		db.And(
-			db.Cond{"product_id": payload.ProductID},
+			db.Cond{"product_id": payload.ProductID, "limits >=": "1"},
 			db.Raw("lower(etc->>'color') = ?", payload.Color),
 			db.Raw("lower(etc->>'size') = ?", payload.Size),
 		),
@@ -67,6 +67,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
+
 	render.Render(w, r, presenter.NewCartItem(ctx, newItem))
 }
 

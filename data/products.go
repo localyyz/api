@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"bitbucket.org/moodie-app/moodie-api/web/api"
+
 	"upper.io/bond"
 	db "upper.io/db.v3"
 )
@@ -38,7 +40,7 @@ func (p *Product) CollectionName() string {
 }
 
 // TODO parse item title into tags
-func (store ProductStore) Fuzzy(q string) ([]*Product, error) {
+func (store ProductStore) Fuzzy(q string, optCursor *api.Page) ([]*Product, error) {
 	tags, err := DB.ProductTag.FindAll(db.Cond{
 		"value ~*": fmt.Sprint("\\m(", q, ")"),
 	})

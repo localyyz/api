@@ -25,19 +25,20 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	s := &omniSearch{}
+	//places, err := data.DB.Place.MatchName(q)
+	//if err != nil {
+	//render.Respond(w, r, err)
+	//return
+	//}
+	// TODO
+	s.Places = make([]*presenter.Place, 0)
+	//for i, pl := range places {
+	//place := presenter.NewPlace(ctx, pl)
+	//s.Places[i] = place
+	//}
 
-	places, err := data.DB.Place.MatchName(q)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	s.Places = make([]*presenter.Place, len(places))
-	for i, pl := range places {
-		place := presenter.NewPlace(ctx, pl)
-		s.Places[i] = place
-	}
-
-	products, err := data.DB.Product.Fuzzy(q)
+	// TODO: pagination
+	products, err := data.DB.Product.Fuzzy(q, nil)
 	if err != nil {
 		render.Respond(w, r, err)
 		return

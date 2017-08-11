@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	db "upper.io/db.v3"
+
 	set "gopkg.in/fatih/set.v0"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -28,6 +30,12 @@ func ShopifyProductListings(ctx context.Context) error {
 			Description: strings.TrimSpace(htmlx.StripTags(p.BodyHTML)),
 			Etc:         data.ProductEtc{},
 		}
+
+		// check if product already exists in our system
+		if p, _ := data.DB.Product.FindOne(db.Cond{"external_id": p.Handle}); p != nil {
+			product.ID = p.ID
+		}
+
 		// parse product images
 		for _, img := range p.Images {
 			imgUrl, _ := url.Parse(img.Src)
@@ -48,12 +56,12 @@ func ShopifyProductListings(ctx context.Context) error {
 			}
 			// variant option values
 			for _, o := range v.OptionValues {
-				v := strings.ToLower(o.Value)
-				switch o.Name {
-				case "Size":
-					etc.Size = v
-				case "Color":
-					etc.Color = v
+				vv := strings.ToLower(o.Value)
+				switch strings.ToLower(o.Name) {
+				case "size":
+					etc.Size = vv
+				case "color":
+					etc.Color = vv
 				default:
 					// pass
 				}
@@ -66,6 +74,10 @@ func ShopifyProductListings(ctx context.Context) error {
 				Description: v.Title,
 				Limits:      int64(v.InventoryQuantity),
 				Etc:         etc,
+			}
+			// fetch variant via offerID
+			if vv, _ := data.DB.ProductVariant.FindOne(db.Cond{"offer_id": v.ID}); vv != nil {
+				variants[i].ID = vv.ID
 			}
 
 		}
@@ -83,7 +95,11 @@ func ShopifyProductListings(ctx context.Context) error {
 		}
 
 		tags := parseTags(p.Tags, p.ProductType, p.Vendor)
-		q := data.DB.InsertInto("product_tags").Columns("product_id", "value", "type")
+		q := data.DB.InsertInto("product_tags").
+			Columns("product_id", "value", "type").
+			Amend(func(query string) string {
+				return query + ` ON CONFLICT DO NOTHING`
+			})
 		b := q.Batch(len(tags))
 		go func() {
 			defer b.Done()
