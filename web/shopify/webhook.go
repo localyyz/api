@@ -52,9 +52,20 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 			api := shopify.NewClient(nil, cred.AccessToken)
 			api.BaseURL, _ = url.Parse(cred.ApiURL)
 
-			// remove all webhooks
-			//webhooks, _, _ := api.Webhook.List(ctx)
+			webhooks, err := data.DB.Webhook.FindByPlaceID(place.ID)
+			if err != nil {
+				render.Respond(w, r, err)
+				return
+			}
 
+			for _, wh := range webhooks {
+				api.Webhook.Delete(ctx, wh.ExternalID)
+				data.DB.Webhook.Delete(wh)
+			}
+
+			// TODO: archive the place?
+			// remove the credential
+			data.DB.ShopifyCred.Delete(cred)
 		default:
 			lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
 		}

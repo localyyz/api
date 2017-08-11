@@ -158,16 +158,26 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 
 	// create the webhook
 	for _, topic := range WebhookTopics {
-		wh := &shopify.WebhookRequest{
-			&shopify.Webhook{
-				Topic:   topic,
-				Address: s.webhookURL,
-				Format:  "json",
-			},
-		}
-		_, _, err = api.Webhook.Create(ctx, wh)
+		wh, _, err := api.Webhook.Create(
+			ctx,
+			&shopify.WebhookRequest{
+				&shopify.Webhook{
+					Topic:   topic,
+					Address: s.webhookURL,
+					Format:  "json",
+				},
+			})
 		if err != nil {
 			lg.Alert(errors.Wrapf(err, "failed to create shopify %s webhook", topic))
+			continue
+		}
+		err = data.DB.Webhook.Save(&data.Webhook{
+			PlaceID:    place.ID,
+			Topic:      string(topic),
+			ExternalID: int64(wh.ID),
+		})
+		if err != nil {
+			lg.Alert(errors.Wrapf(err, "failed to save webhook"))
 		}
 	}
 	return nil

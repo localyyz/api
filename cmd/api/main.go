@@ -13,7 +13,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web"
-	"bitbucket.org/moodie-app/moodie-api/workers"
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron"
@@ -61,7 +60,8 @@ func main() {
 
 	// cron worker
 	c := cron.New()
-	c.AddFunc("@every 1h", workers.ShopifyPuller)
+	// TODO: disable for now.
+	//c.AddFunc("@every 1h", workers.ShopifyPuller)
 	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)

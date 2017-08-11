@@ -31,11 +31,10 @@ type Database struct {
 	ProductTag  ProductTagStore
 	Promo       PromoStore
 	Share       ShareStore
+	Webhook     WebhookStore
 
 	Cart     CartStore
 	CartItem CartItemStore
-
-	TrackList TrackListStore
 }
 
 type DBConf struct {
@@ -92,11 +91,10 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.ProductTag = ProductTagStore{db.Store(&ProductTag{})}
 	db.Promo = PromoStore{db.Store(&Promo{})}
 	db.Share = ShareStore{db.Store(&Share{})}
+	db.Webhook = WebhookStore{db.Store(&Webhook{})}
 
 	db.Cart = CartStore{db.Store(&Cart{})}
 	db.CartItem = CartItemStore{db.Store(&CartItem{})}
-
-	db.TrackList = TrackListStore{db.Store(&TrackList{})}
 
 	DB = db
 	return db, nil

@@ -123,12 +123,12 @@ func (s *WebhookService) Create(ctx context.Context, webhook *WebhookRequest) (*
 		return nil, nil, err
 	}
 
-	ww := new(Webhook)
+	ww := new(WebhookRequest)
 	resp, err := s.client.Do(ctx, req, ww)
 	if err != nil {
 		return nil, resp, err
 	}
-	return ww, resp, nil
+	return ww.Webhook, resp, nil
 }
 
 func (s WebhookService) Delete(ctx context.Context, ID int64) (*http.Response, error) {
