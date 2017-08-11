@@ -88,7 +88,8 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: email verification
-	authUser := NewAuthUser(newUser)
+	ctx := r.Context()
+	authUser := NewAuthUser(ctx, newUser)
 	if err := render.Render(w, r, authUser); err != nil {
 		render.Respond(w, r, err)
 	}

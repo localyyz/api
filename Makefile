@@ -36,7 +36,7 @@ print-%: ; @echo $*=$($*)
 tools:
 	go get -u github.com/pressly/sup/cmd/sup
 	go get -u github.com/pressly/fresh
-	GOGO=off go build -i -o ./bin/goose ./vendor/bitbucket.org/liamstask/goose/cmd/goose
+	GOGC=off go build -i -o ./bin/goose ./vendor/bitbucket.org/liamstask/goose/cmd/goose
 
 docs:
 	go run ./docs/main.go

@@ -2,7 +2,6 @@ package place
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/pressly/chi/render"
 
@@ -14,30 +13,30 @@ import (
 	"upper.io/db.v3"
 )
 
-// List promotions at a given place grouped by product
-func ListPromo(w http.ResponseWriter, r *http.Request) {
+// List products at a given place
+func ListProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
 	cursor := api.NewPage(r)
 
-	var promos []*data.Promo
+	var variants []*data.Promo
 	query := data.DB.Promo.Find(
 		db.Cond{
-			"place_id":    place.ID,
-			"start_at <=": time.Now().UTC(),
-			"end_at >":    time.Now().UTC(),
-			"status":      data.PromoStatusActive,
-		},
-	).Select("product_id").Group("product_id").OrderBy("product_id")
+			"place_id": place.ID,
+			"status":   data.PromoStatusActive,
+		}).
+		Select("product_id").
+		Group("product_id").
+		OrderBy("product_id")
 
 	query = cursor.UpdateQueryUpper(query)
-	if err := query.All(&promos); err != nil {
+	if err := query.All(&variants); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
 	productIDs := set.New()
-	for _, p := range promos {
+	for _, p := range variants {
 		productIDs.Add(p.ProductID)
 	}
 	if productIDs.Size() == 0 {

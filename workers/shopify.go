@@ -186,7 +186,6 @@ func ShopifyPuller() {
 					ProductID:   product.ID,
 					Status:      data.PromoStatusActive,
 					Description: strings.ToLower(o.Title),
-					UserID:      0, // admin
 					Etc: data.PromoEtc{
 						Price: o.Price,
 						Sku:   o.Sku,

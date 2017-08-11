@@ -7,6 +7,7 @@ import (
 	db "upper.io/db.v3"
 
 	"github.com/goware/lg"
+	"github.com/lib/pq"
 	"github.com/pressly/chi/render"
 )
 
@@ -18,6 +19,7 @@ type ApiError struct {
 
 	AppCode   int64  `json:"code,omitempty"`
 	ErrorText string `json:"error,omitempty"`
+	Cause     string `json:"cause,omitempty"`
 }
 
 var (
@@ -48,7 +50,8 @@ var (
 	ErrEmptyCart = &ApiError{StatusCode: http.StatusOK, ErrorText: "empty cart"}
 
 	// generic api error
-	errGeneric = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Something went wrong"}
+	errGeneric  = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Something went wrong"}
+	errDatabase = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Failed. Please try again."}
 
 	// error mapping
 	mappings = map[error]*ApiError{
@@ -60,6 +63,10 @@ var (
 
 		ErrEncryptinError: &ApiError{StatusCode: http.StatusInternalServerError},
 		ErrClaimDistance:  &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "You're too far away. Get closer!"},
+	}
+
+	dbmappings = map[string]*ApiError{
+		"unique_violation": &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "Already exists!"},
 	}
 )
 
@@ -81,6 +88,19 @@ func WrapErr(err error) *ApiError {
 		if len(a.ErrorText) == 0 {
 			a.ErrorText = err.Error()
 		}
+		return &a
+	}
+
+	if e, ok := err.(*pq.Error); ok {
+		lg.Errorf("encountered database error: %s", e)
+
+		a := *errDatabase
+		if de, ok := dbmappings[e.Code.Name()]; ok {
+			a = *de
+		}
+
+		a.Cause = e.Message
+		a.StatusText = http.StatusText(a.StatusCode)
 		return &a
 	}
 

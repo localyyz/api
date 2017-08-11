@@ -13,7 +13,7 @@ func Routes() chi.Router {
 		r.Use(PlaceCtx)
 
 		r.Get("/", GetPlace)
-		r.Get("/promos", ListPromo)
+		r.Get("/products", ListProduct)
 		r.Post("/share", Share)
 
 		r.Post("/follow", FollowPlace)

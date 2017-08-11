@@ -60,8 +60,9 @@ func New(h *Handler) chi.Router {
 		r.Get("/leaderboard", leaderBoard)
 
 		r.Get("/connect/:shopID", shopify.Connect)
+		r.Get("/sync/:shopID", shopify.SyncProductList)
 		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)
-		r.Post("/webhooks/shopify", shopify.WebhookHandler)
+		r.With(shopify.ShopifyStoreWhCtx).Post("/webhooks/shopify", shopify.WebhookHandler)
 
 		r.Post("/echo", echoPush)
 	})

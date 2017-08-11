@@ -7,6 +7,7 @@ func Routes() chi.Router {
 
 	r.Route("/:productID", func(r chi.Router) {
 		r.Use(ProductCtx)
+		r.Get("/variant", GetVariant)
 	})
 
 	return r
