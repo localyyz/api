@@ -8,12 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-)
 
-const (
-	userAgent = `go-shopify`
-
-	authHeader = `X-Shopify-Access-Token`
+	"github.com/goware/lg"
 )
 
 type Client struct {
@@ -30,15 +26,22 @@ type Client struct {
 
 	common service
 
-	Product  *ProductService
-	Webhook  *WebhookService
-	Shop     *ShopService
-	Checkout *CheckoutService
+	Product     *ProductService
+	Webhook     *WebhookService
+	Shop        *ShopService
+	Checkout    *CheckoutService
+	ProductList *ProductListService
 }
 
 type service struct {
 	client *Client
 }
+
+const (
+	userAgent = `go-shopify`
+
+	authHeader = `X-Shopify-Access-Token`
+)
 
 func NewClient(httpClient *http.Client, token string) *Client {
 	if httpClient == nil {
@@ -51,6 +54,7 @@ func NewClient(httpClient *http.Client, token string) *Client {
 	c.Webhook = (*WebhookService)(&c.common)
 	c.Shop = (*ShopService)(&c.common)
 	c.Checkout = (*CheckoutService)(&c.common)
+	c.ProductList = (*ProductListService)(&c.common)
 	return c
 }
 
@@ -138,7 +142,9 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		if w, ok := v.(io.Writer); ok {
 			io.Copy(w, resp.Body)
 		} else {
-			err = json.NewDecoder(resp.Body).Decode(v)
+			b, _ := ioutil.ReadAll(resp.Body)
+			lg.Warnf("\n\ndebugging shop response: %s\n\n", string(b))
+			err = json.Unmarshal(b, v)
 			if err == io.EOF {
 				err = nil // ignore EOF errors caused by empty response body
 			}
