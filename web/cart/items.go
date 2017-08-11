@@ -43,8 +43,8 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// look up variant
-	var variant *data.Promo
-	err := data.DB.Promo.Find(
+	var variant *data.ProductVariant
+	err := data.DB.ProductVariant.Find(
 		db.And(
 			db.Cond{"product_id": payload.ProductID},
 			db.Raw("lower(etc->>'color') = ?", payload.Color),

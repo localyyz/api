@@ -12,9 +12,9 @@ import (
 
 type Place struct {
 	*data.Place
-	Locale     *Locale `json:"locale"`
-	PromoCount uint64  `json:"promoCount"`
-	Following  bool    `json:"following"`
+	Locale       *Locale `json:"locale"`
+	ProductCount uint64  `json:"productCount"`
+	Following    bool    `json:"following"`
 
 	LatLng *geotools.LatLng `json:"coords"`
 	ctx    context.Context
@@ -25,23 +25,7 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 		Place: place,
 		ctx:   ctx,
 	}
-
-	{ // promotion count
-		query := data.DB.Promo.Find(
-			db.Cond{
-				"place_id": p.ID,
-				"status":   data.PromoStatusActive,
-			},
-		).Select(db.Raw("count(distinct product_id) as count"))
-
-		var c struct {
-			Count uint64 `db:"count"`
-		}
-		if err := query.One(&c); err != nil {
-			return p
-		}
-		p.PromoCount = c.Count
-	}
+	p.ProductCount, _ = data.DB.Product.Find(db.Cond{"place_id": p.ID}).Count()
 
 	locale, _ := data.DB.Locale.FindByID(p.LocaleID)
 	p.Locale = NewLocale(ctx, locale)

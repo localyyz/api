@@ -19,12 +19,9 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 	place := ctx.Value("place").(*data.Place)
 	cursor := api.NewPage(r)
 
-	var variants []*data.Promo
-	query := data.DB.Promo.Find(
-		db.Cond{
-			"place_id": place.ID,
-			"status":   data.PromoStatusActive,
-		}).
+	var variants []*data.ProductVariant
+	query := data.DB.ProductVariant.Find(
+		db.Cond{"place_id": place.ID}).
 		Select("product_id").
 		Group("product_id").
 		OrderBy("product_id")

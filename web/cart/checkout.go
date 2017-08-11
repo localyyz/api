@@ -30,7 +30,7 @@ func Checkout(w http.ResponseWriter, r *http.Request) {
 
 	// shopify cart request objects
 	checkoutMap := make(map[int64]*shopify.Checkout)
-	variantMap := make(map[int64]*data.Promo)
+	variantMap := make(map[int64]*data.ProductVariant)
 	productMap := make(map[int64]*data.Product)
 	placeMap := make(map[int64]*data.Place)
 	credMap := make(map[int64]*data.ShopifyCred)
@@ -49,7 +49,7 @@ func Checkout(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		variants, err := data.DB.Promo.FindAll(db.Cond{"id": variantIDs})
+		variants, err := data.DB.ProductVariant.FindAll(db.Cond{"id": variantIDs})
 		if err != nil {
 			render.Respond(w, r, err)
 			return

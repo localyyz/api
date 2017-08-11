@@ -67,12 +67,12 @@ func (store ProductStore) Fuzzy(q string) ([]*Product, error) {
 	return products, nil
 }
 
-func (store ProductStore) FindPromos(productID int64) ([]*Promo, error) {
-	return DB.Promo.FindAll(db.Cond{
-		"product_id": productID,
-		"status":     PromoStatusActive,
-	})
-}
+//func (store ProductStore) FindPromos(productID int64) ([]*Promo, error) {
+//return DB.Promo.FindAll(db.Cond{
+//"product_id": productID,
+//"status":     PromoStatusActive,
+//})
+//}
 
 func (store ProductStore) FindByID(ID int64) (*Product, error) {
 	return store.FindOne(db.Cond{"id": ID})

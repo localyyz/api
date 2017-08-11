@@ -39,8 +39,8 @@ func GetVariant(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
 	// look up variant by color and size
-	var variant *data.Promo
-	err := data.DB.Promo.Find(
+	var variant *data.ProductVariant
+	err := data.DB.ProductVariant.Find(
 		db.And(
 			db.Cond{"product_id": product.ID},
 			db.Raw("lower(etc->>'color') = ?", q.Get("color")),

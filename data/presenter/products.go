@@ -16,8 +16,8 @@ import (
 
 type Product struct {
 	*data.Product
-	Promos []*Promo `json:"variants"`
-	Place  *Place   `json:"place"`
+	Variants []*ProductVariant `json:"variants"`
+	Place    *Place            `json:"place"`
 
 	Sizes  []string `json:"sizes"`
 	Colors []string `json:"colors"`
@@ -62,10 +62,10 @@ func NewSearchProductList(ctx context.Context, products []*data.Product) SearchP
 
 func NewCartProductList(ctx context.Context, products []*data.Product) CartProductList {
 	list := CartProductList{}
-	promos := ctx.Value("promos").(map[int64]*data.Promo)
+	variants := ctx.Value("variants").(map[int64]*data.ProductVariant)
 	for _, product := range products {
 		p := NewProduct(ctx, product)
-		p.Promos = []*Promo{NewPromo(ctx, promos[p.ID])}
+		p.Variants = []*ProductVariant{NewProductVariant(ctx, variants[p.ID])}
 		list = append(list, p)
 	}
 	return list
@@ -91,12 +91,12 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	}
 	p.Place = &Place{Place: place}
 
-	if dbVariants, _ := data.DB.Promo.FindByProductID(product.ID); dbVariants != nil {
-		variants := make([]*Promo, len(dbVariants))
+	if dbVariants, _ := data.DB.ProductVariant.FindByProductID(product.ID); dbVariants != nil {
+		variants := make([]*ProductVariant, len(dbVariants))
 		for i, v := range dbVariants {
-			variants[i] = &Promo{Promo: v}
+			variants[i] = &ProductVariant{ProductVariant: v}
 		}
-		p.Promos = variants
+		p.Variants = variants
 	}
 
 	p.Sizes = []string{}

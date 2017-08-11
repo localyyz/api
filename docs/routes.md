@@ -30,6 +30,96 @@
 
 </details>
 <details>
+<summary>`/carts/:cartID`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/**
+			- _PUT_
+				- [UpdateCart]()
+			- _DELETE_
+				- [DeleteCart]()
+			- _GET_
+				- [GetCart]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/checkout`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/checkout**
+			- _POST_
+				- [Checkout]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/items`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/items**
+			- **/**
+				- _POST_
+					- [CreateCartItem]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/items/:cartItemID`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/items**
+			- **/:cartItemID**
+				- [CartItemCtx]()
+				- **/**
+					- _DELETE_
+						- [RemoveCartItem]()
+					- _GET_
+						- [GetCartItem]()
+					- _PUT_
+						- [UpdateCartItem]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/shipping`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/shipping**
+			- **/**
+				- _GET_
+					- [ListShippingMethods]()
+				- _PUT_
+					- [UpdateShippingMethod]()
+
+</details>
+<details>
 <summary>`/connect/:shopID`</summary>
 
 - [NoCache]()
@@ -162,7 +252,7 @@
 
 </details>
 <details>
-<summary>`/places/:placeID/promos`</summary>
+<summary>`/places/:placeID/products`</summary>
 
 - [NoCache]()
 - [Logger]()
@@ -171,9 +261,9 @@
 - **/places**
 	- **/:placeID**
 		- [PlaceCtx]()
-		- **/promos**
+		- **/products**
 			- _GET_
-				- [ListPromo]()
+				- [ListProduct]()
 
 </details>
 <details>
@@ -231,6 +321,21 @@
 
 </details>
 <details>
+<summary>`/products/:productID/variant`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/products**
+	- **/:productID**
+		- [ProductCtx]()
+		- **/variant**
+			- _GET_
+				- [GetVariant]()
+
+</details>
+<details>
 <summary>`/search`</summary>
 
 - [NoCache]()
@@ -278,14 +383,26 @@
 - [Recoverer]()
 - [New.func1]()
 - **/signup**
-	- _POST_
-		- [EmailSignup]()
 	- _GET_
 		- [GetSignupPage]()
+	- _POST_
+		- [EmailSignup]()
 
 </details>
 <details>
-<summary>`/users/me/cart`</summary>
+<summary>`/sync/:shopID`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/sync/:shopID**
+	- _GET_
+		- [SyncProductList]()
+
+</details>
+<details>
+<summary>`/users/me/address`</summary>
 
 - [NoCache]()
 - [Logger]()
@@ -294,9 +411,44 @@
 - **/users**
 	- **/me**
 		- [MeCtx]()
-		- **/cart**
+		- **/address**
+			- **/**
+				- _POST_
+					- [CreateAddress]()
+				- _GET_
+					- [ListAddresses]()
+
+</details>
+<details>
+<summary>`/users/me/carts`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/me**
+		- [MeCtx]()
+		- **/carts**
 			- _GET_
-				- [GetCart]()
+				- [ListCarts]()
+
+</details>
+<details>
+<summary>`/users/me/carts/:scope`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/me**
+		- [MeCtx]()
+		- **/carts/:scope**
+			- [CartScopeCtx]()
+			- **/**
+				- _GET_
+					- [ListCarts]()
 
 </details>
 <details>
@@ -315,21 +467,6 @@
 
 </details>
 <details>
-<summary>`/users/me/nda`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/me**
-		- [MeCtx]()
-		- **/nda**
-			- _POST_
-				- [AcceptNDA]()
-
-</details>
-<details>
 <summary>`/webhooks/shopify`</summary>
 
 - [NoCache]()
@@ -338,8 +475,9 @@
 - [New.func1]()
 - **/webhooks/shopify**
 	- _POST_
+		- [ShopifyStoreWhCtx]()
 		- [WebhookHandler]()
 
 </details>
 
-Total # of routes: 25
+Total # of routes: 33

@@ -11,10 +11,10 @@ import (
 type CartItem struct {
 	*data.CartItem
 
-	Cart    *Cart    `json:"cart,omitempty"`
-	Place   *Place   `json:"place,omitempty"`
-	Product *Product `json:"product,omitempty"`
-	Variant *Promo   `json:"variant,omitempty"`
+	Cart    *Cart           `json:"cart,omitempty"`
+	Place   *Place          `json:"place,omitempty"`
+	Product *Product        `json:"product,omitempty"`
+	Variant *ProductVariant `json:"variant,omitempty"`
 
 	Price float64 `json:"price"`
 
@@ -30,8 +30,8 @@ func NewCartItem(ctx context.Context, item *data.CartItem) *CartItem {
 		resp.Product = NewProduct(ctx, product)
 		resp.Product.Render(nil, nil)
 	}
-	if variant, _ := data.DB.Promo.FindByID(item.VariantID); variant != nil {
-		resp.Variant = &Promo{Promo: variant}
+	if variant, _ := data.DB.ProductVariant.FindByID(item.VariantID); variant != nil {
+		resp.Variant = &ProductVariant{ProductVariant: variant}
 		resp.Price = variant.Etc.Price
 	}
 	return resp

@@ -39,10 +39,10 @@ func ShopifyProductListings(ctx context.Context) error {
 			product.Etc.Images = append(product.Etc.Images, imgUrl.String())
 		}
 
-		variants := make([]*data.Promo, len(p.Variants))
+		variants := make([]*data.ProductVariant, len(p.Variants))
 		for i, v := range p.Variants {
 			price, _ := strconv.ParseFloat(v.Price, 64)
-			etc := data.PromoEtc{
+			etc := data.ProductVariantEtc{
 				Price: price,
 				Sku:   v.Sku,
 			}
@@ -58,11 +58,11 @@ func ShopifyProductListings(ctx context.Context) error {
 					// pass
 				}
 			}
-			variants[i] = &data.Promo{
+			variants[i] = &data.ProductVariant{
 				PlaceID:     place.ID,
 				ProductID:   product.ID,
 				OfferID:     v.ID,
-				Status:      data.PromoStatusActive,
+				Status:      data.ProductVariantStatusActive,
 				Description: v.Title,
 				Limits:      int64(v.InventoryQuantity),
 				Etc:         etc,
@@ -71,13 +71,13 @@ func ShopifyProductListings(ctx context.Context) error {
 		}
 
 		if err := data.DB.Product.Save(product); err != nil {
-			return errors.Wrap(err, "failed to save promotion")
+			return errors.Wrap(err, "failed to save product")
 		}
 
 		for _, v := range variants {
 			v.ProductID = product.ID
-			if err := data.DB.Promo.Save(v); err != nil {
-				lg.Warn(errors.Wrap(err, "failed to save promotion"))
+			if err := data.DB.ProductVariant.Save(v); err != nil {
+				lg.Warn(errors.Wrap(err, "failed to save product variants"))
 				continue
 			}
 		}

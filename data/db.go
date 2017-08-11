@@ -26,12 +26,12 @@ type Database struct {
 	Locale LocaleStore
 	Cell   CellStore
 
-	ShopifyCred ShopifyCredStore
-	Product     ProductStore
-	ProductTag  ProductTagStore
-	Promo       PromoStore
-	Share       ShareStore
-	Webhook     WebhookStore
+	ShopifyCred    ShopifyCredStore
+	Product        ProductStore
+	ProductTag     ProductTagStore
+	ProductVariant ProductVariantStore
+	Share          ShareStore
+	Webhook        WebhookStore
 
 	Cart     CartStore
 	CartItem CartItemStore
@@ -89,7 +89,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}
 	db.Product = ProductStore{db.Store(&Product{})}
 	db.ProductTag = ProductTagStore{db.Store(&ProductTag{})}
-	db.Promo = PromoStore{db.Store(&Promo{})}
+	db.ProductVariant = ProductVariantStore{db.Store(&ProductVariant{})}
 	db.Share = ShareStore{db.Store(&Share{})}
 	db.Webhook = WebhookStore{db.Store(&Webhook{})}
 

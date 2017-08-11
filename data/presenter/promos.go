@@ -12,8 +12,8 @@ import (
 	"upper.io/db.v3"
 )
 
-type Promo struct {
-	*data.Promo
+type ProductVariant struct {
+	*data.ProductVariant
 	Place   *Place        `json:"place,omitempty"`
 	Product *data.Product `json:"product,omitempty"`
 
@@ -31,11 +31,11 @@ type Promo struct {
 	ctx context.Context
 }
 
-func NewPromo(ctx context.Context, promo *data.Promo) *Promo {
-	p := &Promo{
-		Promo: promo,
-		Price: promo.Etc.Price,
-		ctx:   ctx,
+func NewProductVariant(ctx context.Context, variant *data.ProductVariant) *ProductVariant {
+	p := &ProductVariant{
+		ProductVariant: variant,
+		Price:          variant.Etc.Price,
+		ctx:            ctx,
 	}
 
 	if p.Place == nil {
@@ -52,7 +52,7 @@ func NewPromo(ctx context.Context, promo *data.Promo) *Promo {
 			One(&place)
 		if err != nil {
 			if err != db.ErrNoMoreRows {
-				lg.Error(errors.Wrapf(err, "failed to present promo(%v) place", p.ID))
+				lg.Error(errors.Wrapf(err, "failed to present variant(%v) place", p.ID))
 			}
 		}
 		p.Place = NewPlace(ctx, place)
@@ -61,15 +61,15 @@ func NewPromo(ctx context.Context, promo *data.Promo) *Promo {
 	return p
 }
 
-func NewPromoList(ctx context.Context, promos []*data.Promo) []render.Renderer {
+func NewProductVariantList(ctx context.Context, variants []*data.ProductVariant) []render.Renderer {
 	list := []render.Renderer{}
-	for _, promo := range promos {
-		list = append(list, NewPromo(ctx, promo))
+	for _, variant := range variants {
+		list = append(list, NewProductVariant(ctx, variant))
 	}
 	return list
 }
 
-// Promo implements render.Renderer interface
-func (p *Promo) Render(w http.ResponseWriter, r *http.Request) error {
+// ProductVariant implements render.Renderer interface
+func (p *ProductVariant) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }

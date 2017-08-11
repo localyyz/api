@@ -55,7 +55,7 @@ func GetPlace(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, presenter.NewPlace(ctx, place))
 }
 
-// ListNearby returns places and promos based on user's last recorded geolocation
+// ListNearby returns places and products based on user's last recorded geolocation
 func ListNearby(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
@@ -82,7 +82,7 @@ func ListNearby(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ListRecent returns the places with most recent promotions
+// ListRecent returns the places with most recent products
 func ListRecent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
@@ -94,11 +94,8 @@ func ListRecent(w http.ResponseWriter, r *http.Request) {
 			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
 		).
 		From("places pl").
-		LeftJoin("promos pr").
+		LeftJoin("products pr").
 		On("pl.id = pr.place_id").
-		Where(db.Cond{
-			"pr.status": data.PromoStatusActive,
-		}).
 		GroupBy("pl.id").
 		OrderBy("pl.id").
 		Limit(10)
