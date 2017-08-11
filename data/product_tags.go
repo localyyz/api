@@ -24,7 +24,8 @@ type ProductTagStore struct {
 }
 
 const (
-	ProductTagTypeGeneral ProductTagType = iota
+	_ ProductTagType = iota
+	ProductTagTypeGeneral
 	ProductTagTypeSize
 	ProductTagTypeColor
 	ProductTagTypeMaterial
@@ -32,7 +33,14 @@ const (
 )
 
 var (
-	productTagTypes = []string{"general", "size", "color", "material", "gender"}
+	productTagTypes = []string{
+		"-",
+		"general",
+		"size",
+		"color",
+		"material",
+		"gender",
+	}
 )
 
 func (t *ProductTag) CollectionName() string {

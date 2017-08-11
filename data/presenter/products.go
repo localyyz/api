@@ -7,17 +7,20 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/pressly/chi/render"
+	db "upper.io/db.v3"
 
-	"upper.io/db.v3"
+	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 )
 
 type Product struct {
 	*data.Product
-	Promos []*Promo `json:"promos"`
+	Promos []*Promo `json:"variants"`
 	Place  *Place   `json:"place"`
+
+	Sizes  []string `json:"sizes"`
+	Colors []string `json:"colors"`
 
 	ShopUrl string `json:"shopUrl"`
 
@@ -88,14 +91,27 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	}
 	p.Place = &Place{Place: place}
 
-	var promo *data.Promo
-	data.DB.Promo.Find(
-		db.Cond{
-			"product_id": p.ID,
-			"status":     data.PromoStatusActive,
-		},
-	).OrderBy("id").One(&promo)
-	p.Promos = []*Promo{{Promo: promo}}
+	if dbVariants, _ := data.DB.Promo.FindByProductID(product.ID); dbVariants != nil {
+		variants := make([]*Promo, len(dbVariants))
+		for i, v := range dbVariants {
+			variants[i] = &Promo{Promo: v}
+		}
+		p.Promos = variants
+	}
+
+	p.Sizes = []string{}
+	if sizes, _ := data.DB.ProductTag.FindAll(db.Cond{"product_id": product.ID, "type": data.ProductTagTypeSize}); sizes != nil {
+		for _, s := range sizes {
+			p.Sizes = append(p.Sizes, s.Value)
+		}
+	}
+
+	p.Colors = []string{}
+	if colors, _ := data.DB.ProductTag.FindAll(db.Cond{"product_id": product.ID, "type": data.ProductTagTypeColor}); colors != nil {
+		for _, c := range colors {
+			p.Colors = append(p.Colors, c.Value)
+		}
+	}
 
 	return p
 }

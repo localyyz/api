@@ -53,7 +53,6 @@ const (
 type UserEtc struct {
 	// Store user's current neighbourhood whereabouts
 	LocaleID      int64      `json:"localeId"`
-	HasAgreedNDA  bool       `json:"hasAgreedNDA"`
 	FirstName     string     `json:"firstName"`
 	FbFriendCount int32      `json:"fbFriendCount"`
 	Dob           time.Time  `json:"dob"`

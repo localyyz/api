@@ -19,6 +19,7 @@ type Database struct {
 	User         UserStore
 	UserAccess   UserAccessStore
 	UserLocation UserLocationStore
+	UserAddress  UserAddressStore
 	Following    FollowingStore
 
 	Place  PlaceStore
@@ -79,6 +80,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.User = UserStore{db.Store(&User{})}
 	db.UserAccess = UserAccessStore{db.Store(&UserAccess{})}
 	db.UserLocation = UserLocationStore{db.Store(&UserLocation{})}
+	db.UserAddress = UserAddressStore{db.Store(&UserAddress{})}
 	db.Following = FollowingStore{db.Store(&Following{})}
 
 	db.Place = PlaceStore{db.Store(&Place{})}

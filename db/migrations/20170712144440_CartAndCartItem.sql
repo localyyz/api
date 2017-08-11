@@ -15,14 +15,17 @@ CREATE TABLE carts (
 
 CREATE TABLE cart_items (
     id serial PRIMARY KEY,
-    user_id bigint NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     cart_id bigint NOT NULL REFERENCES carts (id) ON DELETE CASCADE,
     product_id bigint NOT NULL REFERENCES products (id) ON DELETE CASCADE,
     variant_id bigint NOT NULL REFERENCES promos (id) ON DELETE CASCADE,
+    
+    quantity smallint DEFAULT 0 NOT NULL,
 
     created_at timestamp DEFAULT now() NOT NULL,
     updated_at timestamp,
-    deleted_at timestamp
+    deleted_at timestamp,
+
+    CONSTRAINT unique_cart_product_variant UNIQUE (cart_id, product_id, variant_id)
 );
 
 -- +goose Down

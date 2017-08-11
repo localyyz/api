@@ -11,7 +11,6 @@ import (
 type Promo struct {
 	ID        int64       `db:"id,pk,omitempty" json:"id,omitempty"`
 	PlaceID   int64       `db:"place_id" json:"placeId"`
-	UserID    int64       `db:"user_id" json:"userId"`
 	ProductID int64       `db:"product_id" json:"productId"`
 	Status    PromoStatus `db:"status" json:"status"`
 
@@ -34,6 +33,9 @@ type PromoStore struct {
 type PromoEtc struct {
 	Price float64 `json:"prc"`
 	Sku   string  `json:"sku"`
+
+	Size  string `json:"size"`
+	Color string `json:"color"`
 }
 
 type (
@@ -97,6 +99,10 @@ func (store PromoStore) FindByID(ID int64) (*Promo, error) {
 
 func (store PromoStore) FindByOfferID(offerID int64) (*Promo, error) {
 	return store.FindOne(db.Cond{"offer_id": offerID})
+}
+
+func (store PromoStore) FindByProductID(productID int64) ([]*Promo, error) {
+	return store.FindAll(db.Cond{"product_id": productID})
 }
 
 func (store PromoStore) FindOne(cond db.Cond) (*Promo, error) {

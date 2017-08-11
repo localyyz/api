@@ -24,8 +24,9 @@ type Product struct {
 }
 
 type ProductEtc struct {
-	Brand string `json:"brand"`
-	Type  string `json:"type"`
+	Brand  string   `json:"brand"`
+	Type   string   `json:"type"`
+	Images []string `json:"images"`
 }
 
 type ProductStore struct {
