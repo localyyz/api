@@ -16,7 +16,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
-	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 
 	"golang.org/x/oauth2"
@@ -38,6 +37,14 @@ var (
 		"read_collection_listings",
 		"read_checkouts",
 		"write_checkouts",
+	}
+	WebhookTopics = []shopify.Topic{
+		shopify.TopicProductListingsAdd,
+		shopify.TopicProductListingsUpdate,
+		shopify.TopicProductListingsRemove,
+		shopify.TopicCollectionListingsAdd,
+		shopify.TopicCollectionListingsUpdate,
+		shopify.TopicCollectionListingsRemove,
 	}
 )
 
@@ -149,29 +156,20 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 
 	// create the webhook
-	wh := &shopify.WebhookRequest{
-		&shopify.Webhook{
-			// TODO: create more webhooks
-			Topic:   shopify.TopicProductListingsAdd,
-			Address: s.webhookURL,
-			Format:  "json",
-		},
+	for _, topic := range WebhookTopics {
+		wh := &shopify.WebhookRequest{
+			&shopify.Webhook{
+				Topic:   topic,
+				Address: s.webhookURL,
+				Format:  "json",
+			},
+		}
+		_, _, err = api.Webhook.Create(ctx, wh)
+		if err != nil {
+			lg.Alert(errors.Wrapf(err, "failed to create shopify %s webhook", topic))
+		}
 	}
-	_, _, err = api.Webhook.Create(ctx, wh)
-	if err != nil {
-		lg.Alert(errors.Wrap(err, "shopify webhook"))
-	}
-
-	// fetch the product list
-	productList, _, err := api.Product.List(ctx)
-	if err != nil {
-		return errors.Wrap(err, "shopify list products")
-	}
-
-	ctx = context.WithValue(ctx, "sync.list", productList)
-	ctx = context.WithValue(ctx, "sync.place", place)
-
-	return sync.ShopifyProducts(ctx)
+	return nil
 }
 
 func (s *Shopify) Exchange(shopID string, r *http.Request) (*oauth2.Token, error) {

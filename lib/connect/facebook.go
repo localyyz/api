@@ -23,6 +23,8 @@ type Facebook struct {
 	*fb.App
 }
 
+// TODO package lib/auther
+
 func SetupFacebook(conf Config) {
 	FB = &Facebook{
 		App: &fb.App{
