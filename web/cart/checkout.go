@@ -106,17 +106,20 @@ func Checkout(w http.ResponseWriter, r *http.Request) {
 		product := productMap[item.ProductID]
 		place := placeMap[product.PlaceID]
 		variant := variantMap[item.VariantID]
-		checkout := checkoutMap[place.ID]
 
-		checkoutMap[place.ID].LineItems = append(checkout.LineItems, &shopify.LineItem{
-			VariantID: variant.OfferID,
-			Quantity:  int64(item.Quantity),
-		})
+		checkoutMap[place.ID].LineItems = append(
+			checkoutMap[place.ID].LineItems,
+			&shopify.LineItem{
+				VariantID: variant.OfferID,
+				Quantity:  int64(item.Quantity),
+			},
+		)
 	}
 
 	cart.Etc.ShopifyData = make(map[int64]data.CartShopifyData)
 	for placeID, checkout := range checkoutMap {
 		cred := credMap[placeID]
+
 		api := shopify.NewClient(nil, cred.AccessToken)
 		api.BaseURL, _ = url.Parse(cred.ApiURL)
 

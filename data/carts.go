@@ -21,6 +21,7 @@ type Cart struct {
 }
 
 type CartStatus uint
+
 type CartAddress struct {
 	FirstName  string `json:"firstName"`
 	LastName   string `json:"lastName"`
@@ -31,6 +32,7 @@ type CartAddress struct {
 	Province   string `json:"province"`
 	Zip        string `json:"zip"`
 }
+
 type CartShippingMethod struct {
 	Handle        string      `json:"handle"`
 	Title         string      `json:"title"`

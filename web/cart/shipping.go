@@ -13,6 +13,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/goware/lg"
+	"github.com/pkg/errors"
 	"github.com/pressly/chi/render"
 	db "upper.io/db.v3"
 )
@@ -42,10 +43,20 @@ func ListShippingMethods(w http.ResponseWriter, r *http.Request) {
 		// TODO/NOTE: there is a weird shopify bug that first call to this api
 		// endpoint will always result in empty response. try again until
 		// something is back
+		maxAttempt := 2
+		attempt := 1
 		for {
+			if attempt == maxAttempt {
+				break
+			}
 			if len(shippingMethods) == 0 {
-				shippingMethods, _, _ = api.Checkout.ListShippingRates(ctx, tokensMap[cred.PlaceID])
+				shippingMethods, _, err = api.Checkout.ListShippingRates(ctx, tokensMap[cred.PlaceID])
+				if err != nil {
+					break
+				}
 				time.Sleep(time.Second)
+
+				attempt += 1
 				continue
 			}
 			break
@@ -135,7 +146,11 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 				Handle: m.Handle,
 			},
 		}
-		c, _, _ := api.Checkout.Update(ctx, &shopify.CheckoutRequest{checkout})
+		c, _, err := api.Checkout.Update(ctx, &shopify.CheckoutRequest{checkout})
+		if err != nil {
+			lg.Alert(errors.Wrapf(err, "checkout shipping update. cart(%d)", cart.ID))
+			continue
+		}
 		// TODO handle error here and should retry
 
 		m.SubtotalPrice += atof(c.SubtotalPrice)
