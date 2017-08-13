@@ -133,3 +133,41 @@ func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 
 	return nil
 }
+
+type ProductCategory struct {
+	*data.ProductTag
+	ImageURL string `json:"imageUrl"`
+
+	ID        interface{} `json:"id,omitempty"`
+	ProductID interface{} `json:"productId,omitempty"`
+	Type      interface{} `json:"type,omitempty"`
+	CreatedAt interface{} `json:"createdAt,omitempty"`
+}
+
+func (c *ProductCategory) Render(w http.ResponseWriter, r *http.Request) error {
+	if tag, _ := data.DB.ProductTag.FindOne(db.Cond{"value": c.Value}); tag != nil {
+		if product, _ := data.DB.Product.FindByID(tag.ProductID); product != nil {
+			c.ImageURL = product.ImageUrl
+		}
+	}
+	return nil
+}
+
+type ProductCategoryList []*ProductCategory
+
+func (l ProductCategoryList) Render(w http.ResponseWriter, r *http.Request) error {
+	for _, v := range l {
+		if err := v.Render(w, r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func NewProductCategoryList(ctx context.Context, tags []*data.ProductTag) []render.Renderer {
+	list := []render.Renderer{}
+	for _, tag := range tags {
+		list = append(list, &ProductCategory{ProductTag: tag})
+	}
+	return list
+}

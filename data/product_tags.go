@@ -9,10 +9,10 @@ import (
 )
 
 type ProductTag struct {
-	ID        int64          `db:"id,pk,omitempty"`
-	ProductID int64          `db:"product_id"`
-	Value     string         `db:"value"`
-	Type      ProductTagType `db:"type"`
+	ID        int64          `db:"id,pk,omitempty" json:"id"`
+	ProductID int64          `db:"product_id" json:"productId"`
+	Value     string         `db:"value" json:"value"`
+	Type      ProductTagType `db:"type" json:"type"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 }
@@ -57,6 +57,14 @@ func (store ProductTagStore) FindAll(cond db.Cond) ([]*ProductTag, error) {
 		return nil, err
 	}
 	return tags, nil
+}
+
+func (store ProductTagStore) FindOne(cond db.Cond) (*ProductTag, error) {
+	var tag *ProductTag
+	if err := store.Find(cond).One(&tag); err != nil {
+		return nil, err
+	}
+	return tag, nil
 }
 
 // String returns the string value of the status.
