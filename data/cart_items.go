@@ -9,10 +9,10 @@ import (
 
 type CartItem struct {
 	ID     int64 `db:"id,pk,omitempty" json:"id"`
-	CartID int64 `db:"cart_id" json:"cart_id"`
+	CartID int64 `db:"cart_id" json:"cartId"`
 
-	ProductID int64 `db:"product_id" json:"product_id"`
-	VariantID int64 `db:"variant_id" json:"variant_id"`
+	ProductID int64 `db:"product_id" json:"productId"`
+	VariantID int64 `db:"variant_id" json:"variantId"`
 
 	Quantity uint32 `db:"quantity" json:"quantity"`
 

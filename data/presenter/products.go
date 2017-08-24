@@ -100,14 +100,22 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	}
 
 	p.Sizes = []string{}
-	if sizes, _ := data.DB.ProductTag.FindAll(db.Cond{"product_id": product.ID, "type": data.ProductTagTypeSize}); sizes != nil {
+	if sizes, _ := data.DB.ProductTag.FindAll(
+		db.Cond{
+			"product_id": product.ID,
+			"type":       data.ProductTagTypeSize,
+		}); sizes != nil {
 		for _, s := range sizes {
 			p.Sizes = append(p.Sizes, s.Value)
 		}
 	}
 
 	p.Colors = []string{}
-	if colors, _ := data.DB.ProductTag.FindAll(db.Cond{"product_id": product.ID, "type": data.ProductTagTypeColor}); colors != nil {
+	if colors, _ := data.DB.ProductTag.FindAll(
+		db.Cond{
+			"product_id": product.ID,
+			"type":       data.ProductTagTypeColor,
+		}); colors != nil {
 		for _, c := range colors {
 			p.Colors = append(p.Colors, c.Value)
 		}

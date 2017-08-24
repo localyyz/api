@@ -40,12 +40,12 @@
 	- **/:cartID**
 		- [CartCtx]()
 		- **/**
-			- _GET_
-				- [GetCart]()
 			- _PUT_
 				- [UpdateCart]()
 			- _DELETE_
 				- [DeleteCart]()
+			- _GET_
+				- [GetCart]()
 
 </details>
 <details>
@@ -245,10 +245,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _DELETE_
-				- [UnfollowPlace]()
 			- _POST_
 				- [FollowPlace]()
+			- _DELETE_
+				- [UnfollowPlace]()
 
 </details>
 <details>

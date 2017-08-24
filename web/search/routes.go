@@ -6,6 +6,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"github.com/gedex/inflector"
 	"github.com/pressly/chi/render"
 )
 
@@ -38,6 +39,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	//}
 
 	// TODO: pagination
+	q = inflector.Singularize(q)
 	products, err := data.DB.Product.Fuzzy(q, nil)
 	if err != nil {
 		render.Respond(w, r, err)

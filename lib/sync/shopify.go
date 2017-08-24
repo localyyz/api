@@ -28,7 +28,9 @@ func ShopifyProductListings(ctx context.Context) error {
 			ExternalID:  p.Handle,
 			Title:       p.Title,
 			Description: strings.TrimSpace(htmlx.StripTags(p.BodyHTML)),
-			Etc:         data.ProductEtc{},
+			Etc: data.ProductEtc{
+				Brand: p.Vendor,
+			},
 		}
 
 		// check if product already exists in our system
