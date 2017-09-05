@@ -35,24 +35,20 @@ func (*cartItemRequest) Bind(r *http.Request) error {
 
 func CartItemCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		cartID, err := strconv.ParseInt(chi.URLParam(r, "cartID"), 10, 64)
-		if err != nil {
-			render.Render(w, r, api.ErrBadID)
-			return
-		}
+		ctx := r.Context()
+		cart := ctx.Value("cart").(*data.Cart)
 		cartItemID, err := strconv.ParseInt(chi.URLParam(r, "cartItemID"), 10, 64)
 		if err != nil {
 			render.Render(w, r, api.ErrBadID)
 			return
 		}
-		ctx := r.Context()
-		user := ctx.Value("session.user").(*data.User)
 
+		// by this point, cart ctx should have verified
+		// the user ownership
 		cartItem, err := data.DB.CartItem.FindOne(
 			db.Cond{
 				"id":      cartItemID,
-				"cart_id": cartID,
-				"user_id": user.ID,
+				"cart_id": cart.ID,
 			},
 		)
 		if err != nil {
