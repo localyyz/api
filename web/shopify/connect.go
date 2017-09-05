@@ -26,7 +26,12 @@ func Connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if place != nil {
-		count, err := data.DB.ShopifyCred.Find(db.Cond{"place_id": place.ID}).Count()
+		count, err := data.DB.ShopifyCred.Find(
+			db.Cond{
+				"place_id": place.ID,
+				"status":   data.ShopifyCredStatusActive,
+			},
+		).Count()
 		if err != nil {
 			render.Respond(w, r, err)
 			return

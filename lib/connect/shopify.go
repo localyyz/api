@@ -101,6 +101,7 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 	creds := &data.ShopifyCred{
 		AccessToken: tok.AccessToken,
 		ApiURL:      fmt.Sprintf("https://%s.myshopify.com", shopID),
+		Status:      data.ShopifyCredStatusActive,
 	}
 
 	if err := s.finalizeCallback(r.Context(), shopID, creds); err != nil {
@@ -152,6 +153,10 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 
 	// save authorization
 	creds.PlaceID = place.ID
+	// check if creds already exists, and fill the id
+	if dbCreds, _ := data.DB.ShopifyCred.FindByPlaceID(place.ID); dbCreds != nil {
+		creds.ID = dbCreds.ID
+	}
 	if err := data.DB.ShopifyCred.Save(creds); err != nil {
 		return errors.Wrap(err, "failed to save cred")
 	}
