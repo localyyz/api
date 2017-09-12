@@ -11,6 +11,10 @@ func Routes() chi.Router {
 	r.Route("/me", func(r chi.Router) {
 		r.Use(MeCtx)
 
+		r.Get("/", GetUser)
+		// Pong.
+		r.Get("/ping", Ping)
+
 		r.Route("/carts/:scope", func(r chi.Router) {
 			r.Use(cart.CartScopeCtx)
 			r.Get("/", cart.ListCarts)

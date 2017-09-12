@@ -93,12 +93,27 @@
 			- **/:cartItemID**
 				- [CartItemCtx]()
 				- **/**
-					- _DELETE_
-						- [RemoveCartItem]()
 					- _GET_
 						- [GetCartItem]()
 					- _PUT_
 						- [UpdateCartItem]()
+					- _DELETE_
+						- [RemoveCartItem]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/payment`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/payment**
+			- _POST_
+				- [Payment]()
 
 </details>
 <details>
@@ -245,10 +260,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _POST_
-				- [FollowPlace]()
 			- _DELETE_
 				- [UnfollowPlace]()
+			- _POST_
+				- [FollowPlace]()
 
 </details>
 <details>
@@ -346,6 +361,7 @@
 	- _POST_
 		- [(*JwtAuth).Verify.func1]()
 		- [SessionCtx]()
+		- [UserRefresh]()
 		- [OmniSearch]()
 
 </details>
@@ -480,4 +496,4 @@
 
 </details>
 
-Total # of routes: 33
+Total # of routes: 34

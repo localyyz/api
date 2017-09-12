@@ -3,7 +3,9 @@ package user
 import (
 	"context"
 	"net/http"
+	"strconv"
 
+	"github.com/goware/lg"
 	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -23,6 +25,38 @@ func MeCtx(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
+}
+
+// Use this endpoint to cache bust
+// TODO: is the proper way reissue the jwt?
+// ie bust the jwt and reissue...?
+func Ping(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	me := ctx.Value("session.user").(*data.User)
+
+	// last updated at timestamp from cache
+	lu, err := strconv.ParseInt(r.URL.Query().Get("lu"), 10, 64)
+	if err != nil {
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+	if me.UpdatedAt.Unix()-lu > 0 {
+		// tell frontend to bust the cache
+		lg.Warnf("busting user(%d) cache. diff: %d", me.ID, me.UpdatedAt.Unix()-lu)
+		render.Status(r, http.StatusResetContent)
+		render.Respond(w, r, ".")
+		return
+	}
+
+	// no change, return ok
+	render.Status(r, http.StatusOK)
+	render.Respond(w, r, ".")
+}
+
+func GetUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+	render.Render(w, r, presenter.NewUser(ctx, user))
 }
 
 type deviceTokenRequst struct {
