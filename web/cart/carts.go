@@ -149,14 +149,3 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 
 func DeleteCart(w http.ResponseWriter, r *http.Request) {
 }
-
-func Payment(w http.ResponseWriter, r *http.Request) {
-	//cardvault.AddCard(&cardvault.CreditCard{
-	//Number:            "4242424242424242",
-	//FirstName:         "Paul",
-	//LastName:          "Xue",
-	//Month:             "1",
-	//Year:              "2020",
-	//VerificationValue: "123",
-	//})
-}

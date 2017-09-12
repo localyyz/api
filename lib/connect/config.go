@@ -10,10 +10,12 @@ type Config struct {
 type Configs struct {
 	Facebook Config `toml:"facebook"`
 	Shopify  Config `toml:"shopify"`
+	Stripe   Config `toml:"stripe"`
 }
 
 // Configure loads the connect configs from config file
 func Configure(confs Configs) {
 	SetupFacebook(confs.Facebook)
 	SetupShopify(confs.Shopify)
+	SetupStripe(confs.Stripe)
 }

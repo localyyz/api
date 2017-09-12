@@ -66,18 +66,12 @@ func ListShippingMethods(w http.ResponseWriter, r *http.Request) {
 			r, ok := ratesMap[m.ID]
 			if ok {
 				r.Price += atof(m.Price)
-				r.TotalTax += atof(m.Checkout.TotalTax)
-				r.TotalPrice += atof(m.Checkout.TotalPrice)
-				r.SubtotalPrice += atof(m.Checkout.SubtotalPrice)
 				continue
 			}
 			ratesMap[m.ID] = &data.CartShippingMethod{
 				Handle:        m.ID,
 				Title:         m.Title,
 				Price:         atof(m.Price),
-				SubtotalPrice: atof(m.Checkout.SubtotalPrice),
-				TotalTax:      atof(m.Checkout.TotalTax),
-				TotalPrice:    atof(m.Checkout.TotalPrice),
 				DeliveryRange: m.DeliveryRange,
 			}
 		}
@@ -133,9 +127,7 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := &data.CartShippingMethod{
-		Handle: payload.ShippingMethod.Handle,
-	}
+	cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
 	for _, cred := range creds {
 		api := shopify.NewClient(nil, cred.AccessToken)
 		api.BaseURL, _ = url.Parse(cred.ApiURL)
@@ -143,7 +135,7 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 		checkout := &shopify.Checkout{
 			Token: tokensMap[cred.PlaceID],
 			ShippingLine: &shopify.ShippingLine{
-				Handle: m.Handle,
+				Handle: payload.ShippingMethod.Handle,
 			},
 		}
 		c, _, err := api.Checkout.Update(ctx, &shopify.CheckoutRequest{checkout})
@@ -153,14 +145,17 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 		}
 		// TODO handle error here and should retry
 
-		m.SubtotalPrice += atof(c.SubtotalPrice)
-		m.TotalPrice += atof(c.TotalPrice)
-		m.TotalTax += atof(c.TotalTax)
-		m.Price += atof(c.ShippingLine.Price)
-		m.Title = c.ShippingLine.Title
+		cart.Etc.ShippingMethods[cred.PlaceID] = &data.CartShippingMethod{
+			Handle: payload.ShippingMethod.Handle,
+			Price:  atof(c.ShippingLine.Price),
+			Title:  c.ShippingLine.Title,
+		}
+		cart.Etc.ShopifyData[cred.PlaceID].SubtotalPrice = atof(c.SubtotalPrice)
+		cart.Etc.ShopifyData[cred.PlaceID].TotalPrice = atof(c.TotalPrice)
+		cart.Etc.ShopifyData[cred.PlaceID].TotalTax = atof(c.TotalTax)
+		cart.Etc.ShopifyData[cred.PlaceID].PaymentDue = c.PaymentDue
 	}
 
-	cart.Etc.ShippingMethod = m
 	if err := data.DB.Cart.Save(cart); err != nil {
 		render.Respond(w, r, err)
 		return

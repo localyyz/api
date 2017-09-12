@@ -24,3 +24,6 @@ app_id            = ""
 app_secret        = ""
 oauth_callback    = "http://localhost:5331/oauth/shopify/callback"
 webhook_url       = "http://localhost:5331/webhooks/shopify"
+
+[connect.stripe]
+app_secret        = ""

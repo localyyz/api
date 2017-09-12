@@ -30,7 +30,7 @@ func main() {
 
 	conf, err := config.NewFromFile(*confFile, os.Getenv("CONFIG"))
 	if err != nil {
-		lg.Fatal(err)
+		lg.Fatal(errors.Wrap(err, "invalid config file"))
 	}
 	// new web handler
 	h := &web.Handler{
@@ -52,9 +52,9 @@ func main() {
 	token.SetupJWTAuth(conf.Jwt.Secret)
 
 	// pusher
-	if pemFile != nil {
+	if pemFile != nil && *pemFile != "" {
 		if err := pusher.Setup(*pemFile, conf.Pusher.Topic, conf.Environment); err != nil {
-			lg.Fatal(err)
+			lg.Fatal(errors.Wrap(err, "invalid pem file"))
 		}
 	}
 

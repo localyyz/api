@@ -10,6 +10,8 @@ import (
 type CheckoutService service
 
 type Checkout struct {
+	*CheckoutPrice // embed
+
 	LineItems        []*LineItem `json:"line_items,omitempty"`
 	Email            string      `json:"email,omitempty"`
 	Token            string      `json:"token,omitempty"`
@@ -19,9 +21,8 @@ type Checkout struct {
 	WebURL           string      `json:"web_url,omitempty"`
 	WebProcessingURL string      `json:"web_processing_url,omitempty"`
 
-	*ShippingRate // embed
-
 	ShippingAddress *CustomerAddress `json:"shipping_address,omitempty"`
+	BillingAddress  *CustomerAddress `json:"billing_address,omitempty"`
 	ShippingLine    *ShippingLine    `json:"shipping_line,omitempty"`
 }
 
@@ -42,10 +43,12 @@ type CheckoutShipping struct {
 }
 
 type ShippingRate struct {
+	SubtotalPrice string `json:"subtotal_price"`
 	TotalTax      string `json:"total_tax"`
 	TotalPrice    string `json:"total_price"`
-	SubtotalPrice string `json:"subtotal_price"`
+	PaymentDue    string `json:"payment_due"`
 }
+type CheckoutPrice ShippingRate
 
 type BillingAddress struct{}
 
@@ -61,6 +64,33 @@ type CheckoutRequest struct {
 type ShippingRateRequest struct {
 	CheckoutShipping []*CheckoutShipping `json:"shipping_rates"`
 }
+
+type Payment struct {
+	Amount string `json:"amount"`
+	// clientside idempotency token
+	UniqueToken    string         `json:"unique_token"`
+	PaymentToken   *PaymentToken  `json:"payment_token"`
+	RequestDetails *RequestDetail `json:"request_details"`
+}
+
+type RequestDetail struct {
+	IPAddress      string `json:"ip_address"`
+	AcceptLanguage string `json:"accept_language"`
+	UserAgent      string `json:"user_agent"`
+}
+
+type PaymentToken struct {
+	// Stripe token
+	PaymentData string `json:"payment_data"`
+	// stripe_vault_token
+	Type string `json:"type"`
+}
+
+type PaymentRequest struct {
+	Payment *Payment `json:"payment"`
+}
+
+const StripeVaultToken = `stripe_vault_token`
 
 func (c *CheckoutService) Create(ctx context.Context, checkout *CheckoutRequest) (*Checkout, *http.Response, error) {
 	req, err := c.client.NewRequest("POST", "/admin/checkouts.json", checkout)
@@ -105,4 +135,20 @@ func (c *CheckoutService) ListShippingRates(ctx context.Context, token string) (
 	}
 
 	return shippingRateWrapper.CheckoutShipping, resp, nil
+}
+
+func (c *CheckoutService) Payment(ctx context.Context, token string, payment *PaymentRequest) (*Payment, *http.Response, error) {
+	req, err := c.client.NewRequest("POST", fmt.Sprintf("/admin/checkouts/%s/payments.json", token), payment)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	paymentWrapper := new(PaymentRequest)
+	resp, err := c.client.Do(ctx, req, paymentWrapper)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return paymentWrapper.Payment, resp, nil
+
 }

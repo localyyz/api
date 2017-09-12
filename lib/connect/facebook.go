@@ -102,7 +102,7 @@ func (f *Facebook) GetUser(u *data.User) error {
 	var resp fb.Result
 	var err error
 	params := fb.Params{
-		"fields":       "id,first_name,name,email,timezone,link,friends",
+		"fields":       "id,first_name,name,email,gender,timezone,link",
 		"access_token": u.AccessToken,
 	}
 	resp, err = fb.Get(`me`, params)
@@ -115,10 +115,9 @@ func (f *Facebook) GetUser(u *data.User) error {
 		lg.Warnf("fb decode error: %v", err)
 		return err
 	}
-	lg.Warnf("%+v", u.Friends)
 	u.AvatarURL = fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", u.Username)
 	u.Etc.FirstName = u.FirstName
-	u.Etc.FbFriendCount = u.Friends.Summary.TotalCount
+	u.Etc.Gender.UnmarshalText([]byte(u.Gender))
 
 	return nil
 }

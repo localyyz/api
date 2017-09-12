@@ -37,17 +37,15 @@ type CartShippingMethod struct {
 	Handle        string      `json:"handle"`
 	Title         string      `json:"title"`
 	Price         float64     `json:"price"`
-	SubtotalPrice float64     `json:"subtotalPrice"`
-	TotalTax      float64     `json:"totalTax"`
-	TotalPrice    float64     `json:"totalPrice"`
 	DeliveryRange []time.Time `json:"deliveryRange"`
 }
 
 type CartEtc struct {
 	// placeID -> shopify data
-	ShopifyData     map[int64]CartShopifyData `json:"shopifyData,omitempty"`
-	ShippingAddress *CartAddress              `json:"shippingAddress,omitempty"`
-	ShippingMethod  *CartShippingMethod       `json:"shippingMethod,omitempty"`
+	ShopifyData     map[int64]*CartShopifyData    `json:"shopifyData,omitempty"`
+	ShippingMethods map[int64]*CartShippingMethod `json:"shippingMethods,omitempty"`
+	ShippingAddress *CartAddress                  `json:"shippingAddress,omitempty"`
+	BillingAddress  *CartAddress                  `json:"billingAddress,omitempty"`
 }
 
 type CartShopifyData struct {
@@ -58,6 +56,11 @@ type CartShopifyData struct {
 	WebURL           string `json:"webUrl"`
 	WebProcessingURL string `json:"webProcessingUrl"`
 	HasPayed         bool   `json:"hasPayed"`
+
+	SubtotalPrice float64 `json:"subtotalPrice"`
+	TotalTax      float64 `json:"totalTax"`
+	TotalPrice    float64 `json:"totalPrice"`
+	PaymentDue    string  `json:"paymentDue"`
 }
 
 type CartStore struct {

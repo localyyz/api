@@ -72,7 +72,7 @@ func Checkout(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// transform address
-		shippingAddress := &shopify.CustomerAddress{
+		address := &shopify.CustomerAddress{
 			Address1:  cart.Etc.ShippingAddress.Address,
 			Address2:  cart.Etc.ShippingAddress.AddressOpt,
 			City:      cart.Etc.ShippingAddress.City,
@@ -82,12 +82,14 @@ func Checkout(w http.ResponseWriter, r *http.Request) {
 			Province:  cart.Etc.ShippingAddress.Province,
 			Zip:       cart.Etc.ShippingAddress.Zip,
 		}
+		// TODO: for now, billing address is the same as shippingaddress
 
 		for _, p := range places {
 			placeMap[p.ID] = p
 			checkoutMap[p.ID] = &shopify.Checkout{
 				Email:           user.Email,
-				ShippingAddress: shippingAddress,
+				ShippingAddress: address,
+				BillingAddress:  address,
 			}
 		}
 
@@ -116,7 +118,7 @@ func Checkout(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	cart.Etc.ShopifyData = make(map[int64]data.CartShopifyData)
+	cart.Etc.ShopifyData = make(map[int64]*data.CartShopifyData)
 	for placeID, checkout := range checkoutMap {
 		cred := credMap[placeID]
 
@@ -129,13 +131,17 @@ func Checkout(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		cart.Etc.ShopifyData[placeID] = data.CartShopifyData{
+		cart.Etc.ShopifyData[placeID] = &data.CartShopifyData{
 			Token:            cc.Token,
 			CustomerID:       cc.CustomerID,
 			Name:             cc.Name,
 			PaymentAccountID: cc.PaymentAccountID,
 			WebURL:           cc.WebURL,
 			WebProcessingURL: cc.WebProcessingURL,
+			SubtotalPrice:    atof(cc.SubtotalPrice),
+			TotalPrice:       atof(cc.TotalPrice),
+			TotalTax:         atof(cc.TotalTax),
+			PaymentDue:       cc.PaymentDue,
 		}
 	}
 	cart.Status = data.CartStatusProcessing

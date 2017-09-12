@@ -46,7 +46,7 @@ var (
 	/* Claims */
 	ErrClaimDistance = errors.New("claim distance")
 
-	// Cart
+	/* Cart */
 	ErrEmptyCart = &ApiError{StatusCode: http.StatusOK, ErrorText: "empty cart"}
 
 	// generic api error
@@ -69,6 +69,15 @@ var (
 		"unique_violation": &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "Already exists!"},
 	}
 )
+
+func ErrStripeProcess(err error) *ApiError {
+	return &ApiError{
+		Err:        err,
+		StatusCode: http.StatusBadRequest,
+		StatusText: "Payment error.",
+		ErrorText:  err.Error(),
+	}
+}
 
 func ErrInvalidRequest(err error) *ApiError {
 	return &ApiError{

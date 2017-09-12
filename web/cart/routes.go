@@ -14,6 +14,7 @@ func Routes() chi.Router {
 		r.Delete("/", DeleteCart)
 
 		r.Post("/checkout", Checkout)
+		r.Post("/payment", Payment)
 
 		r.Mount("/items", cartItemRoutes())
 		r.Mount("/shipping", shippingRoutes())
