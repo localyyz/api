@@ -11,6 +11,7 @@ import (
 type ProductTag struct {
 	ID        int64          `db:"id,pk,omitempty" json:"id"`
 	ProductID int64          `db:"product_id" json:"productId"`
+	PlaceID   int64          `db:"place_id" json:"placeId"`
 	Value     string         `db:"value" json:"value"`
 	Type      ProductTagType `db:"type" json:"type"`
 
@@ -30,6 +31,8 @@ const (
 	ProductTagTypeColor
 	ProductTagTypeMaterial
 	ProductTagTypeGender
+	ProductTagTypeCategory
+	ProductTagTypeBrand
 )
 
 var (
@@ -40,6 +43,8 @@ var (
 		"color",
 		"material",
 		"gender",
+		"category",
+		"brand",
 	}
 )
 

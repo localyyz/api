@@ -18,13 +18,9 @@ type User struct {
 	Name      string `db:"name" json:"name" facebook:"name"`
 	AvatarURL string `db:"avatar_url" json:"avatarUrl"`
 
-	// facebook related friends
+	// facebook related fields
 	FirstName string `db:"-" json:"-" facebook:"first_name"`
-	Friends   struct {
-		Summary struct {
-			TotalCount int32 `facebook:"total_count"`
-		} `facebook:"summary"`
-	} `db:"-" json:"-" facebook:"friends"`
+	Gender    string `db:"-" json:"-" facebook:"gender"`
 
 	AccessToken  string         `db:"access_token" json:"-"`
 	PasswordHash string         `db:"password_hash,omitempty" json:"-"`
@@ -52,12 +48,11 @@ const (
 
 type UserEtc struct {
 	// Store user's current neighbourhood whereabouts
-	LocaleID      int64      `json:"localeId"`
-	FirstName     string     `json:"firstName"`
-	FbFriendCount int32      `json:"fbFriendCount"`
-	Dob           time.Time  `json:"dob"`
-	Gender        UserGender `json:"gender"`
-	InvitedBy     int64      `json:"invitedBy"`
+	LocaleID         int64      `json:"localeId"`
+	FirstName        string     `json:"firstName"`
+	Gender           UserGender `json:"gender"`
+	InvitedBy        int64      `json:"invitedBy"`
+	StripeCustomerID string     `json:"stripeCustomerId"`
 }
 
 type UserStore struct {
@@ -66,6 +61,7 @@ type UserStore struct {
 
 var _ interface {
 	bond.HasBeforeCreate
+	bond.HasBeforeUpdate
 } = &User{}
 
 var (
@@ -80,6 +76,12 @@ func (u *User) BeforeCreate(bond.Session) error {
 	u.Geo = *geotools.NewPointFromLatLng(0, 0) // set to zero location
 	u.InviteCode = RandString(5)               // random user invite_code hash
 	//TODO: unlikely event of conflict, do something
+
+	return nil
+}
+
+func (u *User) BeforeUpdate(bond.Session) error {
+	u.UpdatedAt = GetTimeUTCPointer()
 
 	return nil
 }

@@ -71,6 +71,7 @@ func New(h *Handler) chi.Router {
 	r.Group(func(r chi.Router) {
 		r.Use(token.Verify())
 		r.Use(session.SessionCtx)
+		r.Use(session.UserRefresh)
 
 		r.Mount("/session", session.Routes())
 		r.Mount("/users", user.Routes())

@@ -40,12 +40,12 @@
 	- **/:cartID**
 		- [CartCtx]()
 		- **/**
+			- _GET_
+				- [GetCart]()
 			- _PUT_
 				- [UpdateCart]()
 			- _DELETE_
 				- [DeleteCart]()
-			- _GET_
-				- [GetCart]()
 
 </details>
 <details>
@@ -93,12 +93,12 @@
 			- **/:cartItemID**
 				- [CartItemCtx]()
 				- **/**
+					- _DELETE_
+						- [RemoveCartItem]()
 					- _GET_
 						- [GetCartItem]()
 					- _PUT_
 						- [UpdateCartItem]()
-					- _DELETE_
-						- [RemoveCartItem]()
 
 </details>
 <details>

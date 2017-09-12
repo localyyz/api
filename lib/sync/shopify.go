@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -96,9 +97,9 @@ func ShopifyProductListings(ctx context.Context) error {
 			}
 		}
 
-		tags := parseTags(p.Tags, p.ProductType, p.Vendor)
+		tags := parseTags(p.Tags)
 		q := data.DB.InsertInto("product_tags").
-			Columns("product_id", "value", "type").
+			Columns("product_id", "place_id", "value", "type").
 			Amend(func(query string) string {
 				return query + ` ON CONFLICT DO NOTHING`
 			})
@@ -110,11 +111,23 @@ func ShopifyProductListings(ctx context.Context) error {
 				// TODO: let's do this some other way
 				// and detect more product tag types
 				typ := data.ProductTagTypeGeneral
-				if t == "man" || t == "woman" {
+				if t == "man" || t == "woman" || t == "unisex" {
 					typ = data.ProductTagTypeGender
 				}
-				b.Values(product.ID, t, typ)
+				b.Values(product.ID, place.ID, t, typ)
 			}
+
+			// Product type category
+			for _, t := range parseTags(p.ProductType) {
+				if t == "man" || t == "woman" || t == "unisex" {
+					// skip gender if specified
+					continue
+				}
+				b.Values(product.ID, place.ID, t, data.ProductTagTypeCategory)
+			}
+
+			// Product Vendor/Brand
+			b.Values(product.ID, place.ID, p.Vendor, data.ProductTagTypeBrand)
 
 			// Variant options (ie. Color, Size, Material)
 			for _, o := range p.Options {
@@ -127,7 +140,7 @@ func ShopifyProductListings(ctx context.Context) error {
 					if optSet.Has(vv) {
 						continue
 					}
-					b.Values(product.ID, vv, typ)
+					b.Values(product.ID, place.ID, vv, typ)
 					optSet.Add(vv)
 				}
 			}
@@ -140,11 +153,14 @@ func ShopifyProductListings(ctx context.Context) error {
 	return nil
 }
 
+var tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
+
 func parseTags(tagStr string, optTags ...string) []string {
-	tt := strings.FieldsFunc(tagStr, tagSplit)
+	//tt := strings.FieldsFunc(tagStr, tagSplit)
+	tt := tagRegex.Split(tagStr, -1)
+
 	tagSet := set.New()
 	for _, t := range tt {
-		t = strings.TrimSpace(t)
 		t = strings.ToLower(t)
 
 		tt := inflector.Singularize(t)

@@ -125,7 +125,6 @@ func Share(w http.ResponseWriter, r *http.Request) {
 	newShare := &payload.Share
 	newShare.UserID = user.ID
 	newShare.PlaceID = place.ID
-	newShare.Reach = user.Etc.FbFriendCount
 	newShare.NetworkShareID = payload.NetworkShareID
 
 	if err := data.DB.Share.Save(newShare); err != nil {
