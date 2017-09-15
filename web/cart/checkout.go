@@ -138,9 +138,9 @@ func Checkout(w http.ResponseWriter, r *http.Request) {
 			PaymentAccountID: cc.PaymentAccountID,
 			WebURL:           cc.WebURL,
 			WebProcessingURL: cc.WebProcessingURL,
-			SubtotalPrice:    atof(cc.SubtotalPrice),
-			TotalPrice:       atof(cc.TotalPrice),
-			TotalTax:         atof(cc.TotalTax),
+			SubtotalPrice:    atoi(cc.SubtotalPrice),
+			TotalPrice:       atoi(cc.TotalPrice),
+			TotalTax:         atoi(cc.TotalTax),
 			PaymentDue:       cc.PaymentDue,
 		}
 	}

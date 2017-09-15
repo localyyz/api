@@ -40,12 +40,12 @@
 	- **/:cartID**
 		- [CartCtx]()
 		- **/**
-			- _GET_
-				- [GetCart]()
 			- _PUT_
 				- [UpdateCart]()
 			- _DELETE_
 				- [DeleteCart]()
+			- _GET_
+				- [GetCart]()
 
 </details>
 <details>
@@ -399,10 +399,10 @@
 - [Recoverer]()
 - [New.func1]()
 - **/signup**
-	- _GET_
-		- [GetSignupPage]()
 	- _POST_
 		- [EmailSignup]()
+	- _GET_
+		- [GetSignupPage]()
 
 </details>
 <details>
@@ -415,6 +415,21 @@
 - **/sync/:shopID**
 	- _GET_
 		- [SyncProductList]()
+
+</details>
+<details>
+<summary>`/users/me`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/me**
+		- [MeCtx]()
+		- **/**
+			- _GET_
+				- [GetUser]()
 
 </details>
 <details>
@@ -483,6 +498,21 @@
 
 </details>
 <details>
+<summary>`/users/me/ping`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/me**
+		- [MeCtx]()
+		- **/ping**
+			- _GET_
+				- [Ping]()
+
+</details>
+<details>
 <summary>`/webhooks/shopify`</summary>
 
 - [NoCache]()
@@ -496,4 +526,4 @@
 
 </details>
 
-Total # of routes: 34
+Total # of routes: 36

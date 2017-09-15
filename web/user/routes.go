@@ -27,6 +27,23 @@ func Routes() chi.Router {
 			r.Post("/", CreateAddress)
 			r.Get("/", ListAddresses)
 		})
+
+		r.Mount("/payments", paymentRoutes())
+	})
+
+	return r
+}
+
+func paymentRoutes() chi.Router {
+	r := chi.NewRouter()
+
+	r.Get("/", ListPaymentMethods)
+	r.Post("/", CreatePaymentMethod)
+	r.Route("/:paymentID", func(r chi.Router) {
+		r.Use(PaymentMethodCtx)
+		r.Get("/", GetPaymentMethod)
+		r.Put("/", UpdatePaymentMethod)
+		r.Delete("/", RemovePaymentMethod)
 	})
 
 	return r

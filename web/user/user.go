@@ -35,14 +35,14 @@ func Ping(w http.ResponseWriter, r *http.Request) {
 	me := ctx.Value("session.user").(*data.User)
 
 	// last updated at timestamp from cache
-	lu, err := strconv.ParseInt(r.URL.Query().Get("lu"), 10, 64)
+	lastCached, err := strconv.ParseInt(r.URL.Query().Get("lu"), 10, 64)
 	if err != nil {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
 	}
-	if me.UpdatedAt.Unix()-lu > 0 {
+	if me.UpdatedAt.Unix()-lastCached > 0 {
 		// tell frontend to bust the cache
-		lg.Warnf("busting user(%d) cache. diff: %d", me.ID, me.UpdatedAt.Unix()-lu)
+		lg.Warnf("busting user(%d) cache. diff: %d", me.ID, me.UpdatedAt.Unix()-lastCached)
 		render.Status(r, http.StatusResetContent)
 		render.Respond(w, r, ".")
 		return

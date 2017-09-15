@@ -2,6 +2,7 @@ package connect
 
 import (
 	"context"
+	"net/http"
 
 	"golang.org/x/oauth2"
 
@@ -9,9 +10,11 @@ import (
 )
 
 type Stripe struct {
-	c    *stripe.Client
+	c    *http.Client
 	auth string
 }
+
+const StripeAccountKey = "stripe.account"
 
 var (
 	ST *Stripe
@@ -26,17 +29,16 @@ func SetupStripe(conf Config) {
 	tc := oauth2.NewClient(ctx, ts)
 
 	ST = &Stripe{
-		c:    stripe.NewClient(tc),
+		c:    tc,
 		auth: conf.AppSecret,
 	}
 }
 
-func (s *Stripe) ExchangeToken(ctx context.Context, account string, card *stripe.CardParams) (*stripe.Token, error) {
-	// copy client to set the account
-	c := *(s.c)
-
-	c.StripeAccount = account
+func (s *Stripe) ExchangeToken(ctx context.Context, card *stripe.CardParams) (*stripe.Token, error) {
+	stripeAccountID, _ := ctx.Value(StripeAccountKey).(string)
+	// TODO: context -> is there a better way?
+	// i guess doesn't matter, this should be done on the frontend
+	c := stripe.NewClient(stripeAccountID, s.c)
 	tok, _, err := c.Token.CreateCard(ctx, card)
-
 	return tok, err
 }

@@ -16,11 +16,12 @@ var (
 type Database struct {
 	bond.Session
 
-	User         UserStore
-	UserAccess   UserAccessStore
-	UserLocation UserLocationStore
-	UserAddress  UserAddressStore
-	Following    FollowingStore
+	User          UserStore
+	UserAccess    UserAccessStore
+	UserLocation  UserLocationStore
+	UserAddress   UserAddressStore
+	PaymentMethod PaymentMethodStore
+	Following     FollowingStore
 
 	Place  PlaceStore
 	Locale LocaleStore
@@ -80,6 +81,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.UserAccess = UserAccessStore{db.Store(&UserAccess{})}
 	db.UserLocation = UserLocationStore{db.Store(&UserLocation{})}
 	db.UserAddress = UserAddressStore{db.Store(&UserAddress{})}
+	db.PaymentMethod = PaymentMethodStore{db.Store(&PaymentMethod{})}
 	db.Following = FollowingStore{db.Store(&Following{})}
 
 	db.Place = PlaceStore{db.Store(&Place{})}

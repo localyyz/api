@@ -12,6 +12,9 @@ import (
 	"strings"
 )
 
+// Referenced + Modified
+// https://github.com/stripe/stripe-go
+
 type Client struct {
 	client *http.Client // HTTP client used to communicate with the API.
 
@@ -40,14 +43,19 @@ const (
 	clientAccountHeader = `Stripe-Account`
 )
 
-func NewClient(httpClient *http.Client) *Client {
+func NewClient(accountID string, httpClient *http.Client) *Client {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
 
 	baseURL, _ := url.Parse(defaultBaseURL)
 
-	c := &Client{client: httpClient, UserAgent: userAgent, BaseURL: baseURL}
+	c := &Client{
+		client:        httpClient,
+		UserAgent:     userAgent,
+		BaseURL:       baseURL,
+		StripeAccount: accountID,
+	}
 	c.common.client = c
 
 	c.Token = (*TokenService)(&c.common)
@@ -76,8 +84,8 @@ func (c *Client) NewRequest(method, urlStr string, form *RequestValues) (*http.R
 	}
 
 	// Support the value of the old Account field for now.
-	if account := strings.TrimSpace(c.StripeAccount); account != "" {
-		req.Header.Set("Stripe-Account", account)
+	if accountID := strings.TrimSpace(c.StripeAccount); accountID != "" {
+		req.Header.Set("Stripe-Account", accountID)
 	}
 
 	if form != nil {

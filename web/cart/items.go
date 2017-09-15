@@ -104,6 +104,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, presenter.NewCartItem(ctx, newItem))
 }
 
+// TODO: add cart items even after checkout is done
 func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cartItem := ctx.Value("cart_item").(*data.CartItem)

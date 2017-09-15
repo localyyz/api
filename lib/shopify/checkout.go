@@ -68,15 +68,16 @@ type ShippingRateRequest struct {
 type Payment struct {
 	Amount string `json:"amount"`
 	// clientside idempotency token
-	UniqueToken    string         `json:"unique_token"`
-	PaymentToken   *PaymentToken  `json:"payment_token"`
-	RequestDetails *RequestDetail `json:"request_details"`
+	UniqueToken                   string         `json:"unique_token"`
+	PaymentProcessingErrorMessage string         `json:"payment_processing_error_message"`
+	PaymentToken                  *PaymentToken  `json:"payment_token"`
+	RequestDetails                *RequestDetail `json:"request_details"`
 }
 
 type RequestDetail struct {
-	IPAddress      string `json:"ip_address"`
-	AcceptLanguage string `json:"accept_language"`
-	UserAgent      string `json:"user_agent"`
+	IPAddress      string `json:"ip_address,omitempty"`
+	AcceptLanguage string `json:"accept_language,omitempty"`
+	UserAgent      string `json:"user_agent,omitempty"`
 }
 
 type PaymentToken struct {

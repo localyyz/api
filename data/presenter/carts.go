@@ -12,10 +12,12 @@ import (
 type Cart struct {
 	*data.Cart
 
-	CartItems     CartItemList               `json:"items"`
-	ShippingRates []*data.CartShippingMethod `json:"shippingRates,omitempty"`
+	CartItems CartItemList `json:"items"`
 
-	Subtotal float64 `json:"subtotal"` // in cents
+	SubtotalPrice int64 `json:"subtotalPrice"` // in cents
+	TotalShipping int64 `json:"totalShipping"`
+	TotalTax      int64 `json:"totalTax"`
+	TotalPrice    int64 `json:"totalPrice"`
 
 	ctx context.Context
 }
@@ -39,14 +41,22 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 		resp.CartItems = cartItems
 	}
 
-	resp.ShippingRates = make([]*data.CartShippingMethod, 0)
-	if rates, _ := ctx.Value("shipping.rates").([]*data.CartShippingMethod); rates != nil {
-		resp.ShippingRates = rates
-	}
-
 	// calculate cart subtotal by line item
-	for _, cartItem := range resp.CartItems {
-		resp.Subtotal += (cartItem.Price * 100.0)
+	if cart.Etc.ShopifyData != nil {
+		for k, d := range cart.Etc.ShopifyData {
+			resp.SubtotalPrice += d.SubtotalPrice
+			resp.TotalTax += d.TotalTax
+			resp.TotalPrice += d.TotalPrice
+
+			if s, ok := cart.Etc.ShippingMethods[k]; ok {
+				resp.TotalShipping += s.Price
+			}
+		}
+
+	} else {
+		for _, cartItem := range resp.CartItems {
+			resp.SubtotalPrice += int64(cartItem.Price * 100.0)
+		}
 	}
 
 	return resp
