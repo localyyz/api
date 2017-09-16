@@ -110,8 +110,9 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Status(r, http.StatusCreated)
-	render.Respond(w, r, "shopify connected.")
+	// redirect the user to shopify admin
+	adminUrl := fmt.Sprintf("https://%s.myshopify.com/admin/apps/localyyz", shopID)
+	http.Redirect(w, r, adminUrl, http.StatusTemporaryRedirect)
 }
 
 func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *data.ShopifyCred) error {
