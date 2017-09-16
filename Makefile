@@ -2,7 +2,7 @@
 
 TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf
-PROMO_CONFIG := $$PWD/config/promo.conf
+MERCHANT_CONFIG := $$PWD/config/merchant.conf
 PEM := ./config/push.pem
 
 all:
@@ -69,9 +69,16 @@ db-reset:
 run:
 	@(export CONFIG=${API_CONFIG}; export PEM=${PEM}; fresh -c runner.conf -p ./cmd/api)
 
+run-merchant:
+	@(export CONFIG=${MERCHANT_CONFIG}; fresh -c runner.conf -p ./cmd/merchant)
+
 build-goose:
 	@mkdir -p ./bin
 	GOGO=off go build -i -o ./bin/goose ./vendor/bitbucket.org/liamstask/goose/cmd/goose
+
+build-merchant:
+	@mkdir -p ./bin
+	GOGO=off go build -i -o ./bin/merchant ./cmd/merchant
 
 build:
 	@mkdir -p ./bin

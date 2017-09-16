@@ -1,0 +1,16 @@
+environment     = "development"
+bind            = "localhost:5333"
+
+[db]
+database          = "localyyz"
+hosts             = [ "localhost" ]
+username          = "localyyz"
+password          = ""
+debug_queries     = true
+application_name  = "merchant"
+
+[connect.shopify]
+app_id            = ""
+app_secret        = ""
+oauth_callback    = "http://localhost:5331/oauth/shopify/callback"
+webhook_url       = "http://localhost:5331/webhooks/shopify"

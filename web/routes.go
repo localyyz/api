@@ -110,9 +110,8 @@ func echoPush(w http.ResponseWriter, r *http.Request) {
 }
 
 func leaderBoard(w http.ResponseWriter, r *http.Request) {
-
 	query := data.DB.Select(
-		"v.name",
+		db.Raw("v.etc->>'firstName' as name"),
 		"v.avatar_url",
 		db.Raw("count(*) count")).
 		From("users u").
@@ -129,8 +128,9 @@ func leaderBoard(w http.ResponseWriter, r *http.Request) {
 		Limit(10)
 
 	type leader struct {
-		*data.User
-		Count int64 `db:"count" json:"count"`
+		FirstName string `db:"name" json:"name"`
+		AvatarURL string `db:"avatar_url" json:"avatarUrl"`
+		Count     int64  `db:"count" json:"count"`
 	}
 	var leaders []*leader
 	if err := query.All(&leaders); err != nil {

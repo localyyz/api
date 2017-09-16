@@ -40,12 +40,12 @@
 	- **/:cartID**
 		- [CartCtx]()
 		- **/**
-			- _PUT_
-				- [UpdateCart]()
 			- _DELETE_
 				- [DeleteCart]()
 			- _GET_
 				- [GetCart]()
+			- _PUT_
+				- [UpdateCart]()
 
 </details>
 <details>
@@ -112,8 +112,25 @@
 	- **/:cartID**
 		- [CartCtx]()
 		- **/payment**
-			- _POST_
-				- [Payment]()
+			- **/**
+				- _POST_
+					- [CreatePayment]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/payment/methods`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/payment**
+			- **/methods**
+				- _GET_
+					- [ListPaymentMethods]()
 
 </details>
 <details>
@@ -129,7 +146,7 @@
 		- **/shipping**
 			- **/**
 				- _GET_
-					- [ListShippingMethods]()
+					- [ListShippingRates]()
 				- _PUT_
 					- [UpdateShippingMethod]()
 
@@ -260,10 +277,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _DELETE_
-				- [UnfollowPlace]()
 			- _POST_
 				- [FollowPlace]()
+			- _DELETE_
+				- [UnfollowPlace]()
 
 </details>
 <details>
@@ -399,10 +416,10 @@
 - [Recoverer]()
 - [New.func1]()
 - **/signup**
-	- _POST_
-		- [EmailSignup]()
 	- _GET_
 		- [GetSignupPage]()
+	- _POST_
+		- [EmailSignup]()
 
 </details>
 <details>
@@ -498,6 +515,46 @@
 
 </details>
 <details>
+<summary>`/users/me/payments`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/me**
+		- [MeCtx]()
+		- **/payments**
+			- **/**
+				- _GET_
+					- [ListPaymentMethods]()
+				- _POST_
+					- [CreatePaymentMethod]()
+
+</details>
+<details>
+<summary>`/users/me/payments/:paymentID`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/users**
+	- **/me**
+		- [MeCtx]()
+		- **/payments**
+			- **/:paymentID**
+				- [PaymentMethodCtx]()
+				- **/**
+					- _DELETE_
+						- [RemovePaymentMethod]()
+					- _GET_
+						- [GetPaymentMethod]()
+					- _PUT_
+						- [UpdatePaymentMethod]()
+
+</details>
+<details>
 <summary>`/users/me/ping`</summary>
 
 - [NoCache]()
@@ -526,4 +583,4 @@
 
 </details>
 
-Total # of routes: 36
+Total # of routes: 39

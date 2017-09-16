@@ -8,8 +8,9 @@ fi
 
 docker run -d -it\
   -p 127.0.0.1:$HOST_PORT:$CONTAINER_PORT \
-  -v $CONFIG:/etc/api.conf \
+  -v $CONFIG:/etc/$NAME.conf \
   -v /data/etc/push.pem:/etc/push.pem \
   --link postgres:postgres \
   --restart=always \
-  --name $NAME $IMAGE
+  --name $NAME $IMAGE \
+  /bin/$NAME -config=/etc/$NAME.conf -pem=/etc/push.pem

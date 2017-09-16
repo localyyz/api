@@ -1,13 +1,13 @@
-# Api
+# Merchant
 ---
 version: 0.5
 
 env:
-  NAME: api
+  NAME: merchant
   IMAGE: paulx/api
-  HOST_PORT: 5331
-  CONTAINER_PORT: 5331
-  CONFIG: /data/etc/api.conf
+  HOST_PORT: 5333
+  CONTAINER_PORT: 5333
+  CONFIG: /data/etc/merchant.conf
 
 networks:
   local:
@@ -25,10 +25,10 @@ commands:
   config:
     desc: Upload/test config file.
     upload:
-     - src: ./config/api.$SUP_NETWORK.conf
+     - src: ./config/merchant.$SUP_NETWORK.conf
        dst: /tmp/
     run:
-        test -f /tmp/config/api.$SUP_NETWORK.conf || exit 1 && mv /tmp/config/api.$SUP_NETWORK.conf $CONFIG
+        test -f /tmp/config/merchant.$SUP_NETWORK.conf || exit 1 && mv /tmp/config/merchant.$SUP_NETWORK.conf $CONFIG
 
   ping:
     desc: Print uname and current date/time.
@@ -48,21 +48,10 @@ commands:
         ./scripts/docker-build.sh
     once: true
   
-  generate-docs:
-    desc: Generate api docs with chi docgen
-    local: >
-        make docs
-    once: true
-
   image:
     desc: List Docker image
     run: docker images | grep $IMAGE
   
-  migrate:
-    desc: Migrate database
-    script: ./scripts/migrate.sh
-    once: true
-
   run:
     desc: Run Docker container
     script: ./scripts/docker-run.sh
@@ -107,12 +96,10 @@ targets:
     
   deploy:
     - build-image
-    - generate-docs
     - pull
     - config
     - stop
     - rm
-    - migrate
     - run
     - ps
     - logs
