@@ -132,7 +132,7 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 
-	//cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
+	cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
 	for _, cred := range creds {
 		api := shopify.NewClient(nil, cred.AccessToken)
 		api.BaseURL, _ = url.Parse(cred.ApiURL)

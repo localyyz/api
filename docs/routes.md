@@ -40,12 +40,12 @@
 	- **/:cartID**
 		- [CartCtx]()
 		- **/**
-			- _DELETE_
-				- [DeleteCart]()
 			- _GET_
 				- [GetCart]()
 			- _PUT_
 				- [UpdateCart]()
+			- _DELETE_
+				- [DeleteCart]()
 
 </details>
 <details>
@@ -416,22 +416,10 @@
 - [Recoverer]()
 - [New.func1]()
 - **/signup**
-	- _GET_
-		- [GetSignupPage]()
 	- _POST_
 		- [EmailSignup]()
-
-</details>
-<details>
-<summary>`/sync/:shopID`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/sync/:shopID**
 	- _GET_
-		- [SyncProductList]()
+		- [GetSignupPage]()
 
 </details>
 <details>
@@ -546,12 +534,12 @@
 			- **/:paymentID**
 				- [PaymentMethodCtx]()
 				- **/**
+					- _PUT_
+						- [UpdatePaymentMethod]()
 					- _DELETE_
 						- [RemovePaymentMethod]()
 					- _GET_
 						- [GetPaymentMethod]()
-					- _PUT_
-						- [UpdatePaymentMethod]()
 
 </details>
 <details>
@@ -583,4 +571,4 @@
 
 </details>
 
-Total # of routes: 39
+Total # of routes: 38
