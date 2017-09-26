@@ -55,7 +55,7 @@ func SessionCtx(next http.Handler) http.Handler {
 			},
 		)
 		if err != nil {
-			lg.Error("invalid session user: %+v", err)
+			lg.Errorf("invalid session user: %+v", err)
 			render.Render(w, r, api.ErrInvalidSession)
 			return
 		}
