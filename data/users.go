@@ -12,11 +12,12 @@ import (
 )
 
 type User struct {
-	ID        int64  `db:"id,pk,omitempty" json:"id" facebook:"-"`
-	Username  string `db:"username" json:"username" facebook:"id,required"`
-	Email     string `db:"email" json:"email" facebook:"email"`
-	Name      string `db:"name" json:"name" facebook:"name"`
-	AvatarURL string `db:"avatar_url" json:"avatarUrl"`
+	ID          int64       `db:"id,pk,omitempty" json:"id" facebook:"-"`
+	Username    string      `db:"username" json:"username" facebook:"id,required"`
+	Email       string      `db:"email" json:"email" facebook:"email"`
+	EmailStatus EmailStatus `db:"email_status" json:"emailStatus"`
+	Name        string      `db:"name" json:"name" facebook:"name"`
+	AvatarURL   string      `db:"avatar_url" json:"avatarUrl"`
 
 	// facebook related fields
 	FirstName string `db:"-" json:"-" facebook:"first_name"`
@@ -37,6 +38,14 @@ type User struct {
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt,omitempty"`
 }
+
+type EmailStatus uint
+
+const (
+	EmailStatusUnknown EmailStatus = iota
+	EmailStatusUnconfirmed
+	EmailStatusConfirmed
+)
 
 type UserGender uint
 
@@ -65,7 +74,8 @@ var _ interface {
 } = &User{}
 
 var (
-	userGenders = []string{"unknown", "male", "female"}
+	userGenders   = []string{"unknown", "male", "female"}
+	emailStatuses = []string{"unknown", "unconfirmed", "confirmed"}
 )
 
 func (u *User) CollectionName() string {
@@ -122,7 +132,7 @@ func (s UserStore) FindOne(cond db.Cond) (*User, error) {
 	return a, nil
 }
 
-// String returns the string value of the status.
+// String returns the string value of the gender.
 func (s UserGender) String() string {
 	return userGenders[s]
 }
@@ -142,4 +152,26 @@ func (s *UserGender) UnmarshalText(text []byte) error {
 		}
 	}
 	return fmt.Errorf("unknown user gender %s", enum)
+}
+
+// String returns the string value of the status.
+func (s EmailStatus) String() string {
+	return emailStatuses[s]
+}
+
+// MarshalText satisfies TextMarshaler
+func (s EmailStatus) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (s *EmailStatus) UnmarshalText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(emailStatuses); i++ {
+		if enum == emailStatuses[i] {
+			*s = EmailStatus(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown email status %s", enum)
 }

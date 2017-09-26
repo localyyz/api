@@ -145,10 +145,10 @@
 		- [CartCtx]()
 		- **/shipping**
 			- **/**
-				- _GET_
-					- [ListShippingRates]()
 				- _PUT_
 					- [UpdateShippingMethod]()
+				- _GET_
+					- [ListShippingRates]()
 
 </details>
 <details>
@@ -277,10 +277,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _POST_
-				- [FollowPlace]()
 			- _DELETE_
 				- [UnfollowPlace]()
+			- _POST_
+				- [FollowPlace]()
 
 </details>
 <details>
@@ -416,10 +416,10 @@
 - [Recoverer]()
 - [New.func1]()
 - **/signup**
-	- _POST_
-		- [EmailSignup]()
 	- _GET_
 		- [GetSignupPage]()
+	- _POST_
+		- [EmailSignup]()
 
 </details>
 <details>
@@ -449,10 +449,10 @@
 		- [MeCtx]()
 		- **/address**
 			- **/**
-				- _POST_
-					- [CreateAddress]()
 				- _GET_
 					- [ListAddresses]()
+				- _POST_
+					- [CreateAddress]()
 
 </details>
 <details>
@@ -514,10 +514,10 @@
 		- [MeCtx]()
 		- **/payments**
 			- **/**
-				- _GET_
-					- [ListPaymentMethods]()
 				- _POST_
 					- [CreatePaymentMethod]()
+				- _GET_
+					- [ListPaymentMethods]()
 
 </details>
 <details>
@@ -534,12 +534,12 @@
 			- **/:paymentID**
 				- [PaymentMethodCtx]()
 				- **/**
+					- _GET_
+						- [GetPaymentMethod]()
 					- _PUT_
 						- [UpdatePaymentMethod]()
 					- _DELETE_
 						- [RemovePaymentMethod]()
-					- _GET_
-						- [GetPaymentMethod]()
 
 </details>
 <details>

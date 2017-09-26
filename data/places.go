@@ -7,8 +7,9 @@ import (
 )
 
 type Place struct {
-	ID       int64 `db:"id,pk,omitempty" json:"id,omitempty"`
-	LocaleID int64 `db:"locale_id" json:"localeId"`
+	ID       int64       `db:"id,pk,omitempty" json:"id,omitempty"`
+	LocaleID int64       `db:"locale_id" json:"localeId"`
+	Status   PlaceStatus `db:"-" json:"status"`
 
 	Name        string `db:"name" json:"name"`
 	Address     string `db:"address" json:"address"`
@@ -29,3 +30,11 @@ type Place struct {
 func (p *Place) CollectionName() string {
 	return `places`
 }
+
+type PlaceStatus uint32
+
+const (
+	PlaceStatusUnknown PlaceStatus = iota
+	PlaceStatusInactive
+	PlaceStatusActive
+)

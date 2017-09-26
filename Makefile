@@ -7,7 +7,7 @@ PEM := ./config/push.pem
 
 all:
 	@echo "****************************"
-	@echo "** Pressly API build tool **"
+	@echo "** Localyyz build tool    **"
 	@echo "****************************"
 	@echo "make <cmd>"
 	@echo ""

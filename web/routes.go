@@ -57,6 +57,7 @@ func New(h *Handler) chi.Router {
 		r.Post("/login/facebook", auth.FacebookLogin)
 		r.Get("/signup", auth.GetSignupPage)
 		r.Post("/signup", auth.EmailSignup)
+		r.Post("/register", auth.RegisterSignup)
 		r.Get("/leaderboard", leaderBoard)
 
 		r.Get("/connect/:shopID", shopify.Connect)
