@@ -40,12 +40,12 @@
 	- **/:cartID**
 		- [CartCtx]()
 		- **/**
+			- _DELETE_
+				- [DeleteCart]()
 			- _GET_
 				- [GetCart]()
 			- _PUT_
 				- [UpdateCart]()
-			- _DELETE_
-				- [DeleteCart]()
 
 </details>
 <details>
@@ -145,10 +145,10 @@
 		- [CartCtx]()
 		- **/shipping**
 			- **/**
-				- _PUT_
-					- [UpdateShippingMethod]()
 				- _GET_
 					- [ListShippingRates]()
+				- _PUT_
+					- [UpdateShippingMethod]()
 
 </details>
 <details>
@@ -277,10 +277,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _DELETE_
-				- [UnfollowPlace]()
 			- _POST_
 				- [FollowPlace]()
+			- _DELETE_
+				- [UnfollowPlace]()
 
 </details>
 <details>
@@ -368,6 +368,18 @@
 
 </details>
 <details>
+<summary>`/register`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/register**
+	- _POST_
+		- [RegisterSignup]()
+
+</details>
+<details>
 <summary>`/search`</summary>
 
 - [NoCache]()
@@ -449,10 +461,10 @@
 		- [MeCtx]()
 		- **/address**
 			- **/**
-				- _GET_
-					- [ListAddresses]()
 				- _POST_
 					- [CreateAddress]()
+				- _GET_
+					- [ListAddresses]()
 
 </details>
 <details>
@@ -571,4 +583,4 @@
 
 </details>
 
-Total # of routes: 38
+Total # of routes: 39
