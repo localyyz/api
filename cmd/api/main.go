@@ -13,8 +13,8 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web"
-	"github.com/goware/lg"
 	"github.com/pkg/errors"
+	"github.com/pressly/lg"
 	"github.com/zenazn/goji/graceful"
 )
 

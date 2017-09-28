@@ -7,8 +7,9 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 
 	"github.com/BurntSushi/toml"
-	"github.com/goware/lg"
 	"github.com/pkg/errors"
+	"github.com/pressly/lg"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -50,12 +51,17 @@ func NewFromFile(fileConfig, envConfig string) (*Config, error) {
 		return nil, errors.Wrap(err, "unable to load config file")
 	}
 
+	logger := logrus.New()
+	logger.Formatter = &logrus.JSONFormatter{}
 	// If development, set lg to debug
 	if conf.Environment == "development" {
-		if err := lg.SetLevelString("debug"); err != nil {
-			lg.Fatal(err)
-		}
+		debugLv, _ := logrus.ParseLevel("debug")
+		logger.SetLevel(debugLv)
+	} else {
+		// redirect all stdout to logrus logger
+		lg.RedirectStdlogOutput(logger)
 	}
+	lg.DefaultLogger = logger
 
 	return &conf, nil
 }

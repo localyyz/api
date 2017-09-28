@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/goware/lg"
 	"github.com/pressly/chi/render"
+	"github.com/pressly/lg"
 )
 
 // Result is the intermediate data type to decode

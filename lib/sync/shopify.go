@@ -15,8 +15,8 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/gedex/inflector"
-	"github.com/goware/lg"
 	"github.com/pkg/errors"
+	"github.com/pressly/lg"
 )
 
 func ShopifyProductListings(ctx context.Context) error {

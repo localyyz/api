@@ -8,8 +8,8 @@ import (
 
 	"upper.io/db.v3"
 
-	"github.com/goware/lg"
 	fb "github.com/huandu/facebook"
+	"github.com/pressly/lg"
 )
 
 var (

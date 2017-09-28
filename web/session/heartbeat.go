@@ -6,8 +6,8 @@ import (
 
 	db "upper.io/db.v3"
 
-	"github.com/goware/lg"
 	"github.com/pressly/chi/render"
+	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"

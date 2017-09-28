@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/goware/geotools"
-	"github.com/goware/lg"
+	"github.com/pressly/lg"
 
 	"upper.io/bond"
 	"upper.io/db.v3"

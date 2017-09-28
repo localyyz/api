@@ -8,8 +8,8 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/merchant"
-	"github.com/goware/lg"
 	"github.com/pkg/errors"
+	"github.com/pressly/lg"
 	"github.com/zenazn/goji/graceful"
 )
 

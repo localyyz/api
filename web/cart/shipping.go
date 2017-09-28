@@ -11,9 +11,9 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
-	"github.com/goware/lg"
 	"github.com/pkg/errors"
 	"github.com/pressly/chi/render"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 

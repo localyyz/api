@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/goware/lg"
 	"github.com/pkg/errors"
 	"github.com/pressly/chi/render"
+	"github.com/pressly/lg"
 
 	"golang.org/x/crypto/bcrypt"
 

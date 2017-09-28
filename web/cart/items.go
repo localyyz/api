@@ -10,9 +10,9 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
-	"github.com/goware/lg"
 	"github.com/pressly/chi"
 	"github.com/pressly/chi/render"
+	"github.com/pressly/lg"
 )
 
 type cartItemRequest struct {
