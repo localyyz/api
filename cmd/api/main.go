@@ -15,7 +15,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/goware/lg"
 	"github.com/pkg/errors"
-	"github.com/robfig/cron"
 	"github.com/zenazn/goji/graceful"
 )
 
@@ -57,12 +56,6 @@ func main() {
 			lg.Fatal(errors.Wrap(err, "invalid pem file"))
 		}
 	}
-
-	// cron worker
-	c := cron.New()
-	// TODO: disable for now.
-	//c.AddFunc("@every 1h", workers.ShopifyPuller)
-	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
