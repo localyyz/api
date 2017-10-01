@@ -33,6 +33,7 @@ const (
 	ProductTagTypeGender
 	ProductTagTypeCategory
 	ProductTagTypeBrand
+	ProductTagTypePrice
 )
 
 var (
@@ -45,6 +46,7 @@ var (
 		"gender",
 		"category",
 		"brand",
+		"price",
 	}
 )
 

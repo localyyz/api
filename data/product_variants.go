@@ -5,6 +5,7 @@ import (
 
 	"upper.io/bond"
 	"upper.io/db.v3"
+	"upper.io/db.v3/postgresql"
 )
 
 type ProductVariant struct {
@@ -18,7 +19,7 @@ type ProductVariant struct {
 	Description string `db:"description" json:"description"`
 	// external offer id refering to specific variant
 	OfferID int64             `db:"offer_id" json:"-"`
-	Etc     ProductVariantEtc `db:"etc,jsonb" json:"etc"`
+	Etc     ProductVariantEtc `db:"etc" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
@@ -35,6 +36,7 @@ type ProductVariantEtc struct {
 
 	Size  string `json:"size"`
 	Color string `json:"color"`
+	*postgresql.JSONBConverter
 }
 
 type ProductVariantStatus uint32

@@ -9,6 +9,8 @@ import (
 
 	"upper.io/bond"
 	"upper.io/db.v3"
+	"upper.io/db.v3/lib/sqlbuilder"
+	"upper.io/db.v3/postgresql"
 )
 
 type User struct {
@@ -32,7 +34,7 @@ type User struct {
 	IsAdmin      bool           `db:"is_admin" json:"isAdmin"`
 	LastLogInAt  *time.Time     `db:"last_login_at" json:"lastLoginAt"`
 	Geo          geotools.Point `db:"geo" json:"-"`
-	Etc          UserEtc        `db:"etc,jsonb" json:"etc"`
+	Etc          UserEtc        `db:"etc" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -62,6 +64,8 @@ type UserEtc struct {
 	Gender           UserGender `json:"gender"`
 	InvitedBy        int64      `json:"invitedBy"`
 	StripeCustomerID string     `json:"stripeCustomerId"`
+
+	*postgresql.JSONBConverter
 }
 
 type UserStore struct {
@@ -72,6 +76,7 @@ var _ interface {
 	bond.HasBeforeCreate
 	bond.HasBeforeUpdate
 } = &User{}
+var _ sqlbuilder.ValueWrapper = &UserEtc{}
 
 var (
 	userGenders   = []string{"unknown", "male", "female"}

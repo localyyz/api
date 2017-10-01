@@ -8,6 +8,7 @@ import (
 
 	"upper.io/bond"
 	db "upper.io/db.v3"
+	"upper.io/db.v3/postgresql"
 )
 
 type Product struct {
@@ -18,7 +19,7 @@ type Product struct {
 	Title       string     `db:"title" json:"title"`
 	Description string     `db:"description" json:"description"`
 	ImageUrl    string     `db:"image_url" json:"imageUrl"`
-	Etc         ProductEtc `db:"etc,jsonb" json:"etc"`
+	Etc         ProductEtc `db:"etc" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
@@ -29,6 +30,7 @@ type ProductEtc struct {
 	Brand  string   `json:"brand"`
 	Type   string   `json:"type"`
 	Images []string `json:"images"`
+	*postgresql.JSONBConverter
 }
 
 type ProductStore struct {

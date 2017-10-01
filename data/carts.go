@@ -6,6 +6,8 @@ import (
 
 	"upper.io/bond"
 	db "upper.io/db.v3"
+	"upper.io/db.v3/lib/sqlbuilder"
+	"upper.io/db.v3/postgresql"
 )
 
 type Cart struct {
@@ -13,7 +15,7 @@ type Cart struct {
 	UserID int64      `db:"user_id" json:"userId"`
 	Status CartStatus `db:"status" json:"status"`
 
-	Etc CartEtc `db:"etc,jsonb" json:"etc"`
+	Etc CartEtc `db:"etc" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
@@ -46,6 +48,7 @@ type CartEtc struct {
 	ShippingMethods map[int64]*CartShippingMethod `json:"shippingMethods,omitempty"`
 	ShippingAddress *CartAddress                  `json:"shippingAddress,omitempty"`
 	BillingAddress  *CartAddress                  `json:"billingAddress,omitempty"`
+	*postgresql.JSONBConverter
 }
 
 type CartShopifyData struct {
@@ -78,6 +81,7 @@ var _ interface {
 	bond.HasBeforeCreate
 	bond.HasBeforeUpdate
 } = &Cart{}
+var _ sqlbuilder.ValueWrapper = &CartEtc{}
 
 var (
 	cartStatuses = []string{
