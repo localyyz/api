@@ -6,7 +6,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 
-	"github.com/BurntSushi/toml"
+	"github.com/burntsushi/toml"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 	"github.com/sirupsen/logrus"
