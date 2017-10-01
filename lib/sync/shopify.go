@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -51,8 +52,10 @@ func ShopifyProductListings(ctx context.Context) error {
 		}
 
 		variants := make([]*data.ProductVariant, len(p.Variants))
+		var variantPrice float64
 		for i, v := range p.Variants {
 			price, _ := strconv.ParseFloat(v.Price, 64)
+			variantPrice += price
 			etc := data.ProductVariantEtc{
 				Price: price,
 				Sku:   v.Sku,
@@ -82,8 +85,9 @@ func ShopifyProductListings(ctx context.Context) error {
 			if vv, _ := data.DB.ProductVariant.FindOne(db.Cond{"offer_id": v.ID}); vv != nil {
 				variants[i].ID = vv.ID
 			}
-
 		}
+		// average variant price
+		variantPrice = variantPrice / float64(len(p.Variants))
 
 		if err := data.DB.Product.Save(product); err != nil {
 			return errors.Wrap(err, "failed to save product")
@@ -128,6 +132,9 @@ func ShopifyProductListings(ctx context.Context) error {
 
 			// Product Vendor/Brand
 			b.Values(product.ID, place.ID, p.Vendor, data.ProductTagTypeBrand)
+
+			// Average variant prices
+			b.Values(product.ID, place.ID, fmt.Sprintf("%.2f", variantPrice), data.ProductTagTypePrice)
 
 			// Variant options (ie. Color, Size, Material)
 			for _, o := range p.Options {
