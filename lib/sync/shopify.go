@@ -156,7 +156,6 @@ func ShopifyProductListings(ctx context.Context) error {
 var tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
 
 func parseTags(tagStr string, optTags ...string) []string {
-	//tt := strings.FieldsFunc(tagStr, tagSplit)
 	tt := tagRegex.Split(tagStr, -1)
 
 	tagSet := set.New()
@@ -171,6 +170,9 @@ func parseTags(tagStr string, optTags ...string) []string {
 			t = tt
 			tt = inflector.Singularize(t)
 		}
+		if tt == "" {
+			continue
+		}
 		tagSet.Add(t)
 	}
 	for _, t := range optTags {
@@ -178,8 +180,4 @@ func parseTags(tagStr string, optTags ...string) []string {
 	}
 
 	return set.StringSlice(tagSet)
-}
-
-func tagSplit(r rune) bool {
-	return r == ',' || r == ' '
 }

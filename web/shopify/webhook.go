@@ -33,6 +33,23 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// write the webhook event to the database
+	go func(wrapper *shopifyWebhookRequest) {
+		switch shopify.Topic(topic) {
+		case shopify.TopicProductListingsAdd:
+		case shopify.TopicProductListingsUpdate:
+			data.DB.WebhookCall.Save(&data.WebhookCall{
+				PlaceID: place.ID,
+				Data: data.WebhookCallData{
+					ProductListing: wrapper.ProductListing,
+				},
+			})
+			return
+		default:
+			return // do nothing
+		}
+	}(wrapper)
+
 	go func(wrapper *shopifyWebhookRequest) { // return right away
 		// TODO: implement other webhooks
 		switch shopify.Topic(topic) {
