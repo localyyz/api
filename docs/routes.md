@@ -40,12 +40,12 @@
 	- **/:cartID**
 		- [CartCtx]()
 		- **/**
+			- _PUT_
+				- [UpdateCart]()
 			- _DELETE_
 				- [DeleteCart]()
 			- _GET_
 				- [GetCart]()
-			- _PUT_
-				- [UpdateCart]()
 
 </details>
 <details>
@@ -284,6 +284,21 @@
 
 </details>
 <details>
+<summary>`/places/:placeID/prices`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places**
+	- **/:placeID**
+		- [PlaceCtx]()
+		- **/prices**
+			- _GET_
+				- [ListProductPrices]()
+
+</details>
+<details>
 <summary>`/places/:placeID/products`</summary>
 
 - [NoCache]()
@@ -311,6 +326,21 @@
 		- **/share**
 			- _POST_
 				- [Share]()
+
+</details>
+<details>
+<summary>`/places/:placeID/tags`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places**
+	- **/:placeID**
+		- [PlaceCtx]()
+		- **/tags**
+			- _GET_
+				- [ListProductTags]()
 
 </details>
 <details>
@@ -583,4 +613,4 @@
 
 </details>
 
-Total # of routes: 39
+Total # of routes: 41

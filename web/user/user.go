@@ -40,7 +40,7 @@ func Ping(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
 	}
-	if me.UpdatedAt.Unix()-lastCached > 0 {
+	if me.UpdatedAt != nil && me.UpdatedAt.Unix()-lastCached > 0 {
 		// tell frontend to bust the cache
 		lg.Warnf("busting user(%d) cache. diff: %d", me.ID, me.UpdatedAt.Unix()-lastCached)
 		render.Status(r, http.StatusResetContent)
