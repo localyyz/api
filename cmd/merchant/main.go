@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/config"
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/merchant"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
@@ -26,6 +28,14 @@ func main() {
 		lg.Fatal(errors.Wrap(err, "invalid config file"))
 	}
 
+	//[db]
+	if _, err = data.NewDBSession(&conf.DB); err != nil {
+		lg.Fatal(errors.Wrap(err, "database connection failed"))
+	}
+
+	//[jwt]
+	token.SetupJWTAuth(conf.Jwt.Secret)
+
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
 	graceful.PreHook(func() {
@@ -33,9 +43,9 @@ func main() {
 	})
 	graceful.PostHook(func() {
 		lg.Info("finishing up...")
-		//if err := data.DB.Close(); err != nil {
-		//lg.Alert(err)
-		//}
+		if err := data.DB.Close(); err != nil {
+			lg.Alert(err)
+		}
 	})
 
 	lg.Infof("Merchant site starting on %v", conf.Bind)

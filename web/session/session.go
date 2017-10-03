@@ -33,18 +33,21 @@ func SessionCtx(next http.Handler) http.Handler {
 		if err != nil {
 			lg.Errorf("invalid session token: %+v", err)
 			render.Render(w, r, api.ErrInvalidSession)
+			return
 		}
 
 		rawUserID, ok := token.Claims["user_id"].(json.Number)
 		if !ok {
 			lg.Error("invalid session token, no user_id found")
 			render.Render(w, r, api.ErrInvalidSession)
+			return
 		}
 
 		userID, err := rawUserID.Int64()
 		if err != nil {
 			lg.Errorf("invalid session token: %+v", err)
 			render.Render(w, r, api.ErrInvalidSession)
+			return
 		}
 
 		// find a logged in user with the given id

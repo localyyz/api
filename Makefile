@@ -13,6 +13,7 @@ all:
 	@echo ""
 	@echo "commands:"
 	@echo "  run                   - run API in dev mode"
+	@echo "  run-merchant          - run merchant app in dev mode"
 	@echo "  build                 - build api into bin/ directory"
 	@echo "  build-all             - build all binaries into bin/ directory"
 	@echo "  docs                  - generate api documentation"

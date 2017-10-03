@@ -148,6 +148,8 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			Website:   u.String(),
 		}
 	}
+	// upgrade place status to "waiting for agreement"
+	place.Status = data.PlaceStatusWaitAgreement
 	if err := data.DB.Place.Save(place); err != nil {
 		return errors.Wrap(err, "failed to save place")
 	}

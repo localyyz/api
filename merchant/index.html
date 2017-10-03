@@ -9,6 +9,22 @@
 </head>
 <body>
   <div class="Polaris-Page">
+    <div class="Polaris-Page__Header">
+      {% if (place.Status == 2) %}
+      <div class="Polaris-Banner Polaris-Banner--statusSuccess" tabindex="0" role="status" aria-live="polite" aria-describedby="Banner5Content" aria-labelledby="Banner5Heading">
+        <div class="Polaris-Banner__Ribbon"><span class="Polaris-Icon Polaris-Icon--colorGreenDark Polaris-Icon--hasBackdrop"><svg class="Polaris-Icon__Svg" viewBox="0 0 20 20"><g fill-rule="evenodd"><circle fill="currentColor" cx="10" cy="10" r="9"></circle><path d="M10 0C4.486 0 0 4.486 0 10s4.486 10 10 10 10-4.486 10-10S15.514 0 10 0m0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8m2.293-10.707L9 10.586 7.707 9.293a1 1 0 1 0-1.414 1.414l2 2a.997.997 0 0 0 1.414 0l4-4a1 1 0 1 0-1.414-1.414"></path></g></svg></span></div>
+        <div>
+          <div class="Polaris-Banner__Heading" id="Banner5Heading">
+            <p class="Polaris-Heading">Thank you!</p>
+          </div>
+          <div class="Polaris-Banner__Content" id="Banner5Content">
+            <p>Your store has been submitted for review.
+            You can check the status here, or message us for more info.</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
     <div class="Polaris-Page__Content">
       <div class="Polaris-Layout">
         <div class="Polaris-Layout__AnnotatedSection">
@@ -16,7 +32,7 @@
             <div class="Polaris-Layout__Annotation">
               <div class="Polaris-TextContainer">
                 <h2 class="Polaris-Heading">Account</h2>
-                <p>Connect your account to your Shopify store.</p>
+                <p>Submit your store for approval.</p>
               </div>
             </div>
             <div class="Polaris-Layout__AnnotationContent">
@@ -27,17 +43,54 @@
                       <div class="Polaris-Stack">
                         <div class="Polaris-Stack__Item Polaris-Stack__Item--fill">
                           <div class="Polaris-AccountConnection__Content">
-                            <div><span class="Polaris-TextStyle--variationSubdued">No account connected</span></div>
+                            <div>
+                              <span class="Polaris-TextStyle--variationSubdued">Status is currently:
+                                {% if (place.Status == 0) %}
+                                  <span class="Polaris-Badge">Unknown</span>
+                                {% elif (place.Status == 1) %}
+                                  <span class="Polaris-Badge Polaris-Badge--statusAttention">
+                                    Accept Agreement
+                                  </span>
+                                {% elif (place.Status == 2) %}
+                                  <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
+                                    <span class="Polaris-Badge__Pip"></span>
+                                    Waiting for Approval
+                                  </span>
+                                {% elif (place.Status == 3) %}
+                                  <span class="Polaris-Badge Polaris-Badge--statusSuccess">
+                                    Approved
+                                  </span>
+                                {% elif (place.Status == 4) %}
+                                  <span class="Polaris-Badge Polaris-Badge--statusWarning">
+                                    Inactive
+                                  </span>
+                                {% endif %}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div class="Polaris-SettingAction__Action"><button type="button" class="Polaris-Button Polaris-Button--primary"><span class="Polaris-Button__Content"><span>Connect</span></span></button></div>
+                    <div class="Polaris-SettingAction__Action">
+                      <form id="tos" method="POST" action="#">
+                        <button type="submit" class="Polaris-Button Polaris-Button--primary {%if (place.Status != 1) %}Polaris-Button--disabled{% endif %}">
+                          <span class="Polaris-Button__Content">
+                            <span>Accept</span>
+                          </span>
+                        </button>
+                      </form>
+                    </div>
                   </div>
                   <div class="Polaris-AccountConnection__TermsOfService">
                     <p>
-                      By clicking Connect, you are accepting Localyyz’s <a class="Polaris-Link" href="#"
-                        data-polaris-unstyled="true">Terms and Conditions</a>, including a commission rate of 15% on sales.
+                      {% if (place.Status == 0 or place.Status == 4) %}
+                        Please <a href="mailto:support@localyyz.com?subject={{name}}: {{status}} status help">contact Localyyz Support for help.</a>
+                      {% elif (place.Status == 1) %}
+                        By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" href="#" data-polaris-unstyled="true">Terms and Conditions</a>,
+                          and <a class="Polaris-Link" href="#" data-polaris-unstyled="true">Services Subscription</a>.
+                      {% elif (place.Status == 2) %}
+                        Estimated date of approval: <span class="Polaris-Badge Polaris-Badge--statusInfo"> {{ approvalTs|naturaltime }}</span>
+                      {% endif %}
                     </p>
                   </div>
                 </div>
@@ -62,7 +115,7 @@
               </span>
               </div>
               <div class="Polaris-FooterHelp__Text">
-                For more details on Localyyz, visit our <a class="Polaris-Link" href="#" data-polaris-unstyled="true">Faqs page</a>.
+                For more details on Localyyz, visit our <a class="Polaris-Link" href="https://localyyz.com" data-polaris-unstyled="true">Faqs page</a>.
               </div>
             </div>
           </div>
@@ -70,5 +123,23 @@
       </div>
     </div>
   </div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script type="text/javascript">
+    "use strict"
+    $(document).ready(function() {
+      $("#tos").submit(function(e) {
+        $.ajax({
+          type: "POST",
+          contentType: "application/json",
+          dataType: "json",
+          url: "/tos",
+          success: function(result) {
+            location.reload();
+          }
+        });
+        return false;
+      })
+    });
+  </script>
 </body>
 </html>

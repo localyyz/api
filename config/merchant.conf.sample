@@ -9,6 +9,9 @@ password          = ""
 debug_queries     = true
 application_name  = "merchant"
 
+[jwt]
+secret            = "merchant secret"
+
 [connect.shopify]
 app_id            = ""
 app_secret        = ""

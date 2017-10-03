@@ -277,10 +277,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _POST_
-				- [FollowPlace]()
 			- _DELETE_
 				- [UnfollowPlace]()
+			- _POST_
+				- [FollowPlace]()
 
 </details>
 <details>
@@ -491,10 +491,10 @@
 		- [MeCtx]()
 		- **/address**
 			- **/**
-				- _POST_
-					- [CreateAddress]()
 				- _GET_
 					- [ListAddresses]()
+				- _POST_
+					- [CreateAddress]()
 
 </details>
 <details>
@@ -576,12 +576,12 @@
 			- **/:paymentID**
 				- [PaymentMethodCtx]()
 				- **/**
-					- _GET_
-						- [GetPaymentMethod]()
 					- _PUT_
 						- [UpdatePaymentMethod]()
 					- _DELETE_
 						- [RemovePaymentMethod]()
+					- _GET_
+						- [GetPaymentMethod]()
 
 </details>
 <details>
