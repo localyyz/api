@@ -13,6 +13,7 @@ type CartItem struct {
 
 	ProductID int64 `db:"product_id" json:"productId"`
 	VariantID int64 `db:"variant_id" json:"variantId"`
+	PlaceID   int64 `db:"place_id" json:"placeId"`
 
 	Quantity uint32 `db:"quantity" json:"quantity"`
 

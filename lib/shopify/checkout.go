@@ -66,10 +66,11 @@ type ShippingRateRequest struct {
 }
 
 type Payment struct {
+	ID     int64  `json:"id"`
 	Amount string `json:"amount"`
 	// clientside idempotency token
 	UniqueToken                   string         `json:"unique_token"`
-	PaymentProcessingErrorMessage string         `json:"payment_processing_error_message"`
+	PaymentProcessingErrorMessage string         `json:"payment_processing_error_message,omitempty"`
 	PaymentToken                  *PaymentToken  `json:"payment_token"`
 	RequestDetails                *RequestDetail `json:"request_details"`
 }
@@ -151,5 +152,4 @@ func (c *CheckoutService) Payment(ctx context.Context, token string, payment *Pa
 	}
 
 	return paymentWrapper.Payment, resp, nil
-
 }

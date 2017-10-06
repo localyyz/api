@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 )
 
@@ -91,6 +92,12 @@ func (c *Client) NewRequest(method, urlStr string, body interface{}) (*http.Requ
 	if c.UserAgent != "" {
 		req.Header.Set("User-Agent", c.UserAgent)
 	}
+
+	if c.Debug {
+		b, _ := httputil.DumpRequest(req, true)
+		fmt.Printf("[shopify] %s", string(b))
+	}
+
 	return req, nil
 }
 

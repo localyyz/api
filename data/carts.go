@@ -58,7 +58,8 @@ type CartShopifyData struct {
 	CustomerID       int64  `json:"customer_id"`
 	WebURL           string `json:"webUrl"`
 	WebProcessingURL string `json:"webProcessingUrl"`
-	HasPayed         bool   `json:"hasPayed"`
+
+	PaymentID int64 `json:"paymentId"`
 
 	SubtotalPrice int64  `json:"subtotalPrice"`
 	TotalTax      int64  `json:"totalTax"`
@@ -73,7 +74,8 @@ type CartStore struct {
 const (
 	CartStatusUnknown CartStatus = iota
 	CartStatusInProgress
-	CartStatusProcessing
+	CartStatusCheckout
+	CartStatusPaymentSuccess
 	CartStatusComplete
 )
 
@@ -87,7 +89,8 @@ var (
 	cartStatuses = []string{
 		"",
 		"inprogress",
-		"processing",
+		"checkout",
+		"payment_success",
 		"completed",
 	}
 )

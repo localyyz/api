@@ -1,4 +1,4 @@
-package cart
+package shipping
 
 import (
 	"net/http"
@@ -11,7 +11,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
-	"github.com/pkg/errors"
 	"github.com/pressly/chi/render"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
@@ -40,10 +39,10 @@ func ListShippingRates(w http.ResponseWriter, r *http.Request) {
 
 	shopRates := make([]*shopRate, len(creds))
 	for i, cred := range creds {
-		api := shopify.NewClient(nil, cred.AccessToken)
-		api.BaseURL, _ = url.Parse(cred.ApiURL)
+		cl := shopify.NewClient(nil, cred.AccessToken)
+		cl.BaseURL, _ = url.Parse(cred.ApiURL)
 
-		m, _, _ := api.Checkout.ListShippingRates(ctx, tokensMap[cred.PlaceID])
+		m, _, _ := cl.Checkout.ListShippingRates(ctx, tokensMap[cred.PlaceID])
 		// TODO/NOTE: there is a weird shopify bug that first call to this api
 		// endpoint will always result in empty response. try again until
 		// something is back
@@ -54,7 +53,7 @@ func ListShippingRates(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			if len(m) == 0 {
-				m, _, err = api.Checkout.ListShippingRates(ctx, tokensMap[cred.PlaceID])
+				m, _, err = cl.Checkout.ListShippingRates(ctx, tokensMap[cred.PlaceID])
 				if err != nil {
 					break
 				}
@@ -111,19 +110,6 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// sync to shopify
-	var placeIDs []int64
-	tokensMap := map[int64]string{}
-	for ID, d := range cart.Etc.ShopifyData {
-		placeIDs = append(placeIDs, ID)
-		tokensMap[ID] = d.Token
-	}
-	creds, err := data.DB.ShopifyCred.FindAll(db.Cond{"place_id": placeIDs})
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
 	// TODO: handle cases where different shipping methods are passed in.
 	// for now, select the first one
 	var method *data.CartShippingMethod
@@ -133,28 +119,8 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
-	for _, cred := range creds {
-		api := shopify.NewClient(nil, cred.AccessToken)
-		api.BaseURL, _ = url.Parse(cred.ApiURL)
-
-		checkout := &shopify.Checkout{
-			Token: tokensMap[cred.PlaceID],
-			ShippingLine: &shopify.ShippingLine{
-				Handle: method.Handle,
-			},
-		}
-		c, _, err := api.Checkout.Update(ctx, &shopify.CheckoutRequest{checkout})
-		if err != nil {
-			lg.Alert(errors.Wrapf(err, "checkout shipping update. cart(%d)", cart.ID))
-			continue
-		}
-		// TODO handle error here and should retry
-
-		cart.Etc.ShippingMethods[cred.PlaceID] = method
-		cart.Etc.ShopifyData[cred.PlaceID].SubtotalPrice = atoi(c.SubtotalPrice)
-		cart.Etc.ShopifyData[cred.PlaceID].TotalPrice = atoi(c.TotalPrice)
-		cart.Etc.ShopifyData[cred.PlaceID].TotalTax = atoi(c.TotalTax)
-		cart.Etc.ShopifyData[cred.PlaceID].PaymentDue = c.PaymentDue
+	for placeID, _ := range cart.Etc.ShopifyData {
+		cart.Etc.ShippingMethods[placeID] = method
 	}
 
 	if err := data.DB.Cart.Save(cart); err != nil {

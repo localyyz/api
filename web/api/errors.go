@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+
 	db "upper.io/db.v3"
 
 	"github.com/lib/pq"
@@ -89,6 +91,11 @@ func ErrInvalidRequest(err error) *ApiError {
 }
 
 func WrapErr(err error) *ApiError {
+	if e, ok := err.(*ApiError); ok {
+		lg.Errorf("encountered invalid request error: %s", e)
+		return e
+	}
+
 	if e, ok := mappings[err]; ok {
 		a := *e
 		if len(a.StatusText) == 0 {
@@ -113,8 +120,17 @@ func WrapErr(err error) *ApiError {
 		return &a
 	}
 
-	lg.Errorf("encountered internal error: %+v", err)
+	if e, ok := err.(*shopify.ErrorResponse); ok {
+		lg.Errorf("encountered shopify api error: %s", e)
+		return errGeneric
+	}
+
+	lg.Errorf("encountered internal error: %s", err.Error())
 	return errGeneric
+}
+
+func (e *ApiError) Error() string {
+	return e.ErrorText
 }
 
 func (e *ApiError) Render(w http.ResponseWriter, r *http.Request) error {

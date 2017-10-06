@@ -1,4 +1,4 @@
-package cart
+package payment
 
 import (
 	"context"
@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pressly/chi/render"
-	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/lib/stripe"
@@ -59,7 +59,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	for placeID, sh := range cart.Etc.ShopifyData {
 		ctx = context.WithValue(ctx, connect.StripeAccountKey, sh.PaymentAccountID)
 		stripeToken, err := connect.ST.ExchangeToken(ctx, cardParam)
-		lg.Warnf("%+v %+v", stripeToken, err)
 		if err != nil {
 			render.Render(w, r, api.ErrStripeProcess(err))
 			return
@@ -72,8 +71,8 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		api := shopify.NewClient(nil, creds.AccessToken)
-		api.BaseURL, _ = url.Parse(creds.ApiURL)
+		c := shopify.NewClient(nil, creds.AccessToken)
+		c.BaseURL, _ = url.Parse(creds.ApiURL)
 
 		u, _ := uuid.NewUUID()
 		payment := &shopify.PaymentRequest{
@@ -85,17 +84,26 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 					Type:        shopify.StripeVaultToken,
 				},
 				RequestDetails: &shopify.RequestDetail{
-					IPAddress:      stripeToken.ClientIP,
-					AcceptLanguage: "EN",
+					IPAddress: stripeToken.ClientIP,
 				},
 			},
 		}
-		_, _, err = api.Checkout.Payment(ctx, sh.Token, payment)
+
+		p, _, err := c.Checkout.Payment(ctx, sh.Token, payment)
 		if err != nil {
 			render.Respond(w, r, err)
+			// TODO: do we return here?
 			return
 		}
+		// 3. save shopify payment id
+		sh.PaymentID = p.ID
 	}
+
+	// mark checkout as has payed
+	cart.Status = data.CartStatusPaymentSuccess
+	data.DB.Cart.Save(cart)
 	// TODO: create a customer on stripe after the first
 	// tokenization so we can send stripe customer id moving forward
+
+	render.Render(w, r, presenter.NewCart(ctx, cart))
 }

@@ -8,15 +8,31 @@ import (
 	"net/http"
 )
 
+// Shopify errors usually have the form:
+// {
+//   "errors": {
+//     "title": [
+//       "something is wrong"
+//     ]
+//   }
+// }
+//
+
 type ErrorResponse struct {
-	Errors map[string]interface{} `json:"errors"` // more detail on individual errors
+	Errors interface{} `json:"errors"`
 }
 
 func (r *ErrorResponse) Error() string {
-	for k, v := range r.Errors {
-		return fmt.Sprintf("%s: %s", k, v)
+	if e, ok := r.Errors.(map[string]interface{}); ok {
+		for k, v := range e {
+			// value here can be a slice
+			return fmt.Sprintf("%s: %+v", k, v)
+		}
 	}
-	return "unknown error"
+	if e, ok := r.Errors.(string); ok {
+		return e
+	}
+	return "unknown, unparsed error"
 }
 
 // CheckResponse checks the API response for errors, and returns them if

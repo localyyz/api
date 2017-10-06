@@ -48,7 +48,7 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 			resp.TotalTax += d.TotalTax
 			resp.TotalPrice += d.TotalPrice
 
-			if s, ok := cart.Etc.ShippingMethods[k]; ok {
+			if s, ok := cart.Etc.ShippingMethods[k]; ok && s != nil {
 				resp.TotalShipping += s.Price
 			}
 		}
