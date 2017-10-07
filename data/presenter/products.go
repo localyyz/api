@@ -91,12 +91,11 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	}
 	p.Place = &Place{Place: place}
 
+	p.Variants = []*ProductVariant{}
 	if dbVariants, _ := data.DB.ProductVariant.FindByProductID(product.ID); dbVariants != nil {
-		variants := make([]*ProductVariant, len(dbVariants))
-		for i, v := range dbVariants {
-			variants[i] = &ProductVariant{ProductVariant: v}
+		for _, v := range dbVariants {
+			p.Variants = append(p.Variants, &ProductVariant{ProductVariant: v})
 		}
-		p.Variants = variants
 	}
 
 	p.Sizes = []string{}
