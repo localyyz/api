@@ -57,8 +57,6 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		checkoutMap[placeID] = &shopify.Checkout{
 			Email:     user.Email,
 			LineItems: lineItems,
-			//ShippingAddress: address,
-			//BillingAddress:  address,
 		}
 		cred, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
 		if err != nil {

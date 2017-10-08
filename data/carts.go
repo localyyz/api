@@ -77,6 +77,7 @@ const (
 	CartStatusCheckout
 	CartStatusPaymentSuccess
 	CartStatusComplete
+	CartStatusPartialCheckout
 )
 
 var _ interface {
@@ -92,6 +93,7 @@ var (
 		"checkout",
 		"payment_success",
 		"completed",
+		"partial_checkout",
 	}
 )
 

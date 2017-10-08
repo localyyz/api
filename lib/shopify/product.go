@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -48,6 +49,7 @@ type ProductVariant struct {
 	Barcode              string          `json:"barcode"`
 	ImageID              interface{}     `json:"image_id"`
 	CompareAtPrice       interface{}     `json:"compare_at_price"`
+	Available            bool            `json:"available"`
 	InventoryQuantity    int             `json:"inventory_quantity"`
 	Weight               float64         `json:"weight"`
 	WeightUnit           string          `json:"weight_unit"`
@@ -106,4 +108,22 @@ func (p *ProductService) List(ctx context.Context) ([]*Product, *http.Response, 
 	}
 
 	return productWrapper.Products, resp, nil
+}
+
+func (p *ProductService) GetVariant(ctx context.Context, variantID int64) (*ProductVariant, *http.Response, error) {
+	req, err := p.client.NewRequest("GET", fmt.Sprintf("/admin/variants/%d.json", variantID), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var variantWrapper struct {
+		Variant *ProductVariant `json:"variant"`
+	}
+	resp, err := p.client.Do(ctx, req, &variantWrapper)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return variantWrapper.Variant, resp, nil
+
 }

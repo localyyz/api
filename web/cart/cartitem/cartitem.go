@@ -30,6 +30,17 @@ func (*cartItemRequest) Bind(r *http.Request) error {
 	return nil
 }
 
+func CheckQuantities(w http.ResponseWriter, r *http.Request) {
+	//ctx := r.Context()
+	//cart := ctx.Value("cart").(*data.Cart)
+
+	//cartItems, err := data.DB.CartItem.FindByCartID(cart.ID)
+	//if err != nil {
+	//render.Respond(w, r, err)
+	//return
+	//}
+}
+
 func GetCartItem(w http.ResponseWriter, r *http.Request) {
 }
 

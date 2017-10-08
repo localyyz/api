@@ -95,5 +95,15 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, presenter.NewCart(ctx, cart))
 }
 
-func DeleteCart(w http.ResponseWriter, r *http.Request) {
+func ClearCart(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cart := ctx.Value("cart").(*data.Cart)
+
+	err := data.DB.CartItem.Find(db.Cond{"cart_id": cart.ID}).Delete()
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	render.Status(r, http.StatusNoContent)
+	render.Respond(w, r, "")
 }

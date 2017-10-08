@@ -96,15 +96,9 @@ func WrapErr(err error) *ApiError {
 		return e
 	}
 
-	if e, ok := mappings[err]; ok {
-		a := *e
-		if len(a.StatusText) == 0 {
-			a.StatusText = http.StatusText(a.StatusCode)
-		}
-		if len(a.ErrorText) == 0 {
-			a.ErrorText = err.Error()
-		}
-		return &a
+	if e, ok := err.(shopify.ShopifyErrorer); ok {
+		lg.Errorf("encountered shopify api error: %s", e)
+		return errGeneric
 	}
 
 	if e, ok := err.(*pq.Error); ok {
@@ -120,9 +114,15 @@ func WrapErr(err error) *ApiError {
 		return &a
 	}
 
-	if e, ok := err.(*shopify.ErrorResponse); ok {
-		lg.Errorf("encountered shopify api error: %s", e)
-		return errGeneric
+	if e, ok := mappings[err]; ok {
+		a := *e
+		if len(a.StatusText) == 0 {
+			a.StatusText = http.StatusText(a.StatusCode)
+		}
+		if len(a.ErrorText) == 0 {
+			a.ErrorText = err.Error()
+		}
+		return &a
 	}
 
 	lg.Errorf("encountered internal error: %s", err.Error())

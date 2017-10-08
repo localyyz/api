@@ -18,8 +18,36 @@ import (
 // }
 //
 
+type ShopifyErrorer interface {
+	Type() string
+}
+
+type LineItemError struct {
+	Position string `json:"postition"`
+	Quantity []struct {
+		Message string `json:"message"`
+		Options struct {
+			Remaining int `json:"remaining"`
+		} `json:"options"`
+		Code string `json:"code"`
+	} `json:"quantity"`
+
+	ShopifyErrorer
+}
+
 type ErrorResponse struct {
 	Errors interface{} `json:"errors"`
+}
+
+func (e *LineItemError) Error() string {
+	for _, q := range e.Quantity {
+		return fmt.Sprintf("[line_item] pos(%s) %s %s", e.Position, q.Code, q.Message)
+	}
+	return fmt.Sprintf("line_item at pos(%s) has errors", e.Position)
+}
+
+func (e *LineItemError) Type() string {
+	return `line_items`
 }
 
 func (r *ErrorResponse) Error() string {
@@ -56,5 +84,33 @@ func CheckResponse(r *http.Response) error {
 	if err == nil && data != nil {
 		json.Unmarshal(data, errorResponse)
 	}
-	return errorResponse
+	return findFirstError(errorResponse)
+}
+
+func findFirstError(r *ErrorResponse) error {
+	rr, ok := r.Errors.(map[string]interface{})
+	if !ok {
+		return r
+	}
+
+	// find the first error, and return
+	for k, v := range rr {
+		vv, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		switch k {
+		case "line_items":
+			for pos, vvv := range vv {
+				b, _ := json.Marshal(vvv)
+				var e *LineItemError
+				json.Unmarshal(b, &e)
+				e.Position = pos
+				return e
+			}
+		}
+	}
+
+	return r
 }

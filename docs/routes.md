@@ -25,12 +25,14 @@
 - [New.func1]()
 - **/carts**
 	- **/**
+		- _GET_
+			- [ListCarts]()
 		- _POST_
 			- [CreateCart]()
 
 </details>
 <details>
-<summary>`/carts/:cartID`</summary>
+<summary>`/carts/:cartID/*`</summary>
 
 - [NoCache]()
 - [Logger]()
@@ -39,48 +41,18 @@
 - **/carts**
 	- **/:cartID**
 		- [CartCtx]()
-		- **/**
-			- _PUT_
-				- [UpdateCart]()
-			- _DELETE_
-				- [DeleteCart]()
-			- _GET_
-				- [GetCart]()
-
-</details>
-<details>
-<summary>`/carts/:cartID/checkout`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
-		- **/checkout**
-			- _POST_
-				- [Checkout]()
-
-</details>
-<details>
-<summary>`/carts/:cartID/items`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
-		- **/items**
+		- **/***
 			- **/**
-				- _POST_
-					- [CreateCartItem]()
+				- _PUT_
+					- [UpdateCart]()
+				- _DELETE_
+					- [DeleteCart]()
+				- _GET_
+					- [GetCart]()
 
 </details>
 <details>
-<summary>`/carts/:cartID/items/:cartItemID`</summary>
+<summary>`/carts/:cartID/*/checkout`</summary>
 
 - [NoCache]()
 - [Logger]()
@@ -89,66 +61,238 @@
 - **/carts**
 	- **/:cartID**
 		- [CartCtx]()
-		- **/items**
-			- **/:cartItemID**
-				- [CartItemCtx]()
+		- **/***
+			- **/checkout**
+				- **/**
+					- _PUT_
+						- [UpdateCheckout]()
+					- _POST_
+						- [CreateCheckout]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/*/items`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/***
+			- **/items**
+				- **/**
+					- _POST_
+						- [CreateCartItem]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/*/items/:cartItemID`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/***
+			- **/items**
+				- **/:cartItemID**
+					- [CartItemCtx]()
+					- **/**
+						- _GET_
+							- [GetCartItem]()
+						- _PUT_
+							- [UpdateCartItem]()
+						- _DELETE_
+							- [RemoveCartItem]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/*/payment`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/***
+			- **/payment**
+				- **/**
+					- _POST_
+						- [CreatePayment]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/*/payment/methods`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/***
+			- **/payment**
+				- **/methods**
+					- _GET_
+						- [ListPaymentMethods]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/*/shipping`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/***
+			- **/shipping**
 				- **/**
 					- _GET_
-						- [GetCartItem]()
+						- [ListShippingRates]()
 					- _PUT_
-						- [UpdateCartItem]()
-					- _DELETE_
-						- [RemoveCartItem]()
+						- [UpdateShippingMethod]()
 
 </details>
 <details>
-<summary>`/carts/:cartID/payment`</summary>
+<summary>`/carts/default/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
 - **/carts**
-	- **/:cartID**
-		- [CartCtx]()
-		- **/payment**
+	- **/default**
+		- [DefaultCartCtx]()
+		- **/***
 			- **/**
-				- _POST_
-					- [CreatePayment]()
-
-</details>
-<details>
-<summary>`/carts/:cartID/payment/methods`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
-		- **/payment**
-			- **/methods**
-				- _GET_
-					- [ListPaymentMethods]()
-
-</details>
-<details>
-<summary>`/carts/:cartID/shipping`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
-		- **/shipping**
-			- **/**
-				- _GET_
-					- [ListShippingRates]()
 				- _PUT_
-					- [UpdateShippingMethod]()
+					- [UpdateCart]()
+				- _DELETE_
+					- [DeleteCart]()
+				- _GET_
+					- [GetCart]()
+
+</details>
+<details>
+<summary>`/carts/default/*/checkout`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/default**
+		- [DefaultCartCtx]()
+		- **/***
+			- **/checkout**
+				- **/**
+					- _PUT_
+						- [UpdateCheckout]()
+					- _POST_
+						- [CreateCheckout]()
+
+</details>
+<details>
+<summary>`/carts/default/*/items`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/default**
+		- [DefaultCartCtx]()
+		- **/***
+			- **/items**
+				- **/**
+					- _POST_
+						- [CreateCartItem]()
+
+</details>
+<details>
+<summary>`/carts/default/*/items/:cartItemID`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/default**
+		- [DefaultCartCtx]()
+		- **/***
+			- **/items**
+				- **/:cartItemID**
+					- [CartItemCtx]()
+					- **/**
+						- _DELETE_
+							- [RemoveCartItem]()
+						- _GET_
+							- [GetCartItem]()
+						- _PUT_
+							- [UpdateCartItem]()
+
+</details>
+<details>
+<summary>`/carts/default/*/payment`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/default**
+		- [DefaultCartCtx]()
+		- **/***
+			- **/payment**
+				- **/**
+					- _POST_
+						- [CreatePayment]()
+
+</details>
+<details>
+<summary>`/carts/default/*/payment/methods`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/default**
+		- [DefaultCartCtx]()
+		- **/***
+			- **/payment**
+				- **/methods**
+					- _GET_
+						- [ListPaymentMethods]()
+
+</details>
+<details>
+<summary>`/carts/default/*/shipping`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/default**
+		- [DefaultCartCtx]()
+		- **/***
+			- **/shipping**
+				- **/**
+					- _GET_
+						- [ListShippingRates]()
+					- _PUT_
+						- [UpdateShippingMethod]()
 
 </details>
 <details>
@@ -277,10 +421,10 @@
 	- **/:placeID**
 		- [PlaceCtx]()
 		- **/follow**
-			- _DELETE_
-				- [UnfollowPlace]()
 			- _POST_
 				- [FollowPlace]()
+			- _DELETE_
+				- [UnfollowPlace]()
 
 </details>
 <details>
@@ -458,10 +602,10 @@
 - [Recoverer]()
 - [New.func1]()
 - **/signup**
-	- _GET_
-		- [GetSignupPage]()
 	- _POST_
 		- [EmailSignup]()
+	- _GET_
+		- [GetSignupPage]()
 
 </details>
 <details>
@@ -498,38 +642,6 @@
 
 </details>
 <details>
-<summary>`/users/me/carts`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/me**
-		- [MeCtx]()
-		- **/carts**
-			- _GET_
-				- [ListCarts]()
-
-</details>
-<details>
-<summary>`/users/me/carts/:scope`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/me**
-		- [MeCtx]()
-		- **/carts/:scope**
-			- [CartScopeCtx]()
-			- **/**
-				- _GET_
-					- [ListCarts]()
-
-</details>
-<details>
 <summary>`/users/me/device`</summary>
 
 - [NoCache]()
@@ -542,46 +654,6 @@
 		- **/device**
 			- _PUT_
 				- [SetDeviceToken]()
-
-</details>
-<details>
-<summary>`/users/me/payments`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/me**
-		- [MeCtx]()
-		- **/payments**
-			- **/**
-				- _POST_
-					- [CreatePaymentMethod]()
-				- _GET_
-					- [ListPaymentMethods]()
-
-</details>
-<details>
-<summary>`/users/me/payments/:paymentID`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/users**
-	- **/me**
-		- [MeCtx]()
-		- **/payments**
-			- **/:paymentID**
-				- [PaymentMethodCtx]()
-				- **/**
-					- _PUT_
-						- [UpdatePaymentMethod]()
-					- _DELETE_
-						- [RemovePaymentMethod]()
-					- _GET_
-						- [GetPaymentMethod]()
 
 </details>
 <details>
@@ -613,4 +685,4 @@
 
 </details>
 
-Total # of routes: 41
+Total # of routes: 44

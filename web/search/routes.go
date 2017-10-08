@@ -26,17 +26,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	s := &omniSearch{}
-	//places, err := data.DB.Place.MatchName(q)
-	//if err != nil {
-	//render.Respond(w, r, err)
-	//return
-	//}
-	// TODO
 	s.Places = make([]*presenter.Place, 0)
-	//for i, pl := range places {
-	//place := presenter.NewPlace(ctx, pl)
-	//s.Places[i] = place
-	//}
 
 	// TODO: pagination
 	q = inflector.Singularize(q)
