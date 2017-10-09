@@ -6,16 +6,24 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pressly/chi"
 	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	db "upper.io/db.v3"
 )
 
 func Connect(w http.ResponseWriter, r *http.Request) {
-	shopID := strings.ToLower(chi.URLParam(r, "shopID"))
+	q := r.URL.Query()
+	shopDomain := q.Get("shop")
+	if shopDomain == "" {
+		render.Respond(w, r, api.ErrBadID)
+		return
+	}
+	parts := strings.Split(shopDomain, ".")
+	shopID := parts[0]
+
 	place, err := data.DB.Place.FindByShopifyID(shopID)
 	if err != nil && err != db.ErrNoMoreRows {
 		render.Respond(w, r, err)

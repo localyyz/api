@@ -25,10 +25,10 @@
 - [New.func1]()
 - **/carts**
 	- **/**
-		- _GET_
-			- [ListCarts]()
 		- _POST_
 			- [CreateCart]()
+		- _GET_
+			- [ListCarts]()
 
 </details>
 <details>
@@ -46,7 +46,7 @@
 				- _PUT_
 					- [UpdateCart]()
 				- _DELETE_
-					- [DeleteCart]()
+					- [ClearCart]()
 				- _GET_
 					- [GetCart]()
 
@@ -64,10 +64,10 @@
 		- **/***
 			- **/checkout**
 				- **/**
-					- _PUT_
-						- [UpdateCheckout]()
 					- _POST_
 						- [CreateCheckout]()
+					- _PUT_
+						- [UpdateCheckout]()
 
 </details>
 <details>
@@ -102,12 +102,29 @@
 				- **/:cartItemID**
 					- [CartItemCtx]()
 					- **/**
-						- _GET_
-							- [GetCartItem]()
 						- _PUT_
 							- [UpdateCartItem]()
 						- _DELETE_
 							- [RemoveCartItem]()
+						- _GET_
+							- [GetCartItem]()
+
+</details>
+<details>
+<summary>`/carts/:cartID/*/items/quantities`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/:cartID**
+		- [CartCtx]()
+		- **/***
+			- **/items**
+				- **/quantities**
+					- _GET_
+						- [CheckQuantities]()
 
 </details>
 <details>
@@ -157,10 +174,10 @@
 		- **/***
 			- **/shipping**
 				- **/**
-					- _GET_
-						- [ListShippingRates]()
 					- _PUT_
 						- [UpdateShippingMethod]()
+					- _GET_
+						- [ListShippingRates]()
 
 </details>
 <details>
@@ -178,7 +195,7 @@
 				- _PUT_
 					- [UpdateCart]()
 				- _DELETE_
-					- [DeleteCart]()
+					- [ClearCart]()
 				- _GET_
 					- [GetCart]()
 
@@ -196,10 +213,10 @@
 		- **/***
 			- **/checkout**
 				- **/**
-					- _PUT_
-						- [UpdateCheckout]()
 					- _POST_
 						- [CreateCheckout]()
+					- _PUT_
+						- [UpdateCheckout]()
 
 </details>
 <details>
@@ -234,12 +251,29 @@
 				- **/:cartItemID**
 					- [CartItemCtx]()
 					- **/**
+						- _PUT_
+							- [UpdateCartItem]()
 						- _DELETE_
 							- [RemoveCartItem]()
 						- _GET_
 							- [GetCartItem]()
-						- _PUT_
-							- [UpdateCartItem]()
+
+</details>
+<details>
+<summary>`/carts/default/*/items/quantities`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts**
+	- **/default**
+		- [DefaultCartCtx]()
+		- **/***
+			- **/items**
+				- **/quantities**
+					- _GET_
+						- [CheckQuantities]()
 
 </details>
 <details>
@@ -635,10 +669,10 @@
 		- [MeCtx]()
 		- **/address**
 			- **/**
-				- _GET_
-					- [ListAddresses]()
 				- _POST_
 					- [CreateAddress]()
+				- _GET_
+					- [ListAddresses]()
 
 </details>
 <details>
@@ -685,4 +719,4 @@
 
 </details>
 
-Total # of routes: 44
+Total # of routes: 46
