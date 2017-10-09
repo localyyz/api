@@ -42,7 +42,14 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 
 	// group them by places, as line items
 	lineItemsMap := map[int64][]*shopify.LineItem{}
+	var outOfStock []int64
 	for _, v := range variants {
+		if v.Limits == 0 {
+			// check if any variants are out of stock
+			// collect and continue
+			outOfStock = append(outOfStock, v.ID)
+			continue
+		}
 		lineItemsMap[v.PlaceID] = append(
 			lineItemsMap[v.PlaceID],
 			&shopify.LineItem{
@@ -50,6 +57,10 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 				Quantity:  1, // TODO: for now, 1 item, hardcoded
 			},
 		)
+	}
+	if len(outOfStock) > 0 {
+		render.Respond(w, r, api.ErrOutOfStock(outOfStock))
+		return
 	}
 
 	checkoutMap := make(map[int64]*shopify.Checkout)
@@ -82,10 +93,16 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			if v.PlaceID != placeID {
 				continue
 			}
+
 			isStocked, _, _ := cl.Product.IsInStock(ctx, v.OfferID)
 			if !isStocked {
 				outOfStock = append(outOfStock, v.ID)
 			}
+			// async mark variant as soldout
+			go func(v *data.ProductVariant) {
+				v.Limits = 0
+				data.DB.ProductVariant.Save(v)
+			}(v)
 		}
 		if len(outOfStock) > 0 {
 			render.Respond(w, r, api.ErrOutOfStock(outOfStock))
