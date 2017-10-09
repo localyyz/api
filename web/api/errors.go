@@ -19,9 +19,10 @@ type ApiError struct {
 	StatusCode int    `json:"-"`
 	StatusText string `json:"status"`
 
-	AppCode   int64  `json:"code,omitempty"`
-	ErrorText string `json:"error,omitempty"`
-	Cause     string `json:"cause,omitempty"`
+	AppCode   int64       `json:"code,omitempty"`
+	ErrorText string      `json:"error,omitempty"`
+	Cause     string      `json:"cause,omitempty"`
+	Data      interface{} `json:"data,omitempty"`
 }
 
 var (
@@ -49,7 +50,8 @@ var (
 	ErrClaimDistance = errors.New("claim distance")
 
 	/* Cart */
-	ErrEmptyCart = &ApiError{StatusCode: http.StatusOK, ErrorText: "empty cart"}
+	ErrEmptyCart  = &ApiError{StatusCode: http.StatusOK, ErrorText: "empty cart"}
+	errOutOfStock = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "one or more items in your cart are out of stock"}
 
 	// generic api error
 	errGeneric  = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Something went wrong"}
@@ -67,6 +69,7 @@ var (
 		ErrClaimDistance:  &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "You're too far away. Get closer!"},
 	}
 
+	// db error mappings
 	dbmappings = map[string]*ApiError{
 		"unique_violation": &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "Already exists!"},
 	}
@@ -88,6 +91,12 @@ func ErrInvalidRequest(err error) *ApiError {
 		StatusText: "Invalid request.",
 		ErrorText:  err.Error(),
 	}
+}
+
+func ErrOutOfStock(v interface{}) *ApiError {
+	e := *errOutOfStock
+	e.Data = v
+	return &e
 }
 
 func WrapErr(err error) *ApiError {

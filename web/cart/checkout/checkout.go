@@ -13,6 +13,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
 // Create checkout on shopify
@@ -72,6 +73,24 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 
 		cl := shopify.NewClient(nil, cred.AccessToken)
 		cl.BaseURL, _ = url.Parse(cred.ApiURL)
+
+		// check for line item quantity, return if any is out of stock
+		var outOfStock []int64
+		for _, v := range variants {
+			// TODO: optimize? bulk fetch? is there an api?
+			// TODO: return multiple?
+			if v.PlaceID != placeID {
+				continue
+			}
+			isStocked, _, _ := cl.Product.IsInStock(ctx, v.OfferID)
+			if !isStocked {
+				outOfStock = append(outOfStock, v.ID)
+			}
+		}
+		if len(outOfStock) > 0 {
+			render.Respond(w, r, api.ErrOutOfStock(outOfStock))
+			return
+		}
 
 		cc, _, err := cl.Checkout.Create(ctx, &shopify.CheckoutRequest{checkout})
 		if err != nil {

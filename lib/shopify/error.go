@@ -39,6 +39,11 @@ type ErrorResponse struct {
 	Errors interface{} `json:"errors"`
 }
 
+var (
+	// TODO: make this an unmarshall type
+	ErrNotEnoughInStock = `not_enough_in_stock`
+)
+
 func (e *LineItemError) Error() string {
 	for _, q := range e.Quantity {
 		return fmt.Sprintf("[line_item] pos(%s) %s %s", e.Position, q.Code, q.Message)
