@@ -25,10 +25,10 @@
 - [New.func1]()
 - **/carts**
 	- **/**
-		- _POST_
-			- [CreateCart]()
 		- _GET_
 			- [ListCarts]()
+		- _POST_
+			- [CreateCart]()
 
 </details>
 <details>
@@ -102,12 +102,12 @@
 				- **/:cartItemID**
 					- [CartItemCtx]()
 					- **/**
+						- _GET_
+							- [GetCartItem]()
 						- _PUT_
 							- [UpdateCartItem]()
 						- _DELETE_
 							- [RemoveCartItem]()
-						- _GET_
-							- [GetCartItem]()
 
 </details>
 <details>
@@ -174,10 +174,10 @@
 		- **/***
 			- **/shipping**
 				- **/**
-					- _PUT_
-						- [UpdateShippingMethod]()
 					- _GET_
 						- [ListShippingRates]()
+					- _PUT_
+						- [UpdateShippingMethod]()
 
 </details>
 <details>
@@ -323,20 +323,20 @@
 		- **/***
 			- **/shipping**
 				- **/**
-					- _GET_
-						- [ListShippingRates]()
 					- _PUT_
 						- [UpdateShippingMethod]()
+					- _GET_
+						- [ListShippingRates]()
 
 </details>
 <details>
-<summary>`/connect/:shopID`</summary>
+<summary>`/connect`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/connect/:shopID**
+- **/connect**
 	- _GET_
 		- [Connect]()
 
@@ -636,10 +636,10 @@
 - [Recoverer]()
 - [New.func1]()
 - **/signup**
-	- _POST_
-		- [EmailSignup]()
 	- _GET_
 		- [GetSignupPage]()
+	- _POST_
+		- [EmailSignup]()
 
 </details>
 <details>
@@ -669,10 +669,10 @@
 		- [MeCtx]()
 		- **/address**
 			- **/**
-				- _POST_
-					- [CreateAddress]()
 				- _GET_
 					- [ListAddresses]()
+				- _POST_
+					- [CreateAddress]()
 
 </details>
 <details>

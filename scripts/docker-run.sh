@@ -13,4 +13,4 @@ docker run -d -it\
   --link postgres:postgres \
   --restart=always \
   --name $NAME $IMAGE \
-  /bin/$NAME -config=/etc/$NAME.conf -pem=/etc/push.pem
+  /bin/$NAME -config=/etc/$NAME.conf
