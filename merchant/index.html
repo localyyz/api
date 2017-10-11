@@ -86,8 +86,8 @@
                       {% if (place.Status == 0 or place.Status == 4) %}
                         Please <a href="mailto:support@localyyz.com?subject={{name}}: {{status}} status help">contact Localyyz Support for help.</a>
                       {% elif (place.Status == 1) %}
-                        By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" href="#" data-polaris-unstyled="true">Terms and Conditions</a>,
-                          and <a class="Polaris-Link" href="#" data-polaris-unstyled="true">Services Subscription</a>.
+                        By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" href="https://business.localyyz.com/terms-and-conditions-businesses.html" data-polaris-unstyled="true">Terms and Conditions</a>,
+                          and <a class="Polaris-Link" href="https://business.localyyz.com/services-subscription-agreement.html" data-polaris-unstyled="true">Services Subscription</a>.
                       {% elif (place.Status == 2) %}
                         Estimated date of approval: <span class="Polaris-Badge Polaris-Badge--statusInfo"> {{ approvalTs|naturaltime }}</span>
                       {% endif %}
