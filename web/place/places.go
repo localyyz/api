@@ -37,7 +37,13 @@ func PlaceCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		place, err := data.DB.Place.FindByID(placeID)
+		var place *data.Place
+		err = data.DB.Place.Find(
+			db.Cond{
+				"id":     placeID,
+				"status": data.PlaceStatusActive,
+			},
+		).One(&place)
 		if err != nil {
 			render.Respond(w, r, err)
 			return
@@ -62,7 +68,12 @@ func ListNearby(w http.ResponseWriter, r *http.Request) {
 	cursor := api.NewPage(r)
 
 	query := data.DB.Place.
-		Find(db.Cond{"locale_id": user.Etc.LocaleID}).
+		Find(
+			db.Cond{
+				"locale_id": user.Etc.LocaleID,
+				"status":    data.PlaceStatusActive,
+			},
+		).
 		Select(
 			db.Raw("*"),
 			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
@@ -96,6 +107,7 @@ func ListRecent(w http.ResponseWriter, r *http.Request) {
 		From("places pl").
 		LeftJoin("products pr").
 		On("pl.id = pr.place_id").
+		Where("pl.status = ?", data.PlaceStatusActive).
 		GroupBy("pl.id").
 		OrderBy("pl.id").
 		Limit(10)
