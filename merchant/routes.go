@@ -40,6 +40,7 @@ const (
 func New(h *Handler) chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(middleware.RealIP)
 	r.Use(middleware.NoCache)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
