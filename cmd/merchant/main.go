@@ -8,6 +8,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/merchant"
 	"github.com/pkg/errors"
@@ -51,8 +52,9 @@ func main() {
 	lg.Infof("Merchant site starting on %v", conf.Bind)
 	router := merchant.New(
 		&merchant.Handler{
-			Debug:         (conf.Environment == "development"),
-			ShopifySecret: conf.Connect.Shopify.AppSecret,
+			Debug:  (conf.Environment == "development"),
+			SH:     connect.SetupShopify(conf.Connect.Shopify),
+			ApiURL: conf.Api.ApiURL,
 		},
 	)
 	if err := graceful.ListenAndServe(conf.Bind, router); err != nil {

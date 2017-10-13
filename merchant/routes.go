@@ -2,9 +2,6 @@ package merchant
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -15,6 +12,7 @@ import (
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/flosch/pongo2"
@@ -27,13 +25,13 @@ import (
 )
 
 type Handler struct {
-	DB            *data.Database
-	Debug         bool
-	ShopifySecret string
+	DB     *data.Database
+	SH     *connect.Shopify
+	ApiURL string
+	Debug  bool
 }
 
 const (
-	ShopifySecretKey = "shopify.secret"
 	SignatureTimeout = 30 * time.Second
 )
 
@@ -44,11 +42,12 @@ func New(h *Handler) chi.Router {
 	r.Use(middleware.NoCache)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.WithValue("shopify.client", h.SH))
+	r.Use(middleware.WithValue("api.url", h.ApiURL))
 
 	// Shopify auth routes
 	r.Group(func(r chi.Router) {
 		if !h.Debug {
-			r.Use(middleware.WithValue(ShopifySecretKey, h.ShopifySecret))
 			r.Use(VerifySignature)
 		}
 		r.Use(ShopifyShopCtx)
@@ -155,39 +154,11 @@ func SessionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ShopifyShopCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		q := r.URL.Query()
-		shopDomain := q.Get("shop")
-
-		if len(shopDomain) == 0 {
-			render.Status(r, http.StatusNotFound)
-			render.Respond(w, r, "")
-			return
-		}
-
-		// TODO: Use a tld lib
-		parts := strings.Split(shopDomain, ".")
-		shopID := parts[0]
-
-		place, err := data.DB.Place.FindByShopifyID(shopID)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-
-		ctx = context.WithValue(ctx, "place", place)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
-}
-
 func VerifySignature(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		// verify the signature
 		ctx := r.Context()
-		secret := ctx.Value(ShopifySecretKey).(string)
+		sh := ctx.Value("shopify.client").(*connect.Shopify)
 
 		q := r.URL.Query()
 		sig := []byte(q.Get("hmac"))
@@ -217,17 +188,7 @@ func VerifySignature(next http.Handler) http.Handler {
 		// remove the hmac key
 		q.Del("hmac")
 
-		mac := hmac.New(sha256.New, []byte(secret))
-		// query unescape
-		uu, _ := url.QueryUnescape(q.Encode())
-		mac.Write([]byte(uu))
-
-		src := mac.Sum(nil)
-		// hex encode
-		expectedSig := make([]byte, hex.EncodedLen(len(src)))
-		hex.Encode(expectedSig, src)
-
-		if !hmac.Equal(sig, expectedSig) {
+		if !sh.VerifySignature(sig, q.Encode()) {
 			render.Respond(w, r, ErrUnauthorized)
 			return
 		}

@@ -12,6 +12,9 @@ application_name  = "merchant"
 [jwt]
 secret            = "merchant secret"
 
+[api]
+api_url           = "http://localhost:5331"
+
 [connect.shopify]
 app_id            = ""
 app_secret        = ""

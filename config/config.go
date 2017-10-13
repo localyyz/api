@@ -31,6 +31,11 @@ type Config struct {
 		Topic string `tomp:"topic"`
 	} `toml:"pusher"`
 
+	// [api]
+	Api struct {
+		ApiURL string `toml:"api_url"`
+	} `toml:"api"`
+
 	// [jwt]
 	Jwt struct {
 		Secret string `toml:"secret"`

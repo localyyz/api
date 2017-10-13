@@ -2,6 +2,9 @@ package connect
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -49,13 +52,14 @@ var (
 	}
 )
 
-func SetupShopify(conf Config) {
+func SetupShopify(conf Config) *Shopify {
 	SH = &Shopify{
 		clientID:     conf.AppId,
 		clientSecret: conf.AppSecret,
 		redirectURL:  conf.OAuthCallback,
 		webhookURL:   conf.WebhookURL,
 	}
+	return SH
 }
 
 func (s *Shopify) AuthCodeURL(ctx context.Context) string {
@@ -225,4 +229,18 @@ func (s *Shopify) ClientFromCred(r *http.Request) *http.Client {
 	)
 
 	return oauth2.NewClient(ctx, ts)
+}
+
+func (s *Shopify) VerifySignature(sig []byte, query string) bool {
+	mac := hmac.New(sha256.New, []byte(s.clientSecret))
+	// query unescape
+	uu, _ := url.QueryUnescape(query)
+	mac.Write([]byte(uu))
+
+	src := mac.Sum(nil)
+	// hex encode
+	expectedSig := make([]byte, hex.EncodedLen(len(src)))
+	hex.Encode(expectedSig, src)
+
+	return hmac.Equal(sig, expectedSig)
 }
