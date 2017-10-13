@@ -163,6 +163,7 @@ func VerifySignature(next http.Handler) http.Handler {
 		q := r.URL.Query()
 		sig := []byte(q.Get("hmac"))
 		if len(sig) == 0 {
+			lg.Warn("verify: missing hmac")
 			render.Respond(w, r, ErrUnauthorized)
 			return
 		}
@@ -170,17 +171,20 @@ func VerifySignature(next http.Handler) http.Handler {
 		// verify timestamp
 		ts, err := strconv.ParseInt(q.Get("timestamp"), 10, 64)
 		if err != nil {
+			lg.Warn("verify: missing timestamp")
 			render.Respond(w, r, ErrUnauthorized)
 			return
 		}
 		tm := time.Unix(ts, 0)
 		if time.Now().Before(tm) {
 			// is tm in the future?
+			lg.Warn("verify: timestamp before current time")
 			render.Respond(w, r, ErrUnauthorized)
 			return
 		}
 		if time.Since(tm) > SignatureTimeout {
 			// is tm outside of the timeout (30s)
+			lg.Warn("verify: timestamp timed out (30s)")
 			render.Respond(w, r, ErrUnauthorized)
 			return
 		}
@@ -189,6 +193,7 @@ func VerifySignature(next http.Handler) http.Handler {
 		q.Del("hmac")
 
 		if !sh.VerifySignature(sig, q.Encode()) {
+			lg.Warn("verify: hmac mismatch")
 			render.Respond(w, r, ErrUnauthorized)
 			return
 		}
