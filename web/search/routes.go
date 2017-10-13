@@ -7,7 +7,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"github.com/gedex/inflector"
-	"github.com/pressly/chi/render"
+	"github.com/go-chi/render"
 )
 
 type omniSearch struct {

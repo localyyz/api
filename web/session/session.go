@@ -9,8 +9,8 @@ import (
 	db "upper.io/db.v3"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/go-chi/render"
 	"github.com/pkg/errors"
-	"github.com/pressly/chi/render"
 	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"

@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/go-chi/render"
 	"github.com/pkg/errors"
-	"github.com/pressly/chi/render"
 	"github.com/pressly/lg"
 	"upper.io/db.v3"
 )

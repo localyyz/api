@@ -8,8 +8,8 @@ import (
 
 	db "upper.io/db.v3"
 
+	"github.com/go-chi/render"
 	"github.com/lib/pq"
-	"github.com/pressly/chi/render"
 	"github.com/pressly/lg"
 )
 

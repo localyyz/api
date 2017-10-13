@@ -9,7 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 
-	"github.com/pressly/chi/render"
+	"github.com/go-chi/render"
 )
 
 func ShopifyStoreWhCtx(next http.Handler) http.Handler {

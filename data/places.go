@@ -23,6 +23,7 @@ type Place struct {
 	BlogtoID  *int64         `db:"blogto_id,omitempty" json:"-"`
 	Geo       geotools.Point `db:"geo" json:"-"`
 	Distance  float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
+	TOSIP     string         `db:"tos_ip" json:"-"`
 
 	CreatedAt   *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt   *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`

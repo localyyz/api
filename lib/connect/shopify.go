@@ -8,10 +8,10 @@ import (
 
 	db "upper.io/db.v3"
 
+	"github.com/go-chi/render"
 	"github.com/goware/geotools"
 	"github.com/goware/jwtauth"
 	"github.com/pkg/errors"
-	"github.com/pressly/chi/render"
 	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"

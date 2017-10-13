@@ -19,10 +19,10 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/render"
 	"github.com/goware/jwtauth"
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/middleware"
-	"github.com/pressly/chi/render"
 	"github.com/pressly/lg"
 )
 
@@ -101,6 +101,7 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 	// proceed to next status
 	place.Status += 1
 	place.TOSAgreedAt = data.GetTimeUTCPointer()
+	place.TOSIP = r.RemoteAddr
 	if err := data.DB.Place.Save(place); err != nil {
 		// error has occured. respond
 		render.Status(r, http.StatusInternalServerError)

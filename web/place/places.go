@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi"
+	"github.com/go-chi/render"
+
 	"upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/render"
 )
 
 type shareWrapper struct {

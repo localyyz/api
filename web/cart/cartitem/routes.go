@@ -7,8 +7,8 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/render"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/render"
 	db "upper.io/db.v3"
 )
 
@@ -17,7 +17,7 @@ func Routes() chi.Router {
 
 	r.Post("/", CreateCartItem)
 	r.Get("/quantities", CheckQuantities)
-	r.Route("/:cartItemID", func(r chi.Router) {
+	r.Route("/{cartItemID}", func(r chi.Router) {
 		r.Use(CartItemCtx)
 		r.Get("/", GetCartItem)
 		r.Put("/", UpdateCartItem)

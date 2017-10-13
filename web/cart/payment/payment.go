@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/go-chi/render"
 	"github.com/google/uuid"
-	"github.com/pressly/chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"

@@ -11,8 +11,8 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/cart/checkout"
 	"bitbucket.org/moodie-app/moodie-api/web/cart/payment"
 	"bitbucket.org/moodie-app/moodie-api/web/cart/shipping"
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/render"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/render"
 	db "upper.io/db.v3"
 )
 
@@ -25,7 +25,7 @@ func Routes() chi.Router {
 		r.Use(DefaultCartCtx)
 		r.Mount("/", cartRoutes())
 	})
-	r.Route("/:cartID", func(r chi.Router) {
+	r.Route("/{cartID}", func(r chi.Router) {
 		r.Use(CartCtx)
 		r.Mount("/", cartRoutes())
 	})

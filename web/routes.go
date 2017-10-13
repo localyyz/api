@@ -20,9 +20,9 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
 
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/middleware"
-	"github.com/pressly/chi/render"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/render"
 )
 
 type Handler struct {

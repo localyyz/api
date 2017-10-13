@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"bitbucket.org/moodie-app/moodie-api/web"
-	"github.com/pressly/chi/docgen"
+	"github.com/go-chi/docgen"
 	"github.com/pressly/lg"
 )
 

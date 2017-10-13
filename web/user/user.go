@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/pressly/chi/render"
+	"github.com/go-chi/render"
 	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"

@@ -1,6 +1,6 @@
 package place
 
-import "github.com/pressly/chi"
+import "github.com/go-chi/chi"
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
@@ -9,7 +9,7 @@ func Routes() chi.Router {
 	r.Get("/recent", ListRecent)
 	r.Get("/following", ListFollowing)
 
-	r.Route("/:placeID", func(r chi.Router) {
+	r.Route("/{placeID}", func(r chi.Router) {
 		r.Use(PlaceCtx)
 
 		r.Get("/", GetPlace)

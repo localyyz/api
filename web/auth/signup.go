@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/pressly/chi/render"
+	"github.com/go-chi/render"
 )
 
 func GetSignupPage(w http.ResponseWriter, r *http.Request) {

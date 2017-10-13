@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	set "gopkg.in/fatih/set.v0"
+	"github.com/go-chi/render"
 
-	"github.com/pressly/chi/render"
+	set "gopkg.in/fatih/set.v0"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"

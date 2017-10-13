@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/go-chi/render"
 	"github.com/goware/geotools"
-	"github.com/pressly/chi/render"
 	"upper.io/db.v3"
 )
 

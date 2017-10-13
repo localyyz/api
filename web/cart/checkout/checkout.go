@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/go-chi/render"
 	"github.com/pkg/errors"
-	"github.com/pressly/chi/render"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 

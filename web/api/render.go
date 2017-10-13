@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/pressly/chi/render"
+	"github.com/go-chi/render"
 	"github.com/pressly/lg"
 )
 

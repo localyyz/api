@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"upper.io/db.v3"
+	"github.com/go-chi/render"
 
-	"github.com/pressly/chi/render"
+	"upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"

@@ -1,6 +1,6 @@
 package product
 
-import "github.com/pressly/chi"
+import "github.com/go-chi/chi"
 
 func Routes() chi.Router {
 	r := chi.NewRouter()

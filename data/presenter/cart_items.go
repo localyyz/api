@@ -4,8 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/go-chi/render"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"github.com/pressly/chi/render"
 )
 
 type CartItem struct {

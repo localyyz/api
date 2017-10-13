@@ -17,13 +17,13 @@
 
 </details>
 <details>
-<summary>`/carts`</summary>
+<summary>`/carts/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
+- **/carts/***
 	- **/**
 		- _GET_
 			- [ListCarts]()
@@ -32,37 +32,37 @@
 
 </details>
 <details>
-<summary>`/carts/:cartID/*`</summary>
+<summary>`/carts/*/default/*/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
+- **/carts/***
+	- **/default/***
+		- [DefaultCartCtx]()
 		- **/***
 			- **/**
+				- _GET_
+					- [GetCart]()
 				- _PUT_
 					- [UpdateCart]()
 				- _DELETE_
 					- [ClearCart]()
-				- _GET_
-					- [GetCart]()
 
 </details>
 <details>
-<summary>`/carts/:cartID/*/checkout`</summary>
+<summary>`/carts/*/default/*/*/checkout/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
+- **/carts/***
+	- **/default/***
+		- [DefaultCartCtx]()
 		- **/***
-			- **/checkout**
+			- **/checkout/***
 				- **/**
 					- _POST_
 						- [CreateCheckout]()
@@ -71,35 +71,52 @@
 
 </details>
 <details>
-<summary>`/carts/:cartID/*/items`</summary>
+<summary>`/carts/*/default/*/*/items/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
+- **/carts/***
+	- **/default/***
+		- [DefaultCartCtx]()
 		- **/***
-			- **/items**
+			- **/items/***
 				- **/**
 					- _POST_
 						- [CreateCartItem]()
 
 </details>
 <details>
-<summary>`/carts/:cartID/*/items/:cartItemID`</summary>
+<summary>`/carts/*/default/*/*/items/*/quantities`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
+- **/carts/***
+	- **/default/***
+		- [DefaultCartCtx]()
 		- **/***
-			- **/items**
-				- **/:cartItemID**
+			- **/items/***
+				- **/quantities**
+					- _GET_
+						- [CheckQuantities]()
+
+</details>
+<details>
+<summary>`/carts/*/default/*/*/items/*/{cartItemID}/*`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts/***
+	- **/default/***
+		- [DefaultCartCtx]()
+		- **/***
+			- **/items/***
+				- **/{cartItemID}/***
 					- [CartItemCtx]()
 					- **/**
 						- _GET_
@@ -111,68 +128,51 @@
 
 </details>
 <details>
-<summary>`/carts/:cartID/*/items/quantities`</summary>
+<summary>`/carts/*/default/*/*/payment/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
+- **/carts/***
+	- **/default/***
+		- [DefaultCartCtx]()
 		- **/***
-			- **/items**
-				- **/quantities**
-					- _GET_
-						- [CheckQuantities]()
-
-</details>
-<details>
-<summary>`/carts/:cartID/*/payment`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
-		- **/***
-			- **/payment**
+			- **/payment/***
 				- **/**
 					- _POST_
 						- [CreatePayment]()
 
 </details>
 <details>
-<summary>`/carts/:cartID/*/payment/methods`</summary>
+<summary>`/carts/*/default/*/*/payment/*/methods`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
+- **/carts/***
+	- **/default/***
+		- [DefaultCartCtx]()
 		- **/***
-			- **/payment**
+			- **/payment/***
 				- **/methods**
 					- _GET_
 						- [ListPaymentMethods]()
 
 </details>
 <details>
-<summary>`/carts/:cartID/*/shipping`</summary>
+<summary>`/carts/*/default/*/*/shipping/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/:cartID**
-		- [CartCtx]()
+- **/carts/***
+	- **/default/***
+		- [DefaultCartCtx]()
 		- **/***
-			- **/shipping**
+			- **/shipping/***
 				- **/**
 					- _GET_
 						- [ListShippingRates]()
@@ -181,37 +181,37 @@
 
 </details>
 <details>
-<summary>`/carts/default/*`</summary>
+<summary>`/carts/*/{cartID}/*/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/default**
-		- [DefaultCartCtx]()
+- **/carts/***
+	- **/{cartID}/***
+		- [CartCtx]()
 		- **/***
 			- **/**
+				- _GET_
+					- [GetCart]()
 				- _PUT_
 					- [UpdateCart]()
 				- _DELETE_
 					- [ClearCart]()
-				- _GET_
-					- [GetCart]()
 
 </details>
 <details>
-<summary>`/carts/default/*/checkout`</summary>
+<summary>`/carts/*/{cartID}/*/*/checkout/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/default**
-		- [DefaultCartCtx]()
+- **/carts/***
+	- **/{cartID}/***
+		- [CartCtx]()
 		- **/***
-			- **/checkout**
+			- **/checkout/***
 				- **/**
 					- _POST_
 						- [CreateCheckout]()
@@ -220,108 +220,108 @@
 
 </details>
 <details>
-<summary>`/carts/default/*/items`</summary>
+<summary>`/carts/*/{cartID}/*/*/items/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/default**
-		- [DefaultCartCtx]()
+- **/carts/***
+	- **/{cartID}/***
+		- [CartCtx]()
 		- **/***
-			- **/items**
+			- **/items/***
 				- **/**
 					- _POST_
 						- [CreateCartItem]()
 
 </details>
 <details>
-<summary>`/carts/default/*/items/:cartItemID`</summary>
+<summary>`/carts/*/{cartID}/*/*/items/*/quantities`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/default**
-		- [DefaultCartCtx]()
+- **/carts/***
+	- **/{cartID}/***
+		- [CartCtx]()
 		- **/***
-			- **/items**
-				- **/:cartItemID**
-					- [CartItemCtx]()
-					- **/**
-						- _PUT_
-							- [UpdateCartItem]()
-						- _DELETE_
-							- [RemoveCartItem]()
-						- _GET_
-							- [GetCartItem]()
-
-</details>
-<details>
-<summary>`/carts/default/*/items/quantities`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/carts**
-	- **/default**
-		- [DefaultCartCtx]()
-		- **/***
-			- **/items**
+			- **/items/***
 				- **/quantities**
 					- _GET_
 						- [CheckQuantities]()
 
 </details>
 <details>
-<summary>`/carts/default/*/payment`</summary>
+<summary>`/carts/*/{cartID}/*/*/items/*/{cartItemID}/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/default**
-		- [DefaultCartCtx]()
+- **/carts/***
+	- **/{cartID}/***
+		- [CartCtx]()
 		- **/***
-			- **/payment**
+			- **/items/***
+				- **/{cartItemID}/***
+					- [CartItemCtx]()
+					- **/**
+						- _GET_
+							- [GetCartItem]()
+						- _PUT_
+							- [UpdateCartItem]()
+						- _DELETE_
+							- [RemoveCartItem]()
+
+</details>
+<details>
+<summary>`/carts/*/{cartID}/*/*/payment/*`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/carts/***
+	- **/{cartID}/***
+		- [CartCtx]()
+		- **/***
+			- **/payment/***
 				- **/**
 					- _POST_
 						- [CreatePayment]()
 
 </details>
 <details>
-<summary>`/carts/default/*/payment/methods`</summary>
+<summary>`/carts/*/{cartID}/*/*/payment/*/methods`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/default**
-		- [DefaultCartCtx]()
+- **/carts/***
+	- **/{cartID}/***
+		- [CartCtx]()
 		- **/***
-			- **/payment**
+			- **/payment/***
 				- **/methods**
 					- _GET_
 						- [ListPaymentMethods]()
 
 </details>
 <details>
-<summary>`/carts/default/*/shipping`</summary>
+<summary>`/carts/*/{cartID}/*/*/shipping/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/carts**
-	- **/default**
-		- [DefaultCartCtx]()
+- **/carts/***
+	- **/{cartID}/***
+		- [CartCtx]()
 		- **/***
-			- **/shipping**
+			- **/shipping/***
 				- **/**
 					- _PUT_
 						- [UpdateShippingMethod]()
@@ -366,27 +366,27 @@
 
 </details>
 <details>
-<summary>`/locales`</summary>
+<summary>`/locales/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/locales**
+- **/locales/***
 	- **/**
 		- _GET_
 			- [ListLocale]()
 
 </details>
 <details>
-<summary>`/locales/:localeID/places`</summary>
+<summary>`/locales/*/{localeID}/*/places`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/locales**
-	- **/:localeID**
+- **/locales/***
+	- **/{localeID}/***
 		- [LocaleCtx]()
 		- **/places**
 			- _GET_
@@ -430,14 +430,53 @@
 
 </details>
 <details>
-<summary>`/places/:placeID`</summary>
+<summary>`/places/*/following`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/places**
-	- **/:placeID**
+- **/places/***
+	- **/following**
+		- _GET_
+			- [ListFollowing]()
+
+</details>
+<details>
+<summary>`/places/*/nearby`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places/***
+	- **/nearby**
+		- _GET_
+			- [ListNearby]()
+
+</details>
+<details>
+<summary>`/places/*/recent`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places/***
+	- **/recent**
+		- _GET_
+			- [ListRecent]()
+
+</details>
+<details>
+<summary>`/places/*/{placeID}/*`</summary>
+
+- [NoCache]()
+- [Logger]()
+- [Recoverer]()
+- [New.func1]()
+- **/places/***
+	- **/{placeID}/***
 		- [PlaceCtx]()
 		- **/**
 			- _GET_
@@ -445,14 +484,14 @@
 
 </details>
 <details>
-<summary>`/places/:placeID/follow`</summary>
+<summary>`/places/*/{placeID}/*/follow`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/places**
-	- **/:placeID**
+- **/places/***
+	- **/{placeID}/***
 		- [PlaceCtx]()
 		- **/follow**
 			- _POST_
@@ -462,14 +501,14 @@
 
 </details>
 <details>
-<summary>`/places/:placeID/prices`</summary>
+<summary>`/places/*/{placeID}/*/prices`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/places**
-	- **/:placeID**
+- **/places/***
+	- **/{placeID}/***
 		- [PlaceCtx]()
 		- **/prices**
 			- _GET_
@@ -477,14 +516,14 @@
 
 </details>
 <details>
-<summary>`/places/:placeID/products`</summary>
+<summary>`/places/*/{placeID}/*/products`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/places**
-	- **/:placeID**
+- **/places/***
+	- **/{placeID}/***
 		- [PlaceCtx]()
 		- **/products**
 			- _GET_
@@ -492,14 +531,14 @@
 
 </details>
 <details>
-<summary>`/places/:placeID/share`</summary>
+<summary>`/places/*/{placeID}/*/share`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/places**
-	- **/:placeID**
+- **/places/***
+	- **/{placeID}/***
 		- [PlaceCtx]()
 		- **/share**
 			- _POST_
@@ -507,14 +546,14 @@
 
 </details>
 <details>
-<summary>`/places/:placeID/tags`</summary>
+<summary>`/places/*/{placeID}/*/tags`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/places**
-	- **/:placeID**
+- **/places/***
+	- **/{placeID}/***
 		- [PlaceCtx]()
 		- **/tags**
 			- _GET_
@@ -522,53 +561,14 @@
 
 </details>
 <details>
-<summary>`/places/following`</summary>
+<summary>`/products/*/:productID/*/variant`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/places**
-	- **/following**
-		- _GET_
-			- [ListFollowing]()
-
-</details>
-<details>
-<summary>`/places/nearby`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places**
-	- **/nearby**
-		- _GET_
-			- [ListNearby]()
-
-</details>
-<details>
-<summary>`/places/recent`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places**
-	- **/recent**
-		- _GET_
-			- [ListRecent]()
-
-</details>
-<details>
-<summary>`/products/:productID/variant`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/products**
-	- **/:productID**
+- **/products/***
+	- **/:productID/***
 		- [ProductCtx]()
 		- **/variant**
 			- _GET_
@@ -603,26 +603,26 @@
 
 </details>
 <details>
-<summary>`/session`</summary>
+<summary>`/session/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/session**
+- **/session/***
 	- **/**
 		- _DELETE_
 			- [Logout]()
 
 </details>
 <details>
-<summary>`/session/heartbeat`</summary>
+<summary>`/session/*/heartbeat`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/session**
+- **/session/***
 	- **/heartbeat**
 		- _POST_
 			- [PostHeartbeat]()
@@ -636,21 +636,21 @@
 - [Recoverer]()
 - [New.func1]()
 - **/signup**
-	- _GET_
-		- [GetSignupPage]()
 	- _POST_
 		- [EmailSignup]()
+	- _GET_
+		- [GetSignupPage]()
 
 </details>
 <details>
-<summary>`/users/me`</summary>
+<summary>`/users/*/me/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/users**
-	- **/me**
+- **/users/***
+	- **/me/***
 		- [MeCtx]()
 		- **/**
 			- _GET_
@@ -658,32 +658,32 @@
 
 </details>
 <details>
-<summary>`/users/me/address`</summary>
+<summary>`/users/*/me/*/address/*`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/users**
-	- **/me**
+- **/users/***
+	- **/me/***
 		- [MeCtx]()
-		- **/address**
+		- **/address/***
 			- **/**
-				- _GET_
-					- [ListAddresses]()
 				- _POST_
 					- [CreateAddress]()
+				- _GET_
+					- [ListAddresses]()
 
 </details>
 <details>
-<summary>`/users/me/device`</summary>
+<summary>`/users/*/me/*/device`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/users**
-	- **/me**
+- **/users/***
+	- **/me/***
 		- [MeCtx]()
 		- **/device**
 			- _PUT_
@@ -691,14 +691,14 @@
 
 </details>
 <details>
-<summary>`/users/me/ping`</summary>
+<summary>`/users/*/me/*/ping`</summary>
 
 - [NoCache]()
 - [Logger]()
 - [Recoverer]()
 - [New.func1]()
-- **/users**
-	- **/me**
+- **/users/***
+	- **/me/***
 		- [MeCtx]()
 		- **/ping**
 			- _GET_
