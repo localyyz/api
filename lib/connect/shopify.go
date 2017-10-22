@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	db "upper.io/db.v3"
 
@@ -50,6 +51,8 @@ var (
 		shopify.TopicCollectionListingsUpdate,
 		shopify.TopicCollectionListingsRemove,
 	}
+
+	TrialEndDate time.Time
 )
 
 func SetupShopify(conf Config) *Shopify {
@@ -59,6 +62,7 @@ func SetupShopify(conf Config) *Shopify {
 		redirectURL:  conf.OAuthCallback,
 		webhookURL:   conf.WebhookURL,
 	}
+	TrialEndDate, _ = time.Parse("2006-01-02", "2018-05-01")
 	return SH
 }
 
@@ -120,11 +124,11 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *data.ShopifyCred) error {
-	api := shopify.NewClient(nil, creds.AccessToken)
-	api.BaseURL, _ = url.Parse(creds.ApiURL)
+	sh := shopify.NewClient(nil, creds.AccessToken)
+	sh.BaseURL, _ = url.Parse(creds.ApiURL)
 
 	// fetch place data from shopify
-	shop, _, err := api.Shop.Get(ctx)
+	shop, _, err := sh.Shop.Get(ctx)
 	if err != nil {
 		return err
 	}
@@ -154,6 +158,25 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 	// upgrade place status to "waiting for agreement"
 	place.Status = data.PlaceStatusWaitAgreement
+
+	// create the recurring billing, set at 120.00
+	shopifyBilling := &shopify.Billing{
+		Type:      shopify.BillingTypeRecurring,
+		Name:      "Localyyz Subscription",
+		Price:     "120.00",
+		ReturnUrl: fmt.Sprintf("https://%s.myshopify.com/admin/apps/localyyz", shopID),
+		TrialDays: int64(time.Until(TrialEndDate).Hours() / 24),
+		Test:      true,
+	}
+	_, _, err = sh.Billing.Create(ctx, shopifyBilling)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to create billing for %s", shopID)
+		lg.Alert(err)
+		return err
+	}
+	place.Billing = data.PlaceBilling{Billing: shopifyBilling}
+
+	// save the place!
 	if err := data.DB.Place.Save(place); err != nil {
 		return errors.Wrap(err, "failed to save place")
 	}
@@ -170,7 +193,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 
 	// create the webhook
 	for _, topic := range WebhookTopics {
-		wh, _, err := api.Webhook.Create(
+		wh, _, err := sh.Webhook.Create(
 			ctx,
 			&shopify.WebhookRequest{
 				&shopify.Webhook{
@@ -192,6 +215,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			lg.Alert(errors.Wrapf(err, "failed to save webhook"))
 		}
 	}
+
 	return nil
 }
 

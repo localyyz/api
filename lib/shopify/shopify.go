@@ -27,6 +27,7 @@ type Client struct {
 
 	common service
 
+	Billing     *BillingService
 	Product     *ProductService
 	Webhook     *WebhookService
 	Shop        *ShopService
@@ -51,6 +52,7 @@ func NewClient(httpClient *http.Client, token string) *Client {
 	c := &Client{client: httpClient, UserAgent: userAgent, token: token}
 	c.common.client = c
 
+	c.Billing = (*BillingService)(&c.common)
 	c.Product = (*ProductService)(&c.common)
 	c.Webhook = (*WebhookService)(&c.common)
 	c.Shop = (*ShopService)(&c.common)

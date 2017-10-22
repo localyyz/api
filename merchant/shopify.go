@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
@@ -38,10 +41,59 @@ func ShopifyShopCtx(next http.Handler) http.Handler {
 			// redirect to api to trigger oaut
 			apiURL := ctx.Value("api.url").(string)
 			redirectURL := fmt.Sprintf("%s/connect?shop=%s", apiURL, shopDomain)
-			lg.Warn(redirectURL)
 			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 			return
 		}
+
+		ctx = context.WithValue(ctx, "place", place)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
+func ShopifyChargeCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		place := ctx.Value("place").(*data.Place)
+
+		chargeID, err := strconv.ParseInt(r.URL.Query().Get("charge_id"), 10, 64)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		sh := shopify.NewClient(nil, creds.AccessToken)
+		sh.BaseURL, _ = url.Parse(creds.ApiURL)
+
+		// check if place billing id match
+		if place.Billing.ID != chargeID {
+			lg.Warnf("merchant(%d) expected billing id (%d) but received (%d)", place.ID, place.Billing.ID, chargeID)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if _, _, err := sh.Billing.Get(ctx, place.Billing.Billing); err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// if the status is "accepted", activate it
+		lg.Warn(place.Billing.Billing.Status == shopify.BillingStatusAccepted)
+		if place.Billing.Billing.Status == shopify.BillingStatusAccepted {
+			_, _, err = sh.Billing.Activate(ctx, place.Billing.Billing)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		// save place and billing
+		data.DB.Place.Save(place)
 
 		ctx = context.WithValue(ctx, "place", place)
 		next.ServeHTTP(w, r.WithContext(ctx))

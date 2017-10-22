@@ -86,8 +86,8 @@
                       {% if (place.Status == 0 or place.Status == 4) %}
                         Please <a href="mailto:support@localyyz.com?subject={{name}}: {{status}} status help">contact Localyyz Support for help.</a>
                       {% elif (place.Status == 1) %}
-                        By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" href="https://business.localyyz.com/terms-and-conditions-businesses.html" data-polaris-unstyled="true">Terms and Conditions</a>,
-                          and <a class="Polaris-Link" href="https://business.localyyz.com/services-subscription-agreement.html" data-polaris-unstyled="true">Services Subscription</a>.
+                        By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/terms-and-conditions-businesses.html" data-polaris-unstyled="true">Terms and Conditions</a>,
+                          and <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/services-subscription-agreement.html" data-polaris-unstyled="true">Services Subscription</a>.
                       {% elif (place.Status == 2) %}
                         Estimated date of approval: <span class="Polaris-Badge Polaris-Badge--statusInfo"> {{ approvalTs|naturaltime }}</span>
                       {% endif %}
@@ -95,6 +95,83 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+        <div class="Polaris-Layout__AnnotatedSection">
+          <div class="Polaris-Layout__AnnotationWrapper">
+            <div class="Polaris-Layout__Annotation">
+              <div class="Polaris-TextContainer">
+                <h2 class="Polaris-Heading">Subscription Plan</h2>
+                <p>Select a subscription plan</p>
+              </div>
+            </div>
+            <div class="Polaris-Layout__AnnotationContent">
+              <div class="Polaris-Card">
+                <div class="Polaris-Card__Section">
+                  <div class="Polaris-SettingAction">
+                    <div class="Polaris-SettingAction__Setting">
+                      <div class="Polaris-Stack">
+                        <div class="Polaris-Stack__Item Polaris-Stack__Item--fill">
+                          <div class="Polaris-AccountConnection__Content">
+                            <div>
+                              <span class="Polaris-TextStyle--variationSubdued">Billing Status:
+                                {% if (billing.Status == 0) %}
+                                  <span class="Polaris-Badge">Unknown, Please contact us.</span>
+                                {% elif (billing.Status == 1) %}
+                                  <span class="Polaris-Badge Polaris-Badge--statusAttention">
+                                    Pending
+                                  </span>
+                                {% elif (billing.Status == 2) %}
+                                  <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
+                                    <span class="Polaris-Badge__Pip"></span>
+                                    Accepted
+                                  </span>
+                                {% elif (billing.Status == 3) %}
+                                  <span class="Polaris-Badge Polaris-Badge--statusSuccess">
+                                    Active
+                                  </span>
+                                {% elif (billing.Status == 4) %}
+                                  <span class="Polaris-Badge Polaris-Badge--statusWarning">
+                                    Decline
+                                  </span>
+                                {% elif (billing.Status == 5) %}
+                                  <span class="Polaris-Badge Polaris-Badge--statusWarning">
+                                    Frozen
+                                  </span>
+                                {% elif (billing.Status == 6) %}
+                                  <span class="Polaris-Badge Polaris-Badge--statusWarning">
+                                    Cancelled
+                                  </span>
+                                {% endif %}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="Polaris-SettingAction__Action">
+                      <button onClick="parent.open('{{billing.ConfirmationUrl}}')" class="Polaris-Button Polaris-Button--primary {%if (place.Status != 3) || (billing.Status != 1) %}Polaris-Button--disabled{% endif %}">
+                        <span class="Polaris-Button__Content">
+                          <span>Start Free Plan</span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="Polaris-AccountConnection__TermsOfService">
+                    <ul class="Polaris-List Polaris-List--typeBullet">
+                      <li class="Polaris-List__Item"><b>Free.</b></li>
+                      <li class="Polaris-List__Item">Standard Unlimited sales transactions on the Localyyz Platform.</li>
+                      <li class="Polaris-List__Item">General access to the Localyyz Platform.</li>
+                      <li class="Polaris-List__Item">Ability to publish changes to merchandise onto the Localyyz Platform in real-time.</li>
+                      <li class="Polaris-List__Item">No territorial restrictions in regard to sale of Customer Goods (except to the extent precluded by applicable Law).</li>
+                      <li class="Polaris-List__Item">No Machine Learning, or Target Offers Services.</li>
+                      <li class="Polaris-List__Item">No Analytics Services.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

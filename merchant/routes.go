@@ -51,6 +51,7 @@ func New(h *Handler) chi.Router {
 			r.Use(VerifySignature)
 		}
 		r.Use(ShopifyShopCtx)
+		r.Use(ShopifyChargeCtx)
 		r.Get("/", Index)
 	})
 
@@ -69,9 +70,10 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	place := ctx.Value("place").(*data.Place)
 
 	pageContext := pongo2.Context{
-		"place":  place,
-		"name":   strings.Replace(url.QueryEscape(place.Name), "+", "%20", -1),
-		"status": place.Status.String(),
+		"place":   place,
+		"billing": place.Billing,
+		"name":    strings.Replace(url.QueryEscape(place.Name), "+", "%20", -1),
+		"status":  place.Status.String(),
 	}
 	if place.Status == data.PlaceStatusWaitApproval {
 		pageContext["approvalTs"] = place.TOSAgreedAt.Add(1 * 24 * time.Hour)

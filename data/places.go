@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/goware/geotools"
+	"upper.io/db.v3/postgresql"
 )
 
 type Place struct {
@@ -25,6 +27,8 @@ type Place struct {
 	Distance  float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
 	TOSIP     string         `db:"tos_ip" json:"-"`
 
+	Billing PlaceBilling `db:"billing" json:"billing"`
+
 	CreatedAt   *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt   *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 	TOSAgreedAt *time.Time `db:"tos_agreed_at,omitempty" json:"tosAgreedAt,omitempty"`
@@ -33,6 +37,11 @@ type Place struct {
 
 func (p *Place) CollectionName() string {
 	return `places`
+}
+
+type PlaceBilling struct {
+	*shopify.Billing
+	*postgresql.JSONBConverter
 }
 
 type PlaceStatus uint32
