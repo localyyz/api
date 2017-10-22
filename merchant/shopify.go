@@ -83,7 +83,6 @@ func ShopifyChargeCtx(next http.Handler) http.Handler {
 		}
 
 		// if the status is "accepted", activate it
-		lg.Warn(place.Billing.Billing.Status == shopify.BillingStatusAccepted)
 		if place.Billing.Billing.Status == shopify.BillingStatusAccepted {
 			_, _, err = sh.Billing.Activate(ctx, place.Billing.Billing)
 			if err != nil {
