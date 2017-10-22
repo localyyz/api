@@ -89,12 +89,13 @@ func ShopifyChargeCtx(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 				return
 			}
-		}
 
-		// save place and billing
-		if err := data.DB.Place.Save(place); err != nil {
-			render.Respond(w, r, err)
-			return
+			// save place and billing
+			place.Billing.Billing.Status = shopify.BillingStatusActive
+			if err := data.DB.Place.Save(place); err != nil {
+				render.Respond(w, r, err)
+				return
+			}
 		}
 
 		ctx = context.WithValue(ctx, "place", place)
