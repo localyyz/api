@@ -107,7 +107,6 @@ targets:
     
   deploy:
     - build-image
-    - generate-docs
     - pull
     - config
     - stop
