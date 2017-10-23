@@ -6,6 +6,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 
 	"upper.io/bond"
+	"upper.io/db.v3/postgresql"
 )
 
 type WebhookCall struct {
@@ -17,6 +18,7 @@ type WebhookCall struct {
 
 type WebhookCallData struct {
 	ProductListing *shopify.ProductList `db:"product_listing,omitempty"`
+	*postgresql.JSONBConverter
 }
 
 type WebhookCallStore struct {
