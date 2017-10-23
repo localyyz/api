@@ -78,6 +78,7 @@ func ShopifyChargeCtx(next http.Handler) http.Handler {
 		}
 
 		if _, _, err := sh.Billing.Get(ctx, place.Billing.Billing); err != nil {
+			lg.Warnf("merchant(%d) fetch billing failed with: %+v", place.ID, err)
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -86,16 +87,17 @@ func ShopifyChargeCtx(next http.Handler) http.Handler {
 		if place.Billing.Billing.Status == shopify.BillingStatusAccepted {
 			_, _, err = sh.Billing.Activate(ctx, place.Billing.Billing)
 			if err != nil {
+				lg.Alertf("merchant (%d) failed to activate billing with: %+v", place.ID, err)
 				next.ServeHTTP(w, r)
 				return
 			}
+		}
 
-			// save place and billing
-			place.Billing.Billing.Status = shopify.BillingStatusActive
-			if err := data.DB.Place.Save(place); err != nil {
-				render.Respond(w, r, err)
-				return
-			}
+		// save place and billing
+		lg.Warnf("received merchant (%d) billing status %s", place.ID, place.Billing.Billing.Status)
+		if err := data.DB.Place.Save(place); err != nil {
+			render.Respond(w, r, err)
+			return
 		}
 
 		ctx = context.WithValue(ctx, "place", place)

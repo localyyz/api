@@ -22,17 +22,18 @@ type Billing struct {
 	Type   BillingType   `json:"type"`
 	Status BillingStatus `json:"status"`
 
-	TrialDays   int64      `json:"trial_days"`
-	TrialEndsOn *time.Time `json:"trial_ends_on"`
+	TrialDays int64 `json:"trial_days"`
 
 	Test bool `json:"test"`
 
 	CreatedAt *time.Time `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`
 
-	ActivatedOn *time.Time `json:"activated_on"`
-	BillingOn   *time.Time `json:"billing_on"`
-	CancelledOn *time.Time `json:"cancelled_on"`
+	// formated as "YYYY-mm-dd"
+	TrialEndsOn string `json:"trial_ends_on"`
+	ActivatedOn string `json:"activated_on"`
+	BillingOn   string `json:"billing_on"`
+	CancelledOn string `json:"cancelled_on"`
 }
 
 type BillingType uint32

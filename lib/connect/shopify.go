@@ -166,7 +166,6 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		Price:     "120.00",
 		ReturnUrl: fmt.Sprintf("https://%s.myshopify.com/admin/apps/localyyz", shopID),
 		TrialDays: int64(time.Until(TrialEndDate).Hours() / 24),
-		Test:      true,
 	}
 	_, _, err = sh.Billing.Create(ctx, shopifyBilling)
 	if err != nil {
