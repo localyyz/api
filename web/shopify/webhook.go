@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -33,22 +34,11 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// write the webhook event to the database
-	go func(wrapper *shopifyWebhookRequest) {
-		switch shopify.Topic(topic) {
-		case shopify.TopicProductListingsAdd:
-		case shopify.TopicProductListingsUpdate:
-			data.DB.WebhookCall.Save(&data.WebhookCall{
-				PlaceID: place.ID,
-				Data: data.WebhookCallData{
-					ProductListing: wrapper.ProductListing,
-				},
-			})
-			return
-		default:
-			return // do nothing
-		}
-	}(wrapper)
+	defer func() {
+		// log the call for future use
+		b, _ := json.Marshal(wrapper)
+		lg.Infof(`{"topic":"%s","data":%s}`, topic, string(b))
+	}()
 
 	go func(wrapper *shopifyWebhookRequest) { // return right away
 		// TODO: implement other webhooks
