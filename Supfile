@@ -115,7 +115,6 @@ targets:
     - config
     - stop
     - rm
-    - prune
     - migrate
     - run
     - ps

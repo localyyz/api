@@ -104,7 +104,6 @@ targets:
     - config
     - stop
     - rm
-    - prune
     - run
     - ps
     - logs
