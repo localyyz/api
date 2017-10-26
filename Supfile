@@ -91,6 +91,10 @@ commands:
     desc: Remove Docker container
     run: docker rm $NAME || exit 0
 
+  prune:
+    desc: Prune stale containers
+    run: docker system prune || exit 0
+
   shell:
     desc: Interactive shell on all hosts
     stdin: true
@@ -111,6 +115,7 @@ targets:
     - config
     - stop
     - rm
+    - prune
     - migrate
     - run
     - ps
