@@ -62,9 +62,6 @@ func NewFromFile(fileConfig, envConfig string) (*Config, error) {
 	if conf.Environment == "development" {
 		debugLv, _ := logrus.ParseLevel("debug")
 		logger.SetLevel(debugLv)
-	} else {
-		// redirect all stdout to logrus logger
-		lg.RedirectStdlogOutput(logger)
 	}
 	lg.DefaultLogger = logger
 
