@@ -67,6 +67,9 @@ db-reset:
 	@./db/db.sh reset localyyz
 	goose up
 
+db-loadprod:
+	@./db/db.sh loadprod localyyz
+
 run:
 	@(export CONFIG=${API_CONFIG}; export PEM=${PEM}; fresh -c runner.conf -p ./cmd/api)
 
@@ -84,4 +87,3 @@ build-merchant:
 build:
 	@mkdir -p ./bin
 	GOGC=off go build -i -o ./bin/api ./cmd/api/main.go
-

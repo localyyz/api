@@ -32,12 +32,15 @@ function drop() {
 EOF
 }
 
+function loadprod() {
+  echo "LOADING DATABASE FROM PROD BACKUP";
+  scp ubuntu@localyyz:/home/ubuntu/backups/backup-`date +%F`.gz tmp/.
+  gunzip -c tmp/backup-`date +%F`.gz | psql $database
+}
+
 if [ $# -lt 2 ]; then
   usage
 fi
-
-cd $(dirname "$0")/../..
-pwd
 
 operation="$1"
 database="$2"
@@ -52,6 +55,11 @@ case "$operation" in
   "reset")
     drop
     create
+    ;;
+  "loadprod")
+    drop
+    create
+    loadprod
     ;;
   *)
     echo "no such operation"
