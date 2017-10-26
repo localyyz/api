@@ -37,7 +37,11 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 func NewPlaceList(ctx context.Context, places []*data.Place) []render.Renderer {
 	list := []render.Renderer{}
 	for _, place := range places {
-		list = append(list, NewPlace(ctx, place))
+		p := NewPlace(ctx, place)
+		if p.ProductCount == 0 {
+			continue
+		}
+		list = append(list, p)
 	}
 	return list
 }
