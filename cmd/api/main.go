@@ -70,7 +70,7 @@ func main() {
 		}
 	})
 
-	lg.Infof("API starting on %v", conf.Bind)
+	lg.Warnf("API starting on %v", conf.Bind)
 
 	router := web.New(h)
 	if err := graceful.ListenAndServe(conf.Bind, router); err != nil {

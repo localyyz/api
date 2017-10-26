@@ -23,6 +23,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 )
 
 type Handler struct {
@@ -33,8 +34,10 @@ type Handler struct {
 func New(h *Handler) chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(middleware.RealIP)
 	r.Use(middleware.NoCache)
-	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
+	r.Use(NewStructuredLogger())
 	r.Use(middleware.Recoverer)
 	r.Use(func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +87,10 @@ func New(h *Handler) chi.Router {
 	})
 
 	return r
+}
+
+func NewStructuredLogger() func(next http.Handler) http.Handler {
+	return lg.RequestLogger(lg.DefaultLogger)
 }
 
 type pushRequest struct {
