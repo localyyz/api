@@ -76,7 +76,6 @@ func ShopifyProductListings(ctx context.Context) error {
 				PlaceID:     place.ID,
 				ProductID:   product.ID,
 				OfferID:     v.ID,
-				Status:      data.ProductVariantStatusActive,
 				Description: v.Title,
 				Limits:      int64(v.InventoryQuantity),
 				Etc:         etc,

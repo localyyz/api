@@ -9,10 +9,9 @@ import (
 )
 
 type ProductVariant struct {
-	ID        int64                `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID   int64                `db:"place_id" json:"placeId"`
-	ProductID int64                `db:"product_id" json:"productId"`
-	Status    ProductVariantStatus `db:"status" json:"status"`
+	ID        int64 `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID   int64 `db:"place_id" json:"placeId"`
+	ProductID int64 `db:"product_id" json:"productId"`
 
 	// Limits
 	Limits      int64  `db:"limits" json:"limits"`
@@ -38,17 +37,6 @@ type ProductVariantEtc struct {
 	Color string `json:"color"`
 	*postgresql.JSONBConverter
 }
-
-type ProductVariantStatus uint32
-
-const (
-	_ ProductVariantStatus = iota
-	ProductVariantStatusDraft
-	ProductVariantStatusScheduled
-	ProductVariantStatusActive
-	ProductVariantStatusCompleted
-	ProductVariantStatusDeleted
-)
 
 var _ interface {
 	bond.HasBeforeCreate
