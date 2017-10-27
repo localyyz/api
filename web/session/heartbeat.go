@@ -67,11 +67,6 @@ func PostHeartbeat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// save location history
-	ul := &data.UserLocation{
-		UserID: user.ID,
-		Geo:    user.Geo,
-	}
-	data.DB.UserLocation.Save(ul)
 
 	render.Render(w, r, presented)
 }
