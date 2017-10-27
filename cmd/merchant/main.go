@@ -54,6 +54,7 @@ func main() {
 		&merchant.Handler{
 			Debug:  (conf.Environment == "development"),
 			SH:     connect.SetupShopify(conf.Connect.Shopify),
+			SL:     connect.SetupSlack(conf.Connect.Slack),
 			ApiURL: conf.Api.ApiURL,
 		},
 	)

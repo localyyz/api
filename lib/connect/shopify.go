@@ -216,6 +216,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		}
 	}
 
+	SL.Notify("store", fmt.Sprintf("%s (id: %v) just connected!", place.Name, place.ID))
 	return nil
 }
 

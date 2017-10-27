@@ -66,6 +66,14 @@ func NewFromFile(fileConfig, envConfig string) (*Config, error) {
 		debugLv, _ := logrus.ParseLevel("debug")
 		logger.SetLevel(debugLv)
 	}
+	if conf.Environment == "production" {
+		lg.AlertFn = func(level logrus.Level, msg string) {
+			switch level {
+			case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
+				connect.SL.Notify("alert", msg)
+			}
+		}
+	}
 	lg.DefaultLogger = logger
 
 	return &conf, nil

@@ -3,6 +3,7 @@ package merchant
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -27,6 +28,7 @@ import (
 type Handler struct {
 	DB     *data.Database
 	SH     *connect.Shopify
+	SL     *connect.Slack
 	ApiURL string
 	Debug  bool
 }
@@ -43,6 +45,7 @@ func New(h *Handler) chi.Router {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.WithValue("shopify.client", h.SH))
+	r.Use(middleware.WithValue("slack.client", h.SL))
 	r.Use(middleware.WithValue("api.url", h.ApiURL))
 
 	// Shopify auth routes
@@ -109,6 +112,9 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
+	// notify slack
+	sl := ctx.Value("slack.client").(*connect.Slack)
+	sl.Notify("store", fmt.Sprintf("%s (id: %v) just accepted the TOS!", place.Name, place.ID))
 
 	render.Respond(w, r, "success")
 	return

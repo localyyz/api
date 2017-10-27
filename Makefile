@@ -86,4 +86,4 @@ build-merchant:
 
 build:
 	@mkdir -p ./bin
-	GOGC=off go build -i -o ./bin/api ./cmd/api/main.go
+	GOGC=off go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/api ./cmd/api/main.go
