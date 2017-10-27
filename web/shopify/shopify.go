@@ -41,6 +41,8 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, "place", place)
 		ctx = context.WithValue(ctx, "sync.place", place)
 		ctx = context.WithValue(ctx, "sync.topic", topic)
+
+		lg.SetEntryField(ctx, "place_id", place.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
