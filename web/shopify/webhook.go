@@ -37,7 +37,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		// log the call for future use
 		b, _ := json.Marshal(wrapper)
-		lg.Infof(`{"topic":"%s","data":%s}`, topic, string(b))
+		lg.Infof(`{"topic":"%s","place_id":%d,"data":%s}`, topic, place.ID, string(b))
 	}()
 
 	go func(wrapper *shopifyWebhookRequest) { // return right away
@@ -84,5 +84,6 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}(wrapper)
 
+	render.Status(r, http.StatusOK)
 	return
 }
