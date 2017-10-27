@@ -114,6 +114,7 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.finalizeCallback(r.Context(), shopID, creds); err != nil {
+		lg.Alertf("connect %s: failed with %+v", shopID, err)
 		render.Status(r, http.StatusInternalServerError)
 		render.Respond(w, r, err)
 		return
@@ -170,9 +171,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 	_, _, err = sh.Billing.Create(ctx, shopifyBilling)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to create billing for %s", shopID)
-		lg.Alert(err)
-		return err
+		return errors.Wrapf(err, "failed to create billing for %s", shopID)
 	}
 	place.Billing = data.PlaceBilling{Billing: shopifyBilling}
 
@@ -203,7 +202,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 				},
 			})
 		if err != nil {
-			lg.Alert(errors.Wrapf(err, "failed to create shopify %s webhook", topic))
+			lg.Alertf("connect %s (id: %v): failed to create shopify %s webhook", topic, place.Name, place.ID)
 			continue
 		}
 		err = data.DB.Webhook.Save(&data.Webhook{
@@ -212,7 +211,8 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			ExternalID: int64(wh.ID),
 		})
 		if err != nil {
-			lg.Alert(errors.Wrapf(err, "failed to save webhook"))
+			lg.Alertf("connect %s (id: %v): failed to save shopify %s webhook", topic, place.Name, place.ID)
+			continue
 		}
 	}
 

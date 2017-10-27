@@ -24,6 +24,8 @@ func Connect(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(shopDomain, ".")
 	shopID := parts[0]
 
+	connect.SL.Notify("shop", fmt.Sprintf("%s is trying to connect!", shopDomain))
+
 	place, err := data.DB.Place.FindByShopifyID(shopID)
 	if err != nil && err != db.ErrNoMoreRows {
 		render.Respond(w, r, err)

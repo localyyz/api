@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 )
 
 func ShopifyStoreWhCtx(next http.Handler) http.Handler {
@@ -27,6 +28,7 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 
 		place, err := data.DB.Place.FindByShopifyID(shopID)
 		if err != nil {
+			lg.Alertf("webhooks: place with domain %s is not found", shopDomain)
 			render.Respond(w, r, err)
 			return
 		}
