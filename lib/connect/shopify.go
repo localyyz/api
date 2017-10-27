@@ -267,3 +267,8 @@ func (s *Shopify) VerifySignature(sig []byte, query string) bool {
 
 	return hmac.Equal(sig, expectedSig)
 }
+
+func init() {
+	// NOTE: register broken oauth2
+	oauth2.RegisterBrokenAuthHeaderProvider(".myshopify.com")
+}

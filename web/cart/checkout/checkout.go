@@ -94,18 +94,21 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			isStocked, _, _ := cl.Product.IsInStock(ctx, v.OfferID)
-			if !isStocked {
-				outOfStock = append(outOfStock, v.ID)
+			s, _, err := cl.Product.GetStock(ctx, v.OfferID)
+			if err != nil {
+				render.Respond(w, r, err)
+				return
 			}
-			// async mark variant as soldout
-			go func(v *data.ProductVariant) {
+			if s == 0 {
+				outOfStock = append(outOfStock, v.ID)
+
+				// mark variant as sold out.
 				v.Limits = 0
 				data.DB.ProductVariant.Save(v)
-			}(v)
+			}
 		}
 		if len(outOfStock) > 0 {
-			render.Respond(w, r, api.ErrOutOfStock(outOfStock))
+			render.Render(w, r, api.ErrOutOfStock(outOfStock))
 			return
 		}
 

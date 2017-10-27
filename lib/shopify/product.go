@@ -127,11 +127,11 @@ func (p *ProductService) GetVariant(ctx context.Context, variantID int64) (*Prod
 	return variantWrapper.Variant, resp, nil
 }
 
-func (p *ProductService) IsInStock(ctx context.Context, variantID int64) (bool, *http.Response, error) {
+func (p *ProductService) GetStock(ctx context.Context, variantID int64) (int, *http.Response, error) {
 	v, resp, err := p.GetVariant(ctx, variantID)
 	if err != nil {
-		return false, resp, err
+		return 0, resp, err
 	}
 
-	return v.InventoryQuantity > 0, resp, err
+	return v.InventoryQuantity, resp, err
 }
