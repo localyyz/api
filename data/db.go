@@ -16,12 +16,9 @@ var (
 type Database struct {
 	bond.Session
 
-	User          UserStore
-	UserAccess    UserAccessStore
-	UserLocation  UserLocationStore
-	UserAddress   UserAddressStore
-	PaymentMethod PaymentMethodStore
-	Following     FollowingStore
+	User        UserStore
+	UserAddress UserAddressStore
+	Following   FollowingStore
 
 	Place  PlaceStore
 	Locale LocaleStore
@@ -33,7 +30,6 @@ type Database struct {
 	ProductVariant ProductVariantStore
 	Share          ShareStore
 	Webhook        WebhookStore
-	WebhookCall    WebhookCallStore
 
 	Cart     CartStore
 	CartItem CartItemStore
@@ -79,10 +75,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 		return nil, err
 	}
 	db.User = UserStore{db.Store(&User{})}
-	db.UserAccess = UserAccessStore{db.Store(&UserAccess{})}
-	db.UserLocation = UserLocationStore{db.Store(&UserLocation{})}
 	db.UserAddress = UserAddressStore{db.Store(&UserAddress{})}
-	db.PaymentMethod = PaymentMethodStore{db.Store(&PaymentMethod{})}
 	db.Following = FollowingStore{db.Store(&Following{})}
 
 	db.Place = PlaceStore{db.Store(&Place{})}
@@ -95,7 +88,6 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.ProductVariant = ProductVariantStore{db.Store(&ProductVariant{})}
 	db.Share = ShareStore{db.Store(&Share{})}
 	db.Webhook = WebhookStore{db.Store(&Webhook{})}
-	db.WebhookCall = WebhookCallStore{db.Store(&WebhookCall{})}
 
 	db.Cart = CartStore{db.Store(&Cart{})}
 	db.CartItem = CartItemStore{db.Store(&CartItem{})}
