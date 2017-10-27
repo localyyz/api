@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	db "upper.io/db.v3"
@@ -237,7 +238,7 @@ func (s *Shopify) getConfig(shopifyID string) *oauth2.Config {
 			TokenURL: fmt.Sprintf("%s/admin/oauth/access_token", shopUrl),
 		},
 		RedirectURL: s.redirectURL,
-		Scopes:      Scopes,
+		Scopes:      []string{strings.Join(Scopes, ",")},
 	}
 }
 
