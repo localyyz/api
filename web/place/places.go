@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 
 	"upper.io/db.v3"
 
@@ -51,6 +52,7 @@ func PlaceCtx(next http.Handler) http.Handler {
 		}
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "place", place)
+		lg.SetEntryField(ctx, "place_id", place.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)

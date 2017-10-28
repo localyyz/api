@@ -64,6 +64,7 @@ func SessionCtx(next http.Handler) http.Handler {
 		}
 
 		ctx = context.WithValue(ctx, "session.user", user)
+		lg.SetEntryField(ctx, "user_id", user.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
