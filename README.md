@@ -1,10 +1,27 @@
-### Moodie Api
+### Localyyz Api
+
+### Gcloud CLI
+
+# Install
+
+```
+brew tap caskroom/cask
+brew cask install google-cloud-sdk
+```
+
+tip: you can enable auto completion by sourcing the
+auto complete file (follow on screen instructions).
+
+# Init and Authenticate
+
+```
+gcloud init
+```
 
 Build and deploy
 
-1. make sure docker-machine is running
-2. build the image and upload `sup local build`
-3. deploy with `sup production deploy`
+1. make sure `docker` is running locally
+2. build and deploy with `sup production deploy`
 
 ### Troubleshoot
 

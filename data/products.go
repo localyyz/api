@@ -37,11 +37,33 @@ type ProductStore struct {
 	bond.Store
 }
 
+var _ interface {
+	bond.HasBeforeCreate
+	bond.HasBeforeUpdate
+} = &Product{}
+
 func (p *Product) CollectionName() string {
 	return `products`
 }
 
+func (p *Product) BeforeCreate(sess bond.Session) error {
+	// shared checks for updating variant
+	if err := p.BeforeUpdate(sess); err != nil {
+		return err
+	}
+	p.UpdatedAt = nil
+	p.CreatedAt = GetTimeUTCPointer()
+	return nil
+}
+
+func (p *Product) BeforeUpdate(bond.Session) error {
+	p.UpdatedAt = GetTimeUTCPointer()
+
+	return nil
+}
+
 // TODO parse item title into tags
+// search only 'active' stores
 func (store ProductStore) Fuzzy(q string, optCursor *api.Page) ([]*Product, error) {
 	tags, err := DB.ProductTag.FindAll(db.Cond{
 		"value ~*": fmt.Sprint("\\m(", q, ")"),
