@@ -7,10 +7,12 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
@@ -29,10 +31,17 @@ func ProductCtx(next http.Handler) http.Handler {
 		}
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "product", product)
+		lg.SetEntryField(ctx, "product_id", product.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 
 	return http.HandlerFunc(handler)
+}
+
+func GetProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	product := ctx.Value("product").(*data.Product)
+	render.Render(w, r, presenter.NewProduct(ctx, product))
 }
 
 func GetVariant(w http.ResponseWriter, r *http.Request) {
