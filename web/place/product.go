@@ -144,46 +144,55 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// TODO: handle empty tags
-	var productTags []struct {
-		*data.ProductTag
-		Count int `db:"c"`
-	}
-	data.DB.
-		Select("product_id", db.Raw("count(*) as c")).
-		From("product_tags").
-		Where(
-			db.And(
-				db.Cond{"place_id": place.ID},
-				db.Or(tagFilters...),
-			),
-		).
-		GroupBy("product_id").
-		//Having("count(*) > ?", len(tagFilters)).
-		OrderBy("product_id").
-		All(&productTags)
-	// TODO: having.
-
-	productIDs := set.New()
-	for _, pt := range productTags {
-		if len(tagFilters) == 0 || pt.Count == fCount {
-			productIDs.Add(pt.ProductID)
-		}
-	}
-	if productIDs.Size() == 0 {
-		render.Respond(w, r, []struct{}{})
-		return
-	}
-
 	var products []*data.Product
-	query := data.DB.Product.Find(
-		db.Cond{"id": productIDs.List()},
-		db.Cond{"place_id": place.ID},
-	).OrderBy("id")
-	query = cursor.UpdateQueryUpper(query)
-	if err := query.All(&products); err != nil {
-		render.Respond(w, r, err)
-		return
+	if len(tagFilters) > 0 {
+		// TODO: handle empty tags
+		var productTags []struct {
+			*data.ProductTag
+			Count int `db:"c"`
+		}
+		data.DB.
+			Select("product_id", db.Raw("count(*) as c")).
+			From("product_tags").
+			Where(
+				db.And(
+					db.Cond{"place_id": place.ID},
+					db.Or(tagFilters...),
+				),
+			).
+			GroupBy("product_id").
+			//Having("count(*) > ?", len(tagFilters)).
+			OrderBy("product_id").
+			All(&productTags)
+		// TODO: having.
+
+		productIDs := set.New()
+		for _, pt := range productTags {
+			if len(tagFilters) == 0 || pt.Count == fCount {
+				productIDs.Add(pt.ProductID)
+			}
+		}
+		if productIDs.Size() == 0 {
+			render.Respond(w, r, []struct{}{})
+			return
+		}
+
+		query := data.DB.Product.Find(
+			db.Cond{"id": productIDs.List()},
+			db.Cond{"place_id": place.ID},
+		).OrderBy("id")
+		query = cursor.UpdateQueryUpper(query)
+		if err := query.All(&products); err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+	} else {
+		query := data.DB.Product.Find(db.Cond{"place_id": place.ID}).OrderBy("id")
+		query = cursor.UpdateQueryUpper(query)
+		if err := query.All(&products); err != nil {
+			render.Respond(w, r, err)
+			return
+		}
 	}
 
 	presented := presenter.NewProductList(ctx, products)

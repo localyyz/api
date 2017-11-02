@@ -13,9 +13,11 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
+	"bitbucket.org/moodie-app/moodie-api/scraper"
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
+	"github.com/robfig/cron"
 	"github.com/zenazn/goji/graceful"
 )
 
@@ -57,6 +59,11 @@ func main() {
 			lg.Fatal(errors.Wrap(err, "invalid pem file"))
 		}
 	}
+
+	// cron puller
+	c := cron.New()
+	c.AddFunc("0 0 1 * * *", scraper.ShopifyScraper)
+	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
