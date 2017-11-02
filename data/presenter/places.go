@@ -51,5 +51,12 @@ func (pl *Place) Render(w http.ResponseWriter, r *http.Request) error {
 	if len(pl.Geo.Coordinates) > 1 {
 		pl.LatLng = geotools.LatLngFromPoint(pl.Geo)
 	}
+	if len(pl.ImageURL) == 0 {
+		p, err := data.DB.Product.FindOne(db.Cond{"place_id": pl.ID})
+		if err != nil {
+			return nil
+		}
+		pl.ImageURL = p.ImageUrl
+	}
 	return nil
 }
