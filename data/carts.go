@@ -61,10 +61,9 @@ type CartShopifyData struct {
 
 	PaymentID int64 `json:"paymentId"`
 
-	SubtotalPrice int64  `json:"subtotalPrice"`
-	TotalTax      int64  `json:"totalTax"`
-	TotalPrice    int64  `json:"totalPrice"`
-	PaymentDue    string `json:"paymentDue"`
+	TotalTax   int64  `json:"totalTax"`
+	TotalPrice int64  `json:"totalPrice"`
+	PaymentDue string `json:"paymentDue"`
 }
 
 type CartStore struct {

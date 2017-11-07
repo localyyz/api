@@ -13,10 +13,22 @@ func Routes() chi.Router {
 		r.Get("/ping", Ping)
 
 		r.Put("/device", SetDeviceToken)
-		r.Route("/address", func(r chi.Router) {
-			r.Post("/", CreateAddress)
-			r.Get("/", ListAddresses)
-		})
+		r.Mount("/address", addressRoutes())
+	})
+
+	return r
+}
+
+func addressRoutes() chi.Router {
+	r := chi.NewRouter()
+
+	r.Post("/", CreateAddress)
+	r.Get("/", ListAddresses)
+	r.Route("/{addressID}", func(r chi.Router) {
+		r.Use(AddressCtx)
+		r.Get("/", GetAddress)
+		r.Put("/", UpdateAddress)
+		r.Delete("/", RemoveAddress)
 	})
 
 	return r

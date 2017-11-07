@@ -26,4 +26,5 @@ Build and deploy
 ### Troubleshoot
 
 Sup connection error. Check Sup documentation.
-ie. `ssh-add -l`
+if `ssh-add -l` returns `The agent has no identities`
+do `ssh-add` and enter the passphrase.

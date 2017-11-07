@@ -14,7 +14,6 @@ type Cart struct {
 
 	CartItems CartItemList `json:"items"`
 
-	SubtotalPrice int64 `json:"subtotalPrice"` // in cents
 	TotalShipping int64 `json:"totalShipping"`
 	TotalTax      int64 `json:"totalTax"`
 	TotalPrice    int64 `json:"totalPrice"`
@@ -44,7 +43,6 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 	// calculate cart subtotal by line item
 	if cart.Etc.ShopifyData != nil {
 		for k, d := range cart.Etc.ShopifyData {
-			resp.SubtotalPrice += d.SubtotalPrice
 			resp.TotalTax += d.TotalTax
 			resp.TotalPrice += d.TotalPrice
 
@@ -53,10 +51,6 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 			}
 		}
 
-	} else {
-		for _, cartItem := range resp.CartItems {
-			resp.SubtotalPrice += int64(cartItem.Price * 100.0)
-		}
 	}
 
 	return resp

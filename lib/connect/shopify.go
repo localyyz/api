@@ -202,7 +202,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 				},
 			})
 		if err != nil {
-			lg.Alertf("connect %s (id: %v): failed to create shopify %s webhook", topic, place.Name, place.ID)
+			lg.Alertf("connect %s (id: %v): failed to create shopify %s webhook with %+v", topic, place.ID, place.Name, err)
 			continue
 		}
 		err = data.DB.Webhook.Save(&data.Webhook{
@@ -211,7 +211,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			ExternalID: int64(wh.ID),
 		})
 		if err != nil {
-			lg.Alertf("connect %s (id: %v): failed to save shopify %s webhook", topic, place.Name, place.ID)
+			lg.Alertf("connect %s (id: %v): failed to save shopify %s webhook with %+v", topic, place.ID, place.Name, err)
 			continue
 		}
 	}

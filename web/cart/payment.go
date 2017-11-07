@@ -1,4 +1,4 @@
-package payment
+package cart
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -17,11 +19,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
-func ListPaymentMethods(w http.ResponseWriter, r *http.Request) {
-
-}
-
-type cartPaymentRequest struct {
+type cartPayment struct {
 	Number string `json:"number"`
 	Type   string `json:"type"`
 	Expiry string `json:"expiry"`
@@ -29,7 +27,15 @@ type cartPaymentRequest struct {
 	CVC    string `json:"cvc"`
 }
 
+type cartPaymentRequest struct {
+	Payment        *cartPayment      `json:"payment"`
+	BillingAddress *data.CartAddress `json:"billingAddress"`
+}
+
 func (c *cartPaymentRequest) Bind(r *http.Request) error {
+	if c.Payment == nil {
+		return errors.New("no payment specified")
+	}
 	return nil
 }
 
@@ -46,13 +52,29 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expiryYM := strings.Split(payload.Expiry, "/")
+	expiryYM := strings.Split(payload.Payment.Expiry, "/")
 	cardParam := &stripe.CardParams{
-		Name:   payload.Name,
-		Number: payload.Number,
+		Name:   payload.Payment.Name,
+		Number: payload.Payment.Number,
 		Month:  expiryYM[0],
 		Year:   expiryYM[1],
-		CVC:    payload.CVC,
+		CVC:    payload.Payment.CVC,
+	}
+
+	checkout := shopify.Checkout{}
+	// update billing address, if specified
+	if b := payload.BillingAddress; b != nil {
+		checkout.BillingAddress = &shopify.CustomerAddress{
+			Address1:  b.Address,
+			Address2:  b.AddressOpt,
+			City:      b.City,
+			Country:   b.Country,
+			FirstName: b.FirstName,
+			LastName:  b.LastName,
+			Province:  b.Province,
+			Zip:       b.Zip,
+		}
+		cart.Etc.BillingAddress = payload.BillingAddress
 	}
 
 	// 1. exchange user credit card information for stripe token
@@ -64,20 +86,34 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// 2. send stripe payment token to shopify
 		creds, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
 		if err != nil {
 			render.Respond(w, r, err)
 			return
 		}
 
-		c := shopify.NewClient(nil, creds.AccessToken)
-		c.BaseURL, _ = url.Parse(creds.ApiURL)
+		cl := shopify.NewClient(nil, creds.AccessToken)
+		cl.BaseURL, _ = url.Parse(creds.ApiURL)
 
+		// 2. Check update the shipping line and billing address if set
+		ch := checkout
+		if m, ok := cart.Etc.ShippingMethods[placeID]; ok {
+			ch.ShippingLine = &shopify.ShippingLine{
+				Handle: m.Handle,
+			}
+		}
+		ch.Token = sh.Token
+		cc, _, err := cl.Checkout.Update(ctx, &shopify.CheckoutRequest{&ch})
+		if err != nil {
+			lg.Warn(errors.Wrapf(err, "failed to update shopify(%v)", placeID))
+			continue
+		}
+
+		// 3. send stripe payment token to shopify
 		u, _ := uuid.NewUUID()
 		payment := &shopify.PaymentRequest{
 			Payment: &shopify.Payment{
-				Amount:      sh.PaymentDue,
+				Amount:      cc.CheckoutPrice.PaymentDue,
 				UniqueToken: u.String(),
 				PaymentToken: &shopify.PaymentToken{
 					PaymentData: stripeToken.ID,
@@ -89,19 +125,24 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		p, _, err := c.Checkout.Payment(ctx, sh.Token, payment)
+		p, _, err := cl.Checkout.Payment(ctx, sh.Token, payment)
 		if err != nil {
 			render.Respond(w, r, err)
 			// TODO: do we return here?
 			return
 		}
-		// 3. save shopify payment id
+		// 4. save shopify payment id
 		sh.PaymentID = p.ID
+		sh.PaymentDue = cc.CheckoutPrice.PaymentDue
+		sh.TotalTax = atoi(cc.CheckoutPrice.TotalTax)
+		sh.TotalPrice = atoi(cc.CheckoutPrice.TotalPrice)
 	}
 
 	// mark checkout as has payed
 	cart.Status = data.CartStatusPaymentSuccess
-	data.DB.Cart.Save(cart)
+	if err := data.DB.Cart.Save(cart); err != nil {
+		lg.Alertf("cart (%d) payment save failed with %+v", cart.ID, err)
+	}
 	// TODO: create a customer on stripe after the first
 	// tokenization so we can send stripe customer id moving forward
 
