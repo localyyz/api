@@ -9,8 +9,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/cart/cartitem"
 	"bitbucket.org/moodie-app/moodie-api/web/cart/checkout"
-	"bitbucket.org/moodie-app/moodie-api/web/cart/payment"
-	"bitbucket.org/moodie-app/moodie-api/web/cart/shipping"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	db "upper.io/db.v3"
@@ -35,13 +33,14 @@ func Routes() chi.Router {
 
 func cartRoutes() chi.Router {
 	r := chi.NewRouter()
-	r.Mount("/payment", payment.Routes())
+
 	r.Mount("/items", cartitem.Routes())
-	r.Mount("/shipping", shipping.Routes())
 	r.Mount("/checkout", checkout.Routes())
 
+	r.Get("/shipping", ListShippingRates)
+	r.Post("/pay", CreatePayment)
+
 	r.Get("/", GetCart)
-	r.Put("/", UpdateCart)
 	r.Delete("/", ClearCart)
 	return r
 }

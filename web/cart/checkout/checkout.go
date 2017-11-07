@@ -16,6 +16,23 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
+type cartPayment struct {
+	Number string `json:"number"`
+	Type   string `json:"type"`
+	Expiry string `json:"expiry"`
+	Name   string `json:"name"`
+	CVC    string `json:"cvc"`
+}
+
+type checkoutRequest struct {
+	ShippingAddress *data.CartAddress        `json:"shippingAddress"`
+	Shipping        *data.CartShippingMethod `json:"shipping"`
+}
+
+func (c *checkoutRequest) Bind(r *http.Request) error {
+	return nil
+}
+
 // Create checkout on shopify
 func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -27,7 +44,13 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find the product variants
+	var payload checkoutRequest
+	if err := render.Bind(r, &payload); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	// Find the cart item -> product variants
 	var variants []*data.ProductVariant
 	err := data.DB.Select("pv.*").
 		From("cart_items ci").
@@ -41,6 +64,8 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// group them by places, as line items
+	// + check variant stock on our side. if any is out-of-stock
+	// return with response
 	lineItemsMap := map[int64][]*shopify.LineItem{}
 	var outOfStock []int64
 	for _, v := range variants {
@@ -63,12 +88,26 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// transform address to shopify
+	shippingAddress := &shopify.CustomerAddress{
+		Address1:  payload.ShippingAddress.Address,
+		Address2:  payload.ShippingAddress.AddressOpt,
+		City:      payload.ShippingAddress.City,
+		Country:   payload.ShippingAddress.Country,
+		FirstName: payload.ShippingAddress.FirstName,
+		LastName:  payload.ShippingAddress.LastName,
+		Province:  payload.ShippingAddress.Province,
+		Zip:       payload.ShippingAddress.Zip,
+	}
+
 	checkoutMap := make(map[int64]*shopify.Checkout)
 	credMap := make(map[int64]*data.ShopifyCred)
 	for placeID, lineItems := range lineItemsMap {
 		checkoutMap[placeID] = &shopify.Checkout{
-			Email:     user.Email,
-			LineItems: lineItems,
+			Email:           user.Email,
+			LineItems:       lineItems,
+			ShippingAddress: shippingAddress,
+			//TODO: billing address
 		}
 		cred, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
 		if err != nil {
@@ -78,7 +117,9 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		credMap[placeID] = cred
 	}
 
+	// create shipify data holder on the cart
 	cart.Etc.ShopifyData = make(map[int64]*data.CartShopifyData)
+	cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
 	for placeID, checkout := range checkoutMap {
 		cred := credMap[placeID]
 
@@ -101,13 +142,16 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			}
 			if s == 0 {
 				outOfStock = append(outOfStock, v.ID)
+			}
 
-				// mark variant as sold out.
-				v.Limits = 0
+			if ss := int64(s); v.Limits != ss {
+				// update the quantity
+				v.Limits = ss
 				data.DB.ProductVariant.Save(v)
 			}
 		}
 		if len(outOfStock) > 0 {
+			// return right away if something is out of stock
 			render.Render(w, r, api.ErrOutOfStock(outOfStock))
 			return
 		}
@@ -118,6 +162,23 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// check the shipping rate
+		// TODO: make proper shipping. For now, pick the cheapest one.
+		rates, _, _ := cl.Checkout.ListShippingRates(ctx, cc.Token)
+		// for now, pick the first rate and apply to the checkout
+		// make this proper
+		if len(rates) > 0 {
+			checkout.ShippingLine = &shopify.ShippingLine{
+				Handle: rates[0].Handle,
+			}
+			cart.Etc.ShippingMethods[placeID] = &data.CartShippingMethod{
+				rates[0].Handle,
+				rates[0].Title,
+				atoi(rates[0].Price),
+				rates[0].DeliveryRange,
+			}
+		}
+
 		cart.Etc.ShopifyData[placeID] = &data.CartShopifyData{
 			Token:            cc.Token,
 			CustomerID:       cc.CustomerID,
@@ -125,12 +186,12 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			PaymentAccountID: cc.PaymentAccountID,
 			WebURL:           cc.WebURL,
 			WebProcessingURL: cc.WebProcessingURL,
-			SubtotalPrice:    atoi(cc.SubtotalPrice),
-			TotalPrice:       atoi(cc.TotalPrice),
 			TotalTax:         atoi(cc.TotalTax),
+			TotalPrice:       atoi(cc.TotalPrice),
 			PaymentDue:       cc.PaymentDue,
 		}
 	}
+
 	cart.Status = data.CartStatusCheckout
 	if err := data.DB.Cart.Save(cart); err != nil {
 		render.Respond(w, r, err)
@@ -149,16 +210,25 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// transform address
-	address := &shopify.CustomerAddress{
-		Address1:  cart.Etc.ShippingAddress.Address,
-		Address2:  cart.Etc.ShippingAddress.AddressOpt,
-		City:      cart.Etc.ShippingAddress.City,
-		Country:   cart.Etc.ShippingAddress.Country,
-		FirstName: cart.Etc.ShippingAddress.FirstName,
-		LastName:  cart.Etc.ShippingAddress.LastName,
-		Province:  cart.Etc.ShippingAddress.Province,
-		Zip:       cart.Etc.ShippingAddress.Zip,
+	var payload checkoutRequest
+	if err := render.Bind(r, &payload); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	var checkout shopify.Checkout
+	if sh := payload.ShippingAddress; sh != nil {
+		checkout.ShippingAddress = &shopify.CustomerAddress{
+			Address1:  sh.Address,
+			Address2:  sh.AddressOpt,
+			City:      sh.City,
+			Country:   sh.Country,
+			FirstName: sh.FirstName,
+			LastName:  sh.LastName,
+			Province:  sh.Province,
+			Zip:       sh.Zip,
+		}
+		cart.Etc.ShippingAddress = payload.ShippingAddress
 	}
 
 	for placeID, sh := range cart.Etc.ShopifyData {
@@ -168,28 +238,16 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 		cl.BaseURL, _ = url.Parse(cred.ApiURL)
 		cl.Debug = true
 
-		checkout := &shopify.Checkout{
-			Token:           sh.Token,
-			ShippingAddress: address,
-			BillingAddress:  address,
-		}
-		if cart.Etc.ShippingMethods != nil {
-			if m, ok := cart.Etc.ShippingMethods[placeID]; ok && m != nil {
-				checkout.ShippingLine = &shopify.ShippingLine{
-					Handle: m.Handle,
-				}
-			}
-		}
-		c, _, err := cl.Checkout.Update(ctx, &shopify.CheckoutRequest{checkout})
+		ch := checkout
+		ch.Token = sh.Token
+		c, _, err := cl.Checkout.Update(ctx, &shopify.CheckoutRequest{&ch})
 		if err != nil {
 			lg.Warn(errors.Wrapf(err, "failed to update shopify(%v)", placeID))
 			continue
 		}
-
-		cart.Etc.ShopifyData[cred.PlaceID].SubtotalPrice = atoi(c.SubtotalPrice)
-		cart.Etc.ShopifyData[cred.PlaceID].TotalPrice = atoi(c.TotalPrice)
-		cart.Etc.ShopifyData[cred.PlaceID].TotalTax = atoi(c.TotalTax)
-		cart.Etc.ShopifyData[cred.PlaceID].PaymentDue = c.PaymentDue
+		cart.Etc.ShopifyData[placeID].TotalPrice = atoi(c.TotalPrice)
+		cart.Etc.ShopifyData[placeID].TotalTax = atoi(c.TotalTax)
+		cart.Etc.ShopifyData[placeID].PaymentDue = c.PaymentDue
 	}
 
 	if err := data.DB.Cart.Save(cart); err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -125,15 +126,37 @@ func (c *CheckoutService) Update(ctx context.Context, checkout *CheckoutRequest)
 }
 
 func (c *CheckoutService) ListShippingRates(ctx context.Context, token string) ([]*CheckoutShipping, *http.Response, error) {
-	req, err := c.client.NewRequest("GET", fmt.Sprintf("/admin/checkouts/%s/shipping_rates.json", token), nil)
-	if err != nil {
-		return nil, nil, err
-	}
+	var (
+		resp                *http.Response
+		pollWait            = "0"
+		pollURL             = fmt.Sprintf("/admin/checkouts/%s/shipping_rates.json", token)
+		pollStatus          = http.StatusAccepted
+		shippingRateWrapper = new(ShippingRateRequest)
+	)
 
-	shippingRateWrapper := new(ShippingRateRequest)
-	resp, err := c.client.Do(ctx, req, shippingRateWrapper)
-	if err != nil {
-		return nil, resp, err
+	for {
+		if pollStatus != http.StatusAccepted {
+			break
+		}
+
+		req, err := c.client.NewRequest("GET", pollURL, nil)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		wait, _ := strconv.Atoi(pollWait)
+		// TODO: make a proper poller
+		time.Sleep(time.Duration(wait) * time.Second)
+
+		resp, err = c.client.Do(ctx, req, shippingRateWrapper)
+		if err != nil {
+			return nil, resp, err
+		}
+
+		// check Location and Retry-After for url and delay
+		pollURL = resp.Header.Get("Location")
+		pollWait = resp.Header.Get("Retry-After")
+		pollStatus = resp.StatusCode
 	}
 
 	return shippingRateWrapper.CheckoutShipping, resp, nil

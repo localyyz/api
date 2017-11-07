@@ -140,6 +140,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		resp.Body.Close()
 	}()
 
+	// check for error response
 	err = CheckResponse(resp)
 	if err != nil {
 		// even though there was an error, we still return the response

@@ -16,7 +16,6 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Post("/", CreateCartItem)
-	r.Get("/quantities", CheckQuantities)
 	r.Route("/{cartItemID}", func(r chi.Router) {
 		r.Use(CartItemCtx)
 		r.Get("/", GetCartItem)
