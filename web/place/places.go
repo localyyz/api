@@ -100,9 +100,10 @@ func ListNearby(w http.ResponseWriter, r *http.Request) {
 func ListRecent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
+	cursor := api.NewPage(r)
 
 	var places []*data.Place
-	q := data.DB.
+	query := data.DB.
 		Select(
 			db.Raw("distinct on (pl.id) pl.*"),
 			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
@@ -112,10 +113,9 @@ func ListRecent(w http.ResponseWriter, r *http.Request) {
 		On("pl.id = pr.place_id").
 		Where("pl.status = ?", data.PlaceStatusActive).
 		GroupBy("pl.id").
-		OrderBy("pl.id").
-		Limit(10)
-
-	if err := q.All(&places); err != nil {
+		OrderBy("pl.id")
+	query = cursor.UpdateQueryBuilder(query)
+	if err := query.All(&places); err != nil {
 		render.Respond(w, r, err)
 		return
 	}

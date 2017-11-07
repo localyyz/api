@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"upper.io/db.v3"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 var (
@@ -124,6 +125,13 @@ func (p *Page) UpdateQueryUpper(res db.Result) db.Result {
 		return res.Limit(p.Limit).Offset((p.Page - 1) * p.Limit)
 	}
 	return res.Limit(p.Limit)
+}
+
+func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Selector {
+	if p.Page > 1 {
+		return selector.Limit(p.Limit).Offset((p.Page - 1) * p.Limit)
+	}
+	return selector.Limit(p.Limit)
 }
 
 func (p *Page) HasFirst() bool { return true }
