@@ -25,15 +25,15 @@ type ProductTagStore struct {
 }
 
 const (
-	_ ProductTagType = iota
-	ProductTagTypeGeneral
-	ProductTagTypeSize
-	ProductTagTypeColor
-	ProductTagTypeMaterial
-	ProductTagTypeGender
-	ProductTagTypeCategory
-	ProductTagTypeBrand
-	ProductTagTypePrice
+	_                      ProductTagType = iota
+	ProductTagTypeGeneral                 // 1
+	ProductTagTypeSize                    // 2
+	ProductTagTypeColor                   // 3
+	ProductTagTypeMaterial                // 4
+	ProductTagTypeGender                  // 5
+	ProductTagTypeCategory                // 6
+	ProductTagTypeBrand                   // 7
+	ProductTagTypePrice                   // 8
 )
 
 var (

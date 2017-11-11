@@ -35,23 +35,6 @@ func LocaleCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ListLocale(w http.ResponseWriter, r *http.Request) {
-	// TODO: for now, we're hackers
-	var locales []*data.Locale
-	err := data.DB.Locale.Find(
-		data.EnabledLocales,
-	).OrderBy("shorthand").All(&locales)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	presented := presenter.NewLocaleList(r.Context(), locales)
-	if err := render.RenderList(w, r, presented); err != nil {
-		render.Respond(w, r, err)
-	}
-}
-
 func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	locale := ctx.Value("locale").(*data.Locale)

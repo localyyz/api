@@ -1,10 +1,7 @@
 package data
 
 import (
-	"fmt"
 	"time"
-
-	"bitbucket.org/moodie-app/moodie-api/web/api"
 
 	"upper.io/bond"
 	db "upper.io/db.v3"
@@ -63,37 +60,6 @@ func (p *Product) BeforeUpdate(bond.Session) error {
 	p.UpdatedAt = GetTimeUTCPointer()
 
 	return nil
-}
-
-// TODO parse item title into tags
-// search only 'active' stores
-func (store ProductStore) Fuzzy(q string, optCursor *api.Page) ([]*Product, error) {
-	tags, err := DB.ProductTag.FindAll(db.Cond{
-		"value ~*": fmt.Sprint("\\m(", q, ")"),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	byTitle, err := store.FindAll(db.Cond{
-		"title ~*": fmt.Sprint("\\m(", q, ")"),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	productIDs := make([]int64, len(tags))
-	for i, t := range tags {
-		productIDs[i] = t.ProductID
-	}
-
-	products, err := store.FindAll(db.Cond{"id": productIDs})
-	if err != nil {
-		return nil, err
-	}
-
-	products = append(products, byTitle...)
-	return products, nil
 }
 
 func (store ProductStore) FindByID(ID int64) (*Product, error) {
