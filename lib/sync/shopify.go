@@ -26,10 +26,11 @@ func ShopifyProductListings(ctx context.Context) error {
 
 	for _, p := range list {
 		product := &data.Product{
-			PlaceID:     place.ID,
-			ExternalID:  p.Handle,
-			Title:       p.Title,
-			Description: strings.TrimSpace(htmlx.StripTags(p.BodyHTML)),
+			PlaceID:        place.ID,
+			ExternalID:     &p.ID,
+			ExternalHandle: p.Handle,
+			Title:          p.Title,
+			Description:    strings.TrimSpace(htmlx.StripTags(p.BodyHTML)),
 			Etc: data.ProductEtc{
 				Brand: p.Vendor,
 			},

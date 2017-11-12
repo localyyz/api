@@ -12,9 +12,10 @@ import (
 )
 
 type Product struct {
-	ID         int64  `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID    int64  `db:"place_id" json:"placeId"`
-	ExternalID string `db:"external_id" json:"-"`
+	ID             int64  `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID        int64  `db:"place_id" json:"placeId"`
+	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
+	ExternalHandle string `db:"external_handle" json:"-"`
 
 	Title       string     `db:"title" json:"title"`
 	Description string     `db:"description" json:"description"`
