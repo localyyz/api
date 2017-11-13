@@ -37,7 +37,7 @@ func ShopifyProductListings(ctx context.Context) error {
 		}
 
 		// check if product already exists in our system
-		if p, _ := data.DB.Product.FindOne(db.Cond{"external_handle": p.Handle}); p != nil {
+		if p, _ := data.DB.Product.FindOne(db.Cond{"external_id": p.ProductID}); p != nil {
 			product.ID = p.ID
 		}
 
@@ -140,17 +140,17 @@ func ShopifyProductListings(ctx context.Context) error {
 
 			// Pull and parse collections, for now just parse gender
 			// TODO: categories
-			if !foundGender {
-				clist, _ := getProductCollections(ctx, p.ProductID)
-				for _, c := range clist {
-					for _, ctag := range parseTags(c.Handle) {
-						if ctag == "man" || ctag == "woman" || ctag == "unisex" {
-							foundGender = true
-							b.Values(product.ID, place.ID, ctag, data.ProductTagTypeGender)
-						}
-					}
-				}
-			}
+			//if !foundGender {
+			//clist, _ := getProductCollections(ctx, p.ProductID)
+			//for _, c := range clist {
+			//for _, ctag := range parseTags(c.Handle) {
+			//if ctag == "man" || ctag == "woman" || ctag == "unisex" {
+			//foundGender = true
+			//b.Values(product.ID, place.ID, ctag, data.ProductTagTypeGender)
+			//}
+			//}
+			//}
+			//}
 
 			// Product Vendor/Brand
 			b.Values(product.ID, place.ID, p.Vendor, data.ProductTagTypeBrand)
