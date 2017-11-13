@@ -37,7 +37,7 @@ func ShopifyProductListings(ctx context.Context) error {
 		}
 
 		// check if product already exists in our system
-		if p, _ := data.DB.Product.FindOne(db.Cond{"external_id": p.Handle}); p != nil {
+		if p, _ := data.DB.Product.FindOne(db.Cond{"external_handle": p.Handle}); p != nil {
 			product.ID = p.ID
 		}
 
