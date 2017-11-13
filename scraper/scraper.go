@@ -96,8 +96,8 @@ func ShopifyScraper() {
 		for _, p := range wrapper.Products {
 			// check if product already exists
 			product, err := data.DB.Product.FindOne(db.Cond{
-				"place_id":    place.ID,
-				"external_id": p.ProductID,
+				"place_id":        place.ID,
+				"external_handle": p.ProductID,
 			})
 
 			if err != nil {
@@ -114,11 +114,11 @@ func ShopifyScraper() {
 				u.RawQuery = ""
 
 				product = &data.Product{
-					PlaceID:     place.ID,
-					ExternalID:  p.ProductID,
-					Title:       p.Title,
-					Description: strings.TrimSpace(htmlx.StripTags(p.Description)),
-					ImageUrl:    u.String(),
+					PlaceID:        place.ID,
+					ExternalHandle: p.ProductID,
+					Title:          p.Title,
+					Description:    strings.TrimSpace(htmlx.StripTags(p.Description)),
+					ImageUrl:       u.String(),
 					Etc: data.ProductEtc{
 						Brand:  strings.ToLower(p.Brand),
 						Images: []string{u.String()},

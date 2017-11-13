@@ -10,7 +10,7 @@ import (
 type ProductService service
 
 type Product struct {
-	ID             int64       `json:"id"`
+	ProductID      int64       `json:"product_id"`
 	Title          string      `json:"title"`
 	BodyHTML       string      `json:"body_html"`
 	Vendor         string      `json:"vendor"`

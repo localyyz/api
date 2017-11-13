@@ -12,14 +12,17 @@ import (
 )
 
 type Product struct {
-	ID         int64  `db:"id,pk,omitempty" json:"id,omitempty"`
-	PlaceID    int64  `db:"place_id" json:"placeId"`
-	ExternalID string `db:"external_id" json:"-"`
+	ID      int64 `db:"id,pk,omitempty" json:"id,omitempty"`
+	PlaceID int64 `db:"place_id" json:"placeId"`
 
 	Title       string     `db:"title" json:"title"`
 	Description string     `db:"description" json:"description"`
 	ImageUrl    string     `db:"image_url" json:"imageUrl"`
 	Etc         ProductEtc `db:"etc" json:"etc"`
+
+	// external id
+	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
+	ExternalHandle string `db:"external_handle" json:"-"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
@@ -92,13 +95,6 @@ func (store ProductStore) Fuzzy(q string, optCursor *api.Page) ([]*Product, erro
 	products = append(products, byTitle...)
 	return products, nil
 }
-
-//func (store ProductStore) FindPromos(productID int64) ([]*Promo, error) {
-//return DB.Promo.FindAll(db.Cond{
-//"product_id": productID,
-//"status":     PromoStatusActive,
-//})
-//}
 
 func (store ProductStore) FindByID(ID int64) (*Product, error) {
 	return store.FindOne(db.Cond{"id": ID})
