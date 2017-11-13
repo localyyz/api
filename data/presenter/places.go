@@ -16,8 +16,10 @@ type Place struct {
 	ProductCount uint64  `json:"productCount"`
 	Following    bool    `json:"following"`
 
-	LatLng *geotools.LatLng `json:"coords"`
-	ctx    context.Context
+	LatLng   *geotools.LatLng `json:"coords"`
+	ImageURL string           `json:"imageUrl"`
+
+	ctx context.Context
 }
 
 func NewPlace(ctx context.Context, place *data.Place) *Place {
@@ -51,10 +53,11 @@ func (pl *Place) Render(w http.ResponseWriter, r *http.Request) error {
 	if len(pl.Geo.Coordinates) > 1 {
 		pl.LatLng = geotools.LatLngFromPoint(pl.Geo)
 	}
+	pl.ImageURL = pl.Place.ImageURL
 	if len(pl.ImageURL) == 0 {
 		p, err := data.DB.Product.FindOne(db.Cond{"place_id": pl.ID})
 		if err != nil {
-			return nil
+			return err
 		}
 		pl.ImageURL = p.ImageUrl
 	}

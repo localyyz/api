@@ -97,32 +97,50 @@ func ListNearby(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListRecent returns the places with most recent products
+// by product last updated at in descending order
 func ListRecent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
 	cursor := api.NewPage(r)
 
-	var places []*data.Place
+	var orderedPlaces []*data.Place
 	query := data.DB.
 		Select(
-			db.Raw("distinct on (pl.id) pl.*"),
-			db.Raw(fmt.Sprintf("ST_Distance(pl.geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
+			"pl.id",
+			db.Raw("max(pr.updated_at) updated_at"),
 		).
 		From("places pl").
 		LeftJoin("products pr").
 		On("pl.id = pr.place_id").
-		Where("pl.status = ?", data.PlaceStatusActive).
+		Where(db.Cond{
+			"pl.status": data.PlaceStatusActive,
+		}).
 		GroupBy("pl.id").
-		OrderBy("pl.id")
+		OrderBy(db.Raw("updated_at DESC NULLS LAST"))
 	query = cursor.UpdateQueryBuilder(query)
-	if err := query.All(&places); err != nil {
+	if err := query.All(&orderedPlaces); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	orderedPlaceIDs := make([]int64, len(orderedPlaces))
+	for i, pl := range orderedPlaces {
+		orderedPlaceIDs[i] = pl.ID
+	}
+
+	var places []*data.Place
+	err := data.DB.Place.Find(
+		db.Cond{"id": orderedPlaceIDs},
+	).OrderBy(
+		data.MaintainOrder("id", orderedPlaceIDs),
+	).All(&places)
+	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
 	presented := presenter.NewPlaceList(ctx, places)
 	if err := render.RenderList(w, r, presented); err != nil {
-		render.Render(w, r, nil)
+		render.Respond(w, r, err)
 	}
 }
 
