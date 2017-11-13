@@ -110,6 +110,8 @@ func ShopifyProductListings(ctx context.Context) error {
 		b := q.Batch(len(tags))
 		go func() {
 			defer b.Done()
+
+			foundGender := false
 			for _, t := range tags {
 				// detect if one of "man" or "woman"
 				// TODO: let's do this some other way
@@ -117,17 +119,37 @@ func ShopifyProductListings(ctx context.Context) error {
 				typ := data.ProductTagTypeGeneral
 				if t == "man" || t == "woman" || t == "unisex" {
 					typ = data.ProductTagTypeGender
+					foundGender = true
 				}
 				b.Values(product.ID, place.ID, t, typ)
 			}
 
-			// Product type category
+			// Product type category or gender
 			for _, t := range parseTags(p.ProductType) {
+				typ := data.ProductTagTypeCategory
 				if t == "man" || t == "woman" || t == "unisex" {
-					// skip gender if specified
-					continue
+					// skip gender if specified, if we've already found gender
+					if foundGender {
+						continue
+					}
+					typ = data.ProductTagTypeGender
+					foundGender = true
 				}
-				b.Values(product.ID, place.ID, t, data.ProductTagTypeCategory)
+				b.Values(product.ID, place.ID, t, typ)
+			}
+
+			// Pull and parse collections, for now just parse gender
+			// TODO: categories
+			if !foundGender {
+				clist, _ := getProductCollections(ctx, p.ProductID)
+				for _, c := range clist {
+					for _, ctag := range parseTags(c.Handle) {
+						if ctag == "man" || ctag == "woman" || ctag == "unisex" {
+							foundGender = true
+							b.Values(product.ID, place.ID, ctag, data.ProductTagTypeGender)
+						}
+					}
+				}
 			}
 
 			// Product Vendor/Brand
@@ -158,6 +180,25 @@ func ShopifyProductListings(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func getProductCollections(ctx context.Context, productID int64) ([]*shopify.CustomCollection, error) {
+	place := ctx.Value("sync.place").(*data.Place)
+
+	cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	cl := shopify.NewClient(nil, cred.AccessToken)
+	cl.BaseURL, _ = url.Parse(cred.ApiURL)
+
+	clist, _, err := cl.CustomCollection.Get(ctx, &shopify.CustomCollectionParam{ProductID: productID})
+	if err != nil {
+		return nil, err
+	}
+
+	return clist, nil
 }
 
 var tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
