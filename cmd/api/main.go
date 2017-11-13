@@ -62,7 +62,8 @@ func main() {
 
 	// cron puller
 	c := cron.New()
-	c.AddFunc("0 0 1 * * *", scraper.ShopifyScraper)
+	// run every 2 days at 1am
+	c.AddFunc("0 0 1 * * */2", scraper.ShopifyScraper)
 	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
