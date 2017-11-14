@@ -2,21 +2,24 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/gedex/inflector"
 	"github.com/pressly/lg"
+	set "gopkg.in/fatih/set.v0"
 	db "upper.io/db.v3"
 )
 
 func main() {
 	conf := data.DBConf{
 		Database:        "localyyz",
-		Hosts:           []string{"localhost:1234"},
+		Hosts:           []string{"localhost"},
 		Username:        "localyyz",
 		ApplicationName: "sync_tool",
 	}
@@ -25,8 +28,111 @@ func main() {
 	}
 	log.Println("tool started.")
 
-	pullProductExternalID()
+	//pullProductExternalID()
 	//pullProductGender()
+	pullProductCategory()
+}
+
+var tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
+
+func parseTags(tagStr string, optTags ...string) []string {
+	tt := tagRegex.Split(tagStr, -1)
+
+	tagSet := set.New()
+	for _, t := range tt {
+		t = strings.ToLower(t)
+
+		tt := inflector.Singularize(t)
+		for {
+			if tt == t {
+				break
+			}
+			t = tt
+			tt = inflector.Singularize(t)
+		}
+		if tt == "" {
+			continue
+		}
+		tagSet.Add(t)
+	}
+	for _, t := range optTags {
+		tagSet.Add(strings.ToLower(t))
+	}
+
+	return set.StringSlice(tagSet)
+}
+
+func noGender(v string) bool {
+	return !(v == "man" || v == "woman")
+}
+
+func filter(vs []string, f func(string) bool) []string {
+	vsf := make([]string, 0)
+	for _, v := range vs {
+		if f(v) {
+			vsf = append(vsf, v)
+		}
+	}
+	return vsf
+}
+
+func pullProductCategory() {
+	var creds []*data.ShopifyCred
+	err := data.DB.ShopifyCred.Find(
+		db.Cond{
+			"place_id": 44,
+		},
+	).All(&creds)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, cred := range creds {
+		cl := shopify.NewClient(nil, cred.AccessToken)
+		cl.BaseURL, _ = url.Parse(cred.ApiURL)
+
+		// find the products
+		products, err := data.DB.Product.FindAll(
+			db.Cond{
+				"place_id":           cred.PlaceID,
+				"external_id IS NOT": nil,
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// for each product, find the collections they belong to
+		//q := data.DB.InsertInto("product_tags").
+		//Columns("product_id", "place_id", "value", "type").
+		//Amend(func(query string) string {
+		//return query + ` ON CONFLICT DO NOTHING`
+		//})
+		//b := q.Batch(len(products))
+
+		//go func() {
+		//defer b.Done()
+		for _, p := range products {
+			ctx := context.Background()
+			clist, _, _ := cl.CustomCollection.Get(ctx, &shopify.CustomCollectionParam{ProductID: *p.ExternalID})
+
+			// for each clist, parse the title as tags
+			for _, c := range clist {
+				tt := filter(parseTags(c.Title), noGender)
+				if len(tt) > 0 {
+					fmt.Println(c.Title, tt)
+				}
+			}
+			//}
+			//}()
+
+			//if err := b.Wait(); err != nil {
+			//lg.Warn(err)
+			//}
+
+		}
+	}
+
 }
 
 func pullProductGender() {

@@ -1,41 +1,118 @@
 package search
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/gedex/inflector"
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	db "upper.io/db.v3"
 )
 
-type omniSearch struct {
-	Places   []*presenter.Place          `json:"places"`
-	Products presenter.SearchProductList `json:"products"`
+func Routes() chi.Router {
+	r := chi.NewRouter()
+
+	r.Post("/s", OmniSearch)
+	r.Post("/city", SearchCity)
+	r.Post("/category", SearchCategory)
+
+	return r
 }
 
-func (*omniSearch) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
+func SearchCategory(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cursor := api.NewPage(r)
+
+	// find corresponding category
+	category, err := data.DB.ProductCategory.FindByName(
+		strings.TrimSpace(r.URL.Query().Get("q")))
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	// search the category tags that match the query term
+	query := data.DB.ProductTag.Find(db.Cond{
+		"value": category.Value,
+		"type":  data.ProductTagTypeCategory,
+	}).OrderBy("-created_at")
+	query = cursor.UpdateQueryUpper(query)
+
+	var tags []*data.ProductTag
+	if err := query.All(&tags); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	productIDs := make([]int64, len(tags))
+	for i, t := range tags {
+		productIDs[i] = t.ProductID
+	}
+
+	// find the products
+	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	render.RenderList(w, r, presenter.NewSearchProductList(ctx, products))
+
+}
+
+func SearchCity(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cursor := api.NewPage(r)
+
+	searchQuery := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+	searchQuery = inflector.Singularize(searchQuery)
+
+	// find the locale with search value
+	locale, err := data.DB.Locale.FindOne(db.Cond{"shorthand": searchQuery})
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	// find the places with this relationship
+	query := data.DB.
+		Select(db.Raw("pl.*")).
+		From("places pl").
+		LeftJoin("place_locales pll").
+		On("pl.id = pll.place_id").
+		Where("pll.locale_id = ?", locale.ID).
+		OrderBy("-pl.created_at")
+	query = cursor.UpdateQueryBuilder(query)
+	var places []*data.Place
+	if err := query.All(&places); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	render.RenderList(w, r, presenter.NewPlaceList(ctx, places))
 }
 
 // OmniSearch catch all search endpoint and returns categorized
 // json search results
 func OmniSearch(w http.ResponseWriter, r *http.Request) {
-	q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
 	ctx := r.Context()
 
-	s := &omniSearch{}
-	s.Places = make([]*presenter.Place, 0)
+	searchQuery := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+	searchQuery = inflector.Singularize(searchQuery)
 
-	// TODO: pagination
-	q = inflector.Singularize(q)
-	products, err := data.DB.Product.Fuzzy(q, nil)
-	if err != nil {
+	// find products by title
+	query := data.DB.Product.Find(db.Cond{
+		"title ~*": fmt.Sprint("\\m(", searchQuery, ")"),
+	}).OrderBy("-created_at")
+	cursor := api.NewPage(r)
+	query = cursor.UpdateQueryUpper(query)
+
+	var products []*data.Product
+	if err := query.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
-	s.Products = presenter.NewSearchProductList(ctx, products)
-
-	render.Render(w, r, s)
+	render.RenderList(w, r, presenter.NewSearchProductList(ctx, products))
 }

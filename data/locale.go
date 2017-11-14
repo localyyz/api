@@ -8,26 +8,23 @@ import (
 )
 
 type Locale struct {
-	ID          int64  `db:"id,pk,omitempty" json:"id,omitempty"`
-	Name        string `db:"name" json:"name"`
-	Shorthand   string `db:"shorthand" json:"shorthand"`
-	Description string `db:"description" json:"description"`
+	ID          int64      `db:"id,pk,omitempty" json:"id,omitempty"`
+	Name        string     `db:"name" json:"name"`
+	Type        LocaleType `db:"type" json:"type"`
+	Shorthand   string     `db:"shorthand" json:"shorthand"`
+	Description string     `db:"description" json:"description"`
 }
 
 type LocaleStore struct {
 	bond.Store
 }
 
-var (
-	EnabledLocales = db.Cond{"shorthand": []string{
-		//"king-west",
-		//"queen-west",
-		//"distillery-district",
-		//"kensington-market",
-		//"st-lawrence-market",
-		"west-queen-west",
-		"yorkville",
-	}}
+type LocaleType uint
+
+const (
+	LocaleTypeUnknown = iota
+	LocaleTypeCity    // 1
+	LocaleTypeMetro   // 2
 )
 
 func (n *Locale) CollectionName() string {

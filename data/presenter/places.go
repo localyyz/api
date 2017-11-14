@@ -55,17 +55,14 @@ func (pl *Place) Render(w http.ResponseWriter, r *http.Request) error {
 	}
 	pl.ImageURL = pl.Place.ImageURL
 	if len(pl.ImageURL) == 0 {
-		var product *data.Product
+		var p *data.Product
 		err := data.DB.Product.Find(
-			db.Cond{
-				"place_id": pl.ID,
-			}).
-			OrderBy("-created_at").
-			One(&product)
+			db.Cond{"place_id": pl.ID},
+		).OrderBy("-created_at").One(&p)
 		if err != nil {
 			return err
 		}
-		pl.ImageURL = product.ImageUrl
+		pl.ImageURL = p.ImageUrl
 	}
 	return nil
 }
