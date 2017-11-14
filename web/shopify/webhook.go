@@ -2,7 +2,6 @@ package shopify
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -34,14 +33,10 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer func() {
-		// log the call for future use
-		b, _ := json.Marshal(wrapper)
-		lg.Infof(`{"topic":"%s","place_id":%d,"data":%s}`, topic, place.ID, string(b))
-	}()
-
 	go func(wrapper *shopifyWebhookRequest) { // return right away
 		// TODO: implement other webhooks
+		ctx = context.WithValue(ctx, "sync.type", shopify.Topic(topic))
+
 		switch shopify.Topic(topic) {
 		case shopify.TopicProductListingsAdd:
 			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})

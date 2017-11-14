@@ -23,6 +23,7 @@ import (
 func ShopifyProductListings(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)
+	whType := ctx.Value("sync.type").(shopify.Topic)
 
 	for _, p := range list {
 		product := &data.Product{
@@ -39,6 +40,10 @@ func ShopifyProductListings(ctx context.Context) error {
 		// check if product already exists in our system
 		if p, _ := data.DB.Product.FindOne(db.Cond{"external_id": p.ProductID}); p != nil {
 			product.ID = p.ID
+		}
+		if whType == shopify.TopicProductListingsUpdate && product.ID == 0 {
+			lg.Alertf("product list update with unknown external id: %d. Did not update.", p.ProductID)
+			return nil
 		}
 
 		// parse product images
@@ -139,7 +144,7 @@ func ShopifyProductListings(ctx context.Context) error {
 			}
 
 			// Pull and parse collections, for now just parse gender
-			// TODO: categories
+			// TODO: categories.
 			//if !foundGender {
 			//clist, _ := getProductCollections(ctx, p.ProductID)
 			//for _, c := range clist {
