@@ -18,8 +18,8 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Post("/s", OmniSearch)
-	r.Post("/category", SearchCategory)
 	r.Post("/city", SearchCity)
+	r.Post("/category", SearchCategory)
 
 	return r
 }
@@ -28,13 +28,18 @@ func SearchCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := api.NewPage(r)
 
-	searchQuery := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
-	searchQuery = inflector.Singularize(searchQuery)
+	// find corresponding category
+	category, err := data.DB.ProductCategory.FindByName(
+		strings.TrimSpace(r.URL.Query().Get("q")))
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
 
 	// search the category tags that match the query term
 	query := data.DB.ProductTag.Find(db.Cond{
-		"value ~*": fmt.Sprint("\\m(", searchQuery, ")"),
-		"type":     data.ProductTagTypeCategory,
+		"value": category.Value,
+		"type":  data.ProductTagTypeCategory,
 	}).OrderBy("-created_at")
 	query = cursor.UpdateQueryUpper(query)
 
