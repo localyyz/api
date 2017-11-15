@@ -31,7 +31,13 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 
 	locale, _ := data.DB.Locale.FindByID(p.LocaleID)
 	p.Locale = NewLocale(ctx, locale)
-	p.Following = data.DB.Following.IsFollowing(ctx, p.ID)
+
+	if user, ok := ctx.Value("session.user").(*data.User); ok {
+		count, _ := data.DB.Following.Find(
+			db.Cond{"place_id": p.ID, "user_id": user.ID},
+		).Count()
+		p.Following = (count > 0)
+	}
 
 	return p
 }

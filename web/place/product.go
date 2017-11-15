@@ -95,6 +95,8 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 	cursor := api.NewPage(r)
 
 	u := r.URL.Query()
+	u.Del("limit")
+	u.Del("page")
 	var tagFilters []db.Compound
 	var fCount int
 	for k, v := range u {

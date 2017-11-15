@@ -69,6 +69,11 @@ func New(h *Handler) chi.Router {
 			Post("/webhooks/shopify", shopify.WebhookHandler)
 
 		r.Post("/echo", echoPush)
+
+		r.Mount("/places", place.Routes())
+		r.Post("/search", search.OmniSearch)
+		r.Mount("/products", product.Routes())
+		r.Mount("/search", search.Routes())
 	})
 
 	// Authed Routes
@@ -79,11 +84,8 @@ func New(h *Handler) chi.Router {
 
 		r.Mount("/session", session.Routes())
 		r.Mount("/users", user.Routes())
-		r.Mount("/places", place.Routes())
 		r.Mount("/locales", locale.Routes())
-		r.Mount("/products", product.Routes())
 		r.Mount("/carts", cart.Routes())
-		r.Mount("/search", search.Routes())
 	})
 
 	return r

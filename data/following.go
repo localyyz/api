@@ -1,7 +1,6 @@
 package data
 
 import (
-	"context"
 	"time"
 
 	"upper.io/bond"
@@ -21,16 +20,6 @@ type FollowingStore struct {
 
 func (f *Following) CollectionName() string {
 	return `followings`
-}
-
-func (store FollowingStore) IsFollowing(ctx context.Context, placeID int64) bool {
-	user := ctx.Value("session.user").(*User)
-
-	count, _ := store.Find(
-		db.Cond{"place_id": placeID, "user_id": user.ID},
-	).Count()
-
-	return (count > 0)
 }
 
 func (store FollowingStore) FindByUserID(userID int64) ([]*Following, error) {
