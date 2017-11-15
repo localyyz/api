@@ -28,7 +28,7 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 
 		place, err := data.DB.Place.FindByShopifyID(shopID)
 		if err != nil {
-			lg.Alertf("webhooks: place with domain %s is not found", shopDomain)
+			lg.Alertf("webhooks: place(%s) errored with: %+v", shopID, err)
 			render.Respond(w, r, err)
 			return
 		}
