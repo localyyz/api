@@ -31,7 +31,7 @@ func ShopifyProductListings(ctx context.Context) error {
 			ExternalID:     &p.ProductID,
 			ExternalHandle: p.Handle,
 			Title:          p.Title,
-			Description:    strings.TrimSpace(htmlx.StripTags(p.BodyHTML)),
+			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
 			Etc: data.ProductEtc{
 				Brand: p.Vendor,
 			},

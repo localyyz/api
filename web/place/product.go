@@ -162,7 +162,6 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 			).
 			GroupBy("product_id").
 			//Having("count(*) > ?", len(tagFilters)).
-			OrderBy("product_id").
 			All(&productTags)
 		// TODO: having.
 
@@ -180,14 +179,14 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		query := data.DB.Product.Find(
 			db.Cond{"id": productIDs.List()},
 			db.Cond{"place_id": place.ID},
-		).OrderBy("id")
+		).OrderBy("-created_at")
 		query = cursor.UpdateQueryUpper(query)
 		if err := query.All(&products); err != nil {
 			render.Respond(w, r, err)
 			return
 		}
 	} else {
-		query := data.DB.Product.Find(db.Cond{"place_id": place.ID}).OrderBy("id")
+		query := data.DB.Product.Find(db.Cond{"place_id": place.ID}).OrderBy("-created_at")
 		query = cursor.UpdateQueryUpper(query)
 		if err := query.All(&products); err != nil {
 			render.Respond(w, r, err)

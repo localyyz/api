@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/go-chi/render"
@@ -12,6 +13,7 @@ import (
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 )
 
 type Product struct {
@@ -136,8 +138,10 @@ func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 
 	u.Scheme = "https"
 	u.Path = fmt.Sprintf("products/%s", p.ExternalID)
-
 	p.ShopUrl = u.String()
+
+	// FOR NOW/TODO: remove tags in description
+	p.Description = strings.TrimSpace(htmlx.StripTags(p.Description))
 
 	return nil
 }
