@@ -120,6 +120,13 @@ func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	// FOR NOW/TODO: remove tags in description
 	p.Description = strings.TrimSpace(htmlx.StripTags(p.Description))
 
+	if p.Place == nil {
+		p.Place = new(Place)
+		if place, _ := data.DB.Place.FindByID(p.PlaceID); place != nil {
+			p.Place = &Place{Place: place}
+		}
+	}
+
 	return nil
 }
 
