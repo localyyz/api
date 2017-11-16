@@ -19,7 +19,7 @@ networks:
     env:
       ENV: production
     hosts:
-      - ubuntu@159.203.26.181
+      - root@138.197.148.245
 
 commands:
   config:
