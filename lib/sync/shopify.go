@@ -31,14 +31,19 @@ func ShopifyProductListings(ctx context.Context) error {
 			ExternalID:     &p.ProductID,
 			ExternalHandle: p.Handle,
 			Title:          p.Title,
-			Description:    strings.TrimSpace(htmlx.StripTags(p.BodyHTML)),
+			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
 			Etc: data.ProductEtc{
 				Brand: p.Vendor,
 			},
 		}
 
 		// check if product already exists in our system
-		if p, _ := data.DB.Product.FindOne(db.Cond{"external_id": p.ProductID}); p != nil {
+		if p, err := data.DB.Product.FindOne(db.Cond{
+			"place_id":    place.ID,
+			"external_id": p.ProductID,
+		}); err != nil && err != db.ErrNoMoreRows {
+			return errors.Wrap(err, "failed to fetch product")
+		} else if p != nil {
 			product.ID = p.ID
 		}
 		if whType == shopify.TopicProductListingsUpdate && product.ID == 0 {

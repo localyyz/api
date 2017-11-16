@@ -2,9 +2,8 @@ package presenter
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"net/url"
+	"strings"
 	"time"
 
 	"github.com/go-chi/render"
@@ -12,6 +11,7 @@ import (
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 )
 
 type Product struct {
@@ -21,8 +21,6 @@ type Product struct {
 
 	Sizes  []string `json:"sizes"`
 	Colors []string `json:"colors"`
-
-	ShopUrl string `json:"shopUrl"`
 
 	CreateAt  *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
@@ -86,12 +84,6 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		ctx:     ctx,
 	}
 
-	place, ok := p.ctx.Value("place").(*data.Place)
-	if !ok {
-		place, _ = data.DB.Place.FindByID(p.PlaceID)
-	}
-	p.Place = &Place{Place: place}
-
 	p.Variants = []*ProductVariant{}
 	if dbVariants, _ := data.DB.ProductVariant.FindByProductID(product.ID); dbVariants != nil {
 		for _, v := range dbVariants {
@@ -125,19 +117,8 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 }
 
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
-	var u *url.URL
-	if p.Place.ShopifyID != "" {
-		u = &url.URL{
-			Host: fmt.Sprintf("%s.myshopify.com", p.Place.ShopifyID),
-		}
-	} else if p.Place.Website != "" {
-		u, _ = url.Parse(p.Place.Website)
-	}
-
-	u.Scheme = "https"
-	u.Path = fmt.Sprintf("products/%s", p.ExternalID)
-
-	p.ShopUrl = u.String()
+	// FOR NOW/TODO: remove tags in description
+	p.Description = strings.TrimSpace(htmlx.StripTags(p.Description))
 
 	return nil
 }

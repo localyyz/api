@@ -2,7 +2,6 @@ package presenter
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -39,15 +38,11 @@ func NewProductVariant(ctx context.Context, variant *data.ProductVariant) *Produ
 	}
 
 	if p.Place == nil {
-		user := ctx.Value("session.user").(*data.User)
 
 		var place *data.Place
 		err := data.DB.Place.
 			Find(p.PlaceID).
-			Select(
-				db.Raw("*"),
-				db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
-			).
+			Select(db.Raw("*")).
 			OrderBy("distance").
 			One(&place)
 		if err != nil {

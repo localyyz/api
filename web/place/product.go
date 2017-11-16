@@ -95,6 +95,8 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 	cursor := api.NewPage(r)
 
 	u := r.URL.Query()
+	u.Del("limit")
+	u.Del("page")
 	var tagFilters []db.Compound
 	var fCount int
 	for k, v := range u {
@@ -162,7 +164,6 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 			).
 			GroupBy("product_id").
 			//Having("count(*) > ?", len(tagFilters)).
-			OrderBy("product_id").
 			All(&productTags)
 		// TODO: having.
 
@@ -180,16 +181,26 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		query := data.DB.Product.Find(
 			db.Cond{"id": productIDs.List()},
 			db.Cond{"place_id": place.ID},
-		).OrderBy("id")
+		).OrderBy("-created_at")
 		query = cursor.UpdateQueryUpper(query)
 		if err := query.All(&products); err != nil {
 			render.Respond(w, r, err)
 			return
 		}
 	} else {
-		query := data.DB.Product.Find(db.Cond{"place_id": place.ID}).OrderBy("id")
-		query = cursor.UpdateQueryUpper(query)
-		if err := query.All(&products); err != nil {
+		iter := data.DB.Iterator(`
+			SELECT p.*
+			FROM products p
+			LEFT JOIN product_variants pv
+			ON p.id = pv.product_id
+			WHERE p.place_id = ?
+			GROUP BY p.id
+			HAVING sum(pv.limits) > 0
+			ORDER BY p.created_at DESC
+			LIMIT ? OFFSET ?`, place.ID, cursor.Limit, (cursor.Page-1)*cursor.Limit)
+		defer iter.Close()
+
+		if err := iter.All(&products); err != nil {
 			render.Respond(w, r, err)
 			return
 		}
@@ -199,5 +210,4 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}
-
 }

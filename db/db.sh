@@ -34,7 +34,7 @@ EOF
 
 function loadprod() {
   echo "LOADING DATABASE FROM PROD BACKUP";
-  scp ubuntu@localyyz:/home/ubuntu/backups/backup-`date +%F`.gz tmp/.
+  scp root@localyyz:/home/ubuntu/backups/backup-`date +%F`.gz tmp/.
   gunzip -c tmp/backup-`date +%F`.gz | psql $database
 }
 

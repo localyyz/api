@@ -41,12 +41,14 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		case shopify.TopicProductListingsAdd:
 			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
 			if err := sync.ShopifyProductListings(ctx); err != nil {
+				lg.Alertf("webhook: productAdd for place(%s) failed with %v", place.Name, err)
 				render.Respond(w, r, err)
 				return
 			}
 		case shopify.TopicProductListingsUpdate:
 			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
 			if err := sync.ShopifyProductListings(ctx); err != nil {
+				lg.Alertf("webhook: productUpdate for place(%s) failed with %v", place.Name, err)
 				render.Respond(w, r, err)
 				return
 			}

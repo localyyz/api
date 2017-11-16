@@ -67,7 +67,11 @@ func GetPlace(w http.ResponseWriter, r *http.Request) {
 // ListNearby returns places and products based on user's last recorded geolocation
 func ListNearby(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
+	user, ok := ctx.Value("session.user").(*data.User)
+	if !ok {
+		return
+	}
+
 	cursor := api.NewPage(r)
 
 	query := data.DB.Place.
@@ -147,7 +151,10 @@ func ListRecent(w http.ResponseWriter, r *http.Request) {
 // Share a place on social media
 func Share(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
+	user, ok := ctx.Value("session.user").(*data.User)
+	if !ok {
+		return
+	}
 	place := ctx.Value("place").(*data.Place)
 
 	payload := &shareWrapper{}
