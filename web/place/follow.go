@@ -15,7 +15,11 @@ import (
 
 func ListFollowing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
+	user, ok := ctx.Value("session.user").(*data.User)
+	if !ok {
+		// TODO: fix this so it works with no user session
+		return
+	}
 	cursor := api.NewPage(r)
 
 	followings, err := data.DB.Following.FindByUserID(user.ID)
