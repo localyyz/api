@@ -37,11 +37,16 @@ func SearchCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// search the category tags that match the query term
-	query := data.DB.ProductTag.Find(db.Cond{
-		"value": category.Value,
-		"type":  data.ProductTagTypeCategory,
-	}).OrderBy("-created_at")
-	query = cursor.UpdateQueryUpper(query)
+	query := data.DB.
+		Select(db.Raw("distinct on (product_id, created_at) *")).
+		From("product_tags").
+		Where(db.Cond{
+			"value": category.Value,
+			"type":  data.ProductTagTypeCategory,
+		}).
+		GroupBy("id", "product_id", "created_at").
+		OrderBy("-created_at")
+	query = cursor.UpdateQueryBuilder(query)
 
 	var tags []*data.ProductTag
 	if err := query.All(&tags); err != nil {
