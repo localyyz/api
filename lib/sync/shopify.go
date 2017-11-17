@@ -23,7 +23,7 @@ import (
 func ShopifyProductListings(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)
-	whType := ctx.Value("sync.type").(shopify.Topic)
+	//whType := ctx.Value("sync.type").(shopify.Topic)
 
 	for _, p := range list {
 		product := &data.Product{
@@ -46,10 +46,10 @@ func ShopifyProductListings(ctx context.Context) error {
 		} else if p != nil {
 			product.ID = p.ID
 		}
-		if whType == shopify.TopicProductListingsUpdate && product.ID == 0 {
-			lg.Alertf("product list update with unknown external id: %d. Did not update.", p.ProductID)
-			return nil
-		}
+		//if whType == shopify.TopicProductListingsUpdate && product.ID == 0 {
+		//lg.Alertf("product list update with unknown external id: %d. Did not update.", p.ProductID)
+		//return nil
+		//}
 
 		// parse product images
 		for _, img := range p.Images {
