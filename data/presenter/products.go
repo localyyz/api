@@ -17,7 +17,7 @@ import (
 type Product struct {
 	*data.Product
 	Variants []*ProductVariant `json:"variants"`
-	Place    *Place            `json:"place"`
+	Place    *data.Place       `json:"place"`
 
 	Sizes  []string `json:"sizes"`
 	Colors []string `json:"colors"`
@@ -111,7 +111,7 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	// if place is not in the context, return it as part of presenter
 	if _, ok := ctx.Value("place").(*data.Place); !ok {
 		if place, _ := data.DB.Place.FindByID(p.PlaceID); place != nil {
-			p.Place = &Place{Place: place}
+			p.Place = place
 		}
 	}
 
