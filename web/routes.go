@@ -49,6 +49,10 @@ func New(h *Handler) chi.Router {
 		return http.HandlerFunc(fn)
 	})
 
+	r.Use(token.Verify())
+	r.Use(session.SessionCtx)
+	r.Use(session.UserRefresh)
+
 	// Public Routes
 	r.Group(func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -78,10 +82,6 @@ func New(h *Handler) chi.Router {
 
 	// Authed Routes
 	r.Group(func(r chi.Router) {
-		r.Use(token.Verify())
-		r.Use(session.SessionCtx)
-		r.Use(session.UserRefresh)
-
 		r.Mount("/session", session.Routes())
 		r.Mount("/users", user.Routes())
 		r.Mount("/locales", locale.Routes())

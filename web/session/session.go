@@ -23,9 +23,11 @@ func SessionCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		tok, _ := ctx.Value("jwt").(*jwt.Token)
+		tok, ok := ctx.Value("jwt").(*jwt.Token)
 		if tok == nil {
-			render.Render(w, r, api.ErrInvalidSession)
+			//render.Render(w, r, api.ErrInvalidSession)
+			//lg.SetEntryField(ctx, "user_id", )
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
@@ -75,19 +77,18 @@ func UserRefresh(next http.Handler) http.Handler {
 	// social network
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		user := ctx.Value("session.user").(*data.User)
-
-		// for now, just facebook
-		if user.Network == "facebook" {
-			if user.UpdatedAt == nil || time.Since(*user.UpdatedAt) > 20*24*time.Hour {
-				if err := connect.FB.GetUser(user); err != nil {
-					lg.Warn(errors.Wrap(err, "unable to refresh user"))
-					return
+		if user, ok := ctx.Value("session.user").(*data.User); ok {
+			// for now, just facebook
+			if user.Network == "facebook" {
+				if user.UpdatedAt == nil || time.Since(*user.UpdatedAt) > 20*24*time.Hour {
+					if err := connect.FB.GetUser(user); err != nil {
+						lg.Warn(errors.Wrap(err, "unable to refresh user"))
+						return
+					}
+					data.DB.User.Save(user)
 				}
-				data.DB.User.Save(user)
 			}
 		}
-
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 
