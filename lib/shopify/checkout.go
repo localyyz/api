@@ -21,7 +21,9 @@ type Checkout struct {
 	PaymentAccountID string      `json:"shopify_payments_account_id,omitempty"`
 	WebURL           string      `json:"web_url,omitempty"`
 	WebProcessingURL string      `json:"web_processing_url,omitempty"`
+	DiscountCode     string      `json:"discount_code,omitempty"`
 
+	AppliedDiscount *AppliedDiscount `json:"applied_discount,omitempty"`
 	ShippingAddress *CustomerAddress `json:"shipping_address,omitempty"`
 	BillingAddress  *CustomerAddress `json:"billing_address,omitempty"`
 	ShippingLine    *ShippingLine    `json:"shipping_line,omitempty"`
