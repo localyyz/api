@@ -36,6 +36,7 @@ function loadprod() {
   echo "LOADING DATABASE FROM PROD BACKUP";
   scp root@localyyz:/root/backups/backup-`date +%F`.gz tmp/.
   gunzip -c tmp/backup-`date +%F`.gz | psql $database
+  rm tmp/backup-`data +%F`.gz
 }
 
 if [ $# -lt 2 ]; then

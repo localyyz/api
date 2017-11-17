@@ -29,11 +29,21 @@ func SearchCategory(w http.ResponseWriter, r *http.Request) {
 	cursor := api.NewPage(r)
 
 	// find corresponding category
-	category, err := data.DB.ProductCategory.FindByName(
-		strings.TrimSpace(r.URL.Query().Get("q")))
+	rawCategory := strings.TrimSpace(r.URL.Query().Get("q"))
+	var categoryType *data.ProductCategoryType
+	if err := categoryType.UnmarshalText([]byte(rawCategory)); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	categories, err := data.DB.ProductCategory.FindByType(*categoryType)
 	if err != nil {
 		render.Respond(w, r, err)
 		return
+	}
+
+	var categoryValues []string
+	for _, v := range categories {
+		categoryValues = append(categoryValues, v.Value)
 	}
 
 	// search the category tags that match the query term
@@ -41,7 +51,7 @@ func SearchCategory(w http.ResponseWriter, r *http.Request) {
 		Select(db.Raw("distinct on (product_id, created_at) *")).
 		From("product_tags").
 		Where(db.Cond{
-			"value": category.Value,
+			"value": categoryValues,
 			"type":  data.ProductTagTypeCategory,
 		}).
 		GroupBy("id", "product_id", "created_at").
@@ -65,7 +75,6 @@ func SearchCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.RenderList(w, r, presenter.NewSearchProductList(ctx, products))
-
 }
 
 func SearchCity(w http.ResponseWriter, r *http.Request) {

@@ -1,6 +1,8 @@
 package place
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -53,6 +55,124 @@ func ListProductPrices(w http.ResponseWriter, r *http.Request) {
 	distribution[3] = prices[len(prices)-1]
 
 	render.Respond(w, r, distribution)
+}
+
+func CategoryTypeCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		place := ctx.Value("place").(*data.Place)
+
+		catType := r.URL.Query().Get("type")
+		if len(catType) == 0 {
+			render.Render(w, r, api.ErrBadID)
+		}
+
+		category, err := data.DB.ProductCategory.FindOne(
+			db.Cond{
+				"place_id": place.ID,
+				"name":     catType,
+			})
+		if err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+
+		ctx = context.WithValue(ctx, "category", category)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
+//func ListProductCategory(w http.ResponseWriter, r *http.Request) {
+//ctx := r.Context()
+//place := ctx.Value("place").(*data.Place)
+//category := ctx.Value("category").(*data.ProductCategory)
+
+//cursor := api.NewPage(r)
+
+//var list []struct {
+//Value string `db:"value" json:"value"`
+//}
+//iter := data.DB.Iterator(
+//`SELECT distinct(pt.value)
+//FROM product_tags pt, product_variants pv
+//WHERE (pt.place_id = ? AND pt.type = 6)
+//AND pv.product_id = pt.product_id
+//AND value IN ?
+//GROUP BY value
+//HAVING sum(pv.limits) > 1
+//ORDER BY value ASC
+//LIMIT ? OFFSET ?`,
+//place.ID,
+//category.Value,
+//cursor.Limit,
+//(cursor.Page-1)*cursor.Limit,
+//)
+//defer iter.Close()
+
+//if err := iter.All(&list); err != nil {
+//render.Respond(w, r, err)
+//return
+//}
+
+//render.Respond(w, r, list)
+//}
+
+// List available top level product categories for a given place
+func ListProductCategory(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+
+	var categories []struct {
+		*data.ProductCategory
+		Values []string `db:"values" json:"values"`
+	}
+	err := data.DB.Select(db.Raw("distinct pc.type, array_agg(distinct pt.value) as values")).
+		From("product_categories pc").
+		LeftJoin("product_tags pt").
+		On("pc.value = pt.value").
+		Where(db.Cond{
+			"pt.place_id": place.ID,
+			"pt.type":     data.ProductTagTypeCategory,
+		}).
+		GroupBy("pc.type").
+		All(&categories)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	render.Respond(w, r, categories)
+}
+
+func ListProductBrands(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+	cursor := api.NewPage(r)
+
+	var brands []struct {
+		Value string `db:"value" json:"value"`
+	}
+	iter := data.DB.Iterator(
+		`SELECT distinct(pt.value)
+		FROM product_tags pt, product_variants pv
+		WHERE (pt.place_id = ? AND pt.type = 7)
+		and pv.product_id = pt.product_id
+		group by value
+		having sum(pv.limits) > 1
+		ORDER BY value ASC
+		LIMIT ? OFFSET ?`,
+		place.ID,
+		cursor.Limit,
+		(cursor.Page-1)*cursor.Limit,
+	)
+	defer iter.Close()
+
+	if err := iter.All(&brands); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	render.Respond(w, r, brands)
 }
 
 func ListProductTags(w http.ResponseWriter, r *http.Request) {
@@ -206,6 +326,7 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", cursor.ItemTotal))
 	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
