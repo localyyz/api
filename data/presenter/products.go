@@ -92,24 +92,26 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	}
 
 	p.Sizes = []string{}
-	if sizes, _ := data.DB.ProductTag.FindAll(
+	p.Colors = []string{}
+	if tags, _ := data.DB.ProductTag.FindAll(
 		db.Cond{
 			"product_id": product.ID,
-			"type":       data.ProductTagTypeSize,
-		}); sizes != nil {
-		for _, s := range sizes {
-			p.Sizes = append(p.Sizes, s.Value)
+			"type":       []data.ProductTagType{data.ProductTagTypeSize, data.ProductTagTypeColor},
+		}); tags != nil {
+		for _, tt := range tags {
+			switch tt.Type {
+			case data.ProductTagTypeSize:
+				p.Sizes = append(p.Sizes, tt.Value)
+			case data.ProductTagTypeColor:
+				p.Colors = append(p.Colors, tt.Value)
+			}
 		}
 	}
 
-	p.Colors = []string{}
-	if colors, _ := data.DB.ProductTag.FindAll(
-		db.Cond{
-			"product_id": product.ID,
-			"type":       data.ProductTagTypeColor,
-		}); colors != nil {
-		for _, c := range colors {
-			p.Colors = append(p.Colors, c.Value)
+	// if place is not in the context, return it as part of presenter
+	if _, ok := ctx.Value("place").(*data.Place); !ok {
+		if place, _ := data.DB.Place.FindByID(p.PlaceID); place != nil {
+			p.Place = &Place{Place: place}
 		}
 	}
 
@@ -119,13 +121,6 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	// FOR NOW/TODO: remove tags in description
 	p.Description = strings.TrimSpace(htmlx.StripTags(p.Description))
-
-	if p.Place == nil {
-		p.Place = new(Place)
-		if place, _ := data.DB.Place.FindByID(p.PlaceID); place != nil {
-			p.Place = &Place{Place: place}
-		}
-	}
 
 	return nil
 }
