@@ -1,9 +1,9 @@
 -- +goose Up
 -- SQL in section 'Up' is executed when this migration is applied
-ALTER TABLE product_variants DROP column status;
-ALTER TABLE places DROP column category;
-ALTER TABLE places DROP column gender;
-ALTER TABLE users DROP column is_admin;
+ALTER TABLE product_variants DROP column IF EXISTS status;
+ALTER TABLE places DROP column IF EXISTS category;
+ALTER TABLE places DROP column IF EXISTS gender;
+ALTER TABLE users DROP column IF EXISTS is_admin;
 
 DROP TABLE IF EXISTS track_list;
 DROP TABLE IF EXISTS user_locations;
