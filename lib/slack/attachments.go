@@ -2,10 +2,33 @@ package slack
 
 // https://api.slack.com/docs/attachments
 // It is possible to create more richly-formatted messages using Attachments.
-type AttachmentField struct {
-	Title string `json:"title"`
+type AttachmentActionConfirm struct {
+	Title       string `json:"title"`
+	Text        string `json:"text"`
+	OkText      string `json:"ok_text"`
+	DismissText string `json:"dismiss_text"`
+}
+
+type SelectedOptions struct {
+	Text  string `json:"text"`
 	Value string `json:"value"`
-	Short bool   `json:"short"`
+}
+
+type AttachmentAction struct {
+	Name    string                   `json:"name"`
+	Text    string                   `json:"text"`
+	Type    string                   `json:"type"`
+	Value   string                   `json:"value,omitempty"`
+	Confirm *AttachmentActionConfirm `json:"confirm,omitempty"`
+	Style   string                   `json:"style,omitempty"`
+
+	// Options
+	// OptionGroups
+	// DataSource
+	// MinQueryLength
+
+	// on callback callback
+	SelectedOptions []*SelectedOptions `json:"selected_options,omitempty"`
 }
 
 type Attachment struct {
@@ -17,10 +40,11 @@ type Attachment struct {
 	AuthorLink    string `json:"author_link,omitempty"`
 	AuthorIcon    string `json:"author_icon,omitempty"`
 
-	Title     string `json:"title,omitempty"`
-	TitleLink string `json:"title_link,omitempty"`
-	Pretext   string `json:"pretext,omitempty"`
-	Text      string `json:"text"`
+	Title      string `json:"title,omitempty"`
+	TitleLink  string `json:"title_link,omitempty"`
+	Pretext    string `json:"pretext,omitempty"`
+	Text       string `json:"text"`
+	CallbackID string `json:"callback_id"`
 
 	ImageURL string `json:"image_url,omitempty"`
 	ThumbURL string `json:"thumb_url,omitempty"`
@@ -29,6 +53,6 @@ type Attachment struct {
 	FooterIcon string `json:"footer_icon,omitempty"`
 	TimeStamp  int64  `json:"ts,omitempty"`
 
-	Fields     []*AttachmentField `json:"fields,omitempty"`
-	MarkdownIn []string           `json:"mrkdwn_in,omitempty"`
+	Actions    []*AttachmentAction `json:"actions,omitempty"`
+	MarkdownIn []string            `json:"mrkdwn_in,omitempty"`
 }

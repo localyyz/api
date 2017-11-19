@@ -47,11 +47,11 @@ type PlaceBilling struct {
 type PlaceStatus uint32
 
 const (
-	PlaceStatusUnknown PlaceStatus = iota
-	PlaceStatusWaitAgreement
-	PlaceStatusWaitApproval
-	PlaceStatusActive
-	PlaceStatusInActive
+	PlaceStatusUnknown       PlaceStatus = iota // 0
+	PlaceStatusWaitAgreement                    // 1
+	PlaceStatusWaitApproval                     // 2
+	PlaceStatusActive                           // 3
+	PlaceStatusInActive                         // 4
 )
 
 var (

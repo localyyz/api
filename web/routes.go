@@ -60,6 +60,7 @@ func New(h *Handler) chi.Router {
 			w.Write([]byte(`( ͡° ͜ʖ ͡°)`))
 		})
 
+		// sign-up and login related
 		r.Post("/login", auth.EmailLogin)
 		r.Post("/login/facebook", auth.FacebookLogin)
 		r.Get("/signup", auth.GetSignupPage)
@@ -67,13 +68,16 @@ func New(h *Handler) chi.Router {
 		r.Post("/register", auth.RegisterSignup)
 		r.Get("/leaderboard", leaderBoard)
 
+		// shopify related endpoints
 		r.Get("/connect", shopify.Connect)
 		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)
 		r.With(shopify.ShopifyStoreWhCtx).
 			Post("/webhooks/shopify", shopify.WebhookHandler)
 
+		// push notification
 		r.Post("/echo", echoPush)
 
+		// public api routes
 		r.Mount("/places", place.Routes())
 		r.Post("/search", search.OmniSearch)
 		r.Mount("/products", product.Routes())

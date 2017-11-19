@@ -24,14 +24,15 @@ func SetupSlack(confs SlackConfig) *Slack {
 }
 
 // TODO: proper constant events
-func (s *Slack) Notify(event, msg string) {
+func (s *Slack) Notify(event, msg string, attachments ...*slack.Attachment) {
 	chn, found := s.channels[event]
 	if !found {
 		return
 	}
 
 	payload := &slack.WebhookPostPayload{
-		Text: msg,
+		Text:        msg,
+		Attachments: attachments,
 	}
 
 	chn.PostMessage(payload)

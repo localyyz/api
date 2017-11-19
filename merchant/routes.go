@@ -14,6 +14,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/flosch/pongo2"
@@ -112,9 +113,40 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
-	// notify slack
+	// notify slack with button for approving the merchant
 	sl := ctx.Value("slack.client").(*connect.Slack)
-	sl.Notify("store", fmt.Sprintf("%s (id: %v) just accepted the TOS!", place.Name, place.ID))
+	sl.Notify(
+		"store",
+		fmt.Sprintf("%s (id: %v) just accepted the TOS!", place.Name, place.ID),
+		&slack.Attachment{
+			Text:       "ready to be approved or rejected",
+			Fallback:   "You are unable to approve / reject the store.",
+			CallbackID: fmt.Sprintf("placeid%d", place.ID),
+			Color:      "0195ff",
+			Actions: []*slack.AttachmentAction{
+				{
+					Name:  "approval",
+					Text:  "Approve",
+					Type:  "button",
+					Value: "approve",
+					Style: "primary",
+				},
+				{
+					Name:  "approval",
+					Text:  "Reject",
+					Type:  "button",
+					Value: "reject",
+					Style: "danger",
+					Confirm: &slack.AttachmentActionConfirm{
+						Title:       "Rejecting this store",
+						Text:        "Are you sure you want to reject this store?",
+						OkText:      "Yes",
+						DismissText: "No",
+					},
+				},
+			},
+		},
+	)
 
 	render.Respond(w, r, "success")
 	return
