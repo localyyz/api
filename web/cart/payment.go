@@ -127,6 +127,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 		p, _, err := cl.Checkout.Payment(ctx, sh.Token, payment)
 		if err != nil {
+			lg.Alertf("payment fail: cart(%d) place(%d) with err %+v", cart.ID, placeID, err)
 			render.Respond(w, r, err)
 			// TODO: do we return here?
 			return

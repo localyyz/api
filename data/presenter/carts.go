@@ -3,8 +3,10 @@ package presenter
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 )
@@ -17,6 +19,7 @@ type Cart struct {
 	TotalShipping int64 `json:"totalShipping"`
 	TotalTax      int64 `json:"totalTax"`
 	TotalPrice    int64 `json:"totalPrice"`
+	TotalDiscount int64 `json:"totalDiscount"`
 
 	ctx context.Context
 }
@@ -45,7 +48,9 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 		for k, d := range cart.Etc.ShopifyData {
 			resp.TotalTax += d.TotalTax
 			resp.TotalPrice += d.TotalPrice
-
+			if d.Discount != nil {
+				resp.TotalDiscount += atoi(d.Discount.Amount)
+			}
 			if s, ok := cart.Etc.ShippingMethods[k]; ok && s != nil {
 				resp.TotalShipping += s.Price
 			}
@@ -73,4 +78,13 @@ func NewUserCartList(ctx context.Context, carts []*data.Cart) []render.Renderer 
 		list = append(list, NewCart(ctx, cart))
 	}
 	return list
+}
+
+func atoi(s string) int64 {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		lg.Errorf("failed to parse %s to float", s)
+		return 0
+	}
+	return int64(f * 100.0)
 }

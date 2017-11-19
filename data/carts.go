@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"upper.io/bond"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -61,9 +62,10 @@ type CartShopifyData struct {
 
 	PaymentID int64 `json:"paymentId"`
 
-	TotalTax   int64  `json:"totalTax"`
-	TotalPrice int64  `json:"totalPrice"`
-	PaymentDue string `json:"paymentDue"`
+	Discount   *shopify.AppliedDiscount `json:"discount,omitempty"`
+	TotalTax   int64                    `json:"totalTax"`
+	TotalPrice int64                    `json:"totalPrice"`
+	PaymentDue string                   `json:"paymentDue"`
 }
 
 type CartStore struct {
@@ -71,12 +73,12 @@ type CartStore struct {
 }
 
 const (
-	CartStatusUnknown CartStatus = iota
-	CartStatusInProgress
-	CartStatusCheckout
-	CartStatusPaymentSuccess
-	CartStatusComplete
-	CartStatusPartialCheckout
+	CartStatusUnknown         CartStatus = iota // 0
+	CartStatusInProgress                        // 1
+	CartStatusCheckout                          // 2
+	CartStatusPaymentSuccess                    // 3
+	CartStatusComplete                          // 4
+	CartStatusPartialCheckout                   // 5
 )
 
 var _ interface {

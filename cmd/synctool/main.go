@@ -10,6 +10,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"github.com/gedex/inflector"
 	"github.com/pressly/lg"
 	set "gopkg.in/fatih/set.v0"
@@ -28,9 +29,10 @@ func main() {
 	}
 	log.Println("tool started.")
 
+	pullProducts()
 	//pullProductExternalID()
 	//pullProductGender()
-	pullProductCategory()
+	//pullProductCategory()
 }
 
 var tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
@@ -237,4 +239,34 @@ func pullProductExternalID() {
 			}
 		}
 	}
+}
+
+func pullProducts() {
+	var creds []*data.ShopifyCred
+	if err := data.DB.ShopifyCred.Find().All(&creds); err != nil {
+		log.Fatal(err)
+	}
+
+	for _, cred := range creds {
+		cl := shopify.NewClient(nil, cred.AccessToken)
+		cl.BaseURL, _ = url.Parse(cred.ApiURL)
+
+		place, err := data.DB.Place.FindByID(cred.PlaceID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// range of products and fill external_id
+		ctx := context.Background()
+		plist, _, err := cl.ProductList.Get(ctx, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("syncing %d products for %s", len(plist), place.Name)
+		ctx = context.WithValue(ctx, "sync.list", plist)
+		ctx = context.WithValue(ctx, "sync.place", place)
+
+		sync.ShopifyProductListings(ctx)
+	}
+
 }

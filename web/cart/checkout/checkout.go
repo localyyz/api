@@ -156,8 +156,17 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// check for auto apply discount
+		// TODO: make this better ->
+		// for now.. find one discount code from the place..
+		// TODO: check price rules
+		if discounts, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discounts != nil && len(discounts) > 0 {
+			checkout.DiscountCode = discounts[0].Code
+		}
+
 		cc, _, err := cl.Checkout.Create(ctx, &shopify.CheckoutRequest{checkout})
 		if err != nil {
+			lg.Alertf("checkout (%d) create failed: %+v", err)
 			render.Respond(w, r, err)
 			return
 		}
@@ -167,9 +176,22 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		rates, _, _ := cl.Checkout.ListShippingRates(ctx, cc.Token)
 		// for now, pick the first rate and apply to the checkout
 		// make this proper
+
 		if len(rates) > 0 {
-			checkout.ShippingLine = &shopify.ShippingLine{
-				Handle: rates[0].Handle,
+			//update the checkout with the shipping line
+			cc, _, err = cl.Checkout.Update(
+				ctx,
+				&shopify.CheckoutRequest{
+					Checkout: &shopify.Checkout{
+						Token: cc.Token,
+						ShippingLine: &shopify.ShippingLine{
+							Handle: rates[0].Handle,
+						},
+					},
+				},
+			)
+			if err != nil {
+				lg.Alertf("checkout (%d) shipping failed: %+v", err)
 			}
 			cart.Etc.ShippingMethods[placeID] = &data.CartShippingMethod{
 				rates[0].Handle,
@@ -189,6 +211,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			TotalTax:         atoi(cc.TotalTax),
 			TotalPrice:       atoi(cc.TotalPrice),
 			PaymentDue:       cc.PaymentDue,
+			Discount:         cc.AppliedDiscount,
 		}
 	}
 
