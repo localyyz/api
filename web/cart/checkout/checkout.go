@@ -25,7 +25,8 @@ type cartPayment struct {
 }
 
 type checkoutRequest struct {
-	ShippingAddress *data.CartAddress        `json:"shippingAddress"`
+	ShippingAddress *data.CartAddress        `json:"shippingAddress,omitempty"`
+	BillingAddress  *data.CartAddress        `json:"billingAddress,omitempty"`
 	Shipping        *data.CartShippingMethod `json:"shipping"`
 }
 
@@ -99,6 +100,16 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		Province:  payload.ShippingAddress.Province,
 		Zip:       payload.ShippingAddress.Zip,
 	}
+	billingAddress := &shopify.CustomerAddress{
+		Address1:  payload.BillingAddress.Address,
+		Address2:  payload.BillingAddress.AddressOpt,
+		City:      payload.BillingAddress.City,
+		Country:   payload.BillingAddress.Country,
+		FirstName: payload.BillingAddress.FirstName,
+		LastName:  payload.BillingAddress.LastName,
+		Province:  payload.BillingAddress.Province,
+		Zip:       payload.BillingAddress.Zip,
+	}
 
 	checkoutMap := make(map[int64]*shopify.Checkout)
 	credMap := make(map[int64]*data.ShopifyCred)
@@ -107,7 +118,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			Email:           user.Email,
 			LineItems:       lineItems,
 			ShippingAddress: shippingAddress,
-			//TODO: billing address
+			BillingAddress:  billingAddress,
 		}
 		cred, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
 		if err != nil {
@@ -252,6 +263,19 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 			Zip:       sh.Zip,
 		}
 		cart.Etc.ShippingAddress = payload.ShippingAddress
+	}
+	if bs := payload.BillingAddress; bs != nil {
+		checkout.BillingAddress = &shopify.CustomerAddress{
+			Address1:  bs.Address,
+			Address2:  bs.AddressOpt,
+			City:      bs.City,
+			Country:   bs.Country,
+			FirstName: bs.FirstName,
+			LastName:  bs.LastName,
+			Province:  bs.Province,
+			Zip:       bs.Zip,
+		}
+		cart.Etc.BillingAddress = payload.BillingAddress
 	}
 
 	for placeID, sh := range cart.Etc.ShopifyData {
