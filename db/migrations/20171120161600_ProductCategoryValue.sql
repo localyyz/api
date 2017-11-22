@@ -14,7 +14,9 @@ FROM product_categories;
 ALTER TABLE product_categories DROP COLUMN legacy_value;
 ALTER TABLE product_categories DROP COLUMN name;
 
-DELETE FROM product_categories WHERE id < 7;
+DELETE FROM product_categories WHERE id < 8;
+
+ALTER TABLE product_categories ADD CONSTRAINT unique_product_category_value UNIQUE (value);
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
