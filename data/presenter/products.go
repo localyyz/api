@@ -3,7 +3,6 @@ package presenter
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/go-chi/render"
@@ -119,28 +118,19 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 }
 
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
-	// FOR NOW/TODO: remove tags in description
-	p.Description = strings.TrimSpace(htmlx.StripTags(p.Description))
+	//strings.Replace(p.Description, "\\\"", "", -1)
+	p.Description = htmlx.CaptionizeHtmlBody(p.Description, -1)
 
 	return nil
 }
 
 type ProductCategory struct {
-	*data.ProductTag
-	ImageURL string `json:"imageUrl"`
-
-	ID        interface{} `json:"id,omitempty"`
-	ProductID interface{} `json:"productId,omitempty"`
-	Type      interface{} `json:"type,omitempty"`
-	CreatedAt interface{} `json:"createdAt,omitempty"`
+	*data.ProductCategory
+	ImageURL string   `json:"imageUrl"`
+	Values   []string `json:"values"`
 }
 
 func (c *ProductCategory) Render(w http.ResponseWriter, r *http.Request) error {
-	if tag, _ := data.DB.ProductTag.FindOne(db.Cond{"value": c.Value}); tag != nil {
-		if product, _ := data.DB.Product.FindByID(tag.ProductID); product != nil {
-			c.ImageURL = product.ImageUrl
-		}
-	}
 	return nil
 }
 
@@ -155,10 +145,10 @@ func (l ProductCategoryList) Render(w http.ResponseWriter, r *http.Request) erro
 	return nil
 }
 
-func NewProductCategoryList(ctx context.Context, tags []*data.ProductTag) []render.Renderer {
+func NewProductCategoryList(ctx context.Context, categories []*data.ProductCategory) []render.Renderer {
 	list := []render.Renderer{}
-	for _, tag := range tags {
-		list = append(list, &ProductCategory{ProductTag: tag})
+	for _, cat := range categories {
+		list = append(list, &ProductCategory{ProductCategory: cat})
 	}
 	return list
 }

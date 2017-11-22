@@ -26,6 +26,7 @@ type Page struct {
 	URL        *url.URL
 	Page       int
 	TotalPages int
+	ItemTotal  int
 	Limit      int
 	NextPage   bool
 	firstOnly  bool // Request to return only the first record, as a singular object.
@@ -121,6 +122,7 @@ func (p *Page) DbCondition() db.Cond {
 func (p *Page) UpdateQueryUpper(res db.Result) db.Result {
 	total, _ := res.Count()
 	p.TotalPages = int(math.Ceil(float64(total) / float64(p.Limit)))
+	p.ItemTotal = int(total)
 	if p.Page > 1 {
 		return res.Limit(p.Limit).Offset((p.Page - 1) * p.Limit)
 	}

@@ -16,7 +16,13 @@ func Routes() chi.Router {
 
 		r.Get("/", GetPlace)
 		r.Get("/products", ListProduct)
+
+		// TODO: remove ~ legacy endpoint
 		r.Get("/tags", ListProductTags)
+
+		// filtering endpoints
+		r.Get("/brands", ListProductBrands)
+		r.Get("/categories", ListProductCategory)
 		r.Get("/prices", ListProductPrices)
 
 		r.Post("/share", Share)

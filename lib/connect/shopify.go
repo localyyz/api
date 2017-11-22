@@ -42,6 +42,7 @@ var (
 		"read_collection_listings",
 		"read_checkouts",
 		"write_checkouts",
+		"read_price_rules",
 	}
 	WebhookTopics = []shopify.Topic{
 		shopify.TopicAppUninstalled,
