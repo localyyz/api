@@ -30,7 +30,7 @@ func SearchCategory(w http.ResponseWriter, r *http.Request) {
 
 	// find corresponding category
 	rawCategory := strings.TrimSpace(r.URL.Query().Get("q"))
-	var categoryType *data.ProductCategoryType
+	categoryType := new(data.ProductCategoryType)
 	if err := categoryType.UnmarshalText([]byte(rawCategory)); err != nil {
 		render.Respond(w, r, err)
 		return

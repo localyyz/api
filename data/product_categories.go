@@ -49,7 +49,7 @@ func (p *ProductCategory) CollectionName() string {
 }
 
 func (store ProductCategoryStore) FindByType(t ProductCategoryType) ([]*ProductCategory, error) {
-	return store.FindAll(db.Cond{"name": t})
+	return store.FindAll(db.Cond{"type": t})
 }
 
 func (store ProductCategoryStore) FindOne(cond db.Cond) (*ProductCategory, error) {
