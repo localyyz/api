@@ -213,16 +213,17 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		}
 
 		cart.Etc.ShopifyData[placeID] = &data.CartShopifyData{
-			Token:            cc.Token,
-			CustomerID:       cc.CustomerID,
-			Name:             cc.Name,
-			PaymentAccountID: cc.PaymentAccountID,
-			WebURL:           cc.WebURL,
-			WebProcessingURL: cc.WebProcessingURL,
-			TotalTax:         atoi(cc.TotalTax),
-			TotalPrice:       atoi(cc.TotalPrice),
-			PaymentDue:       cc.PaymentDue,
-			Discount:         cc.AppliedDiscount,
+			Token:      cc.Token,
+			CustomerID: cc.CustomerID,
+			Name:       cc.Name,
+			ShopifyPaymentAccountID: cc.ShopifyPaymentAccountID,
+			PaymentURL:              cc.PaymentURL,
+			WebURL:                  cc.WebURL,
+			WebProcessingURL:        cc.WebProcessingURL,
+			TotalTax:                atoi(cc.TotalTax),
+			TotalPrice:              atoi(cc.TotalPrice),
+			PaymentDue:              cc.PaymentDue,
+			Discount:                cc.AppliedDiscount,
 		}
 	}
 

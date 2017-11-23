@@ -13,14 +13,18 @@ type CheckoutService service
 type Checkout struct {
 	*CheckoutPrice // embed
 
-	LineItems        []*LineItem `json:"line_items,omitempty"`
-	Email            string      `json:"email,omitempty"`
-	Token            string      `json:"token,omitempty"`
-	Name             string      `json:"name,omitempty"`
-	CustomerID       int64       `json:"customer_id,omitempty"`
-	PaymentAccountID string      `json:"shopify_payments_account_id,omitempty"`
-	WebURL           string      `json:"web_url,omitempty"`
-	WebProcessingURL string      `json:"web_processing_url,omitempty"`
+	LineItems  []*LineItem `json:"line_items,omitempty"`
+	Email      string      `json:"email,omitempty"`
+	Token      string      `json:"token,omitempty"`
+	Name       string      `json:"name,omitempty"`
+	CustomerID int64       `json:"customer_id,omitempty"`
+
+	// ShopifyPaymentAccountID is used to use stripe as a payment token provider
+	ShopifyPaymentAccountID string `json:"shopify_payments_account_id,omitempty"`
+	// Use payment url with the other direct payment providers to generate a token
+	PaymentURL       string `json:"payment_url"`
+	WebURL           string `json:"web_url,omitempty"`
+	WebProcessingURL string `json:"web_processing_url,omitempty"`
 	// Don't omit empty, need empty to remove
 	DiscountCode string `json:"discount_code"`
 
@@ -70,13 +74,18 @@ type ShippingRateRequest struct {
 }
 
 type Payment struct {
-	ID     int64  `json:"id"`
-	Amount string `json:"amount"`
+	ID        int64  `json:"id,omitempty"`
+	Amount    string `json:"amount"`
+	SessionID string `json:"session_id"`
 	// clientside idempotency token
-	UniqueToken                   string         `json:"unique_token"`
+	UniqueToken string `json:"unique_token"`
+
 	PaymentProcessingErrorMessage string         `json:"payment_processing_error_message,omitempty"`
-	PaymentToken                  *PaymentToken  `json:"payment_token"`
-	RequestDetails                *RequestDetail `json:"request_details"`
+	PaymentToken                  *PaymentToken  `json:"payment_token,omitempty"`
+	RequestDetails                *RequestDetail `json:"request_details,omitempty"`
+
+	// transaction
+	Transaction *Transaction `json:"transaction,omitempty"`
 }
 
 type RequestDetail struct {
@@ -171,12 +180,45 @@ func (c *CheckoutService) Payment(ctx context.Context, token string, payment *Pa
 		return nil, nil, err
 	}
 
-	paymentWrapper := new(PaymentRequest)
-	resp, err := c.client.Do(ctx, req, paymentWrapper)
+	var (
+		resp           *http.Response
+		paymentWrapper = new(PaymentRequest)
+	)
+	resp, err = c.client.Do(ctx, req, paymentWrapper)
 	if err != nil {
-		// parse the error map
-
 		return nil, resp, err
+	}
+
+	var (
+		pollURL    = resp.Header.Get("Location")
+		pollWait   = resp.Header.Get("Retry-After")
+		pollStatus = resp.StatusCode
+	)
+
+	// poll and wait
+	for {
+		if pollStatus != http.StatusAccepted {
+			break
+		}
+
+		req, err = c.client.NewRequest("GET", pollURL, nil)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		wait, _ := strconv.Atoi(pollWait)
+		// TODO: make a proper poller
+		time.Sleep(time.Duration(wait) * time.Second)
+
+		resp, err = c.client.Do(ctx, req, paymentWrapper)
+		if err != nil {
+			return nil, resp, err
+		}
+
+		// check Location and Retry-After for url and delay
+		pollURL = resp.Header.Get("Location")
+		pollWait = resp.Header.Get("Retry-After")
+		pollStatus = resp.StatusCode
 	}
 
 	return paymentWrapper.Payment, resp, nil

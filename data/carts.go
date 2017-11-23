@@ -53,12 +53,13 @@ type CartEtc struct {
 }
 
 type CartShopifyData struct {
-	Token            string `json:"token"`
-	PaymentAccountID string `json:"payments_account_id"`
-	Name             string `json:"name"`
-	CustomerID       int64  `json:"customer_id"`
-	WebURL           string `json:"webUrl"`
-	WebProcessingURL string `json:"webProcessingUrl"`
+	Token                   string `json:"token"`
+	ShopifyPaymentAccountID string `json:"shopify_payments_account_id"`
+	PaymentURL              string `json:"payment_url"`
+	Name                    string `json:"name"`
+	CustomerID              int64  `json:"customer_id"`
+	WebURL                  string `json:"webUrl"`
+	WebProcessingURL        string `json:"webProcessingUrl"`
 
 	PaymentID int64 `json:"paymentId"`
 
