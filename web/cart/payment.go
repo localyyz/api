@@ -15,6 +15,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify/cardvault"
 	"bitbucket.org/moodie-app/moodie-api/lib/stripe"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
@@ -36,7 +37,43 @@ func (c *cartPaymentRequest) Bind(r *http.Request) error {
 	if c.Payment == nil {
 		return errors.New("no payment specified")
 	}
+	c.Payment.Name = strings.TrimSpace(c.Payment.Name)
 	return nil
+}
+
+func (c *cartPaymentRequest) parseStripeParams() *stripe.CardParams {
+	expiryYM := strings.Split(c.Payment.Expiry, "/")
+	cardParam := &stripe.CardParams{
+		Name:   c.Payment.Name,
+		Number: c.Payment.Number,
+		Month:  expiryYM[0],
+		Year:   expiryYM[1],
+		CVC:    c.Payment.CVC,
+	}
+	if b := c.BillingAddress; b != nil {
+		cardParam.Address1 = b.Address
+		cardParam.Address2 = b.AddressOpt
+		cardParam.City = b.City
+		cardParam.State = b.Province
+		cardParam.Zip = b.Zip
+		cardParam.Country = b.Country
+	}
+	return cardParam
+}
+
+func (c *cartPaymentRequest) parseCardVault() *cardvault.CreditCard {
+	expiryYM := strings.Split(c.Payment.Expiry, "/")
+	nameParts := strings.Split(c.Payment.Name, " ")
+	firstName := strings.Join(nameParts[0:len(nameParts)-1], " ")
+	lastName := nameParts[len(nameParts)-1]
+	return &cardvault.CreditCard{
+		FirstName:         firstName,
+		LastName:          lastName,
+		Number:            c.Payment.Number,
+		Month:             expiryYM[0],
+		Year:              expiryYM[1],
+		VerificationValue: c.Payment.CVC,
+	}
 }
 
 // TODO: Need to do the stripe token exchange on the frontend
@@ -49,15 +86,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	if err := render.Bind(r, &payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
-	}
-
-	expiryYM := strings.Split(payload.Payment.Expiry, "/")
-	cardParam := &stripe.CardParams{
-		Name:   payload.Payment.Name,
-		Number: payload.Payment.Number,
-		Month:  expiryYM[0],
-		Year:   expiryYM[1],
-		CVC:    payload.Payment.CVC,
 	}
 
 	checkout := shopify.Checkout{}
@@ -74,34 +102,11 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			Zip:       b.Zip,
 		}
 		cart.Etc.BillingAddress = payload.BillingAddress
-
-		cardParam.Address1 = b.Address
-		cardParam.Address2 = b.AddressOpt
-		cardParam.City = b.City
-		cardParam.State = b.Province
-		cardParam.Zip = b.Zip
-		cardParam.Country = b.Country
-	} else {
-		if s := cart.Etc.ShippingAddress; s != nil {
-			cardParam.Address1 = s.Address
-			cardParam.Address2 = s.AddressOpt
-			cardParam.City = s.City
-			cardParam.State = s.Province
-			cardParam.Zip = s.Zip
-			cardParam.Country = s.Country
-		}
 	}
 
 	// 1. exchange user credit card information for stripe token
 	for placeID, sh := range cart.Etc.ShopifyData {
-		ctx = context.WithValue(ctx, connect.StripeAccountKey, sh.PaymentAccountID)
-		stripeToken, err := connect.ST.ExchangeToken(ctx, cardParam)
-		if err != nil {
-			render.Render(w, r, api.ErrStripeProcess(err))
-			return
-		}
-		lg.Warnf("received stripe token for place(%d) on cart(%d)", placeID, cart.ID)
-
+		lg.Infof("payment processing cart(%d) for place(%d)", cart.ID, placeID)
 		creds, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
 		if err != nil {
 			render.Respond(w, r, err)
@@ -128,22 +133,63 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// 3. send stripe payment token to shopify
-		u, _ := uuid.NewUUID()
-		payment := &shopify.PaymentRequest{
-			Payment: &shopify.Payment{
-				Amount:      cc.CheckoutPrice.PaymentDue,
-				UniqueToken: u.String(),
-				PaymentToken: &shopify.PaymentToken{
-					PaymentData: stripeToken.ID,
-					Type:        shopify.StripeVaultToken,
+		var payment *shopify.PaymentRequest
+		// 3. Check if using shopify payments -> use stripe
+		if len(sh.ShopifyPaymentAccountID) != 0 {
+			// 3.1 Use stripe token
+			lg.Infof("sending stripe token for place(%d) on cart(%d)", placeID, cart.ID)
+			ctx = context.WithValue(ctx, connect.StripeAccountKey, sh.ShopifyPaymentAccountID)
+			stripeToken, err := connect.ST.ExchangeToken(ctx, payload.parseStripeParams())
+			if err != nil {
+				render.Render(w, r, api.ErrStripeProcess(err))
+				return
+			}
+			lg.Infof("received stripe token for place(%d) on cart(%d)", placeID, cart.ID)
+			u, _ := uuid.NewUUID()
+			payment = &shopify.PaymentRequest{
+				Payment: &shopify.Payment{
+					Amount:      cc.CheckoutPrice.PaymentDue,
+					UniqueToken: u.String(),
+					PaymentToken: &shopify.PaymentToken{
+						PaymentData: stripeToken.ID,
+						Type:        shopify.StripeVaultToken,
+					},
+					RequestDetails: &shopify.RequestDetail{
+						IPAddress: stripeToken.ClientIP,
+					},
 				},
-				RequestDetails: &shopify.RequestDetail{
-					IPAddress: stripeToken.ClientIP,
+			}
+		} else {
+			// 3.2 Use shopify vault system
+			lg.Infof("sending cartvault token for place(%d) on cart(%d)", placeID, cart.ID)
+
+			u, _ := uuid.NewUUID()
+			vaultRequest := &cardvault.PaymentRequest{
+				Payment: &cardvault.Payment{
+					Amount:      cc.CheckoutPrice.PaymentDue,
+					CreditCard:  payload.parseCardVault(),
+					UniqueToken: u.String(),
 				},
-			},
+			}
+			cardVaultID, _, err := cardvault.AddCard(ctx, vaultRequest)
+			if err != nil {
+				render.Render(w, r, api.ErrCardVaultProcess(err))
+				return
+			}
+			lg.Infof("received cardvault token %s for place(%d) on cart(%d)", cardVaultID, placeID, cart.ID)
+			payment = &shopify.PaymentRequest{
+				Payment: &shopify.Payment{
+					Amount:      cc.CheckoutPrice.PaymentDue,
+					UniqueToken: u.String(),
+					SessionID:   cardVaultID,
+					RequestDetails: &shopify.RequestDetail{
+						IPAddress: r.RemoteAddr,
+					},
+				},
+			}
 		}
 
+		// 4. send payment to shopify
 		p, _, err := cl.Checkout.Payment(ctx, sh.Token, payment)
 		if err != nil {
 			lg.Alertf("payment fail: cart(%d) place(%d) with err %+v", cart.ID, placeID, err)
@@ -151,7 +197,9 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			// TODO: do we return here?
 			return
 		}
-		// 4. save shopify payment id
+		lg.Alertf("cart(%d) was just paid!", cart.ID)
+
+		// 5. save shopify payment id
 		sh.PaymentID = p.ID
 		sh.PaymentDue = cc.CheckoutPrice.PaymentDue
 		sh.TotalTax = atoi(cc.CheckoutPrice.TotalTax)

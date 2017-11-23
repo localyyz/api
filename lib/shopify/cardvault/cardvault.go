@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 )
 
@@ -17,22 +16,32 @@ type CreditCard struct {
 	VerificationValue string `json:"verification_value"`
 }
 
+type Payment struct {
+	Amount      string      `json:"amount"`
+	UniqueToken string      `json:"unique_token"`
+	CreditCard  *CreditCard `json:"credit_card"`
+}
+
+type PaymentRequest struct {
+	Payment *Payment `json:"payment"`
+}
+
 const cardVaultURL = "https://elb.deposit.shopifycs.com/sessions"
 
-func AddCard(ctx context.Context, card *CreditCard) (string, *http.Response, error) {
-	var buf io.ReadWriter
-	if card != nil {
-		buf = new(bytes.Buffer)
-		err := json.NewEncoder(buf).Encode(card)
-		if err != nil {
-			return "", nil, err
-		}
+func AddCard(ctx context.Context, vaultRequest *PaymentRequest) (string, *http.Response, error) {
+	buf := new(bytes.Buffer)
+	err := json.NewEncoder(buf).Encode(vaultRequest)
+	if err != nil {
+		return "", nil, err
 	}
 
 	req, err := http.NewRequest("POST", cardVaultURL, buf)
 	if err != nil {
 		return "", nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", nil, err

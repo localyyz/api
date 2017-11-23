@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
-	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
@@ -41,28 +40,6 @@ func ListShippingRates(w http.ResponseWriter, r *http.Request) {
 		cl.BaseURL, _ = url.Parse(cred.ApiURL)
 
 		m, _, _ := cl.Checkout.ListShippingRates(ctx, tokensMap[cred.PlaceID])
-		// TODO/NOTE: there is a weird shopify bug that first call to this api
-		// endpoint will always result in empty response. try again until
-		// something is back
-		maxAttempt := 2
-		attempt := 1
-		for {
-			if attempt == maxAttempt {
-				break
-			}
-			if len(m) == 0 {
-				m, _, err = cl.Checkout.ListShippingRates(ctx, tokensMap[cred.PlaceID])
-				if err != nil {
-					break
-				}
-				time.Sleep(time.Second)
-
-				attempt += 1
-				continue
-			}
-			break
-		}
-
 		rates := make([]*data.CartShippingMethod, len(m))
 		for ii, mm := range m {
 			rates[ii] = &data.CartShippingMethod{

@@ -53,8 +53,8 @@ func DefaultCartCtx(next http.Handler) http.Handler {
 		var cart *data.Cart
 		err := data.DB.Cart.Find(
 			db.Cond{
-				"status":  data.CartStatusInProgress,
-				"user_id": user.ID,
+				"status <=": data.CartStatusCheckout,
+				"user_id":   user.ID,
 			},
 		).OrderBy("-id").One(&cart)
 		if err != nil {

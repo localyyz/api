@@ -84,6 +84,15 @@ func ErrStripeProcess(err error) *ApiError {
 	}
 }
 
+func ErrCardVaultProcess(err error) *ApiError {
+	return &ApiError{
+		Err:        err,
+		StatusCode: http.StatusBadRequest,
+		StatusText: "Payment error.",
+		ErrorText:  err.Error(),
+	}
+}
+
 func ErrInvalidRequest(err error) *ApiError {
 	return &ApiError{
 		Err:        err,

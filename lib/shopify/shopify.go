@@ -81,6 +81,12 @@ func (c *Client) NewRequest(method, urlStr string, body interface{}) (*http.Requ
 	}
 
 	req, err := http.NewRequest(method, u.String(), buf)
+	defer func() {
+		if c.Debug {
+			b, _ := httputil.DumpRequest(req, true)
+			fmt.Printf("[shopify] %s", string(b))
+		}
+	}()
 	if err != nil {
 		return nil, err
 	}
@@ -92,14 +98,10 @@ func (c *Client) NewRequest(method, urlStr string, body interface{}) (*http.Requ
 
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept", "application/json")
 	}
 	if c.UserAgent != "" {
 		req.Header.Set("User-Agent", c.UserAgent)
-	}
-
-	if c.Debug {
-		b, _ := httputil.DumpRequest(req, true)
-		fmt.Printf("[shopify] %s", string(b))
 	}
 
 	return req, nil
