@@ -197,7 +197,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			// TODO: do we return here?
 			return
 		}
-		lg.Alertf("cart(%d) payment %+v", cart.ID, p)
+		lg.Alertf("cart(%d) was just paid!", cart.ID)
 
 		// 5. save shopify payment id
 		sh.PaymentID = p.ID

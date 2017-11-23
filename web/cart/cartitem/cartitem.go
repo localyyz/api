@@ -74,6 +74,56 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// add to shopify cart if needed
+	if cart.Status == data.CartStatusCheckout {
+		// push the change to shopify
+		creds, err := data.DB.ShopifyCred.FindByPlaceID(newItem.PlaceID)
+		if err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+
+		cl := shopify.NewClient(nil, creds.AccessToken)
+		cl.BaseURL, _ = url.Parse(creds.ApiURL)
+
+		var lineItems []*shopify.LineItem
+		var variants []*data.ProductVariant
+		data.DB.Select("pv.*").
+			From("cart_items ci").
+			LeftJoin("product_variants pv").
+			On("ci.variant_id = pv.id").
+			Where("ci.place_id = ?", newItem.PlaceID).
+			All(&variants)
+		for _, v := range variants {
+			lineItems = append(lineItems, &shopify.LineItem{
+				VariantID: v.OfferID,
+				Quantity:  1,
+			})
+		}
+
+		var token string
+		if sh, ok := cart.Etc.ShopifyData[newItem.PlaceID]; ok {
+			token = sh.Token
+		}
+
+		cc, _, _ := cl.Checkout.Update(
+			ctx,
+			&shopify.CheckoutRequest{
+				Checkout: &shopify.Checkout{
+					Token:     token,
+					LineItems: lineItems,
+				},
+			},
+		)
+		cart.Etc.ShopifyData[newItem.PlaceID].TotalTax = atoi(cc.TotalTax)
+		cart.Etc.ShopifyData[newItem.PlaceID].TotalPrice = atoi(cc.TotalPrice)
+		cart.Etc.ShopifyData[newItem.PlaceID].PaymentDue = cc.PaymentDue
+		cart.Etc.ShopifyData[newItem.PlaceID].Discount = cc.AppliedDiscount
+
+		data.DB.Cart.Save(cart)
+
+	}
+
 	render.Render(w, r, presenter.NewCartItem(ctx, newItem))
 }
 
@@ -151,12 +201,11 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 				},
 			},
 		)
-		cart.Etc.ShopifyData[cartItem.PlaceID] = &data.CartShopifyData{
-			TotalTax:   atoi(cc.TotalTax),
-			TotalPrice: atoi(cc.TotalPrice),
-			PaymentDue: cc.PaymentDue,
-			Discount:   cc.AppliedDiscount,
-		}
+		cart.Etc.ShopifyData[cartItem.PlaceID].TotalTax = atoi(cc.TotalTax)
+		cart.Etc.ShopifyData[cartItem.PlaceID].TotalPrice = atoi(cc.TotalPrice)
+		cart.Etc.ShopifyData[cartItem.PlaceID].PaymentDue = cc.PaymentDue
+		cart.Etc.ShopifyData[cartItem.PlaceID].Discount = cc.AppliedDiscount
+
 		data.DB.Cart.Save(cart)
 
 	}
