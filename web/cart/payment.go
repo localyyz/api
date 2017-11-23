@@ -37,6 +37,7 @@ func (c *cartPaymentRequest) Bind(r *http.Request) error {
 	if c.Payment == nil {
 		return errors.New("no payment specified")
 	}
+	c.Payment.Name = strings.TrimSpace(c.Payment.Name)
 	return nil
 }
 
