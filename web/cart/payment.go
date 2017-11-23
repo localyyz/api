@@ -43,7 +43,6 @@ func (c *cartPaymentRequest) Bind(r *http.Request) error {
 // to be PCI complient. This is critical
 func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	//user := ctx.Value("session.user").(*data.User)
 	cart := ctx.Value("cart").(*data.Cart)
 
 	var payload cartPaymentRequest
@@ -101,6 +100,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			render.Render(w, r, api.ErrStripeProcess(err))
 			return
 		}
+		lg.Warnf("received stripe token for place(%d) on cart(%d)", placeID, cart.ID)
 
 		creds, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
 		if err != nil {
