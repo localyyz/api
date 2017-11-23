@@ -102,10 +102,13 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 				Handle: m.Handle,
 			}
 		}
+		if sh.Discount != nil && !sh.Discount.Applicable {
+			ch.DiscountCode = ""
+		}
 		ch.Token = sh.Token
 		cc, _, err := cl.Checkout.Update(ctx, &shopify.CheckoutRequest{&ch})
 		if err != nil {
-			lg.Warn(errors.Wrapf(err, "failed to update shopify(%v)", placeID))
+			lg.Alert(errors.Wrapf(err, "failed to pay cart(%d). shopify(%v)", cart.ID, placeID))
 			continue
 		}
 

@@ -21,7 +21,8 @@ type Checkout struct {
 	PaymentAccountID string      `json:"shopify_payments_account_id,omitempty"`
 	WebURL           string      `json:"web_url,omitempty"`
 	WebProcessingURL string      `json:"web_processing_url,omitempty"`
-	DiscountCode     string      `json:"discount_code,omitempty"`
+	// Don't omit empty, need empty to remove
+	DiscountCode string `json:"discount_code"`
 
 	AppliedDiscount *AppliedDiscount `json:"applied_discount,omitempty"`
 	ShippingAddress *CustomerAddress `json:"shipping_address,omitempty"`
@@ -173,6 +174,8 @@ func (c *CheckoutService) Payment(ctx context.Context, token string, payment *Pa
 	paymentWrapper := new(PaymentRequest)
 	resp, err := c.client.Do(ctx, req, paymentWrapper)
 	if err != nil {
+		// parse the error map
+
 		return nil, resp, err
 	}
 

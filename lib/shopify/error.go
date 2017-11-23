@@ -35,6 +35,11 @@ type LineItemError struct {
 	ShopifyErrorer
 }
 
+type DiscountCodeError struct {
+	Reason interface{} `json:"reason"`
+	ShopifyErrorer
+}
+
 type ErrorResponse struct {
 	Errors interface{} `json:"errors"`
 }
@@ -53,6 +58,14 @@ func (e *LineItemError) Error() string {
 
 func (e *LineItemError) Type() string {
 	return `line_items`
+}
+
+func (e *DiscountCodeError) Error() string {
+	return fmt.Sprintf("%+v", e.Reason)
+}
+
+func (e *DiscountCodeError) Type() string {
+	return `discount_code`
 }
 
 func (r *ErrorResponse) Error() string {
@@ -106,6 +119,7 @@ func findFirstError(r *ErrorResponse) error {
 		}
 
 		switch k {
+		//shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
 		case "line_items":
 			for pos, vvv := range vv {
 				b, _ := json.Marshal(vvv)
@@ -113,6 +127,22 @@ func findFirstError(r *ErrorResponse) error {
 				json.Unmarshal(b, &e)
 				e.Position = pos
 				return e
+			}
+		case "checkout":
+			for kk, vvv := range vv {
+				switch kk {
+				case "discount_code":
+					// list of fields
+					if e, _ := vvv.([]interface{}); e != nil {
+						for _, ee := range e {
+							if ex, _ := ee.(map[string]interface{}); ex != nil {
+								for _, reason := range ex {
+									return &DiscountCodeError{Reason: reason}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
