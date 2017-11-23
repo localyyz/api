@@ -75,6 +75,22 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			Zip:       b.Zip,
 		}
 		cart.Etc.BillingAddress = payload.BillingAddress
+
+		cardParam.Address1 = b.Address
+		cardParam.Address2 = b.AddressOpt
+		cardParam.City = b.City
+		cardParam.State = b.Province
+		cardParam.Zip = b.Zip
+		cardParam.Country = b.Country
+	} else {
+		if s := cart.Etc.ShippingAddress; s != nil {
+			cardParam.Address1 = s.Address
+			cardParam.Address2 = s.AddressOpt
+			cardParam.City = s.City
+			cardParam.State = s.Province
+			cardParam.Zip = s.Zip
+			cardParam.Country = s.Country
+		}
 	}
 
 	// 1. exchange user credit card information for stripe token
