@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -86,7 +85,6 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 			for _, o := range a.SelectedOptions {
 				localeID, _ := strconv.Atoi(strings.TrimPrefix(o.Value, "localeid"))
 				place.LocaleID = int64(localeID)
-				log.Println(o)
 				actionResponse.Text = fmt.Sprintf("place location updated!")
 			}
 		}

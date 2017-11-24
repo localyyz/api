@@ -92,14 +92,13 @@ func SearchCity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find the places with this relationship
-	query := data.DB.
-		Select(db.Raw("pl.*")).
-		From("places pl").
-		LeftJoin("place_locales pll").
-		On("pl.id = pll.place_id").
-		Where("pll.locale_id = ?", locale.ID).
-		OrderBy("-pl.created_at")
-	query = cursor.UpdateQueryBuilder(query)
+	query := data.DB.Place.Find(
+		db.Cond{
+			"locale_id": locale.ID,
+			"status":    data.PlaceStatusActive,
+		},
+	)
+	query = cursor.UpdateQueryUpper(query)
 	var places []*data.Place
 	if err := query.All(&places); err != nil {
 		render.Respond(w, r, err)
