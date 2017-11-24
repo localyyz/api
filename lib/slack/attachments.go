@@ -9,10 +9,11 @@ type AttachmentActionConfirm struct {
 	DismissText string `json:"dismiss_text"`
 }
 
-type SelectedOptions struct {
+type Option struct {
 	Text  string `json:"text"`
 	Value string `json:"value"`
 }
+type SelectedOption Option
 
 type AttachmentAction struct {
 	Name    string                   `json:"name"`
@@ -22,13 +23,18 @@ type AttachmentAction struct {
 	Confirm *AttachmentActionConfirm `json:"confirm,omitempty"`
 	Style   string                   `json:"style,omitempty"`
 
-	// Options
 	// OptionGroups
-	// DataSource
 	// MinQueryLength
 
+	// valid options:
+	// "users"
+	// "channels"
+	// "conversations"
+	DataSource string `json:"data_source"`
+
 	// on callback callback
-	SelectedOptions []*SelectedOptions `json:"selected_options,omitempty"`
+	Option          []*Option         `json:"options,omitempty"`
+	SelectedOptions []*SelectedOption `json:"selected_options,omitempty"`
 }
 
 type Attachment struct {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,6 +21,8 @@ const (
 	ApprovalActionName    = "approval"
 	ApprovalActionApprove = "approve"
 	ApprovalActionReject  = "reject"
+
+	LocationActionName = "location_list"
 )
 
 var (
@@ -64,6 +67,11 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// send a response back to slack
+	var actionResponse struct {
+		Text string `json:"text"`
+	}
+
 	// approve or reject
 	for _, a := range payload.Actions {
 		if a.Name == ApprovalActionName {
@@ -73,18 +81,19 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 			} else if a.Value == ApprovalActionReject {
 				place.Status = data.PlaceStatusInActive
 			}
+			actionResponse.Text = fmt.Sprintf("%s is now %s! (by: %s)", place.Name, place.Status, payload.User.Name)
+		} else if a.Name == LocationActionName {
+			for _, o := range a.SelectedOptions {
+				localeID, _ := strconv.Atoi(strings.TrimPrefix(o.Value, "localeid"))
+				place.LocaleID = int64(localeID)
+				log.Println(o)
+				actionResponse.Text = fmt.Sprintf("place location updated!")
+			}
 		}
 	}
 	err = data.DB.Place.Save(place)
-
-	// send a response back to slack
-	var actionResponse struct {
-		Text string `json:"text"`
-	}
 	if err != nil {
 		actionResponse.Text = err.Error()
-	} else {
-		actionResponse.Text = fmt.Sprintf("%s is now %s! (by: %s)", place.Name, place.Status, payload.User.Name)
 	}
 	body, _ := json.Marshal(actionResponse)
 	http.Post(payload.ResponseURL, "application/json", bytes.NewReader(body))

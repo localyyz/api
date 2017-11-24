@@ -76,3 +76,12 @@ func (store LocaleStore) FindOne(cond db.Cond) (*Locale, error) {
 	}
 	return locale, nil
 }
+
+func (store LocaleStore) FindAll(cond db.Cond) ([]*Locale, error) {
+	var locales []*Locale
+	err := DB.Locale.Find(cond).All(&locales)
+	if err != nil {
+		return nil, err
+	}
+	return locales, nil
+}

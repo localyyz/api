@@ -13,13 +13,14 @@ type Webhook struct {
 }
 
 type WebhookPostPayload struct {
-	Text        string        `json:"text,omitempty"`
-	Channel     string        `json:"channel,omitempty"`
-	Username    string        `json:"username,omitempty"`
-	IconUrl     string        `json:"icon_url,omitempty"`
-	IconEmoji   string        `json:"icon_emoji,omitempty"`
-	UnfurlLinks bool          `json:"unfurl_links,omitempty"`
-	Attachments []*Attachment `json:"attachments,omitempty"`
+	Text         string        `json:"text,omitempty"`
+	Channel      string        `json:"channel,omitempty"`
+	Username     string        `json:"username,omitempty"`
+	IconUrl      string        `json:"icon_url,omitempty"`
+	IconEmoji    string        `json:"icon_emoji,omitempty"`
+	UnfurlLinks  bool          `json:"unfurl_links,omitempty"`
+	ResponseType string        `json:"response_type,omitempty"`
+	Attachments  []*Attachment `json:"attachments,omitempty"`
 }
 
 func NewWebhook(url string) *Webhook {

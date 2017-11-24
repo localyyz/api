@@ -10,6 +10,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"github.com/gedex/inflector"
 	"github.com/pressly/lg"
@@ -29,7 +30,8 @@ func main() {
 	}
 	log.Println("tool started.")
 
-	pullProducts()
+	testSlack()
+	//pullProducts()
 	//pullProductExternalID()
 	//pullProductGender()
 	//pullProductCategory()
@@ -269,4 +271,63 @@ func pullProducts() {
 		sync.ShopifyProductListings(ctx)
 	}
 
+}
+
+func testSlack() {
+	wh := slack.NewWebhook("https://hooks.slack.com/services/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")
+
+	cities, _ := data.DB.Locale.FindAll(db.Cond{"type": data.LocaleTypeCity})
+	cityOptions := make([]*slack.Option, len(cities))
+	for i, c := range cities {
+		cityOptions[i] = &slack.Option{Text: c.Name, Value: fmt.Sprintf("localeid%d", c.ID)}
+	}
+	payload := &slack.WebhookPostPayload{
+		Text:         "hello",
+		ResponseType: "in_channel",
+		Attachments: []*slack.Attachment{
+			&slack.Attachment{
+				Text:       "Select the location of the merchant",
+				Fallback:   "Can't select the location",
+				CallbackID: "placeid43",
+				Actions: []*slack.AttachmentAction{
+					{
+						Name:   "location_list",
+						Text:   "Pick a location",
+						Type:   "select",
+						Option: cityOptions,
+					},
+				},
+			},
+		},
+	}
+	log.Println(wh.PostMessage(payload))
+
+	payload = &slack.WebhookPostPayload{
+		Text:         "hello",
+		ResponseType: "in_channel",
+		Attachments: []*slack.Attachment{
+			&slack.Attachment{
+				Text:       "Approve or reject",
+				Fallback:   "can't do it",
+				CallbackID: "placeid43",
+				Actions: []*slack.AttachmentAction{
+					{
+						Name:  "approval",
+						Text:  "Approve",
+						Type:  "button",
+						Value: "approve",
+						Style: "primary",
+					},
+					{
+						Name:  "approval",
+						Text:  "Reject",
+						Type:  "button",
+						Value: "reject",
+						Style: "danger",
+					},
+				},
+			},
+		},
+	}
+	log.Println(wh.PostMessage(payload))
 }
