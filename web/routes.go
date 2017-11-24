@@ -12,6 +12,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/cart"
+	"bitbucket.org/moodie-app/moodie-api/web/collection"
 	"bitbucket.org/moodie-app/moodie-api/web/locale"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/product"
@@ -78,6 +79,7 @@ func New(h *Handler) chi.Router {
 		r.Post("/echo", echoPush)
 
 		// public api routes
+		r.Mount("/collections", collection.Routes())
 		r.Mount("/places", place.Routes())
 		r.Post("/search", search.OmniSearch)
 		r.Mount("/products", product.Routes())

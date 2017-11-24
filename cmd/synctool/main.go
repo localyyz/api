@@ -30,7 +30,7 @@ func main() {
 	}
 	log.Println("tool started.")
 
-	testSlack()
+	parseCollections()
 	//pullProducts()
 	//pullProductExternalID()
 	//pullProductGender()
