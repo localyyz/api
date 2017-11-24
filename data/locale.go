@@ -11,6 +11,7 @@ type Locale struct {
 	ID          int64      `db:"id,pk,omitempty" json:"id,omitempty"`
 	Name        string     `db:"name" json:"name"`
 	Type        LocaleType `db:"type" json:"type"`
+	ImageURL    string     `db:"image_url" json:"imageUrl"`
 	Shorthand   string     `db:"shorthand" json:"shorthand"`
 	Description string     `db:"description" json:"description"`
 }

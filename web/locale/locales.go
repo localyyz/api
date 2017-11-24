@@ -35,6 +35,15 @@ func LocaleCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+func ListCities(w http.ResponseWriter, r *http.Request) {
+	locales, err := data.DB.Locale.FindAll(db.Cond{"type": data.LocaleTypeCity})
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	render.Respond(w, r, locales)
+}
+
 func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	locale := ctx.Value("locale").(*data.Locale)
