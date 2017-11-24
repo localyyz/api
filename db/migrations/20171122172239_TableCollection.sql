@@ -10,7 +10,7 @@ CREATE TABLE collections (
     ordering smallint DEFAULT 1 NOT NULL,
 
     created_at timestamp DEFAULT now() NOT NULL,
-    updated_at timestamp,
+    updated_at timestamp
 );
 
 CREATE TABLE collection_products (
