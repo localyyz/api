@@ -287,6 +287,10 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 		cl.Debug = true
 
 		ch := checkout
+		if discounts, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discounts != nil && len(discounts) > 0 {
+			ch.DiscountCode = discounts[0].Code
+		}
+
 		ch.Token = sh.Token
 		c, _, err := cl.Checkout.Update(ctx, &shopify.CheckoutRequest{&ch})
 		if err != nil {

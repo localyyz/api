@@ -113,9 +113,9 @@ targets:
     - build-image
     - pull
     - config
+    - migrate
     - stop
     - rm
-    - migrate
     - run
     - ps
     - logs
