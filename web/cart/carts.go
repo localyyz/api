@@ -32,8 +32,9 @@ func ListCarts(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetCart(w http.ResponseWriter, r *http.Request) {
-	cart := r.Context().Value("cart").(*data.Cart)
-	render.Render(w, r, presenter.NewCart(r.Context(), cart))
+	ctx := r.Context()
+	cart := ctx.Value("cart").(*data.Cart)
+	render.Render(w, r, presenter.NewCart(ctx, cart))
 }
 
 func CreateCart(w http.ResponseWriter, r *http.Request) {

@@ -290,7 +290,6 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 		if discounts, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discounts != nil && len(discounts) > 0 {
 			ch.DiscountCode = discounts[0].Code
 		}
-
 		ch.Token = sh.Token
 		c, _, err := cl.Checkout.Update(ctx, &shopify.CheckoutRequest{&ch})
 		if err != nil {
@@ -300,6 +299,7 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 		cart.Etc.ShopifyData[placeID].TotalPrice = atoi(c.TotalPrice)
 		cart.Etc.ShopifyData[placeID].TotalTax = atoi(c.TotalTax)
 		cart.Etc.ShopifyData[placeID].PaymentDue = c.PaymentDue
+		cart.Etc.ShopifyData[placeID].Discount = c.AppliedDiscount
 	}
 
 	if err := data.DB.Cart.Save(cart); err != nil {

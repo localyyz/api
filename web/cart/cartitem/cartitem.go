@@ -74,39 +74,48 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// add to shopify cart if needed
-	if cart.Status == data.CartStatusCheckout {
-		// push the change to shopify
-		creds, err := data.DB.ShopifyCred.FindByPlaceID(newItem.PlaceID)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
+	// if cart is not checked out, let checkout cart do the
+	// syncing to shopify
+	if cart.Status != data.CartStatusCheckout {
+		render.Render(w, r, presenter.NewCartItem(ctx, newItem))
+		return
+	}
 
-		cl := shopify.NewClient(nil, creds.AccessToken)
-		cl.BaseURL, _ = url.Parse(creds.ApiURL)
+	// add to shopify checkout if needed
+	// find the shopify cred for the new item
+	creds, err := data.DB.ShopifyCred.FindByPlaceID(newItem.PlaceID)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
 
-		var lineItems []*shopify.LineItem
-		var variants []*data.ProductVariant
-		data.DB.Select("pv.*").
-			From("cart_items ci").
-			LeftJoin("product_variants pv").
-			On("ci.variant_id = pv.id").
-			Where("ci.place_id = ?", newItem.PlaceID).
-			All(&variants)
-		for _, v := range variants {
-			lineItems = append(lineItems, &shopify.LineItem{
-				VariantID: v.OfferID,
-				Quantity:  1,
-			})
-		}
+	cl := shopify.NewClient(nil, creds.AccessToken)
+	cl.BaseURL, _ = url.Parse(creds.ApiURL)
 
-		var token string
-		if sh, ok := cart.Etc.ShopifyData[newItem.PlaceID]; ok {
-			token = sh.Token
-		}
+	// find the line item
+	var lineItems []*shopify.LineItem
+	var variants []*data.ProductVariant
+	data.DB.Select("pv.*").
+		From("cart_items ci").
+		LeftJoin("product_variants pv").
+		On("ci.variant_id = pv.id").
+		Where("ci.place_id = ?", newItem.PlaceID).
+		All(&variants)
+	for _, v := range variants {
+		lineItems = append(lineItems, &shopify.LineItem{
+			VariantID: v.OfferID,
+			Quantity:  1,
+		})
+	}
 
-		cc, _, _ := cl.Checkout.Update(
+	var token string
+	if sh, ok := cart.Etc.ShopifyData[newItem.PlaceID]; ok {
+		token = sh.Token
+	}
+
+	var cc *shopify.Checkout
+	if len(token) != 0 {
+		cc, _, _ = cl.Checkout.Update(
 			ctx,
 			&shopify.CheckoutRequest{
 				Checkout: &shopify.Checkout{
@@ -119,10 +128,31 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		cart.Etc.ShopifyData[newItem.PlaceID].TotalPrice = atoi(cc.TotalPrice)
 		cart.Etc.ShopifyData[newItem.PlaceID].PaymentDue = cc.PaymentDue
 		cart.Etc.ShopifyData[newItem.PlaceID].Discount = cc.AppliedDiscount
-
-		data.DB.Cart.Save(cart)
-
+	} else {
+		cc, _, _ = cl.Checkout.Create(
+			ctx,
+			&shopify.CheckoutRequest{
+				Checkout: &shopify.Checkout{
+					Token:     token,
+					LineItems: lineItems,
+				},
+			},
+		)
+		cart.Etc.ShopifyData[newItem.PlaceID] = &data.CartShopifyData{
+			Token:      cc.Token,
+			CustomerID: cc.CustomerID,
+			Name:       cc.Name,
+			ShopifyPaymentAccountID: cc.ShopifyPaymentAccountID,
+			PaymentURL:              cc.PaymentURL,
+			WebURL:                  cc.WebURL,
+			WebProcessingURL:        cc.WebProcessingURL,
+			TotalTax:                atoi(cc.TotalTax),
+			TotalPrice:              atoi(cc.TotalPrice),
+			PaymentDue:              cc.PaymentDue,
+			Discount:                cc.AppliedDiscount,
+		}
 	}
+	data.DB.Cart.Save(cart)
 
 	render.Render(w, r, presenter.NewCartItem(ctx, newItem))
 }
@@ -158,7 +188,49 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cart.Status == data.CartStatusCheckout {
+	// if the cart hasn't been checked out yet. no need
+	// to sync status to the stores
+	if cart.Status != data.CartStatusCheckout {
+		render.Status(r, http.StatusNoContent)
+		render.Respond(w, r, "")
+		return
+	}
+
+	// 1. Check if this cart has been "checked" out, and
+	// that this specific store has a checkout created
+	var token string
+	if sh, ok := cart.Etc.ShopifyData[cartItem.PlaceID]; ok {
+		token = sh.Token
+	} else {
+		// if this store was never checked out, no need
+		// to sync to shopify
+		render.Status(r, http.StatusNoContent)
+		render.Respond(w, r, "")
+		return
+	}
+
+	var lineItems []*shopify.LineItem
+	var variants []*data.ProductVariant
+	data.DB.Select("pv.*").
+		From("cart_items ci").
+		LeftJoin("product_variants pv").
+		On("ci.variant_id = pv.id").
+		Where("ci.place_id = ?", cartItem.PlaceID).
+		All(&variants)
+	for _, v := range variants {
+		if v.ID == cartItem.VariantID {
+			continue
+		}
+		lineItems = append(lineItems, &shopify.LineItem{
+			VariantID: v.OfferID,
+			Quantity:  1,
+		})
+	}
+
+	if len(lineItems) == 0 {
+		// if there are no line items. remove the checkout from shopify data
+		delete(cart.Etc.ShopifyData, cartItem.PlaceID)
+	} else {
 		// push the change to shopify
 		creds, err := data.DB.ShopifyCred.FindByPlaceID(cartItem.PlaceID)
 		if err != nil {
@@ -168,29 +240,6 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 
 		cl := shopify.NewClient(nil, creds.AccessToken)
 		cl.BaseURL, _ = url.Parse(creds.ApiURL)
-
-		var lineItems []*shopify.LineItem
-		var variants []*data.ProductVariant
-		data.DB.Select("pv.*").
-			From("cart_items ci").
-			LeftJoin("product_variants pv").
-			On("ci.variant_id = pv.id").
-			Where("ci.place_id = ?", cartItem.PlaceID).
-			All(&variants)
-		for _, v := range variants {
-			if v.ID == cartItem.VariantID {
-				continue
-			}
-			lineItems = append(lineItems, &shopify.LineItem{
-				VariantID: v.OfferID,
-				Quantity:  1,
-			})
-		}
-
-		var token string
-		if sh, ok := cart.Etc.ShopifyData[cartItem.PlaceID]; ok {
-			token = sh.Token
-		}
 
 		cc, _, _ := cl.Checkout.Update(
 			ctx,
@@ -205,10 +254,9 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		cart.Etc.ShopifyData[cartItem.PlaceID].TotalPrice = atoi(cc.TotalPrice)
 		cart.Etc.ShopifyData[cartItem.PlaceID].PaymentDue = cc.PaymentDue
 		cart.Etc.ShopifyData[cartItem.PlaceID].Discount = cc.AppliedDiscount
-
-		data.DB.Cart.Save(cart)
-
 	}
+	data.DB.Cart.Save(cart)
+
 	render.Status(r, http.StatusNoContent)
 	render.Respond(w, r, "")
 }
