@@ -61,13 +61,8 @@ func (store CollectionStore) FindAll(cond db.Cond) ([]*Collection, error) {
 	return collections, nil
 }
 
-func (store CollectionProductStore) FindOne(cond db.Cond) (*CollectionProduct, error) {
-	var collection *CollectionProduct
-	err := DB.CollectionProduct.Find(cond).One(&collection)
-	if err != nil {
-		return nil, err
-	}
-	return collection, nil
+func (store CollectionProductStore) FindByCollectionID(collectionID int64) ([]*CollectionProduct, error) {
+	return DB.CollectionProduct.FindAll(db.Cond{"collection_id": collectionID})
 }
 
 func (store CollectionProductStore) FindAll(cond db.Cond) ([]*CollectionProduct, error) {

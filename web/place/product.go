@@ -5,118 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/render"
-
-	set "gopkg.in/fatih/set.v0"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"upper.io/db.v3"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
-
-func ListProductPrices(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	place := ctx.Value("place").(*data.Place)
-
-	query := data.DB.
-		Select(db.Raw("distinct round((etc->>'prc')::numeric,-1) as price")).
-		From("product_variants").
-		Where(db.Cond{"place_id": place.ID}).
-		OrderBy("price").
-		Iterator()
-
-	var prices []float64
-	for query.Next() {
-		var price float64
-		if err := query.Scan(&price); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-		prices = append(prices, price)
-	}
-
-	// less than the count distrubution, just return
-	if len(prices) < 4 {
-		render.Respond(w, r, prices)
-		return
-	}
-
-	// find the distribution
-	// 0-25%
-	// 26-50%
-	// 51-80%
-	// 80-100%
-	distribution := make([]float64, 4, 4)
-	for i, p := range []float64{0.25, 0.5, 0.8} {
-		distribution[i] = prices[int(p*float64(len(prices)))]
-	}
-	distribution[3] = prices[len(prices)-1]
-
-	render.Respond(w, r, distribution)
-}
-
-func CategoryTypeCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		place := ctx.Value("place").(*data.Place)
-
-		catType := r.URL.Query().Get("type")
-		if len(catType) == 0 {
-			render.Render(w, r, api.ErrBadID)
-		}
-
-		category, err := data.DB.ProductCategory.FindOne(
-			db.Cond{
-				"place_id": place.ID,
-				"name":     catType,
-			})
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-
-		ctx = context.WithValue(ctx, "category", category)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
-}
-
-//func ListProductCategory(w http.ResponseWriter, r *http.Request) {
-//ctx := r.Context()
-//place := ctx.Value("place").(*data.Place)
-//category := ctx.Value("category").(*data.ProductCategory)
-
-//cursor := api.NewPage(r)
-
-//var list []struct {
-//Value string `db:"value" json:"value"`
-//}
-//iter := data.DB.Iterator(
-//`SELECT distinct(pt.value)
-//FROM product_tags pt, product_variants pv
-//WHERE (pt.place_id = ? AND pt.type = 6)
-//AND pv.product_id = pt.product_id
-//AND value IN ?
-//GROUP BY value
-//HAVING sum(pv.limits) > 1
-//ORDER BY value ASC
-//LIMIT ? OFFSET ?`,
-//place.ID,
-//category.Value,
-//cursor.Limit,
-//(cursor.Page-1)*cursor.Limit,
-//)
-//defer iter.Close()
-
-//if err := iter.All(&list); err != nil {
-//render.Respond(w, r, err)
-//return
-//}
-
-//render.Respond(w, r, list)
-//}
 
 // List available top level product categories for a given place
 func ListProductCategory(w http.ResponseWriter, r *http.Request) {
@@ -124,8 +22,8 @@ func ListProductCategory(w http.ResponseWriter, r *http.Request) {
 	place := ctx.Value("place").(*data.Place)
 
 	var categories []struct {
-		*data.ProductCategory
-		Values []string `db:"values" json:"values"`
+		Type   data.ProductCategoryType `db:"type" json:"type"`
+		Values []string                 `db:"values" json:"values"`
 	}
 	err := data.DB.Select(db.Raw("distinct pc.type, array_agg(distinct pt.value) as values")).
 		From("product_categories pc").
@@ -144,30 +42,180 @@ func ListProductCategory(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, categories)
 }
 
+func ListProductColors(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+	categoryType, _ := ctx.Value("categoryType").(string)
+
+	var query sqlbuilder.Selector
+	if len(categoryType) != 0 {
+
+		var tagProducts []struct {
+			ProductID int64 `db:"product_id"`
+		}
+		data.DB.
+			Select().
+			Distinct("product_id").
+			From("product_tags").
+			Where(db.Cond{
+				"type":     data.ProductTagTypeCategory,
+				"value":    categoryType,
+				"place_id": place.ID,
+			}).
+			All(&tagProducts)
+
+		var productIDs []int64
+		for _, t := range tagProducts {
+			productIDs = append(productIDs, t.ProductID)
+		}
+
+		query = data.DB.
+			Select().
+			Distinct("value").
+			From("product_tags").
+			Where(db.Cond{
+				"product_id": productIDs,
+				"type":       data.ProductTagTypeColor,
+			}).
+			OrderBy("value")
+	} else {
+		// depending on if category is selected...
+		query = data.DB.Select().
+			Distinct("value").
+			From("product_tags").
+			Where(
+				db.Cond{
+					"place_id": place.ID,
+					"type":     data.ProductTagTypeColor,
+				},
+			).
+			OrderBy("value")
+	}
+
+	var colors []struct {
+		Value string `db:"value" json:"value"`
+	}
+	if err := query.All(&colors); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	render.Respond(w, r, colors)
+}
+
+func ListProductSizes(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+	categoryType, _ := ctx.Value("categoryType").(string)
+
+	var query sqlbuilder.Selector
+	if len(categoryType) != 0 {
+
+		var tagProducts []struct {
+			ProductID int64 `db:"product_id"`
+		}
+		data.DB.
+			Select().
+			Distinct("product_id").
+			From("product_tags").
+			Where(db.Cond{
+				"type":     data.ProductTagTypeCategory,
+				"value":    categoryType,
+				"place_id": place.ID,
+			}).
+			All(&tagProducts)
+
+		var productIDs []int64
+		for _, t := range tagProducts {
+			productIDs = append(productIDs, t.ProductID)
+		}
+
+		query = data.DB.
+			Select().
+			Distinct("value").
+			From("product_tags").
+			Where(db.Cond{
+				"product_id": productIDs,
+				"type":       data.ProductTagTypeSize,
+			}).
+			OrderBy("value")
+	} else {
+		// depending on if category is selected...
+		query = data.DB.Select().
+			Distinct("value").
+			From("product_tags").
+			Where(
+				db.Cond{
+					"place_id": place.ID,
+					"type":     data.ProductTagTypeSize,
+				},
+			).
+			OrderBy("value")
+	}
+	var sizes []struct {
+		Value string `db:"value" json:"value"`
+	}
+	if err := query.All(&sizes); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	render.Respond(w, r, sizes)
+}
+
 func ListProductBrands(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
-	cursor := api.NewPage(r)
+	categoryType, _ := ctx.Value("categoryType").(string)
+
+	var query sqlbuilder.Selector
+	if len(categoryType) != 0 {
+
+		var tagProducts []struct {
+			ProductID int64 `db:"product_id"`
+		}
+		data.DB.
+			Select().
+			Distinct("product_id").
+			From("product_tags").
+			Where(db.Cond{
+				"type":     data.ProductTagTypeCategory,
+				"value":    categoryType,
+				"place_id": place.ID,
+			}).
+			All(&tagProducts)
+
+		var productIDs []int64
+		for _, t := range tagProducts {
+			productIDs = append(productIDs, t.ProductID)
+		}
+
+		query = data.DB.
+			Select().
+			Distinct("value").
+			From("product_tags").
+			Where(db.Cond{
+				"product_id": productIDs,
+				"type":       data.ProductTagTypeBrand,
+			}).
+			OrderBy("value")
+	} else {
+		// depending on if category is selected...
+		query = data.DB.Select().
+			Distinct("value").
+			From("product_tags").
+			Where(
+				db.Cond{
+					"place_id": place.ID,
+					"type":     data.ProductTagTypeBrand,
+				},
+			).
+			OrderBy("value")
+	}
 
 	var brands []struct {
 		Value string `db:"value" json:"value"`
 	}
-	iter := data.DB.Iterator(
-		`SELECT distinct(pt.value)
-		FROM product_tags pt, product_variants pv
-		WHERE (pt.place_id = ? AND pt.type = 7)
-		and pv.product_id = pt.product_id
-		group by value
-		having sum(pv.limits) > 1
-		ORDER BY value ASC
-		LIMIT ? OFFSET ?`,
-		place.ID,
-		cursor.Limit,
-		(cursor.Page-1)*cursor.Limit,
-	)
-	defer iter.Close()
-
-	if err := iter.All(&brands); err != nil {
+	if err := query.All(&brands); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
@@ -208,6 +256,29 @@ func ListProductTags(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func ProductCategoryCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		for k, v := range r.URL.Query() {
+			if v == nil || len(v) == 0 {
+				continue
+			}
+			// find filterings
+			var filterType data.ProductTagType
+			if err := filterType.UnmarshalText([]byte(k)); err != nil {
+				// unrecognized filter tag type
+				continue
+			}
+			if filterType == data.ProductTagTypeCategory {
+				ctx = context.WithValue(ctx, "categoryType", v[0])
+				break
+			}
+		}
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
 // List products at a given place
 func ListProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -218,7 +289,10 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 	u.Del("limit")
 	u.Del("page")
 	var tagFilters []db.Compound
+	var minPriceValue int
+	var maxPriceValue int
 	var fCount int
+
 	for k, v := range u {
 		// find filterings
 		var tagType data.ProductTagType
@@ -245,14 +319,12 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 
 			if tagType == data.ProductTagTypePrice {
 				// if it's price, need to do some numeric conversions
-				tagNumValue, _ := strconv.Atoi(tagValue)
-				tagFilters = append(
-					tagFilters,
-					db.And(
-						db.Cond{"type": tagType},
-						db.Raw("value::numeric <= ?", tagNumValue),
-					),
-				)
+				if strings.HasPrefix(tagValue, "min") {
+					minPriceValue, _ = strconv.Atoi(strings.TrimPrefix(tagValue, "min"))
+				}
+				if strings.HasPrefix(tagValue, "max") {
+					maxPriceValue, _ = strconv.Atoi(strings.TrimPrefix(tagValue, "max"))
+				}
 				continue
 			}
 
@@ -266,44 +338,56 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// add min/max price values if they are set
+	if minPriceValue > 0 && maxPriceValue > 0 {
+		tagFilters = append(
+			tagFilters,
+			db.And(
+				db.Cond{"type": data.ProductTagTypePrice},
+				db.Raw("value::numeric BETWEEN ? AND ?", minPriceValue, maxPriceValue),
+			),
+		)
+	}
+
 	var products []*data.Product
+	var itemTotal int
 	if len(tagFilters) > 0 {
-		// TODO: handle empty tags
-		var productTags []struct {
-			*data.ProductTag
-			Count int `db:"c"`
-		}
-		data.DB.
-			Select("product_id", db.Raw("count(*) as c")).
-			From("product_tags").
+		query := data.DB.Select("pv.product_id").
+			From("product_variants pv").
+			LeftJoin("product_tags pt").
+			On("pv.product_id = pt.product_id").
 			Where(
 				db.And(
-					db.Cond{"place_id": place.ID},
+					db.Cond{
+						"pv.place_id": place.ID,
+						"pv.limits >": 0,
+					},
 					db.Or(tagFilters...),
 				),
 			).
-			GroupBy("product_id").
-			//Having("count(*) > ?", len(tagFilters)).
-			All(&productTags)
-		// TODO: having.
+			GroupBy("pv.product_id").
+			Amend(func(query string) string {
+				query = query + fmt.Sprintf(" HAVING count(distinct pt.type) = %d", fCount)
+				return query
+			})
 
-		productIDs := set.New()
-		for _, pt := range productTags {
-			if len(tagFilters) == 0 || pt.Count == fCount {
-				productIDs.Add(pt.ProductID)
-			}
+		var productTags []struct {
+			ProductID int64 `db:"product_id"`
 		}
-		if productIDs.Size() == 0 {
-			render.Respond(w, r, []struct{}{})
+		if err := query.All(&productTags); err != nil {
+			render.Respond(w, r, err)
 			return
 		}
 
-		query := data.DB.Product.Find(
-			db.Cond{"id": productIDs.List()},
-			db.Cond{"place_id": place.ID},
-		).OrderBy("-created_at")
-		query = cursor.UpdateQueryUpper(query)
-		if err := query.All(&products); err != nil {
+		productIDs := make([]int64, len(productTags))
+		for i, t := range productTags {
+			productIDs[i] = t.ProductID
+		}
+
+		productQuery := data.DB.Product.Find(db.Cond{"id": productIDs}).OrderBy("id DESC")
+		productQuery = cursor.UpdateQueryUpper(productQuery)
+		itemTotal = cursor.ItemTotal
+		if err := productQuery.All(&products); err != nil {
 			render.Respond(w, r, err)
 			return
 		}
@@ -326,7 +410,7 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", cursor.ItemTotal))
+	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", itemTotal))
 	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)

@@ -19,62 +19,8 @@ func Routes() chi.Router {
 
 	r.Post("/s", OmniSearch)
 	r.Post("/city", SearchCity)
-	r.Post("/category", SearchCategory)
 
 	return r
-}
-
-func SearchCategory(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	cursor := api.NewPage(r)
-
-	// find corresponding category
-	rawCategory := strings.TrimSpace(r.URL.Query().Get("q"))
-	categoryType := new(data.ProductCategoryType)
-	if err := categoryType.UnmarshalText([]byte(rawCategory)); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	categories, err := data.DB.ProductCategory.FindByType(*categoryType)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	var categoryValues []string
-	for _, v := range categories {
-		categoryValues = append(categoryValues, v.Value)
-	}
-
-	// search the category tags that match the query term
-	query := data.DB.
-		Select(db.Raw("distinct on (product_id, created_at) *")).
-		From("product_tags").
-		Where(db.Cond{
-			"value": categoryValues,
-			"type":  data.ProductTagTypeCategory,
-		}).
-		GroupBy("id", "product_id", "created_at").
-		OrderBy("-created_at")
-	query = cursor.UpdateQueryBuilder(query)
-
-	var tags []*data.ProductTag
-	if err := query.All(&tags); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	productIDs := make([]int64, len(tags))
-	for i, t := range tags {
-		productIDs[i] = t.ProductID
-	}
-
-	// find the products
-	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	render.RenderList(w, r, presenter.NewSearchProductList(ctx, products))
 }
 
 func SearchCity(w http.ResponseWriter, r *http.Request) {
