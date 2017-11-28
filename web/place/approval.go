@@ -60,7 +60,7 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find the place
-	place, err := data.DB.Place.FindOne(db.Cond{"id": placeID, "status": data.PlaceStatusWaitApproval})
+	place, err := data.DB.Place.FindOne(db.Cond{"id": placeID})
 	if err != nil {
 		render.Respond(w, r, err)
 		return
