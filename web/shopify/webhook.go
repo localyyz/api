@@ -73,9 +73,14 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 				data.DB.Webhook.Delete(wh)
 			}
 
-			// TODO: archive the place?
 			// remove the credential
 			data.DB.ShopifyCred.Delete(cred)
+
+			// set place status to inactive
+			place.Status = data.PlaceStatusInActive
+			data.DB.Place.Save(place)
+
+			lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
 		default:
 			lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
 		}

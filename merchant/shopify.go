@@ -31,7 +31,12 @@ func ShopifyShopCtx(next http.Handler) http.Handler {
 		parts := strings.Split(shopDomain, ".")
 		shopID := parts[0]
 
-		place, err := data.DB.Place.FindByShopifyID(shopID)
+		place, err := data.DB.Place.FindOne(
+			db.Cond{
+				"shopify_id": shopID,
+				"status <>":  data.PlaceStatusInActive,
+			},
+		)
 		if err != nil && err != db.ErrNoMoreRows {
 			render.Respond(w, r, err)
 			return
