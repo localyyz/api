@@ -97,7 +97,6 @@ func ShopifyChargeCtx(next http.Handler) http.Handler {
 				return
 			}
 		}
-
 		// save place and billing
 		lg.Warnf("received merchant (%d) billing status %s", place.ID, place.Billing.Billing.Status)
 		if err := data.DB.Place.Save(place); err != nil {

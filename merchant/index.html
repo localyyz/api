@@ -151,7 +151,7 @@
                       </div>
                     </div>
                     <div class="Polaris-SettingAction__Action">
-                      <button onClick="open_popup('{{billing.ConfirmationUrl}}', 'Confirm Subscription')" class="Polaris-Button Polaris-Button--primary {%if (place.Status != 3) || (billing.Status != 1) %}Polaris-Button--disabled{% endif %}">
+                      <button onClick="ShopifyApp.redirect('{{confirmationUrl}}')" class="Polaris-Button Polaris-Button--primary {%if (place.Status != 3) || (billing.Status != 1) %}Polaris-Button--disabled{% endif %}">
                         <span class="Polaris-Button__Content">
                           <span>Start Free Plan</span>
                         </span>
@@ -197,7 +197,19 @@
       </div>
     </div>
   </div>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="//cdn.shopify.com/s/assets/external/app.js"></script>
+  <script type="text/javascript">
+    ShopifyApp.init({
+      apiKey: '{{clientID}}',
+      shopOrigin: 'https://{{place.ShopifyID}}.myshopify.com',
+      debug: true,
+    });
+
+    ShopifyApp.ready(function() {
+      ShopifyApp.Bar.loadingOff();
+    })
+  </script>
   <script type="text/javascript">
     "use strict"
     $(document).ready(function() {
@@ -213,16 +225,6 @@
         });
         return false;
       });
-
-      window.open_popup = function(url, title) {
-          var width = 1e3;
-          var height = 600;
-          var leftPosition = window.screen.width / 2 - (width / 2 + 10);
-          var topPosition = window.screen.height / 2 - (height / 2 + 50);
-          var windowFeatures = "status=no,height=" + height + ",width=" + width + ",resizable=no,left=" + leftPosition + ",top=" + topPosition + ",screenX=" + leftPosition + ",screenY=" + topPosition + ",toolbar=no,menubar=no,scrollbars=no," + "location=no,directories=no";
-          window.open(url, title, windowFeatures)
-      };
-
     });
   </script>
 </body>

@@ -68,6 +68,11 @@ func SetupShopify(conf Config) *Shopify {
 	return SH
 }
 
+// read only access to client id
+func (s *Shopify) ClientID() string {
+	return s.clientID
+}
+
 func (s *Shopify) AuthCodeURL(ctx context.Context) string {
 	place := ctx.Value("place").(*data.Place)
 	config := s.getConfig(place.ShopifyID)

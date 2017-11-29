@@ -2,6 +2,7 @@
 cmd/*/tmp/
 bin/
 config/api.conf
+config/merchant.conf
 config/push.pem
 tools/*/data
 
