@@ -42,6 +42,16 @@ var (
 		"cosmetics",
 		"fragrances",
 	}
+
+	ProductCategories = []ProductCategoryType{
+		ProductCategoryAccessory,
+		ProductCategoryApparel,
+		ProductCategoryHandbag,
+		ProductCategoryJewelry,
+		ProductCategoryShoe,
+		ProductCategoryCosmetic,
+		ProductCategoryFragrance,
+	}
 )
 
 func (p *ProductCategory) CollectionName() string {

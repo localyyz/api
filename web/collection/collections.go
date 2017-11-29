@@ -11,7 +11,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
-	db "upper.io/db.v3"
 )
 
 func CollectionCtx(next http.Handler) http.Handler {
@@ -58,27 +57,4 @@ func GetCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	collection := ctx.Value("collection").(*data.Collection)
 	render.Respond(w, r, collection)
-}
-
-func GetCollectionProduct(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	collection := ctx.Value("collection").(*data.Collection)
-	cursor := api.NewPage(r)
-
-	query := data.DB.Select("p.*").
-		From("collection_products cp").
-		LeftJoin("products p").
-		On("p.id = cp.product_id").
-		Where(db.Cond{"cp.collection_id": collection.ID})
-	query = cursor.UpdateQueryBuilder(query)
-	var products []*data.Product
-	if err := query.All(&products); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	presented := presenter.NewProductList(ctx, products)
-	if err := render.RenderList(w, r, presented); err != nil {
-		render.Respond(w, r, err)
-	}
 }

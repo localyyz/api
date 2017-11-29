@@ -12,6 +12,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/cart"
+	"bitbucket.org/moodie-app/moodie-api/web/category"
 	"bitbucket.org/moodie-app/moodie-api/web/collection"
 	"bitbucket.org/moodie-app/moodie-api/web/locale"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
@@ -84,6 +85,7 @@ func New(h *Handler) chi.Router {
 		r.Post("/search", search.OmniSearch)
 		r.Mount("/products", product.Routes())
 		r.Mount("/search", search.Routes())
+		r.Mount("/categories", category.Routes())
 	})
 
 	// Authed Routes
