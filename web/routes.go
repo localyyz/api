@@ -40,7 +40,6 @@ func New(h *Handler) chi.Router {
 	r.Use(middleware.NoCache)
 	r.Use(middleware.RequestID)
 	r.Use(NewStructuredLogger())
-	r.Use(middleware.Recoverer)
 	r.Use(func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			if h.Debug {
@@ -86,13 +85,15 @@ func New(h *Handler) chi.Router {
 		r.Mount("/products", product.Routes())
 		r.Mount("/search", search.Routes())
 		r.Mount("/categories", category.Routes())
+		r.Mount("/locales", locale.Routes())
 	})
 
 	// Authed Routes
 	r.Group(func(r chi.Router) {
+		r.Use(auth.SessionCtx)
+
 		r.Mount("/session", session.Routes())
 		r.Mount("/users", user.Routes())
-		r.Mount("/locales", locale.Routes())
 		r.Mount("/carts", cart.Routes())
 	})
 

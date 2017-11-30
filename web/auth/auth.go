@@ -39,6 +39,19 @@ var (
 	timingHash []byte = []byte("$2a$10$4Kys.PIxpCIoUmlcY6D7QOTuMPgk27lpmV74OWCWfqjwnG/JN4kcu")
 )
 
+func SessionCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		_, ok := r.Context().Value("session.user").(*data.User)
+		if !ok {
+			// no session. return forbidden
+			render.Respond(w, r, api.ErrInvalidSession)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(handler)
+}
+
 // AuthUser wraps a user with JWT token
 func NewAuthUser(ctx context.Context, user *data.User) *AuthUser {
 	return &AuthUser{User: user}
