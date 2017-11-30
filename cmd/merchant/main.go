@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 	"syscall"
 	"time"
@@ -26,7 +27,7 @@ func main() {
 
 	conf, err := config.NewFromFile(*confFile, os.Getenv("CONFIG"))
 	if err != nil {
-		lg.Fatal(errors.Wrap(err, "invalid config file"))
+		log.Fatal(errors.Wrap(err, "invalid config file"))
 	}
 
 	//[db]

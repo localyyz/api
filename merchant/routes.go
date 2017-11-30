@@ -96,6 +96,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		u.Path = strings.TrimPrefix(u.Path, "/admin")
 		pageContext["confirmationUrl"] = u.String()
 	}
+	pageContext["productCount"], _ = data.DB.Product.Find(db.Cond{"place_id": place.ID}).Count()
 
 	// inject a token into the cookie.
 	token, _ := token.Encode(jwtauth.Claims{"place_id": place.ID})
