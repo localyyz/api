@@ -16,17 +16,10 @@ import (
 )
 
 type cartItemRequest struct {
-	*data.CartItem
-
-	Color string `json:"color"`
-	Size  string `json:"size"`
-
-	ID     interface{} `json:"id"`
-	CartID interface{} `json:"cartId"`
-
-	CreatedAt interface{} `json:"createdAt"`
-	UpdatedAt interface{} `json:"updatedAt"`
-	DeletedAt interface{} `json:"deletedAt"`
+	ProductID int64  `json:"productId"`
+	Color     string `json:"color"`
+	Size      string `json:"size"`
+	Quantity  uint32 `json:"quantity"`
 }
 
 func (*cartItemRequest) Bind(r *http.Request) error {
@@ -48,14 +41,14 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// look up variant
-	var variant *data.ProductVariant
-	err := data.DB.ProductVariant.Find(
-		db.And(
-			db.Cond{"product_id": payload.ProductID, "limits >=": "1"},
-			db.Raw("lower(etc->>'color') = ?", payload.Color),
-			db.Raw("lower(etc->>'size') = ?", payload.Size),
-		),
-	).One(&variant)
+	variant, err := data.DB.ProductVariant.FindOne(
+		db.Cond{
+			"product_id":                   payload.ProductID,
+			"limits >=":                    1,
+			db.Raw("lower(etc->>'color')"): payload.Color,
+			db.Raw("lower(etc->>'size')"):  payload.Size,
+		},
+	)
 	if err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
@@ -230,6 +223,8 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 	if len(lineItems) == 0 {
 		// if there are no line items. remove the checkout from shopify data
 		delete(cart.Etc.ShopifyData, cartItem.PlaceID)
+		// mark cart status as in progress
+		cart.Status = data.CartStatusInProgress
 	} else {
 		// push the change to shopify
 		creds, err := data.DB.ShopifyCred.FindByPlaceID(cartItem.PlaceID)
