@@ -182,6 +182,22 @@
             </div>
             <div class="Polaris-Layout__AnnotationContent">
               <div class="Polaris-Card">
+                <div class="Polaris-Card__Header">
+                  <div class="Polaris-Stack Polaris-Stack--alignmentBaseline">
+                    <div class="Polaris-Stack__Item Polaris-Stack__Item--fill">
+                      <h2 class="Polaris-Heading">Status Overview</h2>
+                    </div>
+                    <div class="Polaris-Stack__Item">
+                      <div class="Polaris-ButtonGroup">
+                        <div class="Polaris-ButtonGroup__Item Polaris-ButtonGroup__Item--plain">
+                          <button type="button" onClick="ShopifyApp.redirect('/products?query=&published_status=localyyz%3Avisible')" class="Polaris-Button Polaris-Button--plain" >
+                            <span class="Polaris-Button__Content"><span>Manage</span></span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div class="Polaris-Card__Section">
                   <p> You have published <b>{{ productCount }}</b> product(s) to Localyyz.  </p>
                 </div>
