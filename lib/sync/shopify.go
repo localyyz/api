@@ -20,6 +20,26 @@ import (
 	"github.com/pressly/lg"
 )
 
+func ShopifyProductListingsRemove(ctx context.Context) error {
+	list := ctx.Value("sync.list").([]*shopify.ProductList)
+	place := ctx.Value("sync.place").(*data.Place)
+
+	for _, p := range list {
+		// check if product already exists in our system
+		dbProduct, err := data.DB.Product.FindOne(db.Cond{
+			"place_id":    place.ID,
+			"external_id": p.ProductID,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to fetch product")
+		}
+		data.DB.Delete(dbProduct)
+		lg.Alertf("product (%s) removed for place (%s)", p.Title, place.Name)
+	}
+
+	return nil
+}
+
 func ShopifyProductListings(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)

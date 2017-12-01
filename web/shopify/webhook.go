@@ -52,6 +52,13 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 				render.Respond(w, r, err)
 				return
 			}
+		case shopify.TopicProductListingsRemove:
+			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
+			if err := sync.ShopifyProductListingsRemove(ctx); err != nil {
+				lg.Alertf("webhook: productRemove for place(%s) failed with %v", place.Name, err)
+				render.Respond(w, r, err)
+				return
+			}
 		case shopify.TopicAppUninstalled:
 			lg.Infof("app uninstalled for place(id=%d)", place.ID)
 			cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
