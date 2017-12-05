@@ -73,6 +73,10 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, presenter.NewCartItem(ctx, newItem))
 		return
 	}
+	// check if cart etc shopify data is set
+	if cart.Etc.ShopifyData == nil {
+		cart.Etc.ShopifyData = make(map[int64]*data.CartShopifyData)
+	}
 
 	// add to shopify checkout if needed
 	// find the shopify cred for the new item

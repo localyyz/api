@@ -15,6 +15,7 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Get("/count", CountCartItem)
 	r.Post("/", CreateCartItem)
 	r.Route("/{cartItemID}", func(r chi.Router) {
 		r.Use(CartItemCtx)
@@ -24,6 +25,18 @@ func Routes() chi.Router {
 	})
 
 	return r
+}
+
+func CountCartItem(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cart := ctx.Value("cart").(*data.Cart)
+
+	count, err := data.DB.CartItem.Find(db.Cond{"cart_id": cart.ID}).Count()
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	render.Respond(w, r, map[string]uint64{"count": count})
 }
 
 func CartItemCtx(next http.Handler) http.Handler {
