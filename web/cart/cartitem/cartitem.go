@@ -89,14 +89,17 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	cl := shopify.NewClient(nil, creds.AccessToken)
 	cl.BaseURL, _ = url.Parse(creds.ApiURL)
 
-	// find the line item
+	// find the line item for user's cart
 	var lineItems []*shopify.LineItem
 	var variants []*data.ProductVariant
 	data.DB.Select("pv.*").
 		From("cart_items ci").
 		LeftJoin("product_variants pv").
 		On("ci.variant_id = pv.id").
-		Where("ci.place_id = ?", newItem.PlaceID).
+		Where(db.Cond{
+			"ci.place_id": newItem.PlaceID,
+			"ci.cart_id":  cart.ID,
+		}).
 		All(&variants)
 	for _, v := range variants {
 		lineItems = append(lineItems, &shopify.LineItem{
@@ -126,7 +129,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		cart.Etc.ShopifyData[newItem.PlaceID].PaymentDue = cc.PaymentDue
 		cart.Etc.ShopifyData[newItem.PlaceID].Discount = cc.AppliedDiscount
 	} else {
-		cc, _, _ = cl.Checkout.Create(
+		cc, _, err = cl.Checkout.Create(
 			ctx,
 			&shopify.CheckoutRequest{
 				Checkout: &shopify.Checkout{
@@ -135,6 +138,11 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 				},
 			},
 		)
+		if err != nil || cc == nil {
+			lg.Alertf("failed to create new checkout place(%d) with err: %+v", newItem.PlaceID, err)
+			render.Respond(w, r, err)
+			return
+		}
 		cart.Etc.ShopifyData[newItem.PlaceID] = &data.CartShopifyData{
 			Token:      cc.Token,
 			CustomerID: cc.CustomerID,
@@ -212,7 +220,10 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		From("cart_items ci").
 		LeftJoin("product_variants pv").
 		On("ci.variant_id = pv.id").
-		Where("ci.place_id = ?", cartItem.PlaceID).
+		Where(db.Cond{
+			"ci.place_id": cartItem.PlaceID,
+			"ci.cart_id":  cart.ID,
+		}).
 		All(&variants)
 	for _, v := range variants {
 		if v.ID == cartItem.VariantID {
@@ -240,7 +251,7 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		cl := shopify.NewClient(nil, creds.AccessToken)
 		cl.BaseURL, _ = url.Parse(creds.ApiURL)
 
-		cc, _, _ := cl.Checkout.Update(
+		cc, _, err := cl.Checkout.Update(
 			ctx,
 			&shopify.CheckoutRequest{
 				Checkout: &shopify.Checkout{

@@ -49,6 +49,10 @@ func New(h *Handler) chi.Router {
 		}
 		return http.HandlerFunc(fn)
 	})
+	if h.Debug {
+		// if debug, don't structure log the panic
+		r.Use(middleware.Recoverer)
+	}
 
 	r.Use(token.Verify())
 	r.Use(session.SessionCtx)
