@@ -162,6 +162,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			Address:   fmt.Sprintf("%s, %s", shop.Address1, shop.City),
 			Phone:     shop.Phone,
 			Website:   u.String(),
+			Currency:  shop.Currency,
 		}
 	}
 	// upgrade place status to "waiting for agreement"

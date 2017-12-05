@@ -20,9 +20,9 @@ type Place struct {
 	Website     string `db:"website" json:"website"`
 	Description string `db:"description" json:"description"`
 	ImageURL    string `db:"image_url" json:"imageUrl"`
+	Currency    string `db:"currency" json:"currency"`
 
 	ShopifyID string         `db:"shopify_id,omitempty" json:"-"`
-	BlogtoID  *int64         `db:"blogto_id,omitempty" json:"-"`
 	Geo       geotools.Point `db:"geo" json:"-"`
 	Distance  float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
 	TOSIP     string         `db:"tos_ip" json:"-"`
