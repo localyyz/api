@@ -32,6 +32,11 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 			render.Respond(w, r, err)
 			return
 		}
+		if place.Status != data.PlaceStatusActive {
+			// if place is not active, return and ignore
+			render.Status(r, http.StatusOK)
+			return
+		}
 
 		// TODO: check HMAC
 		topic := h.Get(shopify.WebhookHeaderTopic)
