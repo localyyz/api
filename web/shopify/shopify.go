@@ -25,6 +25,7 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 		// TODO: Use a tld lib
 		parts := strings.Split(shopDomain, ".")
 		shopID := parts[0]
+		ctx := r.Context()
 
 		place, err := data.DB.Place.FindByShopifyID(shopID)
 		if err != nil {
@@ -32,8 +33,11 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 			render.Respond(w, r, err)
 			return
 		}
+		// log the place context
+		lg.SetEntryField(ctx, "place_id", place.ID)
+
 		if place.Status != data.PlaceStatusActive {
-			// if place is not active, return and ignore
+			// if not active, return and ignore
 			render.Status(r, http.StatusOK)
 			return
 		}
@@ -42,12 +46,10 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 		topic := h.Get(shopify.WebhookHeaderTopic)
 
 		// loadup contexts
-		ctx := r.Context()
 		ctx = context.WithValue(ctx, "place", place)
 		ctx = context.WithValue(ctx, "sync.place", place)
 		ctx = context.WithValue(ctx, "sync.topic", topic)
 
-		lg.SetEntryField(ctx, "place_id", place.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
