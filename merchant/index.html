@@ -176,6 +176,58 @@
           <div class="Polaris-Layout__AnnotationWrapper">
             <div class="Polaris-Layout__Annotation">
               <div class="Polaris-TextContainer">
+                <h2 class="Polaris-Heading">Storefront Image</h2>
+                <p>Select an image</p>
+              </div>
+            </div>
+            <div class="Polaris-Layout__AnnotationContent">
+              <div class="Polaris-Card">
+                <div class="Polaris-Card__Header">
+                  <div class="Polaris-Stack Polaris-Stack--alignmentBaseline">
+                    <div class="Polaris-Stack__Item Polaris-Stack__Item--fill">
+                      <p>Select an image that's a good
+                      representation of your store, this will be the first thing
+                      the users will see.</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="Polaris-Card__Section">
+                  <span>1. Upload / Manage file
+                    <button type="button" onClick="ShopifyApp.redirect('/settings/files')" class="Polaris-Button Polaris-Button--plain" >
+                      <span class="Polaris-Button__Content">here</span>
+                    </button>
+                  </span>
+                </div>
+                <div class="Polaris-Card__Section">
+                  <span>2. Copy and paste the image URL from previous screen here</span>
+                  <div class="">
+                    <div class="Polaris-Labelled__LabelWrapper">
+                      <div class="Polaris-Label"><label id="placeImageUrlLabel" for="placeImageUrlInput" class="Polaris-Label__Text">Image URL</label></div>
+                    </div>
+                    <div class="Polaris-TextField"><input id="placeImageUrlInput" value="{{ place.ImageURL }}" class="Polaris-TextField__Input" aria-labelledby="TextField12Label" aria-invalid="false">
+                      <div class="Polaris-TextField__Backdrop"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="Polaris-Card__Section">
+                  <span>3. Save!</span>
+                  <div class="Polaris-SettingAction__Action">
+                    <form id="imgUrl" method="POST" action="#">
+                      <button type="submit" class="Polaris-Button Polaris-Button--primary">
+                        <span class="Polaris-Button__Content">Save</span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="Polaris-Layout__AnnotatedSection">
+          <div class="Polaris-Layout__AnnotationWrapper">
+            <div class="Polaris-Layout__Annotation">
+              <div class="Polaris-TextContainer">
                 <h2 class="Polaris-Heading">Products</h2>
                 <p>Product status summary</p>
               </div>
@@ -280,6 +332,21 @@
           url: "/tos",
           success: function(result) {
             location.reload();
+          }
+        });
+        return false;
+      });
+      $("#imgUrl").submit(function(e) {
+        $.ajax({
+          type: "POST",
+          contentType: "application/json",
+          dataType: "json",
+          data: JSON.stringify({
+            imageUrl: $("#placeImageUrlInput").val(),
+          }),
+          url: "/img",
+          success: function(result) {
+            ShopifyApp.flashNotice("Save success!");
           }
         });
         return false;

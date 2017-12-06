@@ -65,6 +65,7 @@ func New(h *Handler) chi.Router {
 		r.Use(token.Verify())
 		r.Use(SessionCtx)
 		r.Post("/tos", AcceptTOS)
+		r.Post("/img", UploadImageUrl)
 	})
 
 	return r
@@ -186,6 +187,31 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	)
+
+	render.Respond(w, r, "success")
+	return
+}
+
+func UploadImageUrl(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+
+	var payload struct {
+		ImageURL string `json:"imageUrl"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		lg.Warnf("failed to decode image url for place(%d) with err: %+v", place.ID, err)
+		return
+	}
+
+	// proceed to next status
+	place.ImageURL = payload.ImageURL
+	if err := data.DB.Place.Save(place); err != nil {
+		// error has occured. respond
+		render.Status(r, http.StatusInternalServerError)
+		render.Respond(w, r, err)
+		return
+	}
 
 	render.Respond(w, r, "success")
 	return
