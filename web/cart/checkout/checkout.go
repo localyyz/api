@@ -28,6 +28,7 @@ type checkoutRequest struct {
 	ShippingAddress *data.CartAddress        `json:"shippingAddress,omitempty"`
 	BillingAddress  *data.CartAddress        `json:"billingAddress,omitempty"`
 	Shipping        *data.CartShippingMethod `json:"shipping"`
+	DiscountCode    string                   `json:"discountCode,omitempty"`
 }
 
 func (c *checkoutRequest) Bind(r *http.Request) error {
@@ -197,9 +198,9 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		// TODO: make this better ->
 		// for now.. find one discount code from the place..
 		// TODO: check price rules
-		if discounts, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discounts != nil && len(discounts) > 0 {
-			updateCheckout.DiscountCode = discounts[0].Code
-		}
+		//if discounts, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discounts != nil && len(discounts) > 0 {
+		//updateCheckout.DiscountCode = discounts[0].Code
+		//}
 
 		cc, _, err = cl.Checkout.Update(
 			ctx,
@@ -285,9 +286,11 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 		cl.Debug = true
 
 		ch := checkout
-		if discounts, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discounts != nil && len(discounts) > 0 {
-			ch.DiscountCode = discounts[0].Code
+
+		if payload.DiscountCode != "" {
+			ch.DiscountCode = payload.DiscountCode
 		}
+
 		ch.Token = sh.Token
 		c, _, err := cl.Checkout.Update(ctx, &shopify.CheckoutRequest{&ch})
 		if err != nil {
