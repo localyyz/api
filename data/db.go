@@ -33,6 +33,7 @@ type Database struct {
 	ProductTag      ProductTagStore
 	ProductVariant  ProductVariantStore
 	ProductCategory ProductCategoryStore
+	FeatureProduct  FeatureProductStore
 	Share           ShareStore
 	Webhook         WebhookStore
 
@@ -96,6 +97,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.ProductTag = ProductTagStore{db.Store(&ProductTag{})}
 	db.ProductVariant = ProductVariantStore{db.Store(&ProductVariant{})}
 	db.ProductCategory = ProductCategoryStore{db.Store(&ProductCategory{})}
+	db.FeatureProduct = FeatureProductStore{db.Store(&FeatureProduct{})}
 	db.Share = ShareStore{db.Store(&Share{})}
 	db.Webhook = WebhookStore{db.Store(&Webhook{})}
 

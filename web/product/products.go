@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -36,6 +37,58 @@ func ProductCtx(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(handler)
+}
+
+func ListFeaturedProducts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	query := data.DB.Select("p.*").
+		From("feature_products fp").
+		LeftJoin("products p").
+		On("fp.product_id = p.id").
+		OrderBy("ordering")
+
+	var products []*data.Product
+	if err := query.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", len(products)))
+	presented := presenter.NewProductList(ctx, products)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
+func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// select the first row in each place_id group ordered by created_at
+	q := `
+		select *
+		from (
+			select row_number() over (partition by p.place_id order by p.created_at desc) as r, p.*
+			from products p
+			left join places pl on p.place_id = pl.id
+			where p.created_at > now()::date - 1
+			and pl.status = 3
+		) x
+		where x.r = 1
+	`
+	iter := data.DB.Iterator(q)
+	defer iter.Close()
+	var products []*data.Product
+	if err := iter.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", len(products)))
+	presented := presenter.NewProductList(ctx, products)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+	}
 }
 
 func GetProduct(w http.ResponseWriter, r *http.Request) {

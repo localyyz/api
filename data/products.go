@@ -85,3 +85,19 @@ func (store ProductStore) FindAll(cond db.Cond) ([]*Product, error) {
 	}
 	return products, nil
 }
+
+type FeatureProduct struct {
+	ProductID     int64      `db:"product_id"`
+	Ordering      uint32     `db:"ordering"`
+	ImageUrl      string     `db:"image_url"`
+	FeaturedAt    *time.Time `db:"featured_at"`
+	EndFeaturedAt *time.Time `db:"end_featured_at"`
+}
+
+type FeatureProductStore struct {
+	bond.Store
+}
+
+func (FeatureProductStore) CollectionName() string {
+	return `feature_products`
+}
