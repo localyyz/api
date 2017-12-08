@@ -65,8 +65,7 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// select the first row in each place_id group ordered by created_at
-	q := `
-		select *
+	q := `select *
 		from (
 			select row_number() over (partition by p.place_id order by p.created_at desc) as r, p.*
 			from products p
@@ -75,7 +74,7 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			and pl.status = 3
 		) x
 		where x.r = 1
-	`
+		order by created_at desc`
 	iter := data.DB.Iterator(q)
 	defer iter.Close()
 	var products []*data.Product

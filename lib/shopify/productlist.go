@@ -49,3 +49,20 @@ func (p *ProductListService) Get(ctx context.Context, params *ProductListParam) 
 
 	return productListWrapper.ProductListings, resp, nil
 }
+
+func (p *ProductListService) Count(ctx context.Context) (int, *http.Response, error) {
+	req, err := p.client.NewRequest("GET", "/admin/product_listings/count.json", nil)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var productCount struct {
+		Count int `json:"count"`
+	}
+	resp, err := p.client.Do(ctx, req, &productCount)
+	if err != nil {
+		return 0, resp, err
+	}
+
+	return productCount.Count, resp, nil
+}
