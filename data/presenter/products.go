@@ -25,6 +25,9 @@ type Product struct {
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 	DeleteAt  *time.Time `json:"deletedAt,omitempty"`
 
+	HtmlDescription  string `json:"htmlDescription"`
+	NoTagDescription string `json:"noTagDescription"`
+
 	ctx context.Context
 }
 
@@ -118,8 +121,8 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 }
 
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
-	//strings.Replace(p.Description, "\\\"", "", -1)
-	p.Description = htmlx.CaptionizeHtmlBody(p.Description, -1)
+	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Description, -1)
+	p.NoTagDescription = htmlx.StripTags(p.Description)
 
 	return nil
 }
