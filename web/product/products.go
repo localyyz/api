@@ -152,11 +152,12 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			select row_number() over (partition by p.place_id order by p.created_at desc) as r, p.*
 			from products p
 			left join places pl on p.place_id = pl.id
-			where p.created_at > now()::date - 1
+			where p.created_at > now()::date - 7
 			and pl.status = 3
 		) x
 		where x.r = 1
-		order by created_at desc`
+		order by created_at desc
+		limit 10`
 	iter := data.DB.Iterator(q)
 	defer iter.Close()
 	var products []*data.Product
