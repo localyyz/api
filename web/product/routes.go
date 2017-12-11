@@ -13,6 +13,7 @@ func Routes() chi.Router {
 		r.Use(ProductCtx)
 		r.Get("/", GetProduct)
 		r.Get("/variant", GetVariant)
+		r.Get("/related", ListRelatedProduct)
 	})
 
 	return r

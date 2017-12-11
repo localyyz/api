@@ -61,6 +61,88 @@ func ListFeaturedProducts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	product := ctx.Value("product").(*data.Product)
+
+	// get product tags we want to relate on.
+	var relatedTags []*data.ProductTag
+	err := data.DB.ProductTag.Find(db.Cond{
+		"product_id": product.ID,
+		"type": []data.ProductTagType{
+			data.ProductTagTypeCategory,
+			//data.ProductTagTypePrice,
+			data.ProductTagTypeGender,
+			data.ProductTagTypeBrand,
+		},
+	}).All(&relatedTags)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	// iterate over product tags and assemble a db condition
+	relatedConds := make([]db.Compound, len(relatedTags))
+	for i, t := range relatedTags {
+		//if t.Type == data.ProductTagTypePrice {
+		//v, _ := strconv.ParseFloat(t.Value, 64)
+		//relatedConds[i] = db.And(
+		//db.Cond{"type": data.ProductTagTypePrice},
+		//db.Raw("value::numeric BETWEEN ? AND ?", v/1.5, v*1.5),
+		//)
+		//continue
+		//}
+		relatedConds[i] = db.Cond{
+			"type":     t.Type,
+			"value ~*": t.Value,
+		}
+	}
+
+	// find the products
+	cursor := api.NewPage(r)
+	query := data.DB.Select("product_id").
+		From("product_tags").
+		Where(
+			db.Or(relatedConds...),
+			db.Cond{"product_id !=": product.ID},
+		).
+		GroupBy("product_id").
+		Amend(func(query string) string {
+			query = query + fmt.Sprintf(" HAVING count(distinct type) = %d", len(relatedTags))
+			query = query + fmt.Sprintf(" ORDER BY product_id DESC")
+			if cursor.Page > 1 {
+				query = query + fmt.Sprintf(" LIMIT %d OFFSET %d", cursor.Limit, (cursor.Page-1)*cursor.Limit)
+			} else {
+				query = query + fmt.Sprintf(" LIMIT %d", cursor.Limit)
+			}
+			return query
+		})
+	var relatedProducts []struct {
+		ProductID int64 `db:"product_id"`
+	}
+	if err := query.All(&relatedProducts); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	var productIDs []int64
+	for _, p := range relatedProducts {
+		productIDs = append(productIDs, p.ProductID)
+	}
+
+	// pull the products
+	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	presented := presenter.NewProductList(ctx, products)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
 func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
