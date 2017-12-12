@@ -30,8 +30,9 @@ type ProductVariantStore struct {
 }
 
 type ProductVariantEtc struct {
-	Price float64 `json:"prc"`
-	Sku   string  `json:"sku"`
+	Price     float64 `json:"prc"`
+	PrevPrice float64 `json:"prv"`
+	Sku       string  `json:"sku"`
 
 	Size  string `json:"size"`
 	Color string `json:"color"`

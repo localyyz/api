@@ -87,9 +87,12 @@ func ShopifyProductListings(ctx context.Context) error {
 		for i, v := range p.Variants {
 			price, _ := strconv.ParseFloat(v.Price, 64)
 			variantPrice += price
+
+			prevPrice, _ := strconv.ParseFloat(v.CompareAtPrice, 64)
 			etc := data.ProductVariantEtc{
-				Price: price,
-				Sku:   v.Sku,
+				Price:     price,
+				PrevPrice: prevPrice,
+				Sku:       v.Sku,
 			}
 			// variant option values
 			for _, o := range v.OptionValues {

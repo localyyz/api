@@ -48,7 +48,7 @@ type ProductVariant struct {
 	Taxable              bool            `json:"taxable"`
 	Barcode              string          `json:"barcode"`
 	ImageID              interface{}     `json:"image_id"`
-	CompareAtPrice       interface{}     `json:"compare_at_price"`
+	CompareAtPrice       string          `json:"compare_at_price"`
 	Available            bool            `json:"available"`
 	InventoryQuantity    int             `json:"inventory_quantity"`
 	Weight               float64         `json:"weight"`
