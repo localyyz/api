@@ -194,14 +194,6 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// check for auto apply discount
-		// TODO: make this better ->
-		// for now.. find one discount code from the place..
-		// TODO: check price rules
-		//if discounts, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discounts != nil && len(discounts) > 0 {
-		//updateCheckout.DiscountCode = discounts[0].Code
-		//}
-
 		cc, _, err = cl.Checkout.Update(
 			ctx,
 			&shopify.CheckoutRequest{Checkout: updateCheckout},
