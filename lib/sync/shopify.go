@@ -33,8 +33,8 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to fetch product")
 		}
-		data.DB.Delete(dbProduct)
-		lg.Alertf("product (%d) removed for place (%s)", dbProduct.ID, place.Name)
+		dbProduct.DeletedAt = data.GetTimeUTCPointer()
+		data.DB.Save(dbProduct)
 	}
 
 	return nil
