@@ -36,7 +36,16 @@ func LocaleCtx(next http.Handler) http.Handler {
 }
 
 func ListCities(w http.ResponseWriter, r *http.Request) {
-	locales, err := data.DB.Locale.FindAll(db.Cond{"type": data.LocaleTypeCity})
+	var locales []*data.Locale
+	err := data.DB.
+		Select("l.*").
+		From("locales l").
+		LeftJoin("places p").
+		On("p.locale_id = l.id").
+		Where(db.Cond{"type": data.LocaleTypeCity, "status": data.PlaceStatusActive}).
+		GroupBy("l.id").
+		OrderBy(db.Raw("count(p) desc")).
+		All(&locales)
 	if err != nil {
 		render.Respond(w, r, err)
 		return
