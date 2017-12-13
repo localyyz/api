@@ -85,7 +85,7 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 			for _, o := range a.SelectedOptions {
 				localeID, _ := strconv.Atoi(strings.TrimPrefix(o.Value, "localeid"))
 				place.LocaleID = int64(localeID)
-				actionResponse.Text = fmt.Sprintf("place location updated!")
+				actionResponse.Text = fmt.Sprintf("place location updated to %d!", place.LocaleID)
 			}
 		}
 	}

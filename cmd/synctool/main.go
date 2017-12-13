@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net/url"
 	"regexp"
 	"strings"
@@ -30,11 +31,13 @@ func main() {
 	}
 	log.Println("tool started.")
 
-	parseCollections()
+	//parseCollections()
 	//pullProducts()
 	//pullProductExternalID()
 	//pullProductGender()
 	//pullProductCategory()
+
+	pullProductCount()
 }
 
 var tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
@@ -241,6 +244,54 @@ func pullProductExternalID() {
 			}
 		}
 	}
+}
+
+func pullProductCount() {
+
+	var creds []*data.ShopifyCred
+	data.DB.
+		Select("c.*").
+		From("places p").
+		LeftJoin("shopify_creds c").
+		On("p.id = c.place_id").
+		Where(db.Cond{"p.status": data.PlaceStatusActive}).
+		All(&creds)
+
+	for _, cred := range creds {
+		cl := shopify.NewClient(nil, cred.AccessToken)
+		cl.BaseURL, _ = url.Parse(cred.ApiURL)
+
+		place, err := data.DB.Place.FindByID(cred.PlaceID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// range of products and fill external_id
+		ctx := context.Background()
+		remoteCount, _, err := cl.ProductList.Count(ctx)
+		if err != nil {
+			log.Printf("place %s returned shopify error %+v", place.Name, err)
+			continue
+		}
+
+		localCount, _ := data.DB.Product.Find(
+			db.Cond{
+				"place_id":   place.ID,
+				"deleted_at": nil,
+			},
+		).Count()
+
+		if math.Abs(float64(remoteCount)-float64(localCount)) > 10.0 {
+			log.Printf(
+				"%s: r(%d) l(%d) d(%d)",
+				place.Name,
+				remoteCount,
+				localCount,
+				remoteCount-int(localCount),
+			)
+		}
+	}
+
 }
 
 func pullProducts() {
