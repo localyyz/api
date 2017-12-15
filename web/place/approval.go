@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
@@ -77,6 +78,9 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 			if a.Value == ApprovalActionApprove {
 				place.Status = data.PlaceStatusActive
 				place.ApprovedAt = data.GetTimeUTCPointer()
+
+				// register the webhooks
+				connect.SH.RegisterWebhooks(r.Context(), place)
 			} else if a.Value == ApprovalActionReject {
 				place.Status = data.PlaceStatusInActive
 			}

@@ -36,8 +36,38 @@ func main() {
 	//pullProductExternalID()
 	//pullProductGender()
 	//pullProductCategory()
+	//pullProductCount()
 
-	pullProductCount()
+	cleanupWebhooks()
+}
+
+func cleanupWebhooks() {
+	places, _ := data.DB.Place.FindAll(db.Cond{"status": data.PlaceStatusInActive})
+	for _, pl := range places {
+		log.Printf("removing webhooks for %s", pl.Name)
+		creds, err := data.DB.ShopifyCred.FindOne(db.Cond{"place_id": pl.ID})
+		if err != nil {
+			log.Printf("cred error %v", err)
+			continue
+		}
+		sh := shopify.NewClient(nil, creds.AccessToken)
+		sh.BaseURL, _ = url.Parse(creds.ApiURL)
+
+		webhooks, _ := data.DB.Webhook.FindAll(
+			db.Cond{
+				"place_id": pl.ID,
+				"topic !=": shopify.TopicAppUninstalled,
+			},
+		)
+		for _, wh := range webhooks {
+			_, err := sh.Webhook.Delete(context.Background(), wh.ExternalID)
+			if err != nil {
+				log.Println(err)
+			}
+			data.DB.Webhook.Delete(wh)
+		}
+	}
+
 }
 
 var tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")

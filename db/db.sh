@@ -34,9 +34,8 @@ EOF
 
 function loadprod() {
   echo "LOADING DATABASE FROM PROD BACKUP";
-  scp root@localyyz:/root/backups/backup-`date -u +%F`.gz tmp/.
-  gunzip -c tmp/backup-`date -u +%F`.gz | psql $database
-  rm tmp/backup-`date -u +%F`.gz
+  scp root@localyyz:/data/backups/backup-latest.gz tmp/.
+  gunzip -c tmp/backup-latest.gz | psql $database
 }
 
 if [ $# -lt 2 ]; then

@@ -45,7 +45,7 @@ var (
 		"read_price_rules",
 	}
 	WebhookTopics = []shopify.Topic{
-		shopify.TopicAppUninstalled,
+		//shopify.TopicAppUninstalled,
 		shopify.TopicProductListingsAdd,
 		shopify.TopicProductListingsUpdate,
 		shopify.TopicProductListingsRemove,
@@ -71,6 +71,39 @@ func SetupShopify(conf Config) *Shopify {
 // read only access to client id
 func (s *Shopify) ClientID() string {
 	return s.clientID
+}
+
+func (s *Shopify) RegisterWebhooks(ctx context.Context, place *data.Place) {
+	creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
+	if err != nil {
+		lg.Alertf("register webhook: %s(id:%v) %+v", place.Name, place.ID, err)
+		return
+	}
+	sh := shopify.NewClient(nil, creds.AccessToken)
+	sh.BaseURL, _ = url.Parse(creds.ApiURL)
+	for _, topic := range WebhookTopics {
+		wh, _, err := sh.Webhook.Create(
+			ctx,
+			&shopify.WebhookRequest{
+				&shopify.Webhook{
+					Topic:   topic,
+					Address: s.webhookURL,
+					Format:  "json",
+				},
+			})
+		if err != nil {
+			lg.Alertf("register webhook: %s(id:%v) %s with %+v", place.Name, place.ID, topic, err)
+			continue
+		}
+		if err := data.DB.Webhook.Save(&data.Webhook{
+			PlaceID:    place.ID,
+			Topic:      string(topic),
+			ExternalID: int64(wh.ID),
+		}); err != nil {
+			lg.Alertf("register webhook: %s (id:%v) %s with %+v", place.Name, place.ID, topic, err)
+		}
+	}
+	lg.Alertf("registered webhooks for place(%d)", place.ID)
 }
 
 func (s *Shopify) AuthCodeURL(ctx context.Context) string {
@@ -198,29 +231,25 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 
 	// create the webhook
-	for _, topic := range WebhookTopics {
-		wh, _, err := sh.Webhook.Create(
-			ctx,
-			&shopify.WebhookRequest{
-				&shopify.Webhook{
-					Topic:   topic,
-					Address: s.webhookURL,
-					Format:  "json",
-				},
-			})
-		if err != nil {
-			lg.Alertf("connect %s (id: %v): failed to create shopify %s webhook with %+v", topic, place.ID, place.Name, err)
-			continue
-		}
-		err = data.DB.Webhook.Save(&data.Webhook{
-			PlaceID:    place.ID,
-			Topic:      string(topic),
-			ExternalID: int64(wh.ID),
+	wh, _, err := sh.Webhook.Create(
+		ctx,
+		&shopify.WebhookRequest{
+			&shopify.Webhook{
+				Topic:   shopify.TopicAppUninstalled,
+				Address: s.webhookURL,
+				Format:  "json",
+			},
 		})
-		if err != nil {
-			lg.Alertf("connect %s (id: %v): failed to save shopify %s webhook with %+v", topic, place.ID, place.Name, err)
-			continue
-		}
+	if err != nil {
+		lg.Alertf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
+	}
+	err = data.DB.Webhook.Save(&data.Webhook{
+		PlaceID:    place.ID,
+		Topic:      string(shopify.TopicAppUninstalled),
+		ExternalID: int64(wh.ID),
+	})
+	if err != nil {
+		lg.Alertf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
 	}
 
 	SL.Notify("store", fmt.Sprintf("%s (id: %v) just connected!", place.Name, place.ID))
