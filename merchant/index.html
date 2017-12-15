@@ -199,18 +199,20 @@
                   </span>
                 </div>
                 <div class="Polaris-Card__Section">
-                  <span>2. Copy and paste the image URL from previous screen here</span>
-                  <div class="">
-                    <div class="Polaris-Labelled__LabelWrapper">
-                      <div class="Polaris-Label"><label id="placeImageUrlLabel" for="placeImageUrlInput" class="Polaris-Label__Text">Image URL</label></div>
-                    </div>
-                    <div class="Polaris-TextField"><input id="placeImageUrlInput" value="{{ place.ImageURL }}" class="Polaris-TextField__Input" aria-labelledby="TextField12Label" aria-invalid="false">
-                      <div class="Polaris-TextField__Backdrop"></div>
-                    </div>
+                  <span>2. Find the selected image's <b>URL</b> from previous screen</span>
+                  <img src="https://cdn.shopify.com/s/files/1/1976/6885/files/imagebox.png?2297683349886995721" alt="" width="100%" />
+                </div>
+                <div class="Polaris-Card__Section">
+                  <div class="Polaris-Labelled__LabelWrapper">
+                    <div class="Polaris-Label"><label id="placeImageUrlLabel" for="placeImageUrlInput" class="Polaris-Label__Text">3. Copy and paste the image URL:</label></div>
+                  </div>
+                  <div class="Polaris-TextField">
+                    <input id="placeImageUrlInput" value="{{ place.ImageURL }}" placeholder="https://cdn.shopify.com/..." class="Polaris-TextField__Input" aria-labelledby="TextField12Label" aria-invalid="false">
+                    <div class="Polaris-TextField__Backdrop"></div>
                   </div>
                 </div>
                 <div class="Polaris-Card__Section">
-                  <span>3. Save!</span>
+                  <span>4. Save!</span>
                   <div class="Polaris-SettingAction__Action">
                     <form id="imgUrl" method="POST" action="#">
                       <button type="submit" class="Polaris-Button Polaris-Button--primary">
