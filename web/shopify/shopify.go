@@ -44,6 +44,7 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 
 		// TODO: check HMAC
 		topic := h.Get(shopify.WebhookHeaderTopic)
+		lg.SetEntryField(ctx, "topic", topic)
 
 		// loadup contexts
 		ctx = context.WithValue(ctx, "place", place)
