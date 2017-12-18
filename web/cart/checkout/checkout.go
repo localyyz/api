@@ -170,7 +170,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 
 		cc, _, err := cl.Checkout.Create(ctx, &shopify.CheckoutRequest{checkout})
 		if err != nil {
-			lg.Alertf("checkout (%d) create failed: %+v", err)
+			lg.Alertf("checkout create: cart(%d) pl(%d) user(%d) create failed: %+v", cart.ID, placeID, user.ID, err)
 			render.Respond(w, r, err)
 			return
 		}
