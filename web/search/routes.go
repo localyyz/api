@@ -66,8 +66,8 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		db.Or(
 			db.Cond{"title ~*": fmt.Sprint("\\m(", singularQuery, ")")},
 			db.Cond{"title ~*": fmt.Sprint("\\m(", searchQuery, ")")},
-			db.Cond{"etc->>'brand' ~*": fmt.Sprint("\\m(", singularQuery, ")")},
-			db.Cond{"etc->>'brand' ~*": fmt.Sprint("\\m(", searchQuery, ")")},
+			db.Raw("etc->>'brand' ~* ?", fmt.Sprint("\\m(", singularQuery, ")")),
+			db.Raw("etc->>'brand' ~* ?", fmt.Sprint("\\m(", searchQuery, ")")),
 		),
 	).OrderBy("-created_at")
 	cursor := api.NewPage(r)
