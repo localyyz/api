@@ -98,6 +98,6 @@ type FeatureProductStore struct {
 	bond.Store
 }
 
-func (FeatureProductStore) CollectionName() string {
+func (FeatureProduct) CollectionName() string {
 	return `feature_products`
 }
