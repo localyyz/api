@@ -59,12 +59,17 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	searchQuery := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
-	searchQuery = inflector.Singularize(searchQuery)
+	singularQuery := inflector.Singularize(searchQuery)
 
 	// find products by title
-	query := data.DB.Product.Find(db.Cond{
-		"title ~*": fmt.Sprint("\\m(", searchQuery, ")"),
-	}).OrderBy("-created_at")
+	query := data.DB.Product.Find(
+		db.Or(
+			db.Cond{"title ~*": fmt.Sprint("\\m(", singularQuery, ")")},
+			db.Cond{"title ~*": fmt.Sprint("\\m(", searchQuery, ")")},
+			db.Cond{"etc->>'brand' ~*": fmt.Sprint("\\m(", singularQuery, ")")},
+			db.Cond{"etc->>'brand' ~*": fmt.Sprint("\\m(", searchQuery, ")")},
+		),
+	).OrderBy("-created_at")
 	cursor := api.NewPage(r)
 	query = cursor.UpdateQueryUpper(query)
 

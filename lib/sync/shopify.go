@@ -66,10 +66,6 @@ func ShopifyProductListings(ctx context.Context) error {
 		} else if p != nil {
 			product.ID = p.ID
 		}
-		//if whType == shopify.TopicProductListingsUpdate && product.ID == 0 {
-		//lg.Alertf("product list update with unknown external id: %d. Did not update.", p.ProductID)
-		//return nil
-		//}
 
 		// parse product images
 		for _, img := range p.Images {
@@ -125,6 +121,7 @@ func ShopifyProductListings(ctx context.Context) error {
 		if err := data.DB.Product.Save(product); err != nil {
 			return errors.Wrap(err, "failed to save product")
 		}
+		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		for _, v := range variants {
 			v.ProductID = product.ID
