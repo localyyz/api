@@ -42,14 +42,20 @@ func ProductCtx(next http.Handler) http.Handler {
 func ListFeaturedProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	query := data.DB.Select("p.*").
-		From("feature_products fp").
-		LeftJoin("products p").
-		On("fp.product_id = p.id").
-		OrderBy("ordering")
+	var featured []*data.FeatureProduct
+	if err := data.DB.FeatureProduct.Find().
+		OrderBy("ordering").All(&featured); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
 
-	var products []*data.Product
-	if err := query.All(&products); err != nil {
+	var productIDs []int64
+	for _, p := range featured {
+		productIDs = append(productIDs, p.ProductID)
+	}
+
+	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
+	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
