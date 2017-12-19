@@ -50,8 +50,9 @@ var (
 	ErrClaimDistance = errors.New("claim distance")
 
 	/* Cart */
-	ErrEmptyCart  = &ApiError{StatusCode: http.StatusOK, ErrorText: "empty cart"}
-	errOutOfStock = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "one or more items in your cart are out of stock"}
+	ErrEmptyCart      = &ApiError{StatusCode: http.StatusOK, ErrorText: "empty cart"}
+	errOutOfStockCart = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "one or more items in your cart are out of stock"}
+	errOutOfStockAdd  = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "this variant is out of stock."}
 
 	// generic api error
 	errGeneric  = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Something went wrong"}
@@ -102,8 +103,14 @@ func ErrInvalidRequest(err error) *ApiError {
 	}
 }
 
-func ErrOutOfStock(v interface{}) *ApiError {
-	e := *errOutOfStock
+func ErrOutOfStockCart(v interface{}) *ApiError {
+	e := *errOutOfStockCart
+	e.Data = v
+	return &e
+}
+
+func ErrOutOfStockAdd(v interface{}) *ApiError {
+	e := *errOutOfStockAdd
 	e.Data = v
 	return &e
 }

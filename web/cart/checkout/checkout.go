@@ -86,7 +86,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 	if len(outOfStock) > 0 {
-		render.Respond(w, r, api.ErrOutOfStock(outOfStock))
+		render.Respond(w, r, api.ErrOutOfStockCart(outOfStock))
 		return
 	}
 
@@ -164,7 +164,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(outOfStock) > 0 {
 			// return right away if something is out of stock
-			render.Render(w, r, api.ErrOutOfStock(outOfStock))
+			render.Render(w, r, api.ErrOutOfStockCart(outOfStock))
 			return
 		}
 

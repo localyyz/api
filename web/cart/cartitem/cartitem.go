@@ -50,6 +50,10 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 	if err != nil {
+		if err == db.ErrNoMoreRows {
+			render.Render(w, r, api.ErrOutOfStockAdd(err))
+			return
+		}
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
