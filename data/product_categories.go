@@ -10,8 +10,9 @@ import (
 type ProductCategory struct {
 	ID int64 `db:"id,pk,omitempty" json:"id,omitempty"`
 
-	Type  ProductCategoryType `db:"type" json:"type"`
-	Value string              `db:"value" json:"value"`
+	Type    ProductCategoryType `db:"type" json:"type"`
+	Value   string              `db:"value" json:"value"`
+	Mapping string              `db:"mapping"`
 }
 
 type ProductCategoryStore struct {
@@ -29,6 +30,8 @@ const (
 	ProductCategoryShoe                                 // 5
 	ProductCategoryCosmetic                             // 6
 	ProductCategoryFragrance                            // 7
+	ProductCategoryHome                                 // 8
+	ProductCategoryBag                                  // 9
 )
 
 var (
@@ -41,6 +44,8 @@ var (
 		"shoes",
 		"cosmetics",
 		"fragrances",
+		"home",
+		"bag",
 	}
 
 	ProductCategories = []ProductCategoryType{
