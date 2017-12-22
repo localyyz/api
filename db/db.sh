@@ -34,7 +34,13 @@ EOF
 
 function loadprod() {
   echo "LOADING DATABASE FROM PROD BACKUP";
-  scp root@localyyz:/data/backups/backup-latest.gz tmp/.
+  if [ ! -f /tmp/backup-latest.gz ]; then
+    echo "DOWNLOADING BACKUP";
+    scp root@localyyz:/data/backups/backup-latest.gz tmp/.
+  elif test `find "tmp/backup-latest.gz" -mmin +2000`; then
+    echo "DOWNLOADING LATEST BACKUP";
+    scp root@localyyz:/data/backups/backup-latest.gz tmp/.
+  fi
   gunzip -c tmp/backup-latest.gz | psql $database
 }
 
