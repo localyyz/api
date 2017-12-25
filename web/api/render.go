@@ -100,13 +100,25 @@ func checkRequired(r Result, v reflect.Value) error {
 	return nil
 }
 
+func cursorLinkHeader(w http.ResponseWriter, cursor *Page) {
+	var links []string
+	for name, url := range cursor.PageURLs() {
+		links = append(links, fmt.Sprintf("<%s>; rel=\"%s\"", url, name))
+	}
+	w.Header().Set("Link", strings.Join(links, ","))
+}
+
 func renderResponder(w http.ResponseWriter, r *http.Request, v interface{}) {
 	if err, ok := v.(error); ok {
 		werr := WrapErr(err)
 		w.WriteHeader(werr.StatusCode)
 		render.DefaultResponder(w, r, werr)
-
 		return
+	}
+	// pagination Link header
+	if cursor, _ := r.Context().Value("cursor").(*Page); cursor != nil {
+		cursorLinkHeader(w, cursor)
+		w.Header().Set("X-Item-Total", fmt.Sprintf("%d", cursor.ItemTotal))
 	}
 	render.DefaultResponder(w, r, v)
 }

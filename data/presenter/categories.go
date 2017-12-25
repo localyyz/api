@@ -13,14 +13,14 @@ type Category struct {
 	ctx context.Context
 }
 
-func NewCategory(ctx context.Context, productCategories []*data.ProductCategory) *Category {
+func NewCategoryList(ctx context.Context, productCategories []*data.ProductCategory) *Category {
 	categoryType := ctx.Value("categoryType").(data.ProductCategoryType)
 	category := &Category{
 		Type: categoryType,
 		ctx:  ctx,
 	}
 	for _, c := range productCategories {
-		category.Values = append(category.Values, c.Value)
+		category.Values = append(category.Values, c.Mapping)
 	}
 	return category
 }

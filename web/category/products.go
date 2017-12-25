@@ -1,6 +1,7 @@
 package category
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -92,6 +93,7 @@ func ListProductColors(w http.ResponseWriter, r *http.Request) {
 	}
 	render.Respond(w, r, colors)
 }
+
 func ListProductSizes(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
 
@@ -133,62 +135,114 @@ func ListProductSizes(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, sizes)
 }
 
-func ListCategoryProduct(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	categoryType := ctx.Value("categoryType").(data.ProductCategoryType)
-	cursor := api.NewPage(r)
+func listCategoryProduct(ctx context.Context, categories []*data.ProductCategory) ([]*data.Product, error) {
+	var categoryValues []string
+	for _, v := range categories {
+		categoryValues = append(categoryValues, v.Value)
+	}
 
-	u := r.URL.Query()
-	u.Del("limit")
-	u.Del("page")
-	var tagFilters []db.Compound
-	var minPriceValue int
-	var maxPriceValue int
-	var fCount int
+	// search the category tags that match the query term
+	query := data.DB.
+		Select(db.Raw("distinct pv.product_id")).
+		From("product_variants pv").
+		LeftJoin("product_tags pt").On("pv.product_id = pt.product_id").
+		Where(db.Cond{
+			"pt.value":    categoryValues,
+			"pt.type":     data.ProductTagTypeCategory,
+			"pv.limits >": 0,
+		}).
+		GroupBy("pv.product_id").
+		OrderBy("-pv.product_id")
 
-	for k, v := range u {
-		// find filterings
-		var tagType data.ProductTagType
-		if err := tagType.UnmarshalText([]byte(k)); err != nil {
-			// unrecognized filter tag type
-			continue
-		}
+	cursor := ctx.Value("cursor").(*api.Page)
+	paginator := cursor.UpdateQueryBuilder(query)
+	var rows []*data.ProductVariant
+	if err := paginator.All(&rows); err != nil {
+		return nil, err
+	}
 
-		if v == nil || len(v) == 0 {
-			continue
-		}
+	var productIDs []int64
+	for _, row := range rows {
+		productIDs = append(productIDs, row.ProductID)
+	}
+	var products []*data.Product
+	if err := data.DB.Product.Find(
+		db.Cond{"id": productIDs},
+	).OrderBy("-id").All(&products); err != nil {
+		return nil, err
+	}
+	cursor.Update(products)
 
+	// count query
+	row, _ := data.DB.
+		Select(db.Raw("count(distinct pv.product_id)")).
+		From("product_variants pv").
+		LeftJoin("product_tags pt").On("pv.product_id = pt.product_id").
+		Where(db.Cond{
+			"pt.value":    categoryValues,
+			"pt.type":     data.ProductTagTypeCategory,
+			"pv.limits >": 0,
+		}).QueryRow()
+	row.Scan(&cursor.ItemTotal)
+
+	return products, nil
+}
+
+type categoryFilterRequest struct {
+	Filters []struct {
+		Type  data.ProductTagType `json:"type,required"`
+		Value string              `json:"value,required"`
+	} `json:"filters"`
+}
+
+func (cf *categoryFilterRequest) Bind(*http.Request) error {
+	return nil
+}
+
+// filter category product based on subcategories
+func filterCategoryProduct(ctx context.Context, payload *categoryFilterRequest) ([]*data.Product, error) {
+	var (
+		tagFilters                           []db.Compound
+		minPriceValue, maxPriceValue, fCount int
+	)
+
+	for _, f := range payload.Filters {
 		fCount += 1
-		// values can be multiple, ie: {gender: [male female]}
-		for _, vv := range v {
-			tagValue := vv
-			// translate gender tag value
-			if tagType == data.ProductTagTypeGender {
-				tagValue = "man"
-				if vv == "female" {
-					tagValue = "woman"
-				}
-			}
+		var filterValue interface{}
 
-			if tagType == data.ProductTagTypePrice {
-				// if it's price, need to do some numeric conversions
-				if strings.HasPrefix(tagValue, "min") {
-					minPriceValue, _ = strconv.Atoi(strings.TrimPrefix(tagValue, "min"))
-				}
-				if strings.HasPrefix(tagValue, "max") {
-					maxPriceValue, _ = strconv.Atoi(strings.TrimPrefix(tagValue, "max"))
-				}
+		switch f.Type {
+		case data.ProductTagTypeGender:
+			filterValue = "man"
+			if f.Value == "female" {
+				filterValue = "woman"
+			}
+		case data.ProductTagTypePrice:
+			if strings.HasPrefix(f.Value, "min") {
+				minPriceValue, _ = strconv.Atoi(strings.TrimPrefix(f.Value, "min"))
+			}
+			if strings.HasPrefix(f.Value, "max") {
+				maxPriceValue, _ = strconv.Atoi(strings.TrimPrefix(f.Value, "max"))
+			}
+			continue
+		case data.ProductTagTypeCategory:
+			mappings, err := data.DB.ProductCategory.FindByMapping(f.Value)
+			if err != nil {
 				continue
 			}
-
-			tagFilters = append(
-				tagFilters,
-				db.Cond{
-					"type":  tagType,
-					"value": tagValue,
-				},
-			)
+			var tagValues []string
+			for _, m := range mappings {
+				tagValues = append(tagValues, m.Value)
+			}
+			filterValue = tagValues
 		}
+
+		tagFilters = append(
+			tagFilters,
+			db.Cond{
+				"type":  f.Type,
+				"value": filterValue,
+			},
+		)
 	}
 
 	// add min/max price values if they are set
@@ -203,100 +257,72 @@ func ListCategoryProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var products []*data.Product
-	var itemTotal int
-	if len(tagFilters) > 0 {
-		query := data.DB.Select("pv.product_id").
-			From("product_variants pv").
-			LeftJoin("product_tags pt").
-			On("pv.product_id = pt.product_id").
-			Where(
-				db.And(
-					db.Cond{
-						"pv.limits >": 0,
-					},
-					db.Or(tagFilters...),
-				),
-			).
-			GroupBy("pv.product_id").
-			Amend(func(query string) string {
-				query = query + fmt.Sprintf(" HAVING count(distinct pt.type) = %d", fCount)
-				return query
-			})
-		var productTags []struct {
-			ProductID int64 `db:"product_id"`
-		}
-		if err := query.All(&productTags); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
+	query := data.DB.Select(db.Raw("distinct pv.product_id")).
+		From("product_variants pv").
+		LeftJoin("product_tags pt").
+		On("pv.product_id = pt.product_id").
+		Where(db.Or(tagFilters...)).
+		GroupBy("pv.product_id").
+		Amend(func(query string) string {
+			query = query + fmt.Sprintf(" HAVING count(distinct pt.type) = %d AND max(pv.limits) > 0", fCount)
+			return query
+		})
+	var productTags []struct {
+		ProductID int64 `db:"product_id"`
+	}
+	if err := query.All(&productTags); err != nil {
+		return nil, err
+	}
 
-		productIDs := make([]int64, len(productTags))
-		for i, t := range productTags {
-			productIDs[i] = t.ProductID
-		}
+	productIDs := make([]int64, len(productTags))
+	for i, t := range productTags {
+		productIDs[i] = t.ProductID
+	}
 
-		productQuery := data.DB.Product.Find(db.Cond{"id": productIDs}).OrderBy("id DESC")
-		productQuery = cursor.UpdateQueryUpper(productQuery)
-		itemTotal = cursor.ItemTotal
-		if err := productQuery.All(&products); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
+	productQuery := data.DB.Product.Find(
+		db.Cond{"id": productIDs},
+	).OrderBy("id DESC")
+	cursor := ctx.Value("cursor").(*api.Page)
+	productQuery = cursor.UpdateQueryUpper(productQuery)
+	if err := productQuery.All(&products); err != nil {
+		return nil, err
+	}
+	cursor.Update(products)
+
+	return products, nil
+}
+
+// Return all products within a top level category
+func ListCategoryProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	categoryType := ctx.Value("categoryType").(data.ProductCategoryType)
+
+	var payload categoryFilterRequest
+	if err := render.Bind(r, &payload); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	var (
+		products []*data.Product
+		err      error
+	)
+	if len(payload.Filters) > 0 {
+		products, err = filterCategoryProduct(ctx, &payload)
 	} else {
-		// find corresponding category
+		// find category tag values
 		categories, err := data.DB.ProductCategory.FindByType(categoryType)
 		if err != nil {
 			render.Respond(w, r, err)
 			return
 		}
 
-		var categoryValues []string
-		for _, v := range categories {
-			categoryValues = append(categoryValues, v.Value)
-		}
-
-		// search the category tags that match the query term
-		query := data.DB.
-			Select(db.Raw("distinct on (product_id, created_at) *")).
-			From("product_tags").
-			Where(db.Cond{
-				"value": categoryValues,
-				"type":  data.ProductTagTypeCategory,
-			}).
-			GroupBy("id", "product_id", "created_at").
-			OrderBy("-created_at")
-
-		var counts []struct{}
-		err = query.
-			Limit(0).
-			Offset(0).
-			All(&counts)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-		itemTotal = len(counts)
-
-		query = cursor.UpdateQueryBuilder(query)
-		var tags []*data.ProductTag
-		if err := query.All(&tags); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-		productIDs := make([]int64, len(tags))
-		for i, t := range tags {
-			productIDs[i] = t.ProductID
-		}
-
-		// find the products
-		products, err = data.DB.Product.FindAll(db.Cond{"id": productIDs})
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-
+		products, err = listCategoryProduct(ctx, categories)
 	}
-	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", itemTotal))
-	render.RenderList(w, r, presenter.NewSearchProductList(ctx, products))
 
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	render.RenderList(w, r, presenter.NewSearchProductList(ctx, products))
 }

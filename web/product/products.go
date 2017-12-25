@@ -159,7 +159,6 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			from products p
 			left join places pl on p.place_id = pl.id
 			where p.created_at > now()::date - 7
-			and p.deleted_at IS NULL
 			and pl.status = 3
 		) x
 		where x.r = 1

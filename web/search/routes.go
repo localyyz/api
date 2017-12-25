@@ -53,24 +53,41 @@ func SearchCity(w http.ResponseWriter, r *http.Request) {
 	render.RenderList(w, r, presenter.NewPlaceList(ctx, places))
 }
 
+type omniSearchRequest struct {
+	Query string `json:"query,required"`
+
+	singularQuery string
+	searchQuery   string
+}
+
+func (o *omniSearchRequest) Bind(r *http.Request) error {
+	o.searchQuery = strings.ToLower(strings.TrimSpace(o.Query))
+	o.singularQuery = inflector.Singularize(o.searchQuery)
+
+	return nil
+}
+
 // OmniSearch catch all search endpoint and returns categorized
 // json search results
 func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	searchQuery := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
-	singularQuery := inflector.Singularize(searchQuery)
+	var p *omniSearchRequest
+	if err := render.Bind(r, p); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
 
 	// find products by title
 	query := data.DB.Product.Find(
 		db.Or(
-			db.Cond{"title ~*": fmt.Sprint("\\m(", singularQuery, ")")},
-			db.Cond{"title ~*": fmt.Sprint("\\m(", searchQuery, ")")},
-			db.Raw("etc->>'brand' ~* ?", fmt.Sprint("\\m(", singularQuery, ")")),
-			db.Raw("etc->>'brand' ~* ?", fmt.Sprint("\\m(", searchQuery, ")")),
+			db.Cond{"title ~*": fmt.Sprint("\\m(", p.singularQuery, ")")},
+			db.Cond{"title ~*": fmt.Sprint("\\m(", p.searchQuery, ")")},
+			db.Raw("etc->>'brand' ~* ?", fmt.Sprint("\\m(", p.singularQuery, ")")),
+			db.Raw("etc->>'brand' ~* ?", fmt.Sprint("\\m(", p.searchQuery, ")")),
 		),
 	).OrderBy("-created_at")
-	cursor := api.NewPage(r)
+	cursor := ctx.Value("cursor").(*api.Page)
 	query = cursor.UpdateQueryUpper(query)
 
 	var products []*data.Product
@@ -78,5 +95,6 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
+	cursor.Update(products)
 	render.RenderList(w, r, presenter.NewSearchProductList(ctx, products))
 }

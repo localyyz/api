@@ -120,8 +120,8 @@ func ListRecent(w http.ResponseWriter, r *http.Request) {
 		}).
 		GroupBy("pl.id").
 		OrderBy(db.Raw("updated_at DESC NULLS LAST, id DESC"))
-	query = cursor.UpdateQueryBuilder(query)
-	if err := query.All(&orderedPlaces); err != nil {
+	paginator := cursor.UpdateQueryBuilder(query)
+	if err := paginator.All(&orderedPlaces); err != nil {
 		render.Respond(w, r, err)
 		return
 	}

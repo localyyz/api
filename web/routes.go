@@ -57,6 +57,7 @@ func New(h *Handler) chi.Router {
 	r.Use(token.Verify())
 	r.Use(session.SessionCtx)
 	r.Use(session.UserRefresh)
+	r.Use(api.PaginateCtx)
 
 	// Public Routes
 	r.Group(func(r chi.Router) {

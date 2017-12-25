@@ -56,6 +56,8 @@ var (
 		ProductCategoryShoe,
 		ProductCategoryCosmetic,
 		ProductCategoryFragrance,
+		ProductCategoryHome,
+		ProductCategoryBag,
 	}
 )
 
@@ -65,6 +67,10 @@ func (p *ProductCategory) CollectionName() string {
 
 func (store ProductCategoryStore) FindByType(t ProductCategoryType) ([]*ProductCategory, error) {
 	return store.FindAll(db.Cond{"type": t})
+}
+
+func (store ProductCategoryStore) FindByMapping(v string) ([]*ProductCategory, error) {
+	return store.FindAll(db.Cond{"mapping": v})
 }
 
 func (store ProductCategoryStore) FindOne(cond db.Cond) (*ProductCategory, error) {

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -30,6 +31,15 @@ type Page struct {
 	Limit      int
 	NextPage   bool
 	firstOnly  bool // Request to return only the first record, as a singular object.
+}
+
+func PaginateCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		cursor := NewPage(r)
+		ctx := context.WithValue(r.Context(), "cursor", cursor)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
 }
 
 func NewPage(r *http.Request) *Page {
@@ -129,11 +139,12 @@ func (p *Page) UpdateQueryUpper(res db.Result) db.Result {
 	return res.Limit(p.Limit)
 }
 
-func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Selector {
+func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Paginator {
+	paginator := selector.Paginate(uint(p.Limit))
 	if p.Page > 1 {
-		return selector.Limit(p.Limit).Offset((p.Page - 1) * p.Limit)
+		return paginator.Page(uint(p.Page))
 	}
-	return selector.Limit(p.Limit)
+	return paginator
 }
 
 func (p *Page) HasFirst() bool { return true }
