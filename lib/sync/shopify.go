@@ -26,15 +26,14 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 
 	for _, p := range list {
 		// check if product already exists in our system
-		dbProduct, err := data.DB.Product.FindOne(db.Cond{
+		err := data.DB.Product.Find(db.Cond{
 			"place_id":    place.ID,
 			"external_id": p.ProductID,
-		})
+		}).Delete()
 		if err != nil {
-			return errors.Wrap(err, "failed to fetch product")
+			lg.Alertf("failed to delete product %s with %+v", p.Handle, err)
+			return nil
 		}
-		dbProduct.DeletedAt = data.GetTimeUTCPointer()
-		data.DB.Save(dbProduct)
 	}
 
 	return nil
@@ -154,33 +153,24 @@ func ShopifyProductListings(ctx context.Context) error {
 				b.Values(product.ID, place.ID, t, typ)
 			}
 
-			// Product type category or gender
-			for _, t := range parseTags(p.ProductType) {
-				typ := data.ProductTagTypeCategory
-				if t == "man" || t == "woman" || t == "unisex" {
-					// skip gender if specified, if we've already found gender
-					if foundGender {
-						continue
+			// Product Category
+			if len(p.ProductType) > 0 {
+				// Check if Gender can be found
+				if !foundGender {
+					for _, t := range parseTags(p.ProductType) {
+						if t == "man" || t == "woman" || t == "unisex" {
+							// skip gender if specified, if we've already found gender
+							if foundGender {
+								break
+							}
+							b.Values(product.ID, place.ID, t, data.ProductTagTypeGender)
+							foundGender = true
+						}
 					}
-					typ = data.ProductTagTypeGender
-					foundGender = true
 				}
-				b.Values(product.ID, place.ID, t, typ)
+				// Category type
+				b.Values(product.ID, place.ID, p.ProductType, data.ProductTagTypeCategory)
 			}
-
-			// Pull and parse collections, for now just parse gender
-			// TODO: categories.
-			//if !foundGender {
-			//clist, _ := getProductCollections(ctx, p.ProductID)
-			//for _, c := range clist {
-			//for _, ctag := range parseTags(c.Handle) {
-			//if ctag == "man" || ctag == "woman" || ctag == "unisex" {
-			//foundGender = true
-			//b.Values(product.ID, place.ID, ctag, data.ProductTagTypeGender)
-			//}
-			//}
-			//}
-			//}
 
 			// Product Vendor/Brand
 			b.Values(product.ID, place.ID, p.Vendor, data.ProductTagTypeBrand)
