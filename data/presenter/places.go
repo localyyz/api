@@ -37,12 +37,13 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 	}
 
 	p.ImageURL = p.Place.ImageURL
-	if len(p.ImageURL) == 0 {
+	if len(p.ImageURL) == 0 && p.ProductCount > 0 {
 		var first *data.Product
-		data.DB.Product.Find(
+		if err := data.DB.Product.Find(
 			db.Cond{"place_id": p.ID},
-		).OrderBy("-created_at").Limit(1).One(&first)
-		p.ImageURL = first.ImageUrl
+		).OrderBy("-id").Limit(1).One(&first); err == nil {
+			p.ImageURL = first.ImageUrl
+		}
 	}
 
 	if user, ok := ctx.Value("session.user").(*data.User); ok {
