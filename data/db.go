@@ -47,6 +47,7 @@ type DBConf struct {
 	Password        string   `toml:"password"`
 	DebugQueries    bool     `toml:"debug_queries"`
 	ApplicationName string   `toml:"application_name"`
+	MaxConnection   int      `tomp:"max_connection"`
 }
 
 // String implements db.ConnectionURL
@@ -101,6 +102,9 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 
 	db.Cart = CartStore{db.Store(&Cart{})}
 	db.CartItem = CartItemStore{db.Store(&CartItem{})}
+
+	// set max db open connection
+	db.SetMaxOpenConns(conf.MaxConnection)
 
 	DB = db
 	return db, nil
