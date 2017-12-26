@@ -169,7 +169,8 @@ func ShopifyProductListings(ctx context.Context) error {
 					}
 				}
 				// Category type
-				b.Values(product.ID, place.ID, p.ProductType, data.ProductTagTypeCategory)
+				t := inflector.Singularize(strings.ToLower(p.ProductType))
+				b.Values(product.ID, place.ID, t, data.ProductTagTypeCategory)
 			}
 
 			// Product Vendor/Brand
