@@ -29,8 +29,21 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 	}
 	p.ProductCount, _ = data.DB.Product.Find(db.Cond{"place_id": p.ID}).Count()
 
-	locale, _ := data.DB.Locale.FindByID(p.LocaleID)
-	p.Locale = NewLocale(ctx, locale)
+	if locale, _ := ctx.Value("locale").(*data.Locale); locale != nil {
+		p.Locale = NewLocale(ctx, locale)
+	} else {
+		locale, _ := data.DB.Locale.FindByID(p.LocaleID)
+		p.Locale = NewLocale(ctx, locale)
+	}
+
+	p.ImageURL = p.Place.ImageURL
+	if len(p.ImageURL) == 0 {
+		var first *data.Product
+		data.DB.Product.Find(
+			db.Cond{"place_id": p.ID},
+		).OrderBy("-created_at").Limit(1).One(&first)
+		p.ImageURL = first.ImageUrl
+	}
 
 	if user, ok := ctx.Value("session.user").(*data.User); ok {
 		count, _ := data.DB.Following.Find(
@@ -58,17 +71,6 @@ func NewPlaceList(ctx context.Context, places []*data.Place) []render.Renderer {
 func (pl *Place) Render(w http.ResponseWriter, r *http.Request) error {
 	if len(pl.Geo.Coordinates) > 1 {
 		pl.LatLng = geotools.LatLngFromPoint(pl.Geo)
-	}
-	pl.ImageURL = pl.Place.ImageURL
-	if len(pl.ImageURL) == 0 {
-		var p *data.Product
-		err := data.DB.Product.Find(
-			db.Cond{"place_id": pl.ID},
-		).OrderBy("-created_at").One(&p)
-		if err != nil {
-			return err
-		}
-		pl.ImageURL = p.ImageUrl
 	}
 	return nil
 }

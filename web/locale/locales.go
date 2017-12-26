@@ -35,6 +35,26 @@ func LocaleCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+func LocaleShorthandCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		shorthand := chi.URLParam(r, "locale")
+		if len(shorthand) == 0 {
+			render.Render(w, r, api.ErrBadID)
+			return
+		}
+
+		locale, err := data.DB.Locale.FindOne(db.Cond{"shorthand": shorthand})
+		if err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "locale", locale)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
 func ListCities(w http.ResponseWriter, r *http.Request) {
 	var locales []*data.Locale
 	err := data.DB.
