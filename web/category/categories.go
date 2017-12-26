@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
-	db "upper.io/db.v3"
 )
 
 func CategoryTypeCtx(next http.Handler) http.Handler {
@@ -29,26 +28,13 @@ func CategoryTypeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ListCategory(w http.ResponseWriter, r *http.Request) {
-	// TODO: with place context?
-	render.Respond(w, r, data.ProductCategories)
+func ListProductCategory(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	render.Respond(w, r, presenter.NewCategoryList(ctx, data.ProductCategories))
 }
 
-func ListProductCategory(w http.ResponseWriter, r *http.Request) {
-	// TODO: with place context?
+func GetProductCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	categoryType := ctx.Value("categoryType").(data.ProductCategoryType)
-
-	var productCategories []*data.ProductCategory
-	err := data.DB.
-		Select(db.Raw("distinct mapping")).
-		From("product_categories").
-		Where(db.Cond{"type": categoryType, "mapping !=": ""}).
-		OrderBy("mapping").
-		All(&productCategories)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	render.Respond(w, r, presenter.NewCategoryList(ctx, productCategories))
+	render.Respond(w, r, presenter.NewCategory(ctx, categoryType))
 }

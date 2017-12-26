@@ -1,6 +1,9 @@
 package place
 
-import "github.com/go-chi/chi"
+import (
+	"bitbucket.org/moodie-app/moodie-api/web/category"
+	"github.com/go-chi/chi"
+)
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
@@ -18,14 +21,12 @@ func Routes() chi.Router {
 		r.Get("/", GetPlace)
 		r.Get("/products", ListProduct)
 
-		// TODO: remove ~ legacy endpoint
-		r.Get("/tags", ListProductTags)
-
 		// filtering endpoints
-		r.Get("/categories", ListProductCategory)
-		r.Get("/brands", ListProductBrands)
-		r.Get("/colors", ListProductColors)
-		r.Get("/sizes", ListProductSizes)
+		//r.Get("/categories", ListProductCategory)
+		r.Mount("/categories", category.Routes())
+		//r.Get("/brands", ListProductBrands)
+		//r.Get("/colors", ListProductColors)
+		//r.Get("/sizes", ListProductSizes)
 
 		r.Post("/share", Share)
 		r.Post("/follow", FollowPlace)

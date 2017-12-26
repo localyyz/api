@@ -48,6 +48,32 @@ func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error 
 }
 
 func NewSearchProductList(ctx context.Context, products []*data.Product) []render.Renderer {
+	return newProductList(ctx, products)
+}
+
+type CartProductList []*Product
+
+func (l CartProductList) Render(w http.ResponseWriter, r *http.Request) error {
+	for _, v := range l {
+		if err := v.Render(w, r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func NewCartProductList(ctx context.Context, products []*data.Product) CartProductList {
+	list := CartProductList{}
+	variants := ctx.Value("variants").(map[int64]*data.ProductVariant)
+	for _, product := range products {
+		p := NewProduct(ctx, product)
+		p.Variants = []*ProductVariant{NewProductVariant(ctx, variants[p.ID])}
+		list = append(list, p)
+	}
+	return list
+}
+
+func newProductList(ctx context.Context, products []*data.Product) []render.Renderer {
 	list := []render.Renderer{}
 
 	productIDs := make([]int64, len(products))
@@ -81,50 +107,28 @@ func NewSearchProductList(ctx context.Context, products []*data.Product) []rende
 	}
 
 	placeCache := make(PlaceCache)
-	if places, _ := data.DB.Place.FindAll(db.Cond{"id": set.IntSlice(placeIDset)}); places != nil {
-		for _, p := range places {
-			placeCache[p.ID] = p
+	if place, _ := ctx.Value("place").(*data.Place); place != nil {
+		placeCache[place.ID] = place
+	} else {
+		if places, _ := data.DB.Place.FindAll(db.Cond{"id": set.IntSlice(placeIDset)}); places != nil {
+			for _, p := range places {
+				placeCache[p.ID] = p
+			}
 		}
 	}
 
 	ctx = context.WithValue(ctx, "tag.cache", tagCache)
 	ctx = context.WithValue(ctx, "variant.cache", variantCache)
 	ctx = context.WithValue(ctx, "place.cache", placeCache)
+
 	for _, product := range products {
 		list = append(list, NewProduct(ctx, product))
-	}
-
-	return list
-}
-
-type CartProductList []*Product
-
-func (l CartProductList) Render(w http.ResponseWriter, r *http.Request) error {
-	for _, v := range l {
-		if err := v.Render(w, r); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func NewCartProductList(ctx context.Context, products []*data.Product) CartProductList {
-	list := CartProductList{}
-	variants := ctx.Value("variants").(map[int64]*data.ProductVariant)
-	for _, product := range products {
-		p := NewProduct(ctx, product)
-		p.Variants = []*ProductVariant{NewProductVariant(ctx, variants[p.ID])}
-		list = append(list, p)
 	}
 	return list
 }
 
 func NewProductList(ctx context.Context, products []*data.Product) []render.Renderer {
-	list := []render.Renderer{}
-	for _, product := range products {
-		list = append(list, NewProduct(ctx, product))
-	}
-	return list
+	return newProductList(ctx, products)
 }
 
 func NewProduct(ctx context.Context, product *data.Product) *Product {

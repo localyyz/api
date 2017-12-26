@@ -54,9 +54,9 @@ var (
 		ProductCategoryHandbag,
 		ProductCategoryJewelry,
 		ProductCategoryShoe,
-		ProductCategoryCosmetic,
-		ProductCategoryFragrance,
-		ProductCategoryHome,
+		//ProductCategoryCosmetic,
+		//ProductCategoryFragrance,
+		//ProductCategoryHome,
 		ProductCategoryBag,
 	}
 )

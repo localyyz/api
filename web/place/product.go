@@ -2,10 +2,7 @@ package place
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/go-chi/render"
 
@@ -223,39 +220,6 @@ func ListProductBrands(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, brands)
 }
 
-func ListProductTags(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	place := ctx.Value("place").(*data.Place)
-
-	var tagType data.ProductTagType
-	if err := tagType.UnmarshalText([]byte(r.URL.Query().Get("t"))); err != nil {
-		render.Respond(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	query := data.DB.
-		Select(db.Raw("distinct(value)")).
-		From("product_tags").
-		Where(
-			db.Cond{
-				"place_id": place.ID,
-				"type":     tagType,
-			},
-		).
-		OrderBy("value")
-
-	var brands []struct {
-		Value string `db:"value" json:"value"`
-	}
-	if err := query.All(&brands); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	render.Respond(w, r, brands)
-	return
-}
-
 func ProductCategoryCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -283,134 +247,40 @@ func ProductCategoryCtx(next http.Handler) http.Handler {
 func ListProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
-	cursor := api.NewPage(r)
 
-	u := r.URL.Query()
-	u.Del("limit")
-	u.Del("page")
-	var tagFilters []db.Compound
-	var minPriceValue int
-	var maxPriceValue int
-	var fCount int
-
-	for k, v := range u {
-		// find filterings
-		var tagType data.ProductTagType
-		if err := tagType.UnmarshalText([]byte(k)); err != nil {
-			// unrecognized filter tag type
-			continue
-		}
-
-		if v == nil || len(v) == 0 {
-			continue
-		}
-
-		fCount += 1
-		// values can be multiple, ie: {gender: [male female]}
-		for _, vv := range v {
-			tagValue := vv
-			// translate gender tag value
-			if tagType == data.ProductTagTypeGender {
-				tagValue = "man"
-				if vv == "female" {
-					tagValue = "woman"
-				}
-			}
-
-			if tagType == data.ProductTagTypePrice {
-				// if it's price, need to do some numeric conversions
-				if strings.HasPrefix(tagValue, "min") {
-					minPriceValue, _ = strconv.Atoi(strings.TrimPrefix(tagValue, "min"))
-				}
-				if strings.HasPrefix(tagValue, "max") {
-					maxPriceValue, _ = strconv.Atoi(strings.TrimPrefix(tagValue, "max"))
-				}
-				continue
-			}
-
-			tagFilters = append(
-				tagFilters,
-				db.Cond{
-					"type":  tagType,
-					"value": tagValue,
-				},
-			)
-		}
-	}
-
-	// add min/max price values if they are set
-	if minPriceValue > 0 && maxPriceValue > 0 {
-		tagFilters = append(
-			tagFilters,
-			db.And(
-				db.Cond{"type": data.ProductTagTypePrice},
-				db.Raw("value::numeric BETWEEN ? AND ?", minPriceValue, maxPriceValue),
-			),
-		)
-	}
+	query := data.DB.
+		Select(db.Raw("distinct p.*")).
+		From("products p").
+		LeftJoin("product_variants pv").
+		On("pv.product_id = p.id").
+		Where(
+			db.Cond{
+				"pv.limits >": 0,
+				"p.place_id":  place.ID,
+			},
+		).
+		GroupBy("p.id").
+		OrderBy("-p.id")
+	cursor := ctx.Value("cursor").(*api.Page)
+	paginate := cursor.UpdateQueryBuilder(query)
 
 	var products []*data.Product
-	var itemTotal int
-	if len(tagFilters) > 0 {
-		query := data.DB.Select("pv.product_id").
-			From("product_variants pv").
-			LeftJoin("product_tags pt").
-			On("pv.product_id = pt.product_id").
-			Where(
-				db.And(
-					db.Cond{
-						"pv.place_id": place.ID,
-						"pv.limits >": 0,
-					},
-					db.Or(tagFilters...),
-				),
-			).
-			GroupBy("pv.product_id").
-			Amend(func(query string) string {
-				query = query + fmt.Sprintf(" HAVING count(distinct pt.type) = %d", fCount)
-				return query
-			})
-
-		var productTags []struct {
-			ProductID int64 `db:"product_id"`
-		}
-		if err := query.All(&productTags); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-
-		productIDs := make([]int64, len(productTags))
-		for i, t := range productTags {
-			productIDs[i] = t.ProductID
-		}
-
-		productQuery := data.DB.Product.Find(db.Cond{"id": productIDs}).OrderBy("id DESC")
-		productQuery = cursor.UpdateQueryUpper(productQuery)
-		itemTotal = cursor.ItemTotal
-		if err := productQuery.All(&products); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-	} else {
-		iter := data.DB.Iterator(`
-			SELECT p.*
-			FROM products p
-			LEFT JOIN product_variants pv
-			ON p.id = pv.product_id
-			WHERE p.place_id = ?
-			GROUP BY p.id
-			HAVING sum(pv.limits) > 0
-			ORDER BY p.created_at DESC
-			LIMIT ? OFFSET ?`, place.ID, cursor.Limit, (cursor.Page-1)*cursor.Limit)
-		defer iter.Close()
-
-		if err := iter.All(&products); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
+	if err := paginate.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
 	}
+	cursor.Update(products)
 
-	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", itemTotal))
+	// count query
+	row, _ := data.DB.
+		Select(db.Raw("count(distinct pv.product_id)")).
+		From("product_variants pv").
+		Where(db.Cond{
+			"pv.limits >": 0,
+			"pv.place_id": place.ID,
+		}).QueryRow()
+	row.Scan(&cursor.ItemTotal)
+
 	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)

@@ -256,12 +256,22 @@ func filterCategoryProduct(ctx context.Context, payload *categoryFilterRequest) 
 		)
 	}
 
+	var queryCondition interface{}
+	if place, _ := ctx.Value("place").(*data.Place); place != nil {
+		queryCondition = db.And(
+			db.Cond{"pv.place_id": place.ID},
+			db.Or(tagFilters...),
+		)
+	} else {
+		queryCondition = db.Or(tagFilters...)
+	}
+
 	var products []*data.Product
 	query := data.DB.Select(db.Raw("distinct pv.product_id")).
 		From("product_variants pv").
 		LeftJoin("product_tags pt").
 		On("pv.product_id = pt.product_id").
-		Where(db.Or(tagFilters...)).
+		Where(queryCondition).
 		GroupBy("pv.product_id").
 		Amend(func(query string) string {
 			query = query + fmt.Sprintf(" HAVING count(distinct pt.type) = %d AND max(pv.limits) > 0", fCount)
@@ -316,7 +326,6 @@ func ListCategoryProduct(w http.ResponseWriter, r *http.Request) {
 			render.Respond(w, r, err)
 			return
 		}
-
 		products, err = listCategoryProduct(ctx, categories)
 	}
 

@@ -7,11 +7,10 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/", ListCategory)
-
+	r.Get("/", ListProductCategory)
 	r.Route("/{categoryType:[a-z]+}", func(r chi.Router) {
 		r.Use(CategoryTypeCtx)
-		r.Get("/", ListProductCategory)
+		r.Get("/", GetProductCategory)
 
 		r.Get("/brands", ListProductBrands)
 		r.Get("/colors", ListProductColors)
