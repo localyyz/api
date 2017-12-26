@@ -77,6 +77,10 @@ func New(h *Handler) chi.Router {
 		// shopify related endpoints
 		r.Get("/connect", shopify.Connect)
 		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)
+
+		// setup shop cache
+		// TODO: is this terrible? Probably
+		shopify.SetupShopCache(h.DB)
 		r.With(shopify.ShopifyStoreWhCtx).
 			Post("/webhooks/shopify", shopify.WebhookHandler)
 

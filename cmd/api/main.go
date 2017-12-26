@@ -32,17 +32,20 @@ func main() {
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "invalid config file"))
 	}
-	// new web handler
-	h := &web.Handler{
-		Debug: (conf.Environment == "development"),
-	}
 
 	// initialize seed
 	rand.Seed(time.Now().Unix())
 
 	//[db]
-	if h.DB, err = data.NewDBSession(&conf.DB); err != nil {
+	db, err := data.NewDBSession(&conf.DB)
+	if err != nil {
 		lg.Fatal(errors.Wrap(err, "database connection failed"))
+	}
+
+	// new web handler
+	h := &web.Handler{
+		Debug: (conf.Environment == "development"),
+		DB:    db,
 	}
 
 	//[connect]
