@@ -1,6 +1,5 @@
 # ignore bin and tmp folders
 bin
 /tmp
-/config
 .git
 .gitignore
