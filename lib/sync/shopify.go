@@ -42,7 +42,6 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 func ShopifyProductListings(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)
-	//whType := ctx.Value("sync.type").(shopify.Topic)
 
 	for _, p := range list {
 		product := &data.Product{
@@ -182,7 +181,9 @@ func ShopifyProductListings(ctx context.Context) error {
 			// Variant options (ie. Color, Size, Material)
 			for _, o := range p.Options {
 				var typ data.ProductTagType
-				typ.UnmarshalText([]byte(strings.ToLower(o.Name)))
+				if err := typ.UnmarshalText([]byte(strings.ToLower(o.Name))); err != nil {
+					continue
+				}
 
 				optSet := set.New()
 				for _, v := range o.Values {
