@@ -4,7 +4,7 @@ version: 0.5
 
 env:
   NAME: merchant
-  IMAGE: paulx/api
+  IMAGE: gcr.io/verdant-descent-153101/api
   HOST_PORT: 5333
   CONTAINER_PORT: 5333
   CONFIG: /data/etc/merchant.conf
@@ -18,6 +18,7 @@ networks:
   production:
     env:
       ENV: production
+      IMAGENAME: ${IMAGE}:master-${GITORIGIN}
     hosts:
       - root@138.197.148.245
 
@@ -32,22 +33,16 @@ commands:
 
   ping:
     desc: Print uname and current date/time.
-    run: uname -a; date
+    run: echo $IMAGENAME; uname -a; date
 
   ps:
     desc: List running Docker containers
-    run: docker ps | grep $NAME
+    run: docker ps | grep $IMAGENAME
 
   pull:
     desc: Pull latest Docker image
-    run: docker pull $IMAGE
+    run: gcloud docker -- pull $IMAGENAME
 
-  build-image:
-    desc: Build Docker image
-    local: >
-        ./scripts/docker-build.sh
-    once: true
-  
   image:
     desc: List Docker image
     run: docker images | grep $IMAGE
@@ -84,22 +79,8 @@ commands:
     desc: Prune stale containers
     run: docker system prune || exit 0
 
-  shell:
-    desc: Interactive shell on all hosts
-    stdin: true
-    run: /bin/sh
-
-  exec:
-    desc: Exec into Docker container
-    stdin: true
-    run: docker exec -i $NAME bash
-
 targets:
-  build:
-    - build-image
-    
   deploy:
-    - build-image
     - pull
     - config
     - stop

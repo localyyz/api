@@ -11,6 +11,7 @@ FROM scratch
 COPY ./db /db
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/api /bin/api
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/merchant /bin/merchant
+COPY --from=0 /bin/goose /bin/goose
 ADD ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 5331
