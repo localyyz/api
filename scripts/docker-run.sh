@@ -12,5 +12,5 @@ docker run -d --name=$NAME \
   -v /data/etc/push.pem:/etc/push.pem \
   --link postgres:postgres \
   --restart=always \
-  $IMAGE \
+  $IMAGENAME \
   /bin/$NAME -config=/etc/$NAME.conf

@@ -7,9 +7,8 @@ RUN GOGC=off go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH}
 RUN GOGO=off go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/merchant ./cmd/merchant
 
 # STAGE 2: BINARY
-FROM gcr.io/verdant-descent-153101/golang
-COPY ./db/migrations/* /migrations/
-COPY ./db/dbconf.yml /migrations/dbconf.yml
+FROM scratch
+COPY ./db /db
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/api /bin/api
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/merchant /bin/merchant
 
