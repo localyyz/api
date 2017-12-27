@@ -8,6 +8,7 @@ env:
   HOST_PORT: 5333
   CONTAINER_PORT: 5333
   CONFIG: /data/etc/merchant.conf
+  GITORIGIN: $(git rev-parse origin/master)
 
 networks:
   local:
