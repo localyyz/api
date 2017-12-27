@@ -82,7 +82,7 @@ build-goose:
 
 build-merchant:
 	@mkdir -p ./bin
-	GOGO=off go build -i -o ./bin/merchant ./cmd/merchant
+	GOGO=off go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/merchant ./cmd/merchant
 
 build:
 	@mkdir -p ./bin
