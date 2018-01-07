@@ -27,8 +27,6 @@ type Product struct {
 }
 
 type ProductEtc struct {
-	Brand  string   `json:"brand"`
-	Type   string   `json:"type"`
 	Images []string `json:"images"`
 	*postgresql.JSONBConverter
 }
@@ -52,7 +50,10 @@ func (p *Product) BeforeCreate(sess bond.Session) error {
 		return err
 	}
 	p.UpdatedAt = nil
-	p.CreatedAt = GetTimeUTCPointer()
+
+	if p.CreatedAt == nil {
+		p.CreatedAt = GetTimeUTCPointer()
+	}
 	return nil
 }
 

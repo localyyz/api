@@ -43,10 +43,8 @@ func main() {
 	}
 
 	// new web handler
-	h := &web.Handler{
-		Debug: (conf.Environment == "development"),
-		DB:    db,
-	}
+	h := web.New(db)
+	h.Debug = (conf.Environment == "development")
 
 	//[connect]
 	connect.Configure(conf.Connect)
@@ -81,8 +79,7 @@ func main() {
 
 	lg.Warnf("API starting on %v", conf.Bind)
 
-	router := web.New(h)
-	if err := graceful.ListenAndServe(conf.Bind, router); err != nil {
+	if err := graceful.ListenAndServe(conf.Bind, h.Routes()); err != nil {
 		lg.Fatal(err)
 	}
 

@@ -19,6 +19,7 @@ type Product struct {
 	TemplateSuffix interface{} `json:"template_suffix"`
 	PublishedScope string      `json:"published_scope"`
 	Tags           string      `json:"tags"`
+	Available      bool        `json:"available"`
 
 	Variants []*ProductVariant `json:"variants"`
 	Options  []*ProductOption  `json:"options"`

@@ -8,8 +8,6 @@ import (
 )
 
 type ProductCategory struct {
-	ID int64 `db:"id,pk,omitempty" json:"id,omitempty"`
-
 	Type    ProductCategoryType `db:"type" json:"type"`
 	Value   string              `db:"value" json:"value"`
 	Mapping string              `db:"mapping"`

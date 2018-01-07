@@ -15,7 +15,6 @@ all:
 	@echo "  run                   - run API in dev mode"
 	@echo "  run-merchant          - run merchant app in dev mode"
 	@echo "  build                 - build api into bin/ directory"
-	@echo "  build-all             - build all binaries into bin/ directory"
 	@echo "  docs                  - generate api documentation"
 	@echo "  tools                 - go get's a bunch of tools for dev"
 	@echo ""
@@ -37,7 +36,7 @@ print-%: ; @echo $*=$($*)
 tools:
 	go get -u github.com/pressly/sup/cmd/sup
 	go get -u github.com/pressly/fresh
-	GOGC=off go build -i -o ./bin/goose ./vendor/bitbucket.org/liamstask/goose/cmd/goose
+	go get -u bitbucket.org/liamstask/goose/cmd/goose
 
 docs:
 	go run ./docs/main.go
@@ -75,10 +74,6 @@ run:
 
 run-merchant:
 	@(export CONFIG=${MERCHANT_CONFIG}; fresh -c runner.conf -p ./cmd/merchant)
-
-build-goose:
-	@mkdir -p ./bin
-	GOGO=off go build -i -o ./bin/goose ./vendor/bitbucket.org/liamstask/goose/cmd/goose
 
 build-merchant:
 	@mkdir -p ./bin

@@ -8,13 +8,7 @@ import (
 
 var storeCache map[string]*data.Place
 
-func SetupShopCache(DB *data.Database) {
-	places, err := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive})
-	if err != nil {
-		lg.Alert("failed to cache place id at init")
-		return
-	}
-
+func SetupShopCache(places ...*data.Place) {
 	storeCache = make(map[string]*data.Place)
 	for _, p := range places {
 		storeCache[p.ShopifyID] = p
@@ -26,7 +20,12 @@ func cacheGet(key string) (*data.Place, error) {
 	place, ok := storeCache[key]
 	if !ok {
 		var err error
-		place, err = data.DB.Place.FindByShopifyID(key)
+		place, err = data.DB.Place.FindOne(
+			db.Cond{
+				"shopify_id": key,
+				"status":     data.PlaceStatusActive,
+			},
+		)
 		if err != nil {
 			return nil, err
 		}

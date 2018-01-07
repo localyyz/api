@@ -30,7 +30,7 @@ func init() {
 	bodyCaptionizeParsePolicy.RequireParseableURLs(true)
 	bodyCaptionizeParsePolicy.AllowRelativeURLs(false)
 	bodyCaptionizeParsePolicy.AddTargetBlankToFullyQualifiedLinks(true)
-	bodyCaptionizeParsePolicy.AllowAttrs("href").OnElements("a")
+	//bodyCaptionizeParsePolicy.AllowAttrs("href").OnElements("a")
 	bodyCaptionizeParsePolicy.AllowAttrs("src").OnElements("img")
 	bodyCaptionizeParsePolicy.AllowElements("b", "strong", "i", "em", "u", "br", "p", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "li", "ul", "ol", "blockquote", "pre", "code")
 

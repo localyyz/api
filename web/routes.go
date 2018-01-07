@@ -33,7 +33,14 @@ type Handler struct {
 	Debug bool
 }
 
-func New(h *Handler) chi.Router {
+func New(DB *data.Database) *Handler {
+	if places, _ := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive}); places != nil {
+		shopify.SetupShopCache(places...)
+	}
+	return &Handler{DB: DB}
+}
+
+func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RealIP)
@@ -80,7 +87,6 @@ func New(h *Handler) chi.Router {
 
 		// setup shop cache
 		// TODO: is this terrible? Probably
-		shopify.SetupShopCache(h.DB)
 		r.With(shopify.ShopifyStoreWhCtx).
 			Post("/webhooks/shopify", shopify.WebhookHandler)
 
