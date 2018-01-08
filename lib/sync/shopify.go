@@ -50,9 +50,7 @@ func ShopifyProductListings(ctx context.Context) error {
 			ExternalHandle: p.Handle,
 			Title:          p.Title,
 			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
-			Etc: data.ProductEtc{
-				Brand: p.Vendor,
-			},
+			Etc:            data.ProductEtc{},
 		}
 
 		// check if product already exists in our system
