@@ -66,12 +66,19 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		for _, v := range p.Variants {
 			dbVariant, err := data.DB.ProductVariant.FindByOfferID(v.ID)
 			if err != nil {
-				lg.Alertf("variant offerID %d for product(%d) err: %+v", v.ID, product.ID, err)
-				continue
+				if err != db.ErrNoMoreRows {
+					lg.Alertf("variant offerID %d for product(%d) err: %+v", v.ID, product.ID, err)
+					continue
+				}
+				// create new db variant previously unavailable
 			}
 
-			dbVariant.Etc.Price, _ = strconv.ParseFloat(v.Price, 64)
-			dbVariant.Etc.PrevPrice, _ = strconv.ParseFloat(v.CompareAtPrice, 64)
+			price, _ := strconv.ParseFloat(v.Price, 64)
+			prevPrice, _ := strconv.ParseFloat(v.CompareAtPrice, 64)
+			dbVariant.Etc = data.ProductVariantEtc{
+				Price:     price,
+				PrevPrice: prevPrice,
+			}
 			for _, o := range v.OptionValues {
 				vv := strings.ToLower(o.Value)
 				switch strings.ToLower(o.Name) {
