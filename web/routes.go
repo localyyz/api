@@ -87,7 +87,8 @@ func (h *Handler) Routes() chi.Router {
 
 		// setup shop cache
 		// TODO: is this terrible? Probably
-		r.With(shopify.ShopifyStoreWhCtx).
+		r.With(middleware.Throttle(200)).
+			With(shopify.ShopifyStoreWhCtx).
 			Post("/webhooks/shopify", shopify.WebhookHandler)
 
 		// push notification
