@@ -61,6 +61,7 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			}
 			return errors.Wrap(err, "failed to fetch product")
 		}
+		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		// iterate product variants and update quantity limit
 		for _, v := range p.Variants {
