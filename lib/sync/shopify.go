@@ -72,14 +72,16 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 					continue
 				}
 				// create new db variant previously unavailable
+				dbVariant = &data.ProductVariant{
+					PlaceID:   place.ID,
+					ProductID: product.ID,
+					OfferID:   v.ID,
+					Etc:       data.ProductVariantEtc{},
+				}
 			}
 
-			price, _ := strconv.ParseFloat(v.Price, 64)
-			prevPrice, _ := strconv.ParseFloat(v.CompareAtPrice, 64)
-			dbVariant.Etc = data.ProductVariantEtc{
-				Price:     price,
-				PrevPrice: prevPrice,
-			}
+			dbVariant.Etc.Price, _ = strconv.ParseFloat(v.Price, 64)
+			dbVariant.Etc.PrevPrice, _ = strconv.ParseFloat(v.CompareAtPrice, 64)
 			for _, o := range v.OptionValues {
 				vv := strings.ToLower(o.Value)
 				switch strings.ToLower(o.Name) {
