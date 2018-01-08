@@ -1,4 +1,4 @@
-.PHONY: help run docs build tools db-migrate
+.PHONY: help run docs build tools db-migrate list-tags
 
 TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf
@@ -68,6 +68,13 @@ db-reset:
 
 db-loadprod:
 	@./db/db.sh loadprod localyyz
+
+##
+# Deploy / GCP
+##
+
+list-tags:
+	@gcloud container images list-tags gcr.io/verdant-descent-153101/api
 
 run:
 	@(export CONFIG=${API_CONFIG}; export PEM=${PEM}; fresh -c runner.conf -p ./cmd/api)

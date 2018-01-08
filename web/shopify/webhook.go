@@ -40,14 +40,14 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		switch shopify.Topic(topic) {
 		case shopify.TopicProductListingsAdd:
 			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
-			if err := sync.ShopifyProductListings(ctx); err != nil {
+			if err := sync.ShopifyProductListingsCreate(ctx); err != nil {
 				lg.Alertf("webhook: productAdd for place(%s) failed with %v", place.Name, err)
 				render.Respond(w, r, err)
 				return
 			}
 		case shopify.TopicProductListingsUpdate:
 			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
-			if err := sync.ShopifyProductListings(ctx); err != nil {
+			if err := sync.ShopifyProductListingsUpdate(ctx); err != nil {
 				lg.Alertf("webhook: productUpdate for place(%s) failed with %v", place.Name, err)
 				render.Respond(w, r, err)
 				return
@@ -88,6 +88,8 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 			data.DB.Place.Save(place)
 
 			lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
+			render.Respond(w, r, "")
+			return
 		default:
 			lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
 		}
