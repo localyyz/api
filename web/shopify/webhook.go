@@ -32,68 +32,60 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
+	defer r.Body.Close()
 
-	go func(wrapper *shopifyWebhookRequest) { // return right away
-		// TODO: implement other webhooks
-		ctx = context.WithValue(ctx, "sync.type", shopify.Topic(topic))
+	// TODO: implement other webhooks
+	ctx = context.WithValue(ctx, "sync.type", shopify.Topic(topic))
 
-		switch shopify.Topic(topic) {
-		case shopify.TopicProductListingsAdd:
-			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
-			if err := sync.ShopifyProductListingsCreate(ctx); err != nil {
-				lg.Alertf("webhook: productAdd for place(%s) failed with %v", place.Name, err)
-				render.Respond(w, r, err)
-				return
-			}
-		case shopify.TopicProductListingsUpdate:
-			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
-			if err := sync.ShopifyProductListingsUpdate(ctx); err != nil {
-				lg.Alertf("webhook: productUpdate for place(%s) failed with %v", place.Name, err)
-				render.Respond(w, r, err)
-				return
-			}
-		case shopify.TopicProductListingsRemove:
-			ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
-			if err := sync.ShopifyProductListingsRemove(ctx); err != nil {
-				lg.Alertf("webhook: productRemove for place(%s) failed with %v", place.Name, err)
-				render.Respond(w, r, err)
-				return
-			}
-		case shopify.TopicAppUninstalled:
-			lg.Infof("app uninstalled for place(id=%d)", place.ID)
-			cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
-			if err != nil {
-				render.Respond(w, r, err)
-				return
-			}
-			api := shopify.NewClient(nil, cred.AccessToken)
-			api.BaseURL, _ = url.Parse(cred.ApiURL)
-
-			webhooks, err := data.DB.Webhook.FindByPlaceID(place.ID)
-			if err != nil {
-				render.Respond(w, r, err)
-				return
-			}
-
-			for _, wh := range webhooks {
-				api.Webhook.Delete(ctx, wh.ExternalID)
-				data.DB.Webhook.Delete(wh)
-			}
-
-			// remove the credential
-			data.DB.ShopifyCred.Delete(cred)
-
-			// set place status to inactive
-			place.Status = data.PlaceStatusInActive
-			data.DB.Place.Save(place)
-
-			lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
-			render.Respond(w, r, "")
+	switch shopify.Topic(topic) {
+	case shopify.TopicProductListingsAdd:
+		ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
+		if err := sync.ShopifyProductListingsCreate(ctx); err != nil {
+			lg.Alertf("webhook: productAdd for place(%s) failed with %v", place.Name, err)
 			return
-		default:
-			lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
 		}
-	}(wrapper)
+	case shopify.TopicProductListingsUpdate:
+		ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
+		if err := sync.ShopifyProductListingsUpdate(ctx); err != nil {
+			lg.Alertf("webhook: productUpdate for place(%s) failed with %v", place.Name, err)
+			return
+		}
+	case shopify.TopicProductListingsRemove:
+		ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
+		if err := sync.ShopifyProductListingsRemove(ctx); err != nil {
+			lg.Alertf("webhook: productRemove for place(%s) failed with %v", place.Name, err)
+			return
+		}
+	case shopify.TopicAppUninstalled:
+		lg.Infof("app uninstalled for place(id=%d)", place.ID)
+		cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
+		if err != nil {
+			return
+		}
+		api := shopify.NewClient(nil, cred.AccessToken)
+		api.BaseURL, _ = url.Parse(cred.ApiURL)
+
+		webhooks, err := data.DB.Webhook.FindByPlaceID(place.ID)
+		if err != nil {
+			return
+		}
+
+		for _, wh := range webhooks {
+			api.Webhook.Delete(ctx, wh.ExternalID)
+			data.DB.Webhook.Delete(wh)
+		}
+
+		// remove the credential
+		data.DB.ShopifyCred.Delete(cred)
+
+		// set place status to inactive
+		place.Status = data.PlaceStatusInActive
+		data.DB.Place.Save(place)
+
+		lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
+	default:
+		lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
+	}
 
 	render.Status(r, http.StatusOK)
 	return

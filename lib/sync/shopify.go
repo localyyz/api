@@ -61,23 +61,12 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			}
 			return errors.Wrap(err, "failed to fetch product")
 		}
-		variantsMap := map[int64]*data.ProductVariant{}
-		// bulk fetch the product variants
-		// bulk fetch variants if product update (get the id)
-		dbVariants, err := data.DB.ProductVariant.FindByProductID(product.ID)
-		if err != nil {
-			return errors.Wrap(err, "failed to fetch product variants")
-		}
-		for _, v := range dbVariants {
-			// group on shopify's offerID
-			variantsMap[v.OfferID] = v
-		}
 
 		// iterate product variants and update quantity limit
 		for _, v := range p.Variants {
-			dbVariant, _ := variantsMap[v.ID]
-			if dbVariant == nil {
-				lg.Alertf("variant offerID %d for product(%d) not found", v.ID, product.ID)
+			dbVariant, err := data.DB.ProductVariant.FindByOfferID(v.ID)
+			if err != nil {
+				lg.Alertf("variant offerID %d for product(%d) err: %+v", v.ID, product.ID, err)
 				continue
 			}
 
