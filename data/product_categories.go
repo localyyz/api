@@ -11,6 +11,8 @@ type ProductCategory struct {
 	Type    ProductCategoryType `db:"type" json:"type"`
 	Value   string              `db:"value" json:"value"`
 	Mapping string              `db:"mapping"`
+	Gender  ProductGender       `db:"gender" json:"-"`
+	Weight  int32               `db:"weight" json:"-"`
 }
 
 type ProductCategoryStore struct {

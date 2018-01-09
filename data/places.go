@@ -14,13 +14,14 @@ type Place struct {
 	LocaleID int64       `db:"locale_id" json:"localeId"`
 	Status   PlaceStatus `db:"status" json:"status"`
 
-	Name        string `db:"name" json:"name"`
-	Address     string `db:"address" json:"address"`
-	Phone       string `db:"phone" json:"phone"`
-	Website     string `db:"website" json:"website"`
-	Description string `db:"description" json:"description"`
-	ImageURL    string `db:"image_url" json:"imageUrl"`
-	Currency    string `db:"currency" json:"currency"`
+	Name        string      `db:"name" json:"name"`
+	Address     string      `db:"address" json:"address"`
+	Phone       string      `db:"phone" json:"phone"`
+	Website     string      `db:"website" json:"website"`
+	Description string      `db:"description" json:"description"`
+	ImageURL    string      `db:"image_url" json:"imageUrl"`
+	Currency    string      `db:"currency" json:"currency"`
+	Gender      PlaceGender `db:"gender" json:"genderHint"`
 
 	ShopifyID string         `db:"shopify_id,omitempty" json:"-"`
 	Geo       geotools.Point `db:"geo" json:"-"`
@@ -34,6 +35,8 @@ type Place struct {
 	TOSAgreedAt *time.Time `db:"tos_agreed_at,omitempty" json:"tosAgreedAt,omitempty"`
 	ApprovedAt  *time.Time `db:"approved_at,omitempty" json:"approvedAt,omitempty"`
 }
+
+type PlaceGender ProductGender
 
 func (p *Place) CollectionName() string {
 	return `places`

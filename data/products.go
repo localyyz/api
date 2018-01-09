@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"time"
 
 	"upper.io/bond"
@@ -12,10 +13,11 @@ type Product struct {
 	ID      int64 `db:"id,pk,omitempty" json:"id,omitempty"`
 	PlaceID int64 `db:"place_id" json:"placeId"`
 
-	Title       string     `db:"title" json:"title"`
-	Description string     `db:"description" json:"description"`
-	ImageUrl    string     `db:"image_url" json:"imageUrl"`
-	Etc         ProductEtc `db:"etc" json:"etc"`
+	Title       string        `db:"title" json:"title"`
+	Description string        `db:"description" json:"description"`
+	ImageUrl    string        `db:"image_url" json:"imageUrl"`
+	Gender      ProductGender `db:"gender" json:"genderHint"`
+	Etc         ProductEtc    `db:"etc" json:"etc"`
 
 	// external id
 	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
@@ -25,6 +27,15 @@ type Product struct {
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
 }
+
+type ProductGender uint32
+
+const (
+	ProductGenderUnknown ProductGender = iota
+	ProductGenderMale
+	ProductGenderFemale
+	ProductGenderUnisex
+)
 
 type ProductEtc struct {
 	Images []string `json:"images"`
@@ -67,7 +78,7 @@ func (store ProductStore) FindByID(ID int64) (*Product, error) {
 	return store.FindOne(db.Cond{"id": ID})
 }
 
-func (store ProductStore) FindByExternalID(extID string) (*Product, error) {
+func (store ProductStore) FindByExternalID(extID int64) (*Product, error) {
 	return store.FindOne(db.Cond{"external_id": extID})
 }
 
@@ -101,4 +112,28 @@ type FeatureProductStore struct {
 
 func (FeatureProduct) CollectionName() string {
 	return `feature_products`
+}
+
+var productGenders = []string{"-", "man", "woman", "unisex"}
+
+// String returns the string value of the status.
+func (s ProductGender) String() string {
+	return productGenders[s]
+}
+
+// MarshalText satisfies TextMarshaler
+func (s ProductGender) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (s *ProductGender) UnmarshalText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(productGenders); i++ {
+		if enum == productGenders[i] {
+			*s = ProductGender(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown product gender %s", enum)
 }
