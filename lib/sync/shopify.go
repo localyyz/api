@@ -153,41 +153,41 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
-		//// bulk insert variants
-		//q := data.DB.InsertInto("product_variants").
-		//Columns("product_id", "place_id", "limits", "description", "offer_id", "etc")
-		//b := q.Batch(len(p.Variants))
-		//go func() {
-		//defer b.Done()
-		//for _, v := range p.Variants {
-		//price, _ := strconv.ParseFloat(v.Price, 64)
+		// bulk insert variants
+		q := data.DB.InsertInto("product_variants").
+			Columns("product_id", "place_id", "limits", "description", "offer_id", "etc")
+		b := q.Batch(len(p.Variants))
+		go func() {
+			defer b.Done()
+			for _, v := range p.Variants {
+				price, _ := strconv.ParseFloat(v.Price, 64)
 
-		//prevPrice, _ := strconv.ParseFloat(v.CompareAtPrice, 64)
-		//variantEtc := data.ProductVariantEtc{
-		//Price:     price,
-		//PrevPrice: prevPrice,
-		//Sku:       v.Sku,
-		//}
+				prevPrice, _ := strconv.ParseFloat(v.CompareAtPrice, 64)
+				variantEtc := data.ProductVariantEtc{
+					Price:     price,
+					PrevPrice: prevPrice,
+					Sku:       v.Sku,
+				}
 
-		//// variant option values
-		//for _, o := range v.OptionValues {
-		//vv := strings.ToLower(o.Value)
-		//switch strings.ToLower(o.Name) {
-		//case "size":
-		//variantEtc.Size = vv
-		//case "color":
-		//variantEtc.Color = vv
-		//default:
-		//// pass
-		//}
-		//}
+				// variant option values
+				for _, o := range v.OptionValues {
+					vv := strings.ToLower(o.Value)
+					switch strings.ToLower(o.Name) {
+					case "size":
+						variantEtc.Size = vv
+					case "color":
+						variantEtc.Color = vv
+					default:
+						// pass
+					}
+				}
 
-		//b.Values(product.ID, place.ID, v.InventoryQuantity, v.Title, v.ID, variantEtc)
-		//}
-		//}()
-		//if err := b.Wait(); err != nil {
-		//return errors.Wrap(err, "failed to create product variants")
-		//}
+				b.Values(product.ID, place.ID, v.InventoryQuantity, v.Title, v.ID, variantEtc)
+			}
+		}()
+		if err := b.Wait(); err != nil {
+			return errors.Wrap(err, "failed to create product variants")
+		}
 
 		if err := ShopifyProductTagsCreate(ctx, product, p); err != nil {
 			return err

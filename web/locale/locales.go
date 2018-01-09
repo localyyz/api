@@ -2,7 +2,6 @@ package locale
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -76,19 +75,11 @@ func ListCities(w http.ResponseWriter, r *http.Request) {
 func ListPlaces(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	locale := ctx.Value("locale").(*data.Locale)
-	user := ctx.Value("session.user").(*data.User)
 
 	cursor := api.NewPage(r)
 
 	var places []*data.Place
-	query := data.DB.Place.
-		Find(db.Cond{"locale_id": locale.ID}).
-		Select(
-			db.Raw("*"),
-			db.Raw(fmt.Sprintf("ST_Distance(geo, st_geographyfromtext('%v'::text)) distance", user.Geo)),
-		).
-		OrderBy("distance")
-
+	query := data.DB.Place.Find(db.Cond{"locale_id": locale.ID})
 	query = cursor.UpdateQueryUpper(query)
 	if err := query.All(&places); err != nil {
 		render.Respond(w, r, err)
