@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -28,6 +29,10 @@ func (p *ProductListParam) EncodeQuery() string {
 	// TODO: support all params
 	v := url.Values{}
 	v.Add("handle", p.Handle)
+	v.Add("page", fmt.Sprintf("%d", p.Page))
+	if p.Limit > 0 {
+		v.Add("limit", fmt.Sprintf("%d", p.Limit))
+	}
 	return v.Encode()
 }
 

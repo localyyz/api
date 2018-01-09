@@ -40,26 +40,28 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	switch shopify.Topic(topic) {
 	case shopify.TopicProductListingsAdd:
 		ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
+		ctx = context.WithValue(ctx, "category.cache", categoryCache)
 		if err := sync.ShopifyProductListingsCreate(ctx); err != nil {
-			lg.Alertf("webhook: productAdd for place(%s) failed with %v", place.Name, err)
+			lg.Warnf("webhook: productAdd for place(%s) failed with %v", place.Name, err)
 			return
 		}
 	case shopify.TopicProductListingsUpdate:
 		ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
 		if err := sync.ShopifyProductListingsUpdate(ctx); err != nil {
-			lg.Alertf("webhook: productUpdate for place(%s) failed with %v", place.Name, err)
+			lg.Warnf("webhook: productUpdate for place(%s) failed with %v", place.Name, err)
 			return
 		}
 	case shopify.TopicProductListingsRemove:
 		ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
 		if err := sync.ShopifyProductListingsRemove(ctx); err != nil {
-			lg.Alertf("webhook: productRemove for place(%s) failed with %v", place.Name, err)
+			lg.Warnf("webhook: productRemove for place(%s) failed with %v", place.Name, err)
 			return
 		}
 	case shopify.TopicAppUninstalled:
 		lg.Infof("app uninstalled for place(id=%d)", place.ID)
 		cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
 		if err != nil {
+			lg.Warnf("webhook: appUninstall for place(%s) cred failed with %v", place.Name, err)
 			return
 		}
 		api := shopify.NewClient(nil, cred.AccessToken)
@@ -67,6 +69,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 		webhooks, err := data.DB.Webhook.FindByPlaceID(place.ID)
 		if err != nil {
+			lg.Warnf("webhook: appUninstall for place(%s) webhook failed with %v", place.Name, err)
 			return
 		}
 

@@ -2,7 +2,6 @@ package shopify
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strings"
 
@@ -28,10 +27,10 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 		shopID := parts[0]
 		ctx := r.Context()
 
-		place, err := cacheGet(shopID)
+		place, err := storeGet(shopID)
 		if err != nil {
 			// TODO: this should warrent some form of retry.
-			lg.Alertf("webhooks: place(%s) errored with: %+v", shopID, err)
+			lg.Warnf("webhooks: place(%s) errored with: %+v", shopID, err)
 			render.Status(r, http.StatusOK)
 			return
 		}
@@ -56,8 +55,4 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
-}
-
-func SetupCac() {
-	log.Println("initializing place cache")
 }

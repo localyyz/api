@@ -34,8 +34,16 @@ type Handler struct {
 }
 
 func New(DB *data.Database) *Handler {
+	return &Handler{DB: DB}
+}
+
+func NewWebhookHandler(DB *data.Database) *Handler {
+	// TODO: use a real caching library
 	if places, _ := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive}); places != nil {
 		shopify.SetupShopCache(places...)
+	}
+	if categories, _ := DB.ProductCategory.FindAll(nil); categories != nil {
+		shopify.SetupCategoryCache(categories...)
 	}
 	return &Handler{DB: DB}
 }
@@ -56,11 +64,8 @@ func (h *Handler) Routes() chi.Router {
 		}
 		return http.HandlerFunc(fn)
 	})
-	if h.Debug {
-		// if debug, don't structure log the panic
-		r.Use(middleware.Recoverer)
-	}
 
+	r.Use(middleware.Recoverer)
 	r.Use(token.Verify())
 	r.Use(session.SessionCtx)
 	r.Use(session.UserRefresh)

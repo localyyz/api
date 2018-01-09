@@ -6,17 +6,28 @@ import (
 	db "upper.io/db.v3"
 )
 
-var storeCache map[string]*data.Place
+var (
+	storeCache    map[string]*data.Place
+	categoryCache map[string]*data.ProductCategory
+)
 
 func SetupShopCache(places ...*data.Place) {
 	storeCache = make(map[string]*data.Place)
 	for _, p := range places {
 		storeCache[p.ShopifyID] = p
 	}
-	lg.Printf("shopify wh cache: keys(%d)", len(storeCache))
+	lg.Infof("store cache: keys(%d)", len(storeCache))
 }
 
-func cacheGet(key string) (*data.Place, error) {
+func SetupCategoryCache(categories ...*data.ProductCategory) {
+	categoryCache = make(map[string]*data.ProductCategory)
+	for _, c := range categories {
+		categoryCache[c.Value] = c
+	}
+	lg.Infof("category cache: keys(%d)", len(categoryCache))
+}
+
+func storeGet(key string) (*data.Place, error) {
 	place, ok := storeCache[key]
 	if !ok {
 		var err error
