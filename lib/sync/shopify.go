@@ -13,7 +13,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
-	"github.com/sirupsen/logrus"
 )
 
 func ShopifyProductListingsRemove(ctx context.Context) error {
@@ -118,7 +117,6 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 func ShopifyProductListingsCreate(ctx context.Context) error {
 	place := ctx.Value("sync.place").(*data.Place)
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
-	lg.DefaultLogger = logrus.New()
 
 	for _, p := range list {
 		if !p.Available {
