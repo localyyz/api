@@ -134,7 +134,7 @@ func ListCollectionSizes(w http.ResponseWriter, r *http.Request) {
 
 func ListCollectionProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	cursor := api.NewPage(r)
+	cursor := ctx.Value("cursor").(*api.Page)
 	productIDs := ctx.Value("product_ids").([]int64)
 
 	u := r.URL.Query()
@@ -246,6 +246,7 @@ func ListCollectionProduct(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	cursor.Update(products)
 
 	presented := presenter.NewProductList(ctx, products)
 	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", itemTotal))
