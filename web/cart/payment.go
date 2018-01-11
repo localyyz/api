@@ -2,6 +2,7 @@ package cart
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -197,6 +198,22 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			// TODO: do we return here?
 			return
 		}
+
+		// check payment transaction
+		if p.Transaction == nil {
+			// something failed. Try again
+			lg.Alertf("cart(%d) failed with empty transaction response", cart.ID)
+			render.Respond(w, r, errors.New("payment failed, please try again"))
+			return
+		}
+
+		if p.Transaction.Status != shopify.TransactionStatusSuccess {
+			// something failed. Try again
+			lg.Alertf("cart(%d) failed with transaction status %v", cart.ID, p.Transaction.Status)
+			render.Respond(w, r, api.ErrCardVaultProcess(fmt.Errorf(p.Transaction.Message)))
+			return
+		}
+
 		lg.Alertf("cart(%d) was just paid!", cart.ID)
 
 		// 5. save shopify payment id

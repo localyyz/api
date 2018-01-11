@@ -157,13 +157,10 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 			io.Copy(w, resp.Body)
 		} else {
 			if c.Debug {
-				b, _ := ioutil.ReadAll(resp.Body)
+				b, _ := httputil.DumpResponse(resp, true)
 				fmt.Printf("[shopify]: %s\n", string(b))
-				err = json.Unmarshal(b, v)
-			} else {
-				err = json.NewDecoder(resp.Body).Decode(v)
 			}
-
+			err = json.NewDecoder(resp.Body).Decode(v)
 			if err == io.EOF {
 				err = nil // ignore EOF errors caused by empty response body
 			}
