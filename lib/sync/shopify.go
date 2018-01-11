@@ -132,7 +132,6 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
 			Gender:         data.ProductGender(place.Gender),
 			Etc:            data.ProductEtc{},
-			CreatedAt:      &p.CreatedAt,
 		}
 
 		// parse product images if adding for the first time
