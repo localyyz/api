@@ -71,14 +71,42 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
 
-	// fetch the product's category
-	category, err := data.DB.ProductTag.FindOne(db.Cond{
+	// fetch the product's tags
+	relatedTags, err := data.DB.ProductTag.FindAll(db.Cond{
 		"product_id": product.ID,
-		"type":       data.ProductTagTypeCategory,
+		"type": []data.ProductTagType{
+			data.ProductTagTypeCategory,
+			data.ProductTagTypeBrand,
+		},
 	})
 	if err != nil {
 		render.Respond(w, r, err)
 		return
+	}
+
+	if len(relatedTags) == 0 {
+		render.Respond(w, r, []struct{}{})
+		return
+	}
+
+	relatedCond := db.Cond{
+		"p.gender": product.Gender,
+		"p.id <>":  product.ID,
+	}
+	if len(relatedTags) == 2 {
+		// if both category and brand are found, use category
+		for _, t := range relatedTags {
+			if t.Type == data.ProductTagTypeCategory {
+				// found a suitable category
+				relatedCond["pt.type"] = t.Type
+				relatedCond["pt.value"] = t.Value
+				break
+			}
+		}
+	} else {
+		// beggers are not chosers
+		relatedCond["pt.type"] = relatedTags[0].Type
+		relatedCond["pt.value"] = relatedTags[0].Value
 	}
 
 	// find the products
@@ -86,12 +114,7 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		LeftJoin("product_tags pt").
 		On("pt.product_id = p.id").
-		Where(db.Cond{
-			"pt.type":  data.ProductTagTypeCategory,
-			"pt.value": category.Value,
-			"p.gender": product.Gender,
-			"p.id <>":  product.ID,
-		})
+		Where(relatedCond)
 	cursor := ctx.Value("cursor").(*api.Page)
 	paginate := cursor.UpdateQueryBuilder(query)
 	var relatedProducts []*data.Product
