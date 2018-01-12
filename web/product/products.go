@@ -71,79 +71,37 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
 
-	// get product tags we want to relate on.
-	var relatedTags []*data.ProductTag
-	err := data.DB.ProductTag.Find(db.Cond{
+	// fetch the product's category
+	category, err := data.DB.ProductTag.FindOne(db.Cond{
 		"product_id": product.ID,
-		"type": []data.ProductTagType{
-			data.ProductTagTypeCategory,
-			//data.ProductTagTypePrice,
-			data.ProductTagTypeGender,
-			data.ProductTagTypeBrand,
-		},
-	}).All(&relatedTags)
+		"type":       data.ProductTagTypeCategory,
+	})
 	if err != nil {
 		render.Respond(w, r, err)
 		return
-	}
-
-	// iterate over product tags and assemble a db condition
-	relatedConds := make([]db.Compound, len(relatedTags))
-	for i, t := range relatedTags {
-		//if t.Type == data.ProductTagTypePrice {
-		//v, _ := strconv.ParseFloat(t.Value, 64)
-		//relatedConds[i] = db.And(
-		//db.Cond{"type": data.ProductTagTypePrice},
-		//db.Raw("value::numeric BETWEEN ? AND ?", v/1.5, v*1.5),
-		//)
-		//continue
-		//}
-		relatedConds[i] = db.Cond{
-			"type":     t.Type,
-			"value ~*": t.Value,
-		}
 	}
 
 	// find the products
-	cursor := api.NewPage(r)
-	query := data.DB.Select("product_id").
-		From("product_tags").
-		Where(
-			db.Or(relatedConds...),
-			db.Cond{"product_id !=": product.ID},
-		).
-		GroupBy("product_id").
-		Amend(func(query string) string {
-			query = query + fmt.Sprintf(" HAVING count(distinct type) = %d", len(relatedTags))
-			query = query + fmt.Sprintf(" ORDER BY product_id DESC")
-			if cursor.Page > 1 {
-				query = query + fmt.Sprintf(" LIMIT %d OFFSET %d", cursor.Limit, (cursor.Page-1)*cursor.Limit)
-			} else {
-				query = query + fmt.Sprintf(" LIMIT %d", cursor.Limit)
-			}
-			return query
+	query := data.DB.Select(db.Raw("distinct p.*")).
+		From("products p").
+		LeftJoin("product_tags pt").
+		On("pt.product_id = p.id").
+		Where(db.Cond{
+			"pt.type":  data.ProductTagTypeCategory,
+			"pt.value": category.Value,
+			"p.gender": product.Gender,
+			"p.id <>":  product.ID,
 		})
-	var relatedProducts []struct {
-		ProductID int64 `db:"product_id"`
-	}
-	if err := query.All(&relatedProducts); err != nil {
+	cursor := ctx.Value("cursor").(*api.Page)
+	paginate := cursor.UpdateQueryBuilder(query)
+	var relatedProducts []*data.Product
+	if err := paginate.All(&relatedProducts); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
-	var productIDs []int64
-	for _, p := range relatedProducts {
-		productIDs = append(productIDs, p.ProductID)
-	}
-
-	// pull the products
-	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	presented := presenter.NewProductList(ctx, products)
+	cursor.Update(relatedProducts)
+	presented := presenter.NewProductList(ctx, relatedProducts)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}
@@ -151,9 +109,11 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 
 func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
 
 	// select the first row in each place_id group ordered by created_at
-	q := `select *
+	// TODO: is this bad? probably
+	q := fmt.Sprintf(`select *
 		from (
 			select row_number() over (partition by p.place_id order by p.created_at desc) as r, p.*
 			from products p
@@ -161,9 +121,9 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			where p.created_at > now()::date - 7
 			and pl.status = 3
 		) x
-		where x.r = 1
+		where x.r = %d
 		order by created_at desc
-		limit 10`
+		limit 10`, cursor.Page)
 	iter := data.DB.Iterator(q)
 	defer iter.Close()
 	var products []*data.Product
