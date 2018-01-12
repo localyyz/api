@@ -114,7 +114,8 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		LeftJoin("product_tags pt").
 		On("pt.product_id = p.id").
-		Where(relatedCond)
+		Where(relatedCond).
+		OrderBy("p.id desc")
 	cursor := ctx.Value("cursor").(*api.Page)
 	paginate := cursor.UpdateQueryBuilder(query)
 	var relatedProducts []*data.Product
@@ -136,26 +137,24 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 
 	// select the first row in each place_id group ordered by created_at
 	// TODO: is this bad? probably
-	q := fmt.Sprintf(`select *
-		from (
+	query := data.DB.Select("*").
+		From(db.Raw(`(
 			select row_number() over (partition by p.place_id order by p.created_at desc) as r, p.*
 			from products p
 			left join places pl on p.place_id = pl.id
 			where p.created_at > now()::date - 7
 			and pl.status = 3
-		) x
-		where x.r = %d
-		order by created_at desc
-		limit 10`, cursor.Page)
-	iter := data.DB.Iterator(q)
-	defer iter.Close()
+		) x`)).
+		Where("x.r = ?", cursor.Page).
+		OrderBy("created_at desc").
+		Limit(cursor.Limit)
+
 	var products []*data.Product
-	if err := iter.All(&products); err != nil {
+	if err := query.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
-
-	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", len(products)))
+	cursor.Update(products)
 	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)

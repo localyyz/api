@@ -150,7 +150,8 @@ func parseCategory(ctx context.Context, s string) aggregateCategory {
 }
 
 var (
-	tagRegex   = regexp.MustCompile("[^a-zA-Z0-9-]+")
+	tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
+	// TODO: load up tag specials from product categories
 	tagSpecial = []string{
 		"bomber-jacket",
 		"boxer-brief",
@@ -163,6 +164,7 @@ var (
 		"t-shirt",
 		"track-pant",
 		"v-neck",
+		"air-jordan",
 	}
 )
 
