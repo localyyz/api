@@ -55,13 +55,24 @@ func ShopifyProductTagsCreate(ctx context.Context, product *data.Product, p *sho
 		f := aggregateCategory{}
 
 		for _, a := range parsedCategories {
-			// flatten categories and gender
-			f.categories = append(f.categories, a.categories...)
+			// flatten gender
 			if f.gender == data.ProductGenderUnknown &&
 				(a.gender == data.ProductGenderMale || a.gender == data.ProductGenderFemale) {
 				f.gender = a.gender
 			}
 		}
+		for _, a := range parsedCategories {
+			// flatten category, but throw out ones that doesn't match
+			// products gender
+			for _, fc := range a.categories {
+				if f.gender != data.ProductGenderUnknown &&
+					a.gender != f.gender {
+					continue
+				}
+				f.categories = append(f.categories, fc)
+			}
+		}
+
 		sort.Sort(&f)
 
 		if f.gender != data.ProductGenderUnknown &&
@@ -81,24 +92,6 @@ func ShopifyProductTagsCreate(ctx context.Context, product *data.Product, p *sho
 
 		// Product Vendor/Brand
 		b.Values(product.ID, place.ID, strings.ToLower(p.Vendor), data.ProductTagTypeBrand)
-
-		//Variant options (ie. Color, Size, Material)
-		for _, o := range p.Options {
-			var typ data.ProductTagType
-			if err := typ.UnmarshalText([]byte(strings.ToLower(o.Name))); err != nil {
-				continue
-			}
-
-			optSet := set.New()
-			for _, v := range o.Values {
-				vv := strings.ToLower(v)
-				if optSet.Has(vv) {
-					continue
-				}
-				b.Values(product.ID, place.ID, vv, typ)
-				optSet.Add(vv)
-			}
-		}
 	}()
 	if err := b.Wait(); err != nil {
 		return errors.Wrap(err, "failed to create product tags")
@@ -120,6 +113,7 @@ func parseGender(t string) data.ProductGender {
 func parseCategory(ctx context.Context, s string) aggregateCategory {
 	tags := ParseTags(s)
 	categoryCache := ctx.Value("category.cache").(map[string]*data.ProductCategory)
+	place := ctx.Value("sync.place").(*data.Place)
 
 	gender := data.ProductGenderUnknown
 	bestCat := aggregateCategory{}
@@ -138,6 +132,13 @@ func parseCategory(ctx context.Context, s string) aggregateCategory {
 		if !found {
 			continue
 		}
+		if place.Gender != data.PlaceGender(data.ProductGenderUnisex) &&
+			cat.Gender != data.ProductGender(place.Gender) {
+			// if place has a gender baise, only pick the categories
+			// with the same gender
+			continue
+		}
+
 		// if found gender in category, set it as such
 		if cat.Gender != data.ProductGenderUnisex &&
 			gender == data.ProductGenderUnknown {
@@ -165,6 +166,8 @@ var (
 		"track-pant",
 		"v-neck",
 		"air-jordan",
+		"lace-up",
+		"slip-on",
 	}
 )
 

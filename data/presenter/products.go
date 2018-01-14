@@ -91,21 +91,6 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 		}
 	}
 
-	tagCache := make(TagCache)
-	if tags, _ := data.DB.ProductTag.FindAll(
-		db.Cond{
-			"product_id": productIDs,
-			"type": []data.ProductTagType{
-				data.ProductTagTypeSize,
-				data.ProductTagTypeColor,
-			},
-		},
-	); tags != nil {
-		for _, t := range tags {
-			tagCache[t.ProductID] = append(tagCache[t.ProductID], t)
-		}
-	}
-
 	placeCache := make(PlaceCache)
 	if place, _ := ctx.Value("place").(*data.Place); place != nil {
 		placeCache[place.ID] = place
@@ -117,7 +102,7 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 		}
 	}
 
-	ctx = context.WithValue(ctx, "tag.cache", tagCache)
+	//ctx = context.WithValue(ctx, "tag.cache", tagCache)
 	ctx = context.WithValue(ctx, "variant.cache", variantCache)
 	ctx = context.WithValue(ctx, "place.cache", placeCache)
 
@@ -146,30 +131,16 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 				p.Variants = append(p.Variants, &ProductVariant{ProductVariant: v})
 			}
 		}
-
 	}
 
-	var tags []*data.ProductTag
-	if cache, _ := ctx.Value("tag.cache").(TagCache); cache != nil {
-		tags = cache[p.ID]
-	} else {
-		tags, _ = data.DB.ProductTag.FindAll(
-			db.Cond{
-				"product_id": product.ID,
-				"type":       []data.ProductTagType{data.ProductTagTypeSize, data.ProductTagTypeColor},
-			})
-
+	sizeSet := set.New()
+	colorSet := set.New()
+	for _, v := range p.Variants {
+		colorSet.Add(v.Etc.Color)
+		sizeSet.Add(v.Etc.Size)
 	}
-	p.Sizes = []string{}
-	p.Colors = []string{}
-	for _, tt := range tags {
-		switch tt.Type {
-		case data.ProductTagTypeSize:
-			p.Sizes = append(p.Sizes, tt.Value)
-		case data.ProductTagTypeColor:
-			p.Colors = append(p.Colors, tt.Value)
-		}
-	}
+	p.Sizes = set.StringSlice(sizeSet)
+	p.Colors = set.StringSlice(colorSet)
 
 	if cache, _ := ctx.Value("place.cache").(PlaceCache); cache != nil {
 		p.Place = cache[p.PlaceID]

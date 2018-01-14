@@ -242,6 +242,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		})
 	if err != nil {
 		lg.Alertf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
+		return nil
 	}
 	err = data.DB.Webhook.Save(&data.Webhook{
 		PlaceID:    place.ID,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
+	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
@@ -84,6 +85,9 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		// set place status to inactive
 		place.Status = data.PlaceStatusInActive
 		data.DB.Place.Save(place)
+
+		// clean up products
+		data.DB.Product.Find(db.Cond{"place_id": place.ID}).Delete()
 
 		lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
 	default:

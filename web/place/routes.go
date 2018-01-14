@@ -8,10 +8,7 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/nearby", ListNearby)
-	r.Get("/recent", ListRecent)
 	r.Get("/following", ListFollowing)
-
 	r.Post("/approval", HandleApproval)
 
 	r.Route("/{placeID}", func(r chi.Router) {

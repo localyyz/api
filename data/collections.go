@@ -8,12 +8,13 @@ import (
 )
 
 type Collection struct {
-	ID          int64      `db:"id,pk,omitempty" json:"id,omitempty"`
-	Name        string     `db:"name" json:"name"`
-	Description string     `db:"description" json:"description"`
-	ImageURL    string     `db:"image_url" json:"imageUrl"`
-	Ordering    int32      `db:"ordering" json:"ordering"`
-	CreatedAt   *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
+	ID          int64         `db:"id,pk,omitempty" json:"id,omitempty"`
+	Name        string        `db:"name" json:"name"`
+	Description string        `db:"description" json:"description"`
+	ImageURL    string        `db:"image_url" json:"imageUrl"`
+	Gender      ProductGender `db:"gender" json:"gender"`
+	Ordering    int32         `db:"ordering" json:"ordering"`
+	CreatedAt   *time.Time    `db:"created_at,omitempty" json:"createdAt,omitempty"`
 }
 
 type CollectionStore struct {
