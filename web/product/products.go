@@ -2,7 +2,6 @@ package product
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -41,26 +40,21 @@ func ProductCtx(next http.Handler) http.Handler {
 
 func ListFeaturedProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
 
-	var featured []*data.FeatureProduct
-	if err := data.DB.FeatureProduct.Find().
-		OrderBy("ordering").All(&featured); err != nil {
+	var products []*data.Product
+	query := data.DB.Select(db.Raw("p.*")).
+		From("feature_products fp").
+		LeftJoin("products p").
+		On("p.id = fp.product_id").
+		OrderBy("fp.ordering")
+	paginate := cursor.UpdateQueryBuilder(query)
+	if err := paginate.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
+	cursor.Update(products)
 
-	var productIDs []int64
-	for _, p := range featured {
-		productIDs = append(productIDs, p.ProductID)
-	}
-
-	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	w.Header().Add("X-Item-Total", fmt.Sprintf("%d", len(products)))
 	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
