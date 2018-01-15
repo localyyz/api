@@ -38,7 +38,48 @@ func ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ListFeaturedProducts(w http.ResponseWriter, r *http.Request) {
+func ProductGenderCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		genderRaw := chi.URLParam(r, "gender")
+
+		gender := new(data.ProductGender)
+		if err := gender.UnmarshalText([]byte(genderRaw)); err != nil {
+			render.Respond(w, r, api.ErrInvalidRequest(err))
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "product.gender", *gender)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+
+	return http.HandlerFunc(handler)
+}
+
+func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	gender := ctx.Value("product.gender").(data.ProductGender)
+	cursor := ctx.Value("cursor").(*api.Page)
+
+	query := data.DB.Product.
+		Find(db.Cond{"gender": gender}).
+		OrderBy("-id")
+
+	query = cursor.UpdateQueryUpper(query)
+	var products []*data.Product
+	if err := query.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	cursor.Update(products)
+
+	presented := presenter.NewProductList(ctx, products)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
+func ListFeaturedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := ctx.Value("cursor").(*api.Page)
 
