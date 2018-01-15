@@ -1,13 +1,15 @@
 package category
 
 import (
+	"bitbucket.org/moodie-app/moodie-api/web/product"
 	"github.com/go-chi/chi"
 )
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/", ListProductCategory)
+	r.With(product.ProductGenderCtx).
+		Get("/gender/{gender}", ListProductCategory)
 	r.Route("/{categoryType:[a-z]+}", func(r chi.Router) {
 		r.Use(CategoryTypeCtx)
 		r.Get("/", GetProductCategory)

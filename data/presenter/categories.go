@@ -21,19 +21,22 @@ func NewCategory(ctx context.Context, categoryType data.ProductCategoryType) *Ca
 		Type: categoryType,
 		ctx:  ctx,
 	}
+	cond := db.Cond{
+		"type":       categoryType,
+		"mapping !=": "",
+	}
+	if gender, ok := ctx.Value("product.gender").(data.ProductGender); ok {
+		cond["gender"] = []data.ProductGender{gender, data.ProductGenderUnisex}
+	}
 	var productCategories []*data.ProductCategory
 	data.DB.
 		Select(db.Raw("distinct mapping")).
 		From("product_categories").
-		Where(
-			db.Cond{
-				"type":       categoryType,
-				"mapping !=": "",
-			},
-		).
+		Where(cond).
 		OrderBy("mapping").
 		All(&productCategories)
 
+	category.Values = []string{}
 	for _, c := range productCategories {
 		category.Values = append(category.Values, c.Mapping)
 	}

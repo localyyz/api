@@ -61,15 +61,32 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 	gender := ctx.Value("product.gender").(data.ProductGender)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	query := data.DB.Product.
-		Find(db.Cond{"gender": gender}).
-		OrderBy("-id")
-
-	query = cursor.UpdateQueryUpper(query)
 	var products []*data.Product
-	if err := query.All(&products); err != nil {
-		render.Respond(w, r, err)
-		return
+	cond := db.Cond{
+		"gender": gender,
+	}
+	if extraCond, ok := ctx.Value("product.filter").(db.Cond); ok && len(extraCond) > 0 {
+		for k, v := range extraCond {
+			cond[k] = v
+		}
+		query := data.DB.Select(db.Raw("distinct p.*")).
+			From("products p").
+			LeftJoin("product_tags pt").
+			On("p.id = pt.product_id").
+			Where(cond).
+			OrderBy("-id")
+		paginate := cursor.UpdateQueryBuilder(query)
+		if err := paginate.All(&products); err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+	} else {
+		query := data.DB.Product.Find(cond).OrderBy("-id")
+		query = cursor.UpdateQueryUpper(query)
+		if err := query.All(&products); err != nil {
+			render.Respond(w, r, err)
+			return
+		}
 	}
 	cursor.Update(products)
 

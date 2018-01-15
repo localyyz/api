@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
+	db "upper.io/db.v3"
 )
 
 func CategoryTypeCtx(next http.Handler) http.Handler {
@@ -30,7 +31,28 @@ func CategoryTypeCtx(next http.Handler) http.Handler {
 
 func ListProductCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	render.Respond(w, r, presenter.NewCategoryList(ctx, data.ProductCategories))
+	gender := ctx.Value("product.gender").(data.ProductGender)
+
+	var categories []*data.ProductCategory
+	err := data.DB.ProductCategory.
+		Find(db.Cond{
+			"gender": []data.ProductGender{
+				gender,
+				data.ProductGenderUnisex,
+			},
+		}).
+		Select(db.Raw("distinct type")).
+		OrderBy("type").
+		All(&categories)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	types := make([]data.ProductCategoryType, len(categories))
+	for i, c := range categories {
+		types[i] = c.Type
+	}
+	render.Respond(w, r, presenter.NewCategoryList(ctx, types))
 }
 
 func GetProductCategory(w http.ResponseWriter, r *http.Request) {
