@@ -200,6 +200,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 	// upgrade place status to "waiting for agreement"
 	place.Status = data.PlaceStatusWaitAgreement
+	place.Gender = data.PlaceGender(data.ProductGenderUnisex)
 
 	// create the recurring billing, set at 120.00
 	shopifyBilling := &shopify.Billing{
