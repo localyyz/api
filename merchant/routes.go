@@ -28,19 +28,30 @@ import (
 )
 
 type Handler struct {
-	DB     *data.Database
-	SH     *connect.Shopify
-	SL     *connect.Slack
-	ApiURL string
-	Debug  bool
+	DB          *data.Database
+	SH          *connect.Shopify
+	SL          *connect.Slack
+	ApiURL      string
+	Debug       bool
+	Environment string
 }
 
 const (
 	SignatureTimeout = 30 * time.Second
 )
 
+var (
+	indexTmpl *pongo2.Template
+)
+
 func New(h *Handler) chi.Router {
 	r := chi.NewRouter()
+
+	if h.Environment == "development" {
+		indexTmpl = pongo2.Must(pongo2.FromFile("./merchant/index.html"))
+	} else {
+		indexTmpl = pongo2.Must(pongo2.FromFile("/merchant/index.html"))
+	}
 
 	r.Use(middleware.RealIP)
 	r.Use(middleware.NoCache)
@@ -132,29 +143,6 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 
 	// notify slack with button for approving the merchant
 	sl := ctx.Value("slack.client").(*connect.Slack)
-	cities, _ := data.DB.Locale.FindAll(db.Cond{"type": data.LocaleTypeCity})
-	cityOptions := make([]*slack.Option, len(cities))
-	for i, c := range cities {
-		cityOptions[i] = &slack.Option{Text: c.Name, Value: fmt.Sprintf("localeid%d", c.ID)}
-	}
-	sl.Notify(
-		"store",
-		fmt.Sprintf("%s (id: %v) just accepted the TOS!", place.Name, place.ID),
-		&slack.Attachment{
-			Text:       "Select the location of the merchant",
-			Fallback:   "Can't select a location",
-			CallbackID: "placeid43",
-			Actions: []*slack.AttachmentAction{
-				{
-					Name:   "location_list",
-					Text:   "Pick a location",
-					Type:   "select",
-					Option: cityOptions,
-				},
-			},
-		},
-	)
-
 	sl.Notify(
 		"store",
 		fmt.Sprintf("%s (id: %v) just accepted the TOS!", place.Name, place.ID),

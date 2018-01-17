@@ -53,10 +53,11 @@ func main() {
 	lg.Infof("Merchant site starting on %v", conf.Bind)
 	router := merchant.New(
 		&merchant.Handler{
-			Debug:  (conf.Environment == "development"),
-			SH:     connect.SetupShopify(conf.Connect.Shopify),
-			SL:     connect.SetupSlack(conf.Connect.Slack),
-			ApiURL: conf.Api.ApiURL,
+			Debug:       (conf.Environment == "development"),
+			SH:          connect.SetupShopify(conf.Connect.Shopify),
+			SL:          connect.SetupSlack(conf.Connect.Slack),
+			ApiURL:      conf.Api.ApiURL,
+			Environment: conf.Environment,
 		},
 	)
 	if err := graceful.ListenAndServe(conf.Bind, router); err != nil {

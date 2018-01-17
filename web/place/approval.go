@@ -22,7 +22,7 @@ const (
 	ApprovalActionApprove = "approve"
 	ApprovalActionReject  = "reject"
 
-	LocationActionName = "location_list"
+	GenderActionName = "pick_gender"
 )
 
 var (
@@ -69,12 +69,15 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 
 	// send a response back to slack
 	var actionResponse struct {
-		Text string `json:"text"`
+		Text        string              `json:"text"`
+		Attachments []*slack.Attachment `json:"attachments,omitempty"`
 	}
 
-	// approve or reject
+	// check the actions
 	for _, a := range payload.Actions {
-		if a.Name == ApprovalActionName {
+		// approve or reject
+		switch a.Name {
+		case ApprovalActionName:
 			if a.Value == ApprovalActionApprove {
 				place.Status = data.PlaceStatusActive
 				place.ApprovedAt = data.GetTimeUTCPointer()
@@ -84,13 +87,49 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 			} else if a.Value == ApprovalActionReject {
 				place.Status = data.PlaceStatusInActive
 			}
+			// approved or rejected.
 			actionResponse.Text = fmt.Sprintf("%s is now %s! (by: %s)", place.Name, place.Status, payload.User.Name)
-		} else if a.Name == LocationActionName {
-			for _, o := range a.SelectedOptions {
-				localeID, _ := strconv.Atoi(strings.TrimPrefix(o.Value, "localeid"))
-				place.LocaleID = int64(localeID)
-				actionResponse.Text = fmt.Sprintf("place location updated to %d!", place.LocaleID)
+			actionResponse.Attachments = []*slack.Attachment{
+				{
+					Text:       fmt.Sprintf("what kind of product does %s sell?", place.Name),
+					Fallback:   "",
+					CallbackID: fmt.Sprintf("placeid%d", place.ID),
+					Color:      "0195ff",
+					Actions: []*slack.AttachmentAction{
+						{
+							Name:  GenderActionName,
+							Text:  "Male",
+							Type:  "button",
+							Value: "male",
+							Style: "primary",
+						},
+						{
+							Name:  GenderActionName,
+							Text:  "Female",
+							Type:  "button",
+							Value: "female",
+							Style: "primary",
+						},
+						{
+							Name:  GenderActionName,
+							Text:  "Unisex",
+							Type:  "button",
+							Value: "unisex",
+							Style: "primary",
+						},
+					},
+				},
 			}
+		case GenderActionName:
+			if a.Value == "male" {
+				place.Gender = data.PlaceGender(data.ProductGenderMale)
+			} else if a.Value == "female" {
+				place.Gender = data.PlaceGender(data.ProductGenderFemale)
+			} else {
+				place.Gender = data.PlaceGender(data.ProductGenderUnisex)
+			}
+			// response text
+			actionResponse.Text = fmt.Sprintf("%s gender set to %v (by: %s)", place.Name, place.Gender, payload.User.Name)
 		}
 	}
 	err = data.DB.Place.Save(place)
