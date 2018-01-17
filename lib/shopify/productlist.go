@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -30,6 +31,13 @@ func (p *ProductListParam) EncodeQuery() string {
 	v := url.Values{}
 	v.Add("handle", p.Handle)
 	v.Add("page", fmt.Sprintf("%d", p.Page))
+	if len(p.ProductIDs) > 0 {
+		s := make([]string, len(p.ProductIDs))
+		for i, id := range p.ProductIDs {
+			s[i] = fmt.Sprintf("%d", id)
+		}
+		v.Add("product_ids", strings.Join(s, ","))
+	}
 	if p.Limit > 0 {
 		v.Add("limit", fmt.Sprintf("%d", p.Limit))
 	}
@@ -53,6 +61,24 @@ func (p *ProductListService) Get(ctx context.Context, params *ProductListParam) 
 	}
 
 	return productListWrapper.ProductListings, resp, nil
+}
+
+// fetch one product by the given product id
+func (p *ProductListService) GetProduct(ctx context.Context, ID int64) (*ProductList, *http.Response, error) {
+	req, err := p.client.NewRequest("GET", fmt.Sprintf("/admin/product_listings/%d.json", ID), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var productListWrapper struct {
+		ProductListing *ProductList `json:"product_listing"`
+	}
+	resp, err := p.client.Do(ctx, req, &productListWrapper)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return productListWrapper.ProductListing, resp, nil
 }
 
 func (p *ProductListService) Count(ctx context.Context) (int, *http.Response, error) {
