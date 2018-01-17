@@ -66,7 +66,8 @@ func ShopifyProductTagsCreate(ctx context.Context, product *data.Product, p *sho
 			// products gender
 			for _, fc := range a.categories {
 				if f.gender != data.ProductGenderUnknown &&
-					a.gender != f.gender {
+					fc.Gender != data.ProductGenderUnisex &&
+					fc.Gender != f.gender {
 					continue
 				}
 				f.categories = append(f.categories, fc)
@@ -101,11 +102,14 @@ func ShopifyProductTagsCreate(ctx context.Context, product *data.Product, p *sho
 }
 
 func parseGender(t string) data.ProductGender {
-	if t == "man" || t == "woman" || t == "unisex" {
-		// skip gender if specified, if we've already found gender
-		gender := new(data.ProductGender)
-		gender.UnmarshalText([]byte(t))
-		return *gender
+	if t == "man" || t == "gentleman" {
+		return data.ProductGenderMale
+	}
+	if t == "woman" || t == "lady" {
+		return data.ProductGenderFemale
+	}
+	if t == "kid" {
+		return data.ProductGenderUnisex
 	}
 	return data.ProductGenderUnknown
 }
