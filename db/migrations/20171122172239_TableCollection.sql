@@ -14,13 +14,9 @@ CREATE TABLE collections (
 );
 
 CREATE TABLE collection_products (
-    id serial PRIMARY KEY,
-
     collection_id bigint NOT NULL REFERENCES collections (id) ON DELETE CASCADE,
     product_id bigint NOT NULL REFERENCES products (id) ON DELETE CASCADE,
-
     created_at timestamp DEFAULT now() NOT NULL,
-
     CONSTRAINT unique_collection_product UNIQUE (collection_id, product_id)
 );
 CREATE INDEX collection_products_collection_id_idx ON collection_products (collection_id);

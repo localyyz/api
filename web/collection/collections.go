@@ -11,7 +11,61 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
+	db "upper.io/db.v3"
 )
+
+func FeaturedScopeCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		// get any existing scope
+		scope, ok := ctx.Value("scope").(db.Cond)
+		if !ok {
+			scope = db.Cond{}
+		}
+		scope["collections.featured"] = true
+
+		ctx = context.WithValue(ctx, "scope", scope)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
+func FemaleScopeCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		// get any existing scope
+		scope, ok := ctx.Value("scope").(db.Cond)
+		if !ok {
+			scope = db.Cond{}
+		}
+		scope["collections.gender"] = data.ProductGenderFemale
+		scope["collections.featured"] = false
+
+		ctx = context.WithValue(ctx, "scope", scope)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
+func MaleScopeCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		// get any existing scope
+		scope, ok := ctx.Value("scope").(db.Cond)
+		if !ok {
+			scope = db.Cond{}
+		}
+		scope["collections.gender"] = data.ProductGenderMale
+		scope["collections.featured"] = false
+
+		ctx = context.WithValue(ctx, "scope", scope)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
 
 func CollectionCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -38,9 +92,11 @@ func CollectionCtx(next http.Handler) http.Handler {
 
 func ListCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	scope, _ := ctx.Value("scope").(db.Cond)
+
 	var collections []*data.Collection
 	err := data.DB.Collection.
-		Find().
+		Find(scope).
 		OrderBy("ordering").
 		All(&collections)
 	if err != nil {

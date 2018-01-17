@@ -7,8 +7,9 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/", ListCollection)
-
+	r.With(FeaturedScopeCtx).Get("/featured", ListCollection)
+	r.With(MaleScopeCtx).Get("/man", ListCollection)
+	r.With(FemaleScopeCtx).Get("/woman", ListCollection)
 	r.Route("/{collectionID}", func(r chi.Router) {
 		r.Use(CollectionCtx)
 		r.Use(CollectionProductCtx)
