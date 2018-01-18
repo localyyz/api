@@ -84,42 +84,43 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 
 				// register the webhooks
 				connect.SH.RegisterWebhooks(r.Context(), place)
+				// if approved. attach the next choice
+				actionResponse.Attachments = []*slack.Attachment{
+					{
+						Text:       fmt.Sprintf("what kind of product does %s sell?", place.Name),
+						Fallback:   "",
+						CallbackID: fmt.Sprintf("placeid%d", place.ID),
+						Color:      "0195ff",
+						Actions: []*slack.AttachmentAction{
+							{
+								Name:  GenderActionName,
+								Text:  "Male",
+								Type:  "button",
+								Value: "male",
+								Style: "primary",
+							},
+							{
+								Name:  GenderActionName,
+								Text:  "Female",
+								Type:  "button",
+								Value: "female",
+								Style: "primary",
+							},
+							{
+								Name:  GenderActionName,
+								Text:  "Unisex",
+								Type:  "button",
+								Value: "unisex",
+								Style: "primary",
+							},
+						},
+					},
+				}
 			} else if a.Value == ApprovalActionReject {
 				place.Status = data.PlaceStatusInActive
 			}
 			// approved or rejected.
 			actionResponse.Text = fmt.Sprintf("%s is now %s! (by: %s)", place.Name, place.Status, payload.User.Name)
-			actionResponse.Attachments = []*slack.Attachment{
-				{
-					Text:       fmt.Sprintf("what kind of product does %s sell?", place.Name),
-					Fallback:   "",
-					CallbackID: fmt.Sprintf("placeid%d", place.ID),
-					Color:      "0195ff",
-					Actions: []*slack.AttachmentAction{
-						{
-							Name:  GenderActionName,
-							Text:  "Male",
-							Type:  "button",
-							Value: "male",
-							Style: "primary",
-						},
-						{
-							Name:  GenderActionName,
-							Text:  "Female",
-							Type:  "button",
-							Value: "female",
-							Style: "primary",
-						},
-						{
-							Name:  GenderActionName,
-							Text:  "Unisex",
-							Type:  "button",
-							Value: "unisex",
-							Style: "primary",
-						},
-					},
-				},
-			}
 		case GenderActionName:
 			if a.Value == "male" {
 				place.Gender = data.PlaceGender(data.ProductGenderMale)

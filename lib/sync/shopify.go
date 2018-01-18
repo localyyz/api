@@ -130,7 +130,6 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			ExternalHandle: p.Handle,
 			Title:          p.Title,
 			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
-			Gender:         data.ProductGender(place.Gender),
 			Etc:            data.ProductEtc{},
 		}
 
@@ -144,10 +143,26 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			// TODO: -> product_images table and reference a variant
 			product.Etc.Images = append(product.Etc.Images, imgUrl.String())
 		}
+
+		// find product category + gender
+		parsedData := ParseProduct(ctx, p.Title, p.Tags, p.ProductType)
+		product.Gender = parsedData.Gender
 		// save product to database. Exit if fail
 		if err := data.DB.Product.Save(product); err != nil {
 			return errors.Wrap(err, "failed to save product")
 		}
+		if len(parsedData.Value) > 0 {
+			// TODO: move product category onto product table
+			data.DB.ProductTag.Save(&data.ProductTag{
+				PlaceID:   place.ID,
+				ProductID: product.ID,
+				Type:      data.ProductTagTypeCategory,
+				Value:     parsedData.Value,
+			})
+		} else {
+			lg.Warnf("parseTags: pl(%s) pr(%s) gnd(%v) without category", place.Name, p.Handle, product.Gender)
+		}
+
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		// bulk insert variants
@@ -186,29 +201,6 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			return errors.Wrap(err, "failed to create product variants")
 		}
 
-		if err := ShopifyProductTagsCreate(ctx, product, p); err != nil {
-			return err
-		}
-
 	}
 	return nil
-}
-
-func getProductCollections(ctx context.Context, productID int64) ([]*shopify.CustomCollection, error) {
-	place := ctx.Value("sync.place").(*data.Place)
-
-	cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	cl := shopify.NewClient(nil, cred.AccessToken)
-	cl.BaseURL, _ = url.Parse(cred.ApiURL)
-
-	clist, _, err := cl.CustomCollection.Get(ctx, &shopify.CustomCollectionParam{ProductID: productID})
-	if err != nil {
-		return nil, err
-	}
-
-	return clist, nil
 }

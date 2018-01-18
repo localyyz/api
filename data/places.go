@@ -38,6 +38,13 @@ type Place struct {
 
 type PlaceGender ProductGender
 
+var (
+	PlaceGenderUnknown = PlaceGender(ProductGenderUnknown)
+	PlaceGenderMale    = PlaceGender(ProductGenderMale)
+	PlaceGenderFemale  = PlaceGender(ProductGenderFemale)
+	PlaceGenderUnisex  = PlaceGender(ProductGenderUnisex)
+)
+
 func (p *Place) CollectionName() string {
 	return `places`
 }
