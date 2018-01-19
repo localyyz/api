@@ -26,6 +26,11 @@ func TestProductGender(t *testing.T) {
 		"drake":       &data.ProductCategory{Gender: data.ProductGenderMale, Value: "drake"},
 		"beyonce":     &data.ProductCategory{Gender: data.ProductGenderFemale, Value: "beyonce"},
 		"brucejenner": &data.ProductCategory{Gender: data.ProductGenderUnisex, Value: "brucejenner"},
+		"shoe":        &data.ProductCategory{Gender: data.ProductGenderUnisex, Value: "shoe"},
+		"lace-up":     &data.ProductCategory{Weight: 1, Gender: data.ProductGenderUnisex, Value: "lace-up"},
+
+		"shirt":   &data.ProductCategory{Weight: 1, Gender: data.ProductGenderMale, Value: "shirt"},
+		"t-shirt": &data.ProductCategory{Weight: 1, Gender: data.ProductGenderUnisex, Value: "t-shirt"},
 	}
 	ctx := context.WithValue(context.Background(), cacheKey, cache)
 
@@ -97,12 +102,6 @@ func TestProductGender(t *testing.T) {
 			inputs:   []string{"drake is from forest hill"},
 			expected: &data.ProductCategory{Value: "drake", Gender: data.ProductGenderMale},
 		},
-		//{ what should this do? it means we mislabeled a place gender
-		//name:     "female category with place gender male",
-		//place:    placeMale,
-		//inputs:   []string{"beyonce is from houston"},
-		//expected: &data.ProductCategory{Value: "beyonce", Gender: data.ProductGenderFemale},
-		//},
 		{
 			name:     "unisex category with place gender female",
 			place:    placeFemale,
@@ -114,6 +113,18 @@ func TestProductGender(t *testing.T) {
 			place:    placeUnisex,
 			inputs:   []string{"brucejenner is kylies dad"},
 			expected: &data.ProductCategory{Value: "brucejenner", Gender: data.ProductGenderUnisex},
+		},
+		{
+			name:     "hyphonated compound category",
+			place:    placeUnisex,
+			inputs:   []string{"mens cool t-shirt"},
+			expected: &data.ProductCategory{Value: "t-shirt", Gender: data.ProductGenderMale},
+		},
+		{
+			name:     "hyphonated compound category with female gender hint and higher weighted category",
+			place:    placeUnisex,
+			inputs:   []string{"Lace-up Warm Cotton Shoes Female"},
+			expected: &data.ProductCategory{Value: "lace-up", Gender: data.ProductGenderFemale},
 		},
 	}
 

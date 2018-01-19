@@ -71,12 +71,6 @@ func tokenize(tagStr string, optTags ...string) []string {
 		}
 	}
 
-	// if tagSet at this point is not empty, found a special case
-	// return right away
-	if tagSet.Size() > 0 {
-		return set.StringSlice(tagSet)
-	}
-
 	for _, t := range tt {
 		if hasNoLetter(t) {
 			// skip if not contain any alphanum letter
