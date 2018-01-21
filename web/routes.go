@@ -38,7 +38,7 @@ func New(DB *data.Database) *Handler {
 	if places, _ := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive}); places != nil {
 		shopify.SetupShopCache(places...)
 	}
-	if categories, _ := DB.ProductCategory.FindAll(nil); categories != nil {
+	if categories, _ := DB.Category.FindAll(nil); categories != nil {
 		shopify.SetupCategoryCache(categories...)
 	}
 	return &Handler{DB: DB}
@@ -49,7 +49,7 @@ func NewWebhookHandler(DB *data.Database) *Handler {
 	if places, _ := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive}); places != nil {
 		shopify.SetupShopCache(places...)
 	}
-	if categories, _ := DB.ProductCategory.FindAll(nil); categories != nil {
+	if categories, _ := DB.Category.FindAll(nil); categories != nil {
 		shopify.SetupCategoryCache(categories...)
 	}
 	return &Handler{DB: DB}

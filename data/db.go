@@ -27,14 +27,14 @@ type Database struct {
 	Collection        CollectionStore
 	CollectionProduct CollectionProductStore
 
-	ShopifyCred     ShopifyCredStore
-	Product         ProductStore
-	ProductTag      ProductTagStore
-	ProductVariant  ProductVariantStore
-	ProductCategory ProductCategoryStore
-	FeatureProduct  FeatureProductStore
-	Share           ShareStore
-	Webhook         WebhookStore
+	ShopifyCred    ShopifyCredStore
+	Product        ProductStore
+	ProductTag     ProductTagStore
+	ProductVariant ProductVariantStore
+	Category       CategoryStore
+	FeatureProduct FeatureProductStore
+	Share          ShareStore
+	Webhook        WebhookStore
 
 	Cart     CartStore
 	CartItem CartItemStore
@@ -95,7 +95,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Product = ProductStore{db.Store(&Product{})}
 	db.ProductTag = ProductTagStore{db.Store(&ProductTag{})}
 	db.ProductVariant = ProductVariantStore{db.Store(&ProductVariant{})}
-	db.ProductCategory = ProductCategoryStore{db.Store(&ProductCategory{})}
+	db.Category = CategoryStore{db.Store(&Category{})}
 	db.FeatureProduct = FeatureProductStore{db.Store(&FeatureProduct{})}
 	db.Share = ShareStore{db.Store(&Share{})}
 	db.Webhook = WebhookStore{db.Store(&Webhook{})}

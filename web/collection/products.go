@@ -41,8 +41,8 @@ func ListCollectionCategory(w http.ResponseWriter, r *http.Request) {
 	productIDs := ctx.Value("product_ids").([]int64)
 
 	var categories []struct {
-		Type   data.ProductCategoryType `db:"type" json:"type"`
-		Values []string                 `db:"values" json:"values"`
+		Type   data.CategoryType `db:"type" json:"type"`
+		Values []string          `db:"values" json:"values"`
 	}
 	err := data.DB.Select(db.Raw("distinct pc.type, array_agg(distinct pt.value) as values")).
 		From("product_categories pc").

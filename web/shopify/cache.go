@@ -8,7 +8,7 @@ import (
 
 var (
 	storeCache    map[string]*data.Place
-	categoryCache map[string]*data.ProductCategory
+	categoryCache map[string]*data.Category
 )
 
 func SetupShopCache(places ...*data.Place) {
@@ -19,8 +19,8 @@ func SetupShopCache(places ...*data.Place) {
 	lg.Infof("store cache: keys(%d)", len(storeCache))
 }
 
-func SetupCategoryCache(categories ...*data.ProductCategory) {
-	categoryCache = make(map[string]*data.ProductCategory)
+func SetupCategoryCache(categories ...*data.Category) {
+	categoryCache = make(map[string]*data.Category)
 	for _, c := range categories {
 		categoryCache[c.Value] = c
 	}

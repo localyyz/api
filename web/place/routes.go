@@ -13,17 +13,11 @@ func Routes() chi.Router {
 
 	r.Route("/{placeID}", func(r chi.Router) {
 		r.Use(PlaceCtx)
-		r.Use(ProductCategoryCtx)
+
+		r.Mount("/categories", category.Routes())
 
 		r.Get("/", GetPlace)
 		r.Get("/products", ListProduct)
-
-		// filtering endpoints
-		//r.Get("/categories", ListProductCategory)
-		r.Mount("/categories", category.Routes())
-		//r.Get("/brands", ListProductBrands)
-		//r.Get("/colors", ListProductColors)
-		//r.Get("/sizes", ListProductSizes)
 
 		r.Post("/share", Share)
 		r.Post("/follow", FollowPlace)

@@ -36,7 +36,7 @@ var (
 	}
 )
 
-type aggregateCategory []*data.ProductCategory
+type aggregateCategory []*data.Category
 
 func (s aggregateCategory) Len() int {
 	return len(s)
@@ -98,7 +98,7 @@ func tokenize(tagStr string, optTags ...string) []string {
 
 // filter tags for categories
 func parseCategory(ctx context.Context, tokens []string) []string {
-	categoryCache := ctx.Value(cacheKey).(map[string]*data.ProductCategory)
+	categoryCache := ctx.Value(cacheKey).(map[string]*data.Category)
 	var categories []string
 	for _, t := range tokens {
 		if _, found := categoryCache[t]; found {
@@ -123,12 +123,12 @@ func parseGender(ctx context.Context, tokens []string) data.ProductGender {
 	return data.ProductGenderUnisex
 }
 
-func ParseProduct(ctx context.Context, inputs ...string) data.ProductCategory {
-	categoryCache := ctx.Value(cacheKey).(map[string]*data.ProductCategory)
+func ParseProduct(ctx context.Context, inputs ...string) data.Category {
+	categoryCache := ctx.Value(cacheKey).(map[string]*data.Category)
 	place := ctx.Value("sync.place").(*data.Place)
 
 	var (
-		parsed     = data.ProductCategory{Gender: place.Gender}
+		parsed     = data.Category{Gender: place.Gender}
 		categories = set.New()
 	)
 	for _, s := range inputs {

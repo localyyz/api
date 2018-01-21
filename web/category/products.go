@@ -135,7 +135,7 @@ func ListProductSizes(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, sizes)
 }
 
-func listCategoryProduct(ctx context.Context, categories []*data.ProductCategory) ([]*data.Product, error) {
+func listCategoryProduct(ctx context.Context, categories []*data.Category) ([]*data.Product, error) {
 	var categoryValues []string
 	for _, v := range categories {
 		categoryValues = append(categoryValues, v.Value)
@@ -225,7 +225,7 @@ func filterCategoryProduct(ctx context.Context, payload *categoryFilterRequest) 
 			}
 			continue
 		case data.ProductTagTypeCategory:
-			mappings, err := data.DB.ProductCategory.FindByMapping(f.Value)
+			mappings, err := data.DB.Category.FindByMapping(f.Value)
 			if err != nil {
 				continue
 			}
@@ -305,7 +305,7 @@ func filterCategoryProduct(ctx context.Context, payload *categoryFilterRequest) 
 // Return all products within a top level category
 func ListCategoryProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	categoryType := ctx.Value("categoryType").(data.ProductCategoryType)
+	categoryType := ctx.Value("categoryType").(data.CategoryType)
 
 	var payload categoryFilterRequest
 	if err := render.Bind(r, &payload); err != nil {
@@ -321,7 +321,7 @@ func ListCategoryProduct(w http.ResponseWriter, r *http.Request) {
 		products, err = filterCategoryProduct(ctx, &payload)
 	} else {
 		// find category tag values
-		categories, err := data.DB.ProductCategory.FindByType(categoryType)
+		categories, err := data.DB.Category.FindByType(categoryType)
 		if err != nil {
 			render.Respond(w, r, err)
 			return

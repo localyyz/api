@@ -165,32 +165,3 @@ func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 
 	return nil
 }
-
-type ProductCategory struct {
-	*data.ProductCategory
-	ImageURL string   `json:"imageUrl"`
-	Values   []string `json:"values"`
-}
-
-func (c *ProductCategory) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
-
-type ProductCategoryList []*ProductCategory
-
-func (l ProductCategoryList) Render(w http.ResponseWriter, r *http.Request) error {
-	for _, v := range l {
-		if err := v.Render(w, r); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func NewProductCategoryList(ctx context.Context, categories []*data.ProductCategory) []render.Renderer {
-	list := []render.Renderer{}
-	for _, cat := range categories {
-		list = append(list, &ProductCategory{ProductCategory: cat})
-	}
-	return list
-}

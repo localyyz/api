@@ -16,7 +16,7 @@ import (
 func CategoryTypeCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		rawCategory := strings.TrimSpace(chi.URLParam(r, "categoryType"))
-		categoryType := new(data.ProductCategoryType)
+		categoryType := new(data.CategoryType)
 		if err := categoryType.UnmarshalText([]byte(rawCategory)); err != nil {
 			render.Respond(w, r, err)
 			return
@@ -29,12 +29,12 @@ func CategoryTypeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ListProductCategory(w http.ResponseWriter, r *http.Request) {
+func ListCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	gender := ctx.Value("product.gender").(data.ProductGender)
 
-	var categories []*data.ProductCategory
-	err := data.DB.ProductCategory.
+	var categories []*data.Category
+	err := data.DB.Category.
 		Find(db.Cond{
 			"gender": []data.ProductGender{
 				gender,
@@ -48,15 +48,15 @@ func ListProductCategory(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
-	types := make([]data.ProductCategoryType, len(categories))
+	types := make([]data.CategoryType, len(categories))
 	for i, c := range categories {
 		types[i] = c.Type
 	}
 	render.Respond(w, r, presenter.NewCategoryList(ctx, types))
 }
 
-func GetProductCategory(w http.ResponseWriter, r *http.Request) {
+func GetCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	categoryType := ctx.Value("categoryType").(data.ProductCategoryType)
+	categoryType := ctx.Value("categoryType").(data.CategoryType)
 	render.Respond(w, r, presenter.NewCategory(ctx, categoryType))
 }

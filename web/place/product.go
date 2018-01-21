@@ -1,7 +1,6 @@
 package place
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -14,13 +13,13 @@ import (
 )
 
 // List available top level product categories for a given place
-func ListProductCategory(w http.ResponseWriter, r *http.Request) {
+func ListCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
 
 	var categories []struct {
-		Type   data.ProductCategoryType `db:"type" json:"type"`
-		Values []string                 `db:"values" json:"values"`
+		Type   data.CategoryType `db:"type" json:"type"`
+		Values []string          `db:"values" json:"values"`
 	}
 	err := data.DB.Select(db.Raw("distinct pc.type, array_agg(distinct pt.value) as values")).
 		From("product_categories pc").
@@ -218,29 +217,6 @@ func ListProductBrands(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Respond(w, r, brands)
-}
-
-func ProductCategoryCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		for k, v := range r.URL.Query() {
-			if v == nil || len(v) == 0 {
-				continue
-			}
-			// find filterings
-			var filterType data.ProductTagType
-			if err := filterType.UnmarshalText([]byte(k)); err != nil {
-				// unrecognized filter tag type
-				continue
-			}
-			if filterType == data.ProductTagTypeCategory {
-				ctx = context.WithValue(ctx, "categoryType", v[0])
-				break
-			}
-		}
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
 }
 
 // List products at a given place

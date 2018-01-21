@@ -10,7 +10,7 @@ func Routes() chi.Router {
 	r.Get("/recent", ListRecentProduct)
 	r.Get("/featured", ListFeaturedProduct)
 	r.With(ProductGenderCtx).
-		With(ProductCategoryCtx).
+		With(CategoryCtx).
 		Get("/gender/{gender}", ListGenderProduct)
 	r.Route("/{productID}", func(r chi.Router) {
 		r.Use(ProductCtx)

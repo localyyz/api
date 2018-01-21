@@ -10,13 +10,13 @@ import (
 )
 
 type Category struct {
-	Type   data.ProductCategoryType `json:"type"`
-	Values []string                 `json:"values"`
+	Type   data.CategoryType `json:"type"`
+	Values []string          `json:"values"`
 
 	ctx context.Context
 }
 
-func NewCategory(ctx context.Context, categoryType data.ProductCategoryType) *Category {
+func NewCategory(ctx context.Context, categoryType data.CategoryType) *Category {
 	category := &Category{
 		Type: categoryType,
 		ctx:  ctx,
@@ -28,16 +28,16 @@ func NewCategory(ctx context.Context, categoryType data.ProductCategoryType) *Ca
 	if gender, ok := ctx.Value("product.gender").(data.ProductGender); ok {
 		cond["gender"] = []data.ProductGender{gender, data.ProductGenderUnisex}
 	}
-	var productCategories []*data.ProductCategory
+	var categories []*data.Category
 	data.DB.
 		Select(db.Raw("distinct mapping")).
 		From("product_categories").
 		Where(cond).
 		OrderBy("mapping").
-		All(&productCategories)
+		All(&categories)
 
 	category.Values = []string{}
-	for _, c := range productCategories {
+	for _, c := range categories {
 		category.Values = append(category.Values, c.Mapping)
 	}
 	return category
@@ -49,7 +49,7 @@ func (c *Category) Render(w http.ResponseWriter, r *http.Request) error {
 
 type CategoryList []*Category
 
-func NewCategoryList(ctx context.Context, categories []data.ProductCategoryType) []render.Renderer {
+func NewCategoryList(ctx context.Context, categories []data.CategoryType) []render.Renderer {
 	list := []render.Renderer{}
 	for _, c := range categories {
 		list = append(list, NewCategory(ctx, c))

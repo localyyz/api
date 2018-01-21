@@ -11,7 +11,7 @@ import (
 	db "upper.io/db.v3"
 )
 
-func ProductCategoryCtx(next http.Handler) http.Handler {
+func CategoryCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		u := r.URL.Query()
 
@@ -19,7 +19,7 @@ func ProductCategoryCtx(next http.Handler) http.Handler {
 		if category := strings.ToLower(u.Get("category")); category != "" {
 			// find the value => mapping in product categories
 			var values []string
-			mappings, _ := data.DB.ProductCategory.FindByMapping(category)
+			mappings, _ := data.DB.Category.FindByMapping(category)
 			for _, m := range mappings {
 				values = append(values, m.Value)
 			}
@@ -28,7 +28,7 @@ func ProductCategoryCtx(next http.Handler) http.Handler {
 				"pt.value": values,
 			}
 		} else if rawType := strings.ToLower(u.Get("categoryType")); rawType != "" {
-			categoryType := new(data.ProductCategoryType)
+			categoryType := new(data.CategoryType)
 			if err := categoryType.UnmarshalText([]byte(rawType)); err != nil {
 				render.Respond(w, r, api.ErrInvalidRequest(err))
 				return
@@ -36,7 +36,7 @@ func ProductCategoryCtx(next http.Handler) http.Handler {
 
 			// find the value => mapping in product categories
 			var values []string
-			categories, _ := data.DB.ProductCategory.FindByType(*categoryType)
+			categories, _ := data.DB.Category.FindByType(*categoryType)
 			for _, c := range categories {
 				values = append(values, c.Value)
 			}
