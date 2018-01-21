@@ -15,9 +15,9 @@ type tagTest struct {
 }
 
 var (
-	placeMale   = &data.Place{Gender: data.PlaceGenderMale}
-	placeFemale = &data.Place{Gender: data.PlaceGenderFemale}
-	placeUnisex = &data.Place{Gender: data.PlaceGenderUnisex}
+	placeMale   = &data.Place{Gender: data.ProductGenderMale}
+	placeFemale = &data.Place{Gender: data.ProductGenderFemale}
+	placeUnisex = &data.Place{Gender: data.ProductGenderUnisex}
 )
 
 func TestProductGender(t *testing.T) {

@@ -36,14 +36,8 @@ type Place struct {
 	ApprovedAt  *time.Time `db:"approved_at,omitempty" json:"approvedAt,omitempty"`
 }
 
-type PlaceGender ProductGender
-
-var (
-	PlaceGenderUnknown = PlaceGender(ProductGenderUnknown)
-	PlaceGenderMale    = PlaceGender(ProductGenderMale)
-	PlaceGenderFemale  = PlaceGender(ProductGenderFemale)
-	PlaceGenderUnisex  = PlaceGender(ProductGenderUnisex)
-)
+// Gender alias
+type PlaceGender = ProductGender
 
 func (p *Place) CollectionName() string {
 	return `places`

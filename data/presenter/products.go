@@ -26,8 +26,10 @@ type Product struct {
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 	DeleteAt  *time.Time `json:"deletedAt,omitempty"`
 
-	HtmlDescription  string `json:"htmlDescription"`
-	NoTagDescription string `json:"noTagDescription"`
+	ThumbURL         string      `json:"thumbUrl"`
+	HtmlDescription  string      `json:"htmlDescription"`
+	NoTagDescription string      `json:"noTagDescription"`
+	Description      interface{} `json:"description"`
 
 	ctx context.Context
 }
@@ -157,8 +159,9 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 }
 
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
-	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Description, -1)
-	p.NoTagDescription = htmlx.StripTags(p.Description)
+	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Product.Description, -1)
+	p.NoTagDescription = htmlx.StripTags(p.Product.Description)
+	p.ThumbURL = thumbImage(p.Product.ImageUrl)
 
 	return nil
 }

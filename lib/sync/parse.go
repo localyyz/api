@@ -128,7 +128,7 @@ func ParseProduct(ctx context.Context, inputs ...string) data.ProductCategory {
 	place := ctx.Value("sync.place").(*data.Place)
 
 	var (
-		parsed     = data.ProductCategory{Gender: data.ProductGender(place.Gender)}
+		parsed     = data.ProductCategory{Gender: place.Gender}
 		categories = set.New()
 	)
 	for _, s := range inputs {
