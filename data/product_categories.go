@@ -32,6 +32,7 @@ const (
 	ProductCategoryFragrance                            // 7
 	ProductCategoryHome                                 // 8
 	ProductCategoryBag                                  // 9
+	ProductCategoryLingerie                             // 10
 )
 
 var (
@@ -46,6 +47,7 @@ var (
 		"fragrances",
 		"home",
 		"bag",
+		"lingerie",
 	}
 
 	ProductCategories = []ProductCategoryType{
@@ -58,6 +60,7 @@ var (
 		//ProductCategoryFragrance,
 		//ProductCategoryHome,
 		ProductCategoryBag,
+		ProductCategoryLingerie,
 	}
 )
 
