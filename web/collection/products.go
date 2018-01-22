@@ -21,7 +21,11 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		db.Raw("p.id IN (SELECT product_id FROM collection_products WHERE collection_id = ?)", collection.ID),
 	)
 	if collection.PlaceIDs != nil {
-		productCond = productCond.Or(db.Cond{"p.place_id IN": collection.PlaceIDs})
+		placeIDs := make([]int64, len(*collection.PlaceIDs))
+		for i, v := range *collection.PlaceIDs {
+			placeIDs[i] = int64(v)
+		}
+		productCond = productCond.Or(db.Cond{"p.place_id IN": placeIDs})
 	}
 	if collection.Categories != nil {
 		args := make([]string, len(*collection.Categories))
