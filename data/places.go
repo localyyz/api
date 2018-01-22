@@ -36,8 +36,18 @@ type Place struct {
 	ApprovedAt  *time.Time `db:"approved_at,omitempty" json:"approvedAt,omitempty"`
 }
 
-// Gender alias
-type PlaceGender = ProductGender
+// TODO: use go alias
+// ie: type PlaceGender = ProductGender
+// NOTE: breaks godef https://github.com/rogpeppe/godef/issues/71
+// pretty much a deal breaker.. sucks because type aliasing would be amazing here
+type PlaceGender ProductGender
+
+var (
+	PlaceGenderUnknown = PlaceGender(ProductGenderUnknown)
+	PlaceGenderMale    = PlaceGender(ProductGenderMale)
+	PlaceGenderFemale  = PlaceGender(ProductGenderFemale)
+	PlaceGenderUnisex  = PlaceGender(ProductGenderUnisex)
+)
 
 func (p *Place) CollectionName() string {
 	return `places`

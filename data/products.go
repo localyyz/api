@@ -19,6 +19,8 @@ type Product struct {
 	Gender      ProductGender `db:"gender" json:"genderHint"`
 	Etc         ProductEtc    `db:"etc" json:"etc"`
 
+	Category ProductCategory `db:"category" json:"category"`
+
 	// external id
 	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
 	ExternalHandle string `db:"external_handle" json:"-"`
@@ -26,6 +28,12 @@ type Product struct {
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
+}
+
+type ProductCategory struct {
+	Type  CategoryType `json:"type"`
+	Value string       `json:"value"`
+	*postgresql.JSONBConverter
 }
 
 type ProductGender uint32

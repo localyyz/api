@@ -128,7 +128,7 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 	place := ctx.Value("sync.place").(*data.Place)
 
 	var (
-		parsed     = data.Category{Gender: place.Gender}
+		parsed     = data.Category{Gender: data.ProductGender(place.Gender)}
 		categories = set.New()
 	)
 	for _, s := range inputs {
@@ -152,6 +152,7 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 	if len(aggregates) > 0 {
 		// use the parsed out category (sorted with the highest weighting) and insert as value
 		parsed.Value = aggregates[0].Value
+		parsed.Type = aggregates[0].Type
 		// if gender is still unspecified, choose it here
 		if parsed.Gender == data.ProductGenderUnisex {
 			parsed.Gender = aggregates[0].Gender

@@ -147,6 +147,10 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		// find product category + gender
 		parsedData := ParseProduct(ctx, p.Title, p.Tags, p.ProductType)
 		product.Gender = parsedData.Gender
+		if len(parsedData.Value) > 0 {
+			product.Category = data.ProductCategory{Type: parsedData.Type, Value: parsedData.Value}
+		}
+
 		// save product to database. Exit if fail
 		if err := data.DB.Product.Save(product); err != nil {
 			return errors.Wrap(err, "failed to save product")

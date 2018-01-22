@@ -33,6 +33,7 @@ const (
 	CategoryHome                          // 8
 	CategoryBag                           // 9
 	CategoryLingerie                      // 10
+	CategorySneaker                       // 11
 )
 
 var (
@@ -48,6 +49,7 @@ var (
 		"home",
 		"bag",
 		"lingerie",
+		"sneaker",
 	}
 
 	Categories = []CategoryType{
@@ -61,6 +63,7 @@ var (
 		//CategoryHome,
 		CategoryBag,
 		CategoryLingerie,
+		CategorySneaker,
 	}
 )
 
