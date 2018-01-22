@@ -126,6 +126,12 @@ func TestProductGender(t *testing.T) {
 			inputs:   []string{"Lace-up Warm Cotton Shoes Female"},
 			expected: &data.Category{Value: "lace-up", Type: data.CategoryShoe, Gender: data.ProductGenderFemale},
 		},
+		{
+			name:     "gender hint sexy is female",
+			place:    placeUnisex,
+			inputs:   []string{"something something sexy"},
+			expected: &data.Category{Gender: data.ProductGenderFemale},
+		},
 	}
 
 	for _, tt := range tests {

@@ -114,7 +114,7 @@ func parseGender(ctx context.Context, tokens []string) data.ProductGender {
 		switch t {
 		case "man", "male", "gentleman":
 			return data.ProductGenderMale
-		case "woman", "female", "lady":
+		case "woman", "female", "lady", "sexy":
 			return data.ProductGenderFemale
 		case "kid":
 			return data.ProductGenderUnisex

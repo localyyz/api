@@ -149,24 +149,13 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		product.Gender = parsedData.Gender
 		if len(parsedData.Value) > 0 {
 			product.Category = data.ProductCategory{Type: parsedData.Type, Value: parsedData.Value}
+		} else {
+			lg.Warnf("parseTags: pl(%s) pr(%s) gnd(%v) without category", place.Name, p.Handle, product.Gender)
 		}
-
 		// save product to database. Exit if fail
 		if err := data.DB.Product.Save(product); err != nil {
 			return errors.Wrap(err, "failed to save product")
 		}
-		if len(parsedData.Value) > 0 {
-			// TODO: move product category onto product table
-			data.DB.ProductTag.Save(&data.ProductTag{
-				PlaceID:   place.ID,
-				ProductID: product.ID,
-				Type:      data.ProductTagTypeCategory,
-				Value:     parsedData.Value,
-			})
-		} else {
-			lg.Warnf("parseTags: pl(%s) pr(%s) gnd(%v) without category", place.Name, p.Handle, product.Gender)
-		}
-
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		// bulk insert variants
