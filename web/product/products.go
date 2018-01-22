@@ -62,10 +62,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 
 	var products []*data.Product
-	cond := db.And(
-		db.Cond{"gender": gender},
-		db.Raw(`not (category @> '{"type": "lingerie"}')`),
-	)
+	cond := db.And(db.Cond{"gender": gender})
 	if extraCond, ok := ctx.Value("product.filter").(db.Cond); ok && len(extraCond) > 0 {
 		cond = cond.And(extraCond)
 		query := data.DB.Select(db.Raw("distinct p.*")).
@@ -80,6 +77,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
+		cond = cond.And(db.Raw(`not (category @> '{"type": "lingerie"}')`))
 		query := data.DB.Product.Find(cond).OrderBy("-id")
 		query = cursor.UpdateQueryUpper(query)
 		if err := query.All(&products); err != nil {
