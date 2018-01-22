@@ -34,7 +34,7 @@ func NewCollectionList(ctx context.Context, collections []*data.Collection) []re
 	list := []render.Renderer{}
 	for _, collection := range collections {
 		c := NewCollection(ctx, collection)
-		if c.ProductCount == 0 {
+		if c.ProductCount == 0 && c.PlaceIDs != nil && c.Categories != nil {
 			continue
 		}
 		list = append(list, c)

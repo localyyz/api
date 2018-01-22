@@ -31,8 +31,8 @@ type Product struct {
 }
 
 type ProductCategory struct {
-	Type  CategoryType `json:"type"`
-	Value string       `json:"value"`
+	Type  CategoryType `json:"type,omitempty"`
+	Value string       `json:"value,omitempty"`
 	*postgresql.JSONBConverter
 }
 

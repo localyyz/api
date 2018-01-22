@@ -5,6 +5,7 @@ import (
 
 	"upper.io/bond"
 	"upper.io/db.v3"
+	"upper.io/db.v3/postgresql"
 )
 
 type Collection struct {
@@ -13,8 +14,12 @@ type Collection struct {
 	Description string        `db:"description" json:"description"`
 	ImageURL    string        `db:"image_url" json:"imageUrl"`
 	Gender      ProductGender `db:"gender" json:"gender"`
-	Ordering    int32         `db:"ordering" json:"ordering"`
-	CreatedAt   *time.Time    `db:"created_at,omitempty" json:"createdAt,omitempty"`
+
+	PlaceIDs   *postgresql.Int64Array  `db:"place_ids" json:"-"`
+	Categories *postgresql.StringArray `db:"categories" json:"-"`
+
+	Ordering  int32      `db:"ordering" json:"ordering"`
+	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 }
 
 type CollectionStore struct {

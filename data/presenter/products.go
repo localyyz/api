@@ -161,7 +161,7 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Product.Description, -1)
 	p.NoTagDescription = htmlx.StripTags(p.Product.Description)
-	p.ThumbURL = thumbImage(p.Product.ImageUrl)
+	p.ThumbURL = p.Product.ImageUrl
 
 	return nil
 }
