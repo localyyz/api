@@ -64,7 +64,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 	var products []*data.Product
 	cond := db.And(
 		db.Cond{"gender": gender},
-		db.Raw("not (category @> '{\"type\": 10}')"),
+		db.Raw(`not (category @> '{"type": "lingerie"}')`),
 	)
 	if extraCond, ok := ctx.Value("product.filter").(db.Cond); ok && len(extraCond) > 0 {
 		cond = cond.And(extraCond)
@@ -195,7 +195,7 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			left join places pl on p.place_id = pl.id
 			where p.created_at > now()::date - 7
 			and pl.status = 3
-			and not (category @> '{"type": 10}')
+			and not (category @> '{"type": "lingerie"}')
 		) x`)).
 		Where("x.r = ?", cursor.Page).
 		OrderBy("created_at desc").
