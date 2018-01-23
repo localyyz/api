@@ -79,7 +79,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 	} else {
 		cond = cond.And(
 			db.Raw(`not (category @> '{"type": "lingerie"}')`),
-			db.Raw(`category ? 'type'`),
+			db.Raw(`category ?? 'type'`),
 		)
 		query := data.DB.Product.Find(cond).OrderBy("-id")
 		query = cursor.UpdateQueryUpper(query)
@@ -197,7 +197,7 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			where p.created_at > now()::date - 7
 			and pl.status = 3
 			and not (category @> '{"type": "lingerie"}')
-			and category ? 'type'
+			and category ?? 'type'
 		) x`)).
 		Where("x.r = ?", cursor.Page).
 		OrderBy("created_at desc").
