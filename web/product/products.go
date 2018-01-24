@@ -144,7 +144,7 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			where p.created_at > now()::date - 7
 			and pl.status = 3
 			and category ->> 'type' = 'apparel'
-			and image_url != ''
+			and p.image_url != ''
 		) x`)).
 		Where("x.r = ?", cursor.Page).
 		OrderBy("created_at desc").
