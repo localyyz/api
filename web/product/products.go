@@ -2,6 +2,8 @@ package product
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -38,24 +40,6 @@ func ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ProductGenderCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		genderRaw := chi.URLParam(r, "gender")
-
-		gender := new(data.ProductGender)
-		if err := gender.UnmarshalText([]byte(genderRaw)); err != nil {
-			render.Respond(w, r, api.ErrInvalidRequest(err))
-			return
-		}
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "product.gender", *gender)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-
-	return http.HandlerFunc(handler)
-}
-
 func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	gender := ctx.Value("product.gender").(data.ProductGender)
@@ -65,10 +49,8 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 	cond := db.And(db.Cond{"gender": gender})
 	if extraCond, ok := ctx.Value("product.filter").(db.Cond); ok && len(extraCond) > 0 {
 		cond = cond.And(extraCond)
-		query := data.DB.Select(db.Raw("distinct p.*")).
-			From("products p").
-			LeftJoin("product_tags pt").
-			On("p.id = pt.product_id").
+		query := data.DB.Select(db.Raw("distinct *")).
+			From("products").
 			Where(cond).
 			OrderBy("-id")
 		paginate := cursor.UpdateQueryBuilder(query)
@@ -123,49 +105,14 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
 
-	// fetch the product's tags
-	relatedTags, err := data.DB.ProductTag.FindAll(db.Cond{
-		"product_id": product.ID,
-		"type": []data.ProductTagType{
-			data.ProductTagTypeCategory,
-			data.ProductTagTypeBrand,
-		},
-	})
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	if len(relatedTags) == 0 {
-		render.Respond(w, r, []struct{}{})
-		return
-	}
-
-	relatedCond := db.Cond{
-		"p.gender": product.Gender,
-		"p.id <>":  product.ID,
-	}
-	if len(relatedTags) == 2 {
-		// if both category and brand are found, use category
-		for _, t := range relatedTags {
-			if t.Type == data.ProductTagTypeCategory {
-				// found a suitable category
-				relatedCond["pt.type"] = t.Type
-				relatedCond["pt.value"] = t.Value
-				break
-			}
-		}
-	} else {
-		// beggers are not chosers
-		relatedCond["pt.type"] = relatedTags[0].Type
-		relatedCond["pt.value"] = relatedTags[0].Value
-	}
-
+	rawCategory, _ := json.Marshal(product.Category)
+	relatedCond := db.And(
+		db.Cond{"p.gender": product.Gender, "p.id <>": product.ID},
+		db.Raw(fmt.Sprintf("category @> '%s'", string(rawCategory))),
+	)
 	// find the products
 	query := data.DB.Select(db.Raw("distinct p.*")).
 		From("products p").
-		LeftJoin("product_tags pt").
-		On("pt.product_id = p.id").
 		Where(relatedCond).
 		OrderBy("p.id desc")
 	cursor := ctx.Value("cursor").(*api.Page)
@@ -196,8 +143,8 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			left join places pl on p.place_id = pl.id
 			where p.created_at > now()::date - 7
 			and pl.status = 3
-			and not (category @> '{"type": "lingerie"}')
-			and category ?? 'type'
+			and category ->> 'type' = 'apparel'
+			and image_url != ''
 		) x`)).
 		Where("x.r = ?", cursor.Page).
 		OrderBy("created_at desc").

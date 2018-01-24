@@ -29,7 +29,6 @@ type Database struct {
 
 	ShopifyCred    ShopifyCredStore
 	Product        ProductStore
-	ProductTag     ProductTagStore
 	ProductVariant ProductVariantStore
 	Category       CategoryStore
 	FeatureProduct FeatureProductStore
@@ -93,7 +92,6 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 
 	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}
 	db.Product = ProductStore{db.Store(&Product{})}
-	db.ProductTag = ProductTagStore{db.Store(&ProductTag{})}
 	db.ProductVariant = ProductVariantStore{db.Store(&ProductVariant{})}
 	db.Category = CategoryStore{db.Store(&Category{})}
 	db.FeatureProduct = FeatureProductStore{db.Store(&FeatureProduct{})}

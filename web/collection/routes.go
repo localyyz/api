@@ -12,7 +12,6 @@ func Routes() chi.Router {
 	r.With(FemaleScopeCtx).Get("/woman", ListCollection)
 	r.Route("/{collectionID}", func(r chi.Router) {
 		r.Use(CollectionCtx)
-
 		r.Get("/", GetCollection)
 		r.Get("/products", ListProduct)
 	})

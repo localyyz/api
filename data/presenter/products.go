@@ -35,7 +35,6 @@ type Product struct {
 }
 
 type VariantCache map[int64][]*ProductVariant
-type TagCache map[int64][]*data.ProductTag
 type PlaceCache map[int64]*data.Place
 
 type SearchProductList []*Product
@@ -104,7 +103,6 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 		}
 	}
 
-	//ctx = context.WithValue(ctx, "tag.cache", tagCache)
 	ctx = context.WithValue(ctx, "variant.cache", variantCache)
 	ctx = context.WithValue(ctx, "place.cache", placeCache)
 
