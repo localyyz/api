@@ -34,6 +34,24 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 	return nil
 }
 
+func setPrices(price, comparePrice string) data.ProductVariantEtc {
+	etc := data.ProductVariantEtc{}
+	price1, _ := strconv.ParseFloat(price, 64)
+	if len(comparePrice) == 0 {
+		etc.Price = price1
+		return etc
+	}
+	price2, _ := strconv.ParseFloat(comparePrice, 64)
+	if price2 > 0 && price1 > price2 {
+		etc.Price = price2
+		etc.PrevPrice = price1
+	} else if price2 > 0 && price2 > price1 {
+		etc.Price = price1
+		etc.PrevPrice = price2
+	}
+	return etc
+}
+
 func ShopifyProductListingsUpdate(ctx context.Context) error {
 	place := ctx.Value("sync.place").(*data.Place)
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
@@ -90,8 +108,11 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 				}
 			}
 
-			dbVariant.Etc.Price, _ = strconv.ParseFloat(v.Price, 64)
-			dbVariant.Etc.PrevPrice, _ = strconv.ParseFloat(v.CompareAtPrice, 64)
+			// set price/compare price
+			etc := setPrices(v.Price, v.CompareAtPrice)
+			dbVariant.Etc.Price = etc.Price
+			dbVariant.Etc.PrevPrice = etc.PrevPrice
+
 			for _, o := range v.OptionValues {
 				vv := strings.ToLower(o.Value)
 				switch strings.ToLower(o.Name) {
@@ -165,29 +186,22 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		go func() {
 			defer b.Done()
 			for _, v := range p.Variants {
-				price, _ := strconv.ParseFloat(v.Price, 64)
-
-				prevPrice, _ := strconv.ParseFloat(v.CompareAtPrice, 64)
-				variantEtc := data.ProductVariantEtc{
-					Price:     price,
-					PrevPrice: prevPrice,
-					Sku:       v.Sku,
-				}
+				etc := setPrices(v.Price, v.CompareAtPrice)
+				etc.Sku = v.Sku
 
 				// variant option values
 				for _, o := range v.OptionValues {
 					vv := strings.ToLower(o.Value)
 					switch strings.ToLower(o.Name) {
 					case "size":
-						variantEtc.Size = vv
+						etc.Size = vv
 					case "color":
-						variantEtc.Color = vv
+						etc.Color = vv
 					default:
 						// pass
 					}
 				}
-
-				b.Values(product.ID, place.ID, v.InventoryQuantity, v.Title, v.ID, variantEtc)
+				b.Values(product.ID, place.ID, v.InventoryQuantity, v.Title, v.ID, etc)
 			}
 		}()
 		if err := b.Wait(); err != nil {
