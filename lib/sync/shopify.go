@@ -48,6 +48,8 @@ func setPrices(price, comparePrice string) data.ProductVariantEtc {
 	} else if price2 > 0 && price2 > price1 {
 		etc.Price = price1
 		etc.PrevPrice = price2
+	} else {
+		etc.Price = price1
 	}
 	return etc
 }

@@ -26,6 +26,12 @@ func TestSetPrices(t *testing.T) {
 			comparePrice: "100.00",
 			expected:     data.ProductVariantEtc{PrevPrice: 100.00, Price: 50.00},
 		},
+		{
+			name:         "compare at price = price (discount)",
+			price:        "50.00",
+			comparePrice: "50.00",
+			expected:     data.ProductVariantEtc{Price: 50.00},
+		},
 	}
 
 	for _, tt := range tests {
