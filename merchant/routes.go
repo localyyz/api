@@ -145,7 +145,7 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 	sl := ctx.Value("slack.client").(*connect.Slack)
 	sl.Notify(
 		"store",
-		fmt.Sprintf("%s (id: %v) just accepted the TOS!", place.Name, place.ID),
+		fmt.Sprintf("<%s|%s> (id: %v) just accepted the TOS!", place.Website, place.Name, place.ID),
 		&slack.Attachment{
 			Text:       "ready to be approved or rejected",
 			Fallback:   "You are unable to approve / reject the store.",
