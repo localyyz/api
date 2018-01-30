@@ -2,7 +2,6 @@ package search
 
 import (
 	"net/http"
-	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -47,13 +46,11 @@ func SearchCity(w http.ResponseWriter, r *http.Request) {
 }
 
 type omniSearchRequest struct {
-	Query       string `json:"query,required"`
-	searchQuery string
+	Query string `json:"query,required"`
+	//searchQuery string
 }
 
 func (o *omniSearchRequest) Bind(r *http.Request) error {
-	o.searchQuery = strings.Join(strings.Split(strings.ToLower(strings.TrimSpace(o.Query)), " "), "&")
-
 	return nil
 }
 
@@ -69,9 +66,9 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find products by title
-	query := data.DB.Select("*", db.Raw("ts_rank(tsv, ?) as rank", p.searchQuery)).
+	query := data.DB.Select("*", db.Raw("ts_rank(tsv, plainto_tsquery('?')) as rank", db.Raw(p.Query))).
 		From("products").
-		Where(db.Raw(`tsv @@ to_tsquery('?')`, db.Raw(p.searchQuery))).
+		Where(db.Raw(`tsv @@ plainto_tsquery('?')`, db.Raw(p.Query))).
 		OrderBy("rank DESC")
 
 	cursor := ctx.Value("cursor").(*api.Page)
