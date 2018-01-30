@@ -1,7 +1,6 @@
 package search
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -9,7 +8,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/locale"
-	"github.com/gedex/inflector"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	db "upper.io/db.v3"
@@ -49,15 +47,12 @@ func SearchCity(w http.ResponseWriter, r *http.Request) {
 }
 
 type omniSearchRequest struct {
-	Query string `json:"query,required"`
-
-	singularQuery string
-	searchQuery   string
+	Query       string `json:"query,required"`
+	searchQuery string
 }
 
 func (o *omniSearchRequest) Bind(r *http.Request) error {
-	o.searchQuery = strings.ToLower(strings.TrimSpace(o.Query))
-	o.singularQuery = inflector.Singularize(o.searchQuery)
+	o.searchQuery = strings.Join(strings.Split(strings.ToLower(strings.TrimSpace(o.Query)), " "), "&")
 
 	return nil
 }
@@ -74,19 +69,15 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find products by title
-	query := data.DB.Product.Find(
-		db.Or(
-			db.Cond{"title ~*": fmt.Sprint("\\m(", p.singularQuery, ")")},
-			db.Cond{"title ~*": fmt.Sprint("\\m(", p.searchQuery, ")")},
-			db.Raw("etc->>'brand' ~* ?", fmt.Sprint("\\m(", p.singularQuery, ")")),
-			db.Raw("etc->>'brand' ~* ?", fmt.Sprint("\\m(", p.searchQuery, ")")),
-		),
-	).OrderBy("-created_at")
-	cursor := ctx.Value("cursor").(*api.Page)
-	query = cursor.UpdateQueryUpper(query)
+	query := data.DB.Select("*", db.Raw("ts_rank(tsv, ?) as rank", p.searchQuery)).
+		From("products").
+		Where(db.Raw(`tsv @@ to_tsquery('?')`, db.Raw(p.searchQuery))).
+		OrderBy("rank DESC")
 
+	cursor := ctx.Value("cursor").(*api.Page)
+	paginate := cursor.UpdateQueryBuilder(query)
 	var products []*data.Product
-	if err := query.All(&products); err != nil {
+	if err := paginate.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
