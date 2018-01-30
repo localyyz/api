@@ -47,7 +47,6 @@ func SearchCity(w http.ResponseWriter, r *http.Request) {
 
 type omniSearchRequest struct {
 	Query string `json:"query,required"`
-	//searchQuery string
 }
 
 func (o *omniSearchRequest) Bind(r *http.Request) error {
@@ -66,7 +65,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find products by title
-	query := data.DB.Select("*", db.Raw("ts_rank(tsv, plainto_tsquery('?')) as rank", db.Raw(p.Query))).
+	query := data.DB.Select("*", db.Raw("ts_rank(tsv, plainto_tsquery('?')) + weight as rank", db.Raw(p.Query))).
 		From("products").
 		Where(db.Raw(`tsv @@ plainto_tsquery('?')`, db.Raw(p.Query))).
 		OrderBy("rank DESC")

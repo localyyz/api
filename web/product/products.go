@@ -52,7 +52,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 		query := data.DB.Select(db.Raw("distinct *")).
 			From("products").
 			Where(cond).
-			OrderBy("-id")
+			OrderBy("-weight", "-id")
 		paginate := cursor.UpdateQueryBuilder(query)
 		if err := paginate.All(&products); err != nil {
 			render.Respond(w, r, err)
@@ -63,7 +63,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 			db.Raw(`not (category @> '{"type": "lingerie"}')`),
 			db.Raw(`category ?? 'type'`),
 		)
-		query := data.DB.Product.Find(cond).OrderBy("-id")
+		query := data.DB.Product.Find(cond).OrderBy("-weight", "-id")
 		query = cursor.UpdateQueryUpper(query)
 		if err := query.All(&products); err != nil {
 			render.Respond(w, r, err)
@@ -138,7 +138,7 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 	// TODO: is this bad? probably
 	query := data.DB.Select("*").
 		From(db.Raw(`(
-			select row_number() over (partition by p.place_id order by p.created_at desc) as r, p.*
+			select row_number() over (partition by p.place_id order by p.weight desc, p.id desc) as r, p.*
 			from products p
 			left join places pl on p.place_id = pl.id
 			where p.created_at > now()::date - 7
