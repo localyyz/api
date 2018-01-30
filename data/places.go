@@ -22,6 +22,7 @@ type Place struct {
 	ImageURL    string      `db:"image_url" json:"imageUrl"`
 	Currency    string      `db:"currency" json:"currency"`
 	Gender      PlaceGender `db:"gender" json:"genderHint"`
+	Weight      int32       `db:"weight" json:"weight"`
 
 	ShopifyID string         `db:"shopify_id,omitempty" json:"-"`
 	Geo       geotools.Point `db:"geo" json:"-"`
