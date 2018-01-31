@@ -35,12 +35,18 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		//NOTE syntax: category @> any (ARRAY ['{"value":"bikini"}', '{"value":"swimwear"}']::jsonb[]);
 		productCond = productCond.Or(db.Raw(fmt.Sprintf("category @> any (ARRAY [%s]::jsonb[])", strings.Join(args, ","))))
 	}
-	cond := db.And(productCond, db.Cond{"p.gender": collection.Gender})
+	cond := db.And(
+		productCond,
+		db.Cond{
+			"p.gender":      collection.Gender,
+			"p.category <>": "{}",
+		},
+	)
 
 	query := data.DB.Select(db.Raw("distinct p.*")).
 		From("products p").
 		Where(cond).
-		OrderBy("p.id DESC")
+		OrderBy("p.weight DESC, p.id DESC")
 
 	paginate := cursor.UpdateQueryBuilder(query)
 	var products []*data.Product
