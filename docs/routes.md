@@ -7,22 +7,34 @@
 <details>
 <summary>`/`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/**
 	- _GET_
-		- [New.func2.1]()
+		- [(*Handler).Routes.func2.1]()
 
 </details>
 <details>
 <summary>`/carts/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/**
 		- _GET_
@@ -34,10 +46,16 @@
 <details>
 <summary>`/carts/*/default/*/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/default/***
 		- [DefaultCartCtx]()
@@ -45,8 +63,6 @@
 			- **/**
 				- _GET_
 					- [GetCart]()
-				- _PUT_
-					- [UpdateCart]()
 				- _DELETE_
 					- [ClearCart]()
 
@@ -54,10 +70,16 @@
 <details>
 <summary>`/carts/*/default/*/*/checkout/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/default/***
 		- [DefaultCartCtx]()
@@ -73,10 +95,16 @@
 <details>
 <summary>`/carts/*/default/*/*/items/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/default/***
 		- [DefaultCartCtx]()
@@ -88,29 +116,41 @@
 
 </details>
 <details>
-<summary>`/carts/*/default/*/*/items/*/quantities`</summary>
+<summary>`/carts/*/default/*/*/items/*/count`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/default/***
 		- [DefaultCartCtx]()
 		- **/***
 			- **/items/***
-				- **/quantities**
+				- **/count**
 					- _GET_
-						- [CheckQuantities]()
+						- [CountCartItem]()
 
 </details>
 <details>
 <summary>`/carts/*/default/*/*/items/*/{cartItemID}/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/default/***
 		- [DefaultCartCtx]()
@@ -128,85 +168,86 @@
 
 </details>
 <details>
-<summary>`/carts/*/default/*/*/payment/*`</summary>
+<summary>`/carts/*/default/*/*/pay`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/default/***
 		- [DefaultCartCtx]()
 		- **/***
-			- **/payment/***
-				- **/**
-					- _POST_
-						- [CreatePayment]()
+			- **/pay**
+				- _POST_
+					- [CreatePayment]()
 
 </details>
 <details>
-<summary>`/carts/*/default/*/*/payment/*/methods`</summary>
+<summary>`/carts/*/default/*/*/shipping`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/default/***
 		- [DefaultCartCtx]()
 		- **/***
-			- **/payment/***
-				- **/methods**
-					- _GET_
-						- [ListPaymentMethods]()
-
-</details>
-<details>
-<summary>`/carts/*/default/*/*/shipping/*`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/carts/***
-	- **/default/***
-		- [DefaultCartCtx]()
-		- **/***
-			- **/shipping/***
-				- **/**
-					- _GET_
-						- [ListShippingRates]()
-					- _PUT_
-						- [UpdateShippingMethod]()
+			- **/shipping**
+				- _GET_
+					- [ListShippingRates]()
 
 </details>
 <details>
 <summary>`/carts/*/{cartID}/*/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/{cartID}/***
 		- [CartCtx]()
 		- **/***
 			- **/**
-				- _GET_
-					- [GetCart]()
-				- _PUT_
-					- [UpdateCart]()
 				- _DELETE_
 					- [ClearCart]()
+				- _GET_
+					- [GetCart]()
 
 </details>
 <details>
 <summary>`/carts/*/{cartID}/*/*/checkout/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/{cartID}/***
 		- [CartCtx]()
@@ -222,10 +263,16 @@
 <details>
 <summary>`/carts/*/{cartID}/*/*/items/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/{cartID}/***
 		- [CartCtx]()
@@ -237,29 +284,41 @@
 
 </details>
 <details>
-<summary>`/carts/*/{cartID}/*/*/items/*/quantities`</summary>
+<summary>`/carts/*/{cartID}/*/*/items/*/count`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/{cartID}/***
 		- [CartCtx]()
 		- **/***
 			- **/items/***
-				- **/quantities**
+				- **/count**
 					- _GET_
-						- [CheckQuantities]()
+						- [CountCartItem]()
 
 </details>
 <details>
 <summary>`/carts/*/{cartID}/*/*/items/*/{cartItemID}/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/{cartID}/***
 		- [CartCtx]()
@@ -268,74 +327,193 @@
 				- **/{cartItemID}/***
 					- [CartItemCtx]()
 					- **/**
+						- _DELETE_
+							- [RemoveCartItem]()
 						- _GET_
 							- [GetCartItem]()
 						- _PUT_
 							- [UpdateCartItem]()
-						- _DELETE_
-							- [RemoveCartItem]()
 
 </details>
 <details>
-<summary>`/carts/*/{cartID}/*/*/payment/*`</summary>
+<summary>`/carts/*/{cartID}/*/*/pay`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/{cartID}/***
 		- [CartCtx]()
 		- **/***
-			- **/payment/***
-				- **/**
-					- _POST_
-						- [CreatePayment]()
+			- **/pay**
+				- _POST_
+					- [CreatePayment]()
 
 </details>
 <details>
-<summary>`/carts/*/{cartID}/*/*/payment/*/methods`</summary>
+<summary>`/carts/*/{cartID}/*/*/shipping`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/carts/***
 	- **/{cartID}/***
 		- [CartCtx]()
 		- **/***
-			- **/payment/***
-				- **/methods**
-					- _GET_
-						- [ListPaymentMethods]()
+			- **/shipping**
+				- _GET_
+					- [ListShippingRates]()
 
 </details>
 <details>
-<summary>`/carts/*/{cartID}/*/*/shipping/*`</summary>
+<summary>`/categories/*/gender/{gender}`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
-- **/carts/***
-	- **/{cartID}/***
-		- [CartCtx]()
-		- **/***
-			- **/shipping/***
-				- **/**
-					- _PUT_
-						- [UpdateShippingMethod]()
-					- _GET_
-						- [ListShippingRates]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/categories/***
+	- **/gender/{gender}**
+		- _GET_
+			- [GenderCtx]()
+			- [ListCategory]()
+
+</details>
+<details>
+<summary>`/collections/*/featured`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/collections/***
+	- **/featured**
+		- _GET_
+			- [FeaturedScopeCtx]()
+			- [ListCollection]()
+
+</details>
+<details>
+<summary>`/collections/*/man`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/collections/***
+	- **/man**
+		- _GET_
+			- [MaleScopeCtx]()
+			- [ListCollection]()
+
+</details>
+<details>
+<summary>`/collections/*/woman`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/collections/***
+	- **/woman**
+		- _GET_
+			- [FemaleScopeCtx]()
+			- [ListCollection]()
+
+</details>
+<details>
+<summary>`/collections/*/{collectionID}/*`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/collections/***
+	- **/{collectionID}/***
+		- [CollectionCtx]()
+		- **/**
+			- _GET_
+				- [GetCollection]()
+
+</details>
+<details>
+<summary>`/collections/*/{collectionID}/*/products`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/collections/***
+	- **/{collectionID}/***
+		- [CollectionCtx]()
+		- **/products**
+			- _GET_
+				- [ListProduct]()
 
 </details>
 <details>
 <summary>`/connect`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/connect**
 	- _GET_
 		- [Connect]()
@@ -344,10 +522,16 @@
 <details>
 <summary>`/echo`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/echo**
 	- _POST_
 		- [echoPush]()
@@ -356,35 +540,53 @@
 <details>
 <summary>`/leaderboard`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/leaderboard**
 	- _GET_
 		- [leaderBoard]()
 
 </details>
 <details>
-<summary>`/locales/*`</summary>
+<summary>`/locales/*/cities`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/locales/***
-	- **/**
+	- **/cities**
 		- _GET_
-			- [ListLocale]()
+			- [ListCities]()
 
 </details>
 <details>
 <summary>`/locales/*/{localeID}/*/places`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/locales/***
 	- **/{localeID}/***
 		- [LocaleCtx]()
@@ -396,10 +598,16 @@
 <details>
 <summary>`/login`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/login**
 	- _POST_
 		- [EmailLogin]()
@@ -408,10 +616,16 @@
 <details>
 <summary>`/login/facebook`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/login/facebook**
 	- _POST_
 		- [FacebookLogin]()
@@ -420,22 +634,53 @@
 <details>
 <summary>`/oauth/shopify/callback`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/oauth/shopify/callback**
 	- _GET_
 		- [bitbucket.org/moodie-app/moodie-api/lib/connect.(*Shopify).OAuthCb-fm]()
 
 </details>
 <details>
+<summary>`/places/*/approval`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/places/***
+	- **/approval**
+		- _POST_
+			- [HandleApproval]()
+
+</details>
+<details>
 <summary>`/places/*/following`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/places/***
 	- **/following**
 		- _GET_
@@ -443,38 +688,18 @@
 
 </details>
 <details>
-<summary>`/places/*/nearby`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places/***
-	- **/nearby**
-		- _GET_
-			- [ListNearby]()
-
-</details>
-<details>
-<summary>`/places/*/recent`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places/***
-	- **/recent**
-		- _GET_
-			- [ListRecent]()
-
-</details>
-<details>
 <summary>`/places/*/{placeID}/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/places/***
 	- **/{placeID}/***
 		- [PlaceCtx]()
@@ -484,12 +709,41 @@
 
 </details>
 <details>
+<summary>`/places/*/{placeID}/*/categories/*/gender/{gender}`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/places/***
+	- **/{placeID}/***
+		- [PlaceCtx]()
+		- **/categories/***
+			- **/gender/{gender}**
+				- _GET_
+					- [GenderCtx]()
+					- [ListCategory]()
+
+</details>
+<details>
 <summary>`/places/*/{placeID}/*/follow`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/places/***
 	- **/{placeID}/***
 		- [PlaceCtx]()
@@ -501,27 +755,18 @@
 
 </details>
 <details>
-<summary>`/places/*/{placeID}/*/prices`</summary>
-
-- [NoCache]()
-- [Logger]()
-- [Recoverer]()
-- [New.func1]()
-- **/places/***
-	- **/{placeID}/***
-		- [PlaceCtx]()
-		- **/prices**
-			- _GET_
-				- [ListProductPrices]()
-
-</details>
-<details>
 <summary>`/places/*/{placeID}/*/products`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/places/***
 	- **/{placeID}/***
 		- [PlaceCtx]()
@@ -533,10 +778,16 @@
 <details>
 <summary>`/places/*/{placeID}/*/share`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/places/***
 	- **/{placeID}/***
 		- [PlaceCtx]()
@@ -546,29 +797,121 @@
 
 </details>
 <details>
-<summary>`/places/*/{placeID}/*/tags`</summary>
+<summary>`/products/*/featured`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
-- **/places/***
-	- **/{placeID}/***
-		- [PlaceCtx]()
-		- **/tags**
-			- _GET_
-				- [ListProductTags]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/products/***
+	- **/featured**
+		- _GET_
+			- [ListFeaturedProduct]()
 
 </details>
 <details>
-<summary>`/products/*/:productID/*/variant`</summary>
+<summary>`/products/*/gender/{gender}`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/products/***
-	- **/:productID/***
+	- **/gender/{gender}**
+		- _GET_
+			- [GenderCtx]()
+			- [CategoryCtx]()
+			- [ListGenderProduct]()
+
+</details>
+<details>
+<summary>`/products/*/recent`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/products/***
+	- **/recent**
+		- _GET_
+			- [ListRecentProduct]()
+
+</details>
+<details>
+<summary>`/products/*/{productID}/*`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/products/***
+	- **/{productID}/***
+		- [ProductCtx]()
+		- **/**
+			- _GET_
+				- [GetProduct]()
+
+</details>
+<details>
+<summary>`/products/*/{productID}/*/related`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/products/***
+	- **/{productID}/***
+		- [ProductCtx]()
+		- **/related**
+			- _GET_
+				- [ListRelatedProduct]()
+
+</details>
+<details>
+<summary>`/products/*/{productID}/*/variant`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/products/***
+	- **/{productID}/***
 		- [ProductCtx]()
 		- **/variant**
 			- _GET_
@@ -578,37 +921,73 @@
 <details>
 <summary>`/register`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/register**
 	- _POST_
 		- [RegisterSignup]()
 
 </details>
 <details>
-<summary>`/search`</summary>
+<summary>`/search/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
-- **/search**
-	- _POST_
-		- [(*JwtAuth).Verify.func1]()
-		- [SessionCtx]()
-		- [UserRefresh]()
-		- [OmniSearch]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/search/***
+	- **/**
+		- _POST_
+			- [OmniSearch]()
+
+</details>
+<details>
+<summary>`/search/*/city/{locale}`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/search/***
+	- **/city/{locale}**
+		- _POST_
+			- [LocaleShorthandCtx]()
+			- [SearchCity]()
 
 </details>
 <details>
 <summary>`/session/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/session/***
 	- **/**
 		- _DELETE_
@@ -618,10 +997,16 @@
 <details>
 <summary>`/session/*/heartbeat`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/session/***
 	- **/heartbeat**
 		- _POST_
@@ -631,24 +1016,36 @@
 <details>
 <summary>`/signup`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/signup**
-	- _POST_
-		- [EmailSignup]()
 	- _GET_
 		- [GetSignupPage]()
+	- _POST_
+		- [EmailSignup]()
 
 </details>
 <details>
 <summary>`/users/*/me/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/users/***
 	- **/me/***
 		- [MeCtx]()
@@ -660,10 +1057,16 @@
 <details>
 <summary>`/users/*/me/*/address/*`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/users/***
 	- **/me/***
 		- [MeCtx]()
@@ -676,12 +1079,46 @@
 
 </details>
 <details>
+<summary>`/users/*/me/*/address/*/{addressID}/*`</summary>
+
+- [RealIP]()
+- [NoCache]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
+- [Recoverer]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
+- **/users/***
+	- **/me/***
+		- [MeCtx]()
+		- **/address/***
+			- **/{addressID}/***
+				- [AddressCtx]()
+				- **/**
+					- _PUT_
+						- [UpdateAddress]()
+					- _DELETE_
+						- [RemoveAddress]()
+					- _GET_
+						- [GetAddress]()
+
+</details>
+<details>
 <summary>`/users/*/me/*/device`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/users/***
 	- **/me/***
 		- [MeCtx]()
@@ -693,10 +1130,16 @@
 <details>
 <summary>`/users/*/me/*/ping`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/users/***
 	- **/me/***
 		- [MeCtx]()
@@ -708,10 +1151,16 @@
 <details>
 <summary>`/webhooks/shopify`</summary>
 
+- [RealIP]()
 - [NoCache]()
-- [Logger]()
+- [RequestID]()
+- [RequestLogger.func1]()
+- [(*Handler).Routes.func1]()
 - [Recoverer]()
-- [New.func1]()
+- [(*JwtAuth).Verify.func1]()
+- [SessionCtx]()
+- [UserRefresh]()
+- [PaginateCtx]()
 - **/webhooks/shopify**
 	- _POST_
 		- [ShopifyStoreWhCtx]()
@@ -719,4 +1168,4 @@
 
 </details>
 
-Total # of routes: 46
+Total # of routes: 55
