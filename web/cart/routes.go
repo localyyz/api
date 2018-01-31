@@ -23,6 +23,10 @@ func Routes() chi.Router {
 		r.Use(DefaultCartCtx)
 		r.Mount("/", cartRoutes())
 	})
+	r.Route("/express", func(r chi.Router) {
+		r.Use(ExpressCartCtx)
+		r.Mount("/", cartRoutes())
+	})
 	r.Route("/{cartID}", func(r chi.Router) {
 		r.Use(CartCtx)
 		r.Mount("/", cartRoutes())
@@ -34,15 +38,48 @@ func Routes() chi.Router {
 func cartRoutes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Get("/", GetCart)
+	r.Delete("/", ClearCart)
+
 	r.Mount("/items", cartitem.Routes())
 	r.Mount("/checkout", checkout.Routes())
 
 	r.Get("/shipping", ListShippingRates)
 	r.Post("/pay", CreatePayment)
 
-	r.Get("/", GetCart)
-	r.Delete("/", ClearCart)
 	return r
+}
+
+func ExpressCartCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		user := ctx.Value("session.user").(*data.User)
+
+		var cart *data.Cart
+		err := data.DB.Cart.Find(
+			db.Cond{
+				"status <=":  data.CartStatusCheckout,
+				"is_express": true,
+				"user_id":    user.ID,
+			},
+		).OrderBy("-id").One(&cart)
+		if err != nil {
+			if err != db.ErrNoMoreRows {
+				render.Respond(w, r, err)
+				return
+			}
+			cart = &data.Cart{
+				UserID:    user.ID,
+				IsExpress: true,
+				Status:    data.CartStatusInProgress,
+			}
+			data.DB.Cart.Save(cart)
+		}
+
+		ctx = context.WithValue(ctx, "cart", cart)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
 }
 
 func DefaultCartCtx(next http.Handler) http.Handler {

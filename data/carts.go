@@ -16,6 +16,8 @@ type Cart struct {
 	UserID int64      `db:"user_id" json:"userId"`
 	Status CartStatus `db:"status" json:"status"`
 
+	IsExpress bool `db:"is_express" json:"isExpress"`
+
 	Etc CartEtc `db:"etc" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
