@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	routes := web.New(&web.Handler{})
+	routes := web.New(nil).Routes()
 
 	// mkdown output
 	mdDocFile, err := os.Create("./docs/routes.md")
