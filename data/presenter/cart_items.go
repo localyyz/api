@@ -33,7 +33,7 @@ func NewCartItem(ctx context.Context, item *data.CartItem) *CartItem {
 	}
 	if variant, _ := data.DB.ProductVariant.FindByID(item.VariantID); variant != nil {
 		resp.Variant = &ProductVariant{ProductVariant: variant}
-		resp.Price = variant.Etc.Price
+		resp.Price = variant.Price
 	}
 	return resp
 }

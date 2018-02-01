@@ -17,8 +17,11 @@ type ProductVariant struct {
 	Limits      int64  `db:"limits" json:"limits"`
 	Description string `db:"description" json:"description"`
 	// external offer id refering to specific variant
-	OfferID int64             `db:"offer_id" json:"-"`
-	Etc     ProductVariantEtc `db:"etc" json:"etc"`
+	OfferID int64 `db:"offer_id" json:"-"`
+
+	Price     float64           `db:"price" json:"price"`
+	PrevPrice float64           `db:"prev_price" json:"prevPrice"`
+	Etc       ProductVariantEtc `db:"etc" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`

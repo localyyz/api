@@ -16,8 +16,6 @@ type ProductVariant struct {
 	Place   *Place        `json:"place,omitempty"`
 	Product *data.Product `json:"product,omitempty"`
 
-	Price float64 `json:"price"`
-
 	// Hide fields
 	ProductID interface{} `json:"productId,omitempty"`
 	PlaceID   interface{} `json:"placeId,omitempty"`
@@ -33,7 +31,6 @@ type ProductVariant struct {
 func NewProductVariant(ctx context.Context, variant *data.ProductVariant) *ProductVariant {
 	p := &ProductVariant{
 		ProductVariant: variant,
-		Price:          variant.Etc.Price,
 		ctx:            ctx,
 	}
 

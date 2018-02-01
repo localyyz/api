@@ -34,24 +34,23 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 	return nil
 }
 
-func setPrices(price, comparePrice string) data.ProductVariantEtc {
-	etc := data.ProductVariantEtc{}
-	price1, _ := strconv.ParseFloat(price, 64)
-	if len(comparePrice) == 0 {
-		etc.Price = price1
-		return etc
+func setPrices(a, b string) (price, comparePrice float64) {
+	price1, _ := strconv.ParseFloat(a, 64)
+	if len(b) == 0 {
+		price = price1
+		return
 	}
-	price2, _ := strconv.ParseFloat(comparePrice, 64)
+	price2, _ := strconv.ParseFloat(b, 64)
 	if price2 > 0 && price1 > price2 {
-		etc.Price = price2
-		etc.PrevPrice = price1
+		price = price2
+		comparePrice = price1
 	} else if price2 > 0 && price2 > price1 {
-		etc.Price = price1
-		etc.PrevPrice = price2
+		price = price1
+		comparePrice = price2
 	} else {
-		etc.Price = price1
+		price = price1
 	}
-	return etc
+	return
 }
 
 func ShopifyProductListingsUpdate(ctx context.Context) error {
@@ -111,9 +110,10 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			}
 
 			// set price/compare price
-			etc := setPrices(v.Price, v.CompareAtPrice)
-			dbVariant.Etc.Price = etc.Price
-			dbVariant.Etc.PrevPrice = etc.PrevPrice
+			dbVariant.Price, dbVariant.PrevPrice = setPrices(
+				v.Price,
+				v.CompareAtPrice,
+			)
 
 			for _, o := range v.OptionValues {
 				vv := strings.ToLower(o.Value)
@@ -181,16 +181,23 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
+		// update product tsv
+		data.DB.Update("products").Set("tsv = to_tsvector(title)").Where(db.Cond{"id": product.ID})
+
 		// bulk insert variants
 		q := data.DB.InsertInto("product_variants").
-			Columns("product_id", "place_id", "limits", "description", "offer_id", "etc")
+			Columns("product_id", "place_id", "limits", "description", "offer_id", "price", "prev_price", "etc")
 		b := q.Batch(len(p.Variants))
 		go func() {
 			defer b.Done()
 			for _, v := range p.Variants {
-				etc := setPrices(v.Price, v.CompareAtPrice)
-				etc.Sku = v.Sku
-
+				price, prevPrice := setPrices(
+					v.Price,
+					v.CompareAtPrice,
+				)
+				etc := data.ProductVariantEtc{
+					Sku: v.Sku,
+				}
 				// variant option values
 				for _, o := range v.OptionValues {
 					vv := strings.ToLower(o.Value)
@@ -203,7 +210,7 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 						// pass
 					}
 				}
-				b.Values(product.ID, place.ID, v.InventoryQuantity, v.Title, v.ID, etc)
+				b.Values(product.ID, place.ID, v.InventoryQuantity, v.Title, v.ID, price, prevPrice, etc)
 			}
 		}()
 		if err := b.Wait(); err != nil {
