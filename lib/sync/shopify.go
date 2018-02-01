@@ -181,6 +181,9 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
+		// update product tsv
+		data.DB.Update("products").Set("tsv = to_tsvector(title)").Where(db.Cond{"id": product.ID})
+
 		// bulk insert variants
 		q := data.DB.InsertInto("product_variants").
 			Columns("product_id", "place_id", "limits", "description", "offer_id", "price", "prev_price", "etc")
