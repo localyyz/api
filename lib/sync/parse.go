@@ -110,16 +110,23 @@ func parseCategory(ctx context.Context, tokens []string) []string {
 
 // filter tags for genders
 func parseGender(ctx context.Context, tokens []string) data.ProductGender {
+	var maybeGender data.ProductGender
 	for _, t := range tokens {
 		switch t {
 		case "man", "male", "gentleman":
 			return data.ProductGenderMale
 		case "woman", "female", "lady", "sexy":
+			maybeGender = data.ProductGenderFemale
 			return data.ProductGenderFemale
 		case "kid":
 			return data.ProductGenderUnisex
 		}
 	}
+
+	if maybeGender != data.ProductGenderUnknown {
+		return maybeGender
+	}
+
 	return data.ProductGenderUnisex
 }
 
