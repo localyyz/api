@@ -127,10 +127,16 @@ func TestProductGender(t *testing.T) {
 			expected: &data.Category{Value: "lace-up", Type: data.CategoryShoe, Gender: data.ProductGenderFemale},
 		},
 		{
-			name:     "gender hint sexy is female",
+			name:     "gender hint sexy is female. only if nothing else is detected",
 			place:    placeUnisex,
 			inputs:   []string{"something something sexy"},
 			expected: &data.Category{Gender: data.ProductGenderFemale},
+		},
+		{
+			name:     "gender men with 'sexy'",
+			place:    placeUnisex,
+			inputs:   []string{"mens sexy something"},
+			expected: &data.Category{Gender: data.ProductGenderMale},
 		},
 	}
 

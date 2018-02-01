@@ -61,6 +61,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 	} else {
 		cond = cond.And(
 			db.Raw(`not (category @> '{"type": "lingerie"}')`),
+			db.Raw(`not (category @> '{"type": "swimwear"}')`),
 			db.Raw(`category ?? 'type'`),
 		)
 		query := data.DB.Product.Find(cond).OrderBy("-weight", "-id")

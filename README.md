@@ -23,6 +23,12 @@ Build and deploy
 1. make sure `docker` is running locally
 2. build and deploy with `sup production deploy`
 
+```
+gcloud clean up tags
+```
+
+gcloud container images delete gcr.io/<project>/api@sha256:<tag> --force-delete-tags
+
 ### Troubleshoot
 
 Sup connection error. Check Sup documentation.
