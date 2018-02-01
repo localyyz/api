@@ -216,6 +216,12 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 	place.Billing = data.PlaceBilling{Billing: shopifyBilling}
 
+	// create a place holder checkout for the account id
+	if checkout, _, _ := sh.Checkout.Create(ctx, nil); checkout != nil && len(checkout.ShopifyPaymentAccountID) != 0 {
+		// NOTE: for now the id returned on checkout is stripe specific
+		place.PaymentMethods = []*data.PaymentMethod{{Type: "stripe", ID: checkout.ShopifyPaymentAccountID}}
+	}
+
 	// save the place!
 	if err := data.DB.Place.Save(place); err != nil {
 		return errors.Wrap(err, "failed to save place")
