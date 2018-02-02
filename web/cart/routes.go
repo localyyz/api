@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/cart/cartitem"
 	"bitbucket.org/moodie-app/moodie-api/web/cart/checkout"
+	"bitbucket.org/moodie-app/moodie-api/web/cart/express"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	db "upper.io/db.v3"
@@ -19,12 +20,10 @@ func Routes() chi.Router {
 
 	r.Get("/", ListCarts)
 	r.Post("/", CreateCart)
+	r.Mount("/express", express.Routes())
+
 	r.Route("/default", func(r chi.Router) {
 		r.Use(DefaultCartCtx)
-		r.Mount("/", cartRoutes())
-	})
-	r.Route("/express", func(r chi.Router) {
-		r.Use(ExpressCartCtx)
 		r.Mount("/", cartRoutes())
 	})
 	r.Route("/{cartID}", func(r chi.Router) {
@@ -48,38 +47,6 @@ func cartRoutes() chi.Router {
 	r.Post("/pay", CreatePayment)
 
 	return r
-}
-
-func ExpressCartCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		user := ctx.Value("session.user").(*data.User)
-
-		var cart *data.Cart
-		err := data.DB.Cart.Find(
-			db.Cond{
-				"status <=":  data.CartStatusCheckout,
-				"is_express": true,
-				"user_id":    user.ID,
-			},
-		).OrderBy("-id").One(&cart)
-		if err != nil {
-			if err != db.ErrNoMoreRows {
-				render.Respond(w, r, err)
-				return
-			}
-			cart = &data.Cart{
-				UserID:    user.ID,
-				IsExpress: true,
-				Status:    data.CartStatusInProgress,
-			}
-			data.DB.Cart.Save(cart)
-		}
-
-		ctx = context.WithValue(ctx, "cart", cart)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
 }
 
 func DefaultCartCtx(next http.Handler) http.Handler {
