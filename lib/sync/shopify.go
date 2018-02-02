@@ -114,6 +114,9 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 				v.Price,
 				v.CompareAtPrice,
 			)
+			// NOTE: backwards compatible
+			dbVariant.Etc.Price = dbVariant.Price
+			dbVariant.Etc.PrevPrice = dbVariant.PrevPrice
 
 			for _, o := range v.OptionValues {
 				vv := strings.ToLower(o.Value)
@@ -197,6 +200,9 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 				)
 				etc := data.ProductVariantEtc{
 					Sku: v.Sku,
+					// NOTE: backwards compatible
+					Price:     price,
+					PrevPrice: prevPrice,
 				}
 				// variant option values
 				for _, o := range v.OptionValues {
