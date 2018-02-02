@@ -46,6 +46,10 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(ExpressCartCtx)
 
+	r.Get("/", GetCart)
+	r.Delete("/", DeleteCart)
+
+	r.Post("/shipping/estimate", GetShippingRates)
 	r.Post("/items", CreateCartItem)
 	r.Post("/pay", CreatePayment)
 

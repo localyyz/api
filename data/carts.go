@@ -28,14 +28,16 @@ type Cart struct {
 type CartStatus uint
 
 type CartAddress struct {
-	FirstName  string `json:"firstName"`
-	LastName   string `json:"lastName"`
-	Address    string `json:"address"`
-	AddressOpt string `json:"addressOpt"`
-	City       string `json:"city"`
-	Country    string `json:"country"`
-	Province   string `json:"province"`
-	Zip        string `json:"zip"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
+	Address      string `json:"address"`
+	AddressOpt   string `json:"addressOpt"`
+	City         string `json:"city"`
+	Country      string `json:"country"`
+	CountryCode  string `json:"countryCode"`
+	Province     string `json:"province"`
+	ProvinceCode string `json:"provinceCode"`
+	Zip          string `json:"zip"`
 }
 
 type CartShippingMethod struct {

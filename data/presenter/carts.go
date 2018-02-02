@@ -14,7 +14,9 @@ import (
 type Cart struct {
 	*data.Cart
 
-	CartItems CartItemList `json:"items"`
+	StripeAccountID string                     `json:"stripeAccountId"`
+	CartItems       CartItemList               `json:"items"`
+	ShippingRates   []*data.CartShippingMethod `json:"shippingRates"`
 
 	TotalShipping int64 `json:"totalShipping"`
 	TotalTax      int64 `json:"totalTax"`
@@ -25,6 +27,14 @@ type Cart struct {
 }
 
 func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
+	if c.IsExpress {
+		// if cart is express. pull shopify account id to the top
+		for _, d := range c.Etc.ShopifyData {
+			c.StripeAccountID = d.ShopifyPaymentAccountID
+			break
+		}
+	}
+
 	return nil
 }
 
@@ -55,7 +65,10 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 				resp.TotalShipping += s.Price
 			}
 		}
+	}
 
+	if rates, _ := ctx.Value("rates").([]*data.CartShippingMethod); rates != nil {
+		resp.ShippingRates = rates
 	}
 
 	return resp
