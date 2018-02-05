@@ -61,8 +61,50 @@ func GenderCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+func ExportProducts(w http.ResponseWriter, r *http.Request) {
+
+	type exportProduct struct {
+		ID            int64   `db:"id" json:"id"`
+		Title         string  `db:"title" json:"title"`
+		Merchant      string  `db:"merchant" json:"merchant"`
+		ImageURL      *string `db:"image_url" json:"image_url"`
+		Category      *string `db:"category" json:"category"`
+		Price         float64 `db:"price" json:"price"`
+		PreviousPrice float64 `db:"previous" json:"previous_price"`
+	}
+
+	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
+
+	query := data.DB.Select(
+		"p.id",
+		"p.title",
+		"p.image_url",
+		"pl.name as merchant",
+		db.Raw("p.category->>'value' as category"),
+		db.Raw("max((pv.etc->>'prc')::numeric) as price"),
+		db.Raw("max((pv.etc->>'prv')::numeric) previous")).
+		From("products p").
+		LeftJoin("places pl").On("pl.id = p.place_id").
+		LeftJoin("product_variants pv").On("pv.product_id = p.id").
+		GroupBy("p.id", "pl.name").
+		OrderBy("id DESC")
+
+	var products []*exportProduct
+	paginate := cursor.UpdateQueryBuilder(query)
+	if err := paginate.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	cursor.Update(products)
+
+	render.Respond(w, r, products)
+}
+
 func Routes() chi.Router {
 	r := chi.NewRouter()
+
+	r.Get("/export", ExportProducts)
 
 	r.Get("/recent", ListRecentProduct)
 	r.Get("/featured", ListFeaturedProduct)
