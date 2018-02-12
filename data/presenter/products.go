@@ -136,8 +136,12 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	sizeSet := set.New()
 	colorSet := set.New()
 	for _, v := range p.Variants {
-		colorSet.Add(v.Etc.Color)
-		sizeSet.Add(v.Etc.Size)
+		if v.Etc.Color != "" {
+			colorSet.Add(v.Etc.Color)
+		}
+		if v.Etc.Size != "" {
+			sizeSet.Add(v.Etc.Size)
+		}
 	}
 	p.Sizes = set.StringSlice(sizeSet)
 	p.Colors = set.StringSlice(colorSet)
