@@ -1,12 +1,10 @@
 package express
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -38,118 +36,6 @@ type expressCheckoutResponse struct {
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
-	render.Render(w, r, presenter.NewCart(ctx, cart))
-}
-
-type shippingRateRequest struct {
-	FirstName   string `json:"firstName,omitempty"`
-	LastName    string `json:"lastName,omitempty"`
-	Address     string `json:"address,omitempty"`
-	City        string `json:"city"`
-	Province    string `json:"province"`
-	Country     string `json:"country,omitempty"`
-	CountryCode string `json:"countryCode"`
-	Zip         string `json:"zip,omitempty"`
-}
-
-func (p *shippingRateRequest) Bind(r *http.Request) error {
-	if p.CountryCode == "" {
-		return errors.New("shipping address missing country")
-	}
-
-	// NOTE: the address passed in here could be truncated (apple pay privacy)
-	// append mock data
-	if len(p.Address) == 0 {
-		p.Address = "1 Mock Street"
-	}
-
-	switch strings.ToLower(p.CountryCode) {
-	case "ca":
-		// Canada postal code is truncated. Use placeholder for last three
-		// characters
-		p.Zip = fmt.Sprintf("%s 9Z0", p.Zip)
-	case "uk":
-		// TODO
-	}
-
-	if len(p.FirstName) == 0 {
-		p.FirstName = "Johnny"
-	}
-	if len(p.LastName) == 0 {
-		p.LastName = "Appleseed"
-	}
-	return nil
-}
-
-func GetShippingRates(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	cart := ctx.Value("cart").(*data.Cart)
-
-	var payload shippingRateRequest
-	if err := render.Bind(r, &payload); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	var (
-		placeID  int64
-		checkout *data.CartShopifyData
-	)
-	for pID, ch := range cart.Etc.ShopifyData {
-		placeID = pID
-		checkout = ch
-		break
-	}
-
-	// fetch shipping rate
-	// find the shopify cred for the merchant and start the checkout process
-	cred, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	cl := shopify.NewClient(nil, cred.AccessToken)
-	cl.BaseURL, _ = url.Parse(cred.ApiURL)
-
-	_, _, err = cl.Checkout.Update(
-		ctx,
-		&shopify.CheckoutRequest{
-			Checkout: &shopify.Checkout{
-				// Partial customer address from apple pay. enough to get shipping rates
-				Token: checkout.Token,
-				ShippingAddress: &shopify.CustomerAddress{
-					FirstName:   payload.FirstName,
-					LastName:    payload.LastName,
-					Country:     payload.Country,
-					CountryCode: payload.CountryCode,
-					Province:    payload.Province,
-					City:        payload.City,
-					Address1:    payload.Address,
-					Zip:         payload.Zip,
-				},
-			},
-		},
-	)
-	if err != nil {
-		render.Respond(w, r, errors.Wrap(err, "express cart shipping rate"))
-		return
-	}
-
-	shopifyRates, _, _ := cl.Checkout.ListShippingRates(ctx, checkout.Token)
-	var rates []*data.CartShippingMethod
-	for _, r := range shopifyRates {
-		rates = append(
-			rates,
-			&data.CartShippingMethod{
-				Handle:        r.Handle,
-				Price:         atoi(r.Price),
-				Title:         r.Title,
-				DeliveryRange: r.DeliveryRange,
-			},
-		)
-	}
-	ctx = context.WithValue(ctx, "rates", rates)
-
 	render.Render(w, r, presenter.NewCart(ctx, cart))
 }
 
@@ -196,9 +82,10 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cl := shopify.NewClient(nil, cred.AccessToken)
-	cl.BaseURL, _ = url.Parse(cred.ApiURL)
-	checkout, _, err := cl.Checkout.Create(
+	client := shopify.NewClient(nil, cred.AccessToken)
+	client.BaseURL, _ = url.Parse(cred.ApiURL)
+	client.Debug = true
+	checkout, _, err := client.Checkout.Create(
 		ctx,
 		&shopify.CheckoutRequest{
 			Checkout: &shopify.Checkout{
@@ -349,14 +236,14 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 	if err != nil {
-		lg.Alert(errors.Wrapf(err, "failed to pay cart(%d). shopify(%v)", cart.ID, placeID))
+		lg.Alert(errors.Wrapf(err, "failed to update shipping method on cart(%d). shopify(%v)", cart.ID, placeID))
 		return
 	}
 
 	u, _ := uuid.NewUUID()
 	payment := &shopify.PaymentRequest{
 		Payment: &shopify.Payment{
-			Amount:      cc.CheckoutPrice.PaymentDue,
+			Amount:      cc.PaymentDue,
 			UniqueToken: u.String(),
 			PaymentToken: &shopify.PaymentToken{
 				PaymentData: payload.ExpressPaymentToken,
@@ -396,9 +283,9 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 	// 5. save shopify payment id
 	shopifyData.PaymentID = p.ID
-	shopifyData.PaymentDue = cc.CheckoutPrice.PaymentDue
-	shopifyData.TotalTax = atoi(cc.CheckoutPrice.TotalTax)
-	shopifyData.TotalPrice = atoi(cc.CheckoutPrice.TotalPrice)
+	shopifyData.PaymentDue = cc.PaymentDue
+	shopifyData.TotalTax = atoi(cc.TotalTax)
+	shopifyData.TotalPrice = atoi(cc.TotalPrice)
 
 	// mark checkout as has payed
 	cart.Status = data.CartStatusPaymentSuccess

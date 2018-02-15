@@ -11,27 +11,41 @@ import (
 type CheckoutService service
 
 type Checkout struct {
-	*CheckoutPrice // embed
-
 	LineItems  []*LineItem `json:"line_items,omitempty"`
 	Email      string      `json:"email,omitempty"`
 	Token      string      `json:"token,omitempty"`
 	Name       string      `json:"name,omitempty"`
 	CustomerID int64       `json:"customer_id,omitempty"`
 
+	// Totals
+	SubtotalPrice string `json:"subtotal_price"`
+	TotalTax      string `json:"total_tax"`
+	TotalPrice    string `json:"total_price"`
+	PaymentDue    string `json:"payment_due"`
+
 	// ShopifyPaymentAccountID is used to use stripe as a payment token provider
 	ShopifyPaymentAccountID string `json:"shopify_payments_account_id,omitempty"`
 	// Use payment url with the other direct payment providers to generate a token
-	PaymentURL       string `json:"payment_url"`
+	PaymentURL       string `json:"payment_url,omitempty"`
 	WebURL           string `json:"web_url,omitempty"`
 	WebProcessingURL string `json:"web_processing_url,omitempty"`
 	// Don't omit empty, need empty to remove
-	DiscountCode string `json:"discount_code"`
+	DiscountCode string `json:"discount_code,omitempty"`
 
 	AppliedDiscount *AppliedDiscount `json:"applied_discount,omitempty"`
 	ShippingAddress *CustomerAddress `json:"shipping_address,omitempty"`
 	BillingAddress  *CustomerAddress `json:"billing_address,omitempty"`
-	ShippingLine    *ShippingLine    `json:"shipping_line,omitempty"`
+
+	ShippingLine *ShippingLine `json:"shipping_line,omitempty"`
+	TaxLines     []*TaxLine    `json:"tax_lines,omitempty"`
+}
+
+type TaxLine struct {
+	Title string `json:"title"`
+	// Dollar tax amount
+	Price string `json:"price,omitempty"`
+	// Percentage tax amount
+	Rate float64 `json:"rate,omitempty"`
 }
 
 type ShippingLine struct {
@@ -56,7 +70,6 @@ type ShippingRate struct {
 	TotalPrice    string `json:"total_price"`
 	PaymentDue    string `json:"payment_due"`
 }
-type CheckoutPrice ShippingRate
 
 type BillingAddress struct{}
 

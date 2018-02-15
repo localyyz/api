@@ -53,6 +53,10 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 		resp.CartItems = cartItems
 	}
 
+	if rates, _ := ctx.Value("rates").([]*data.CartShippingMethod); rates != nil {
+		resp.ShippingRates = rates
+	}
+
 	// calculate cart subtotal by line item
 	if cart.Etc.ShopifyData != nil {
 		for k, d := range cart.Etc.ShopifyData {
@@ -65,10 +69,6 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 				resp.TotalShipping += s.Price
 			}
 		}
-	}
-
-	if rates, _ := ctx.Value("rates").([]*data.CartShippingMethod); rates != nil {
-		resp.ShippingRates = rates
 	}
 
 	return resp

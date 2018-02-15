@@ -3,10 +3,13 @@ package express
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
@@ -42,14 +45,56 @@ func ExpressCartCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+func ExpressShopifyClientCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		cart := ctx.Value("cart").(*data.Cart)
+
+		if len(cart.Etc.ShopifyData) == 0 {
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		var (
+			placeID  int64
+			checkout *data.CartShopifyData
+		)
+		for pID, c := range cart.Etc.ShopifyData {
+			placeID = pID
+			checkout = c
+			checkout.PlaceID = pID
+			break
+		}
+
+		cred, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
+		if err != nil {
+			lg.Warnf("unable to find cred for place %d", placeID)
+			render.Respond(w, r, err)
+			return
+		}
+		client := shopify.NewClient(nil, cred.AccessToken)
+		client.BaseURL, _ = url.Parse(cred.ApiURL)
+		client.Debug = true
+
+		ctx = context.WithValue(ctx, "shopify.client", client)
+		ctx = context.WithValue(ctx, "shopify.checkout", checkout)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
 func Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(ExpressCartCtx)
+	r.Use(ExpressShopifyClientCtx)
 
 	r.Get("/", GetCart)
 	r.Delete("/", DeleteCart)
 
-	r.Post("/shipping/estimate", GetShippingRates)
+	r.Get("/shipping/estimate", GetShippingRates)
+	r.Put("/shipping/address", UpdateShippingAddress)
+	r.Put("/shipping/method", UpdateShippingMethod)
+
 	r.Post("/items", CreateCartItem)
 	r.Post("/pay", CreatePayment)
 

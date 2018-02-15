@@ -71,6 +71,9 @@ type CartShopifyData struct {
 	TotalTax   int64                    `json:"totalTax"`
 	TotalPrice int64                    `json:"totalPrice"`
 	PaymentDue string                   `json:"paymentDue"`
+
+	// INTERNAL place id reference
+	PlaceID int64 `json:"-"`
 }
 
 type CartStore struct {
