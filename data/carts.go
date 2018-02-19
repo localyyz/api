@@ -38,6 +38,9 @@ type CartAddress struct {
 	Province     string `json:"province"`
 	ProvinceCode string `json:"provinceCode"`
 	Zip          string `json:"zip"`
+
+	Email string `json:"email,omitempty"`
+	Phone string `json:"phone,omitempty"`
 }
 
 type CartShippingMethod struct {

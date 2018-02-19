@@ -25,8 +25,6 @@ func SessionCtx(next http.Handler) http.Handler {
 
 		tok, ok := ctx.Value("jwt").(*jwt.Token)
 		if tok == nil {
-			//render.Render(w, r, api.ErrInvalidSession)
-			//lg.SetEntryField(ctx, "user_id", )
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -67,6 +65,49 @@ func SessionCtx(next http.Handler) http.Handler {
 
 		ctx = context.WithValue(ctx, "session.user", user)
 		lg.SetEntryField(ctx, "user_id", user.ID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
+// Device context uses device id to create an unique token that represents a new
+// user account
+func DeviceCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		if _, ok := ctx.Value("session.user").(*data.User); ok {
+			// Use already exists. Nothing to do
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		deviceId := r.Header.Get("X-DEVICE-ID")
+		if deviceId == "" {
+			render.Respond(w, r, api.ErrInvalidSession)
+			return
+		}
+
+		// find a user with username similar to this device id
+		user, err := data.DB.User.FindByUsername(deviceId)
+		if err != nil {
+			if err != db.ErrNoMoreRows {
+				render.Respond(w, r, err)
+				return
+			}
+			// not found, create new user
+			user = &data.User{
+				Username:    deviceId,
+				Email:       deviceId,
+				Network:     "shadow",
+				LastLogInAt: data.GetTimeUTCPointer(),
+				LoggedIn:    true,
+			}
+			if err := data.DB.User.Save(user); err != nil {
+				render.Respond(w, r, err)
+				return
+			}
+		}
+		ctx = context.WithValue(ctx, "session.user", user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)

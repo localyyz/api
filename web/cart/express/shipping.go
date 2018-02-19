@@ -20,17 +20,14 @@ func GetShippingRates(w http.ResponseWriter, r *http.Request) {
 	checkout := ctx.Value("shopify.checkout").(*data.CartShopifyData)
 
 	shopifyRates, _, _ := client.Checkout.ListShippingRates(ctx, checkout.Token)
-	var rates []*data.CartShippingMethod
-	for _, r := range shopifyRates {
-		rates = append(
-			rates,
-			&data.CartShippingMethod{
-				Handle:        r.Handle,
-				Price:         atoi(r.Price),
-				Title:         r.Title,
-				DeliveryRange: r.DeliveryRange,
-			},
-		)
+	rates := make([]*data.CartShippingMethod, len(shopifyRates))
+	for i, r := range shopifyRates {
+		rates[i] = &data.CartShippingMethod{
+			Handle:        r.Handle,
+			Price:         atoi(r.Price),
+			Title:         r.Title,
+			DeliveryRange: r.DeliveryRange,
+		}
 	}
 	ctx = context.WithValue(ctx, "rates", rates)
 	render.Render(w, r, presenter.NewCart(ctx, cart))
@@ -38,9 +35,15 @@ func GetShippingRates(w http.ResponseWriter, r *http.Request) {
 
 type shippingAddressRequest struct {
 	*data.CartAddress
+	IsPartial bool `json:"isPartial"`
 }
 
 func (p *shippingAddressRequest) Bind(r *http.Request) error {
+	if !p.IsPartial {
+		// If not partial, skip the rest
+		return nil
+	}
+
 	if p.CountryCode == "" {
 		return errors.New("shipping address missing country")
 	}
@@ -55,7 +58,9 @@ func (p *shippingAddressRequest) Bind(r *http.Request) error {
 	case "ca":
 		// Canada postal code is truncated. Use placeholder for last three
 		// characters
-		p.Zip = fmt.Sprintf("%s 9Z0", p.Zip)
+		if z := strings.TrimSpace(p.Zip); len(z) == 3 {
+			p.Zip = fmt.Sprintf("%s 9Z0", z)
+		}
 	case "uk":
 		// TODO
 	}
@@ -111,9 +116,6 @@ func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 	checkout.TotalPrice = atoi(ch.TotalPrice)
 	checkout.PaymentDue = ch.PaymentDue
 	cart.Etc.ShopifyData[checkout.PlaceID] = checkout
-	// shipping address has changed -> reset shipping method
-	cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
-
 	cart.Etc.ShippingAddress = payload.CartAddress
 	data.DB.Cart.Save(cart)
 

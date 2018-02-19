@@ -12,6 +12,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/cart"
+	"bitbucket.org/moodie-app/moodie-api/web/cart/express"
 	"bitbucket.org/moodie-app/moodie-api/web/category"
 	"bitbucket.org/moodie-app/moodie-api/web/collection"
 	"bitbucket.org/moodie-app/moodie-api/web/locale"
@@ -94,6 +95,7 @@ func (h *Handler) Routes() chi.Router {
 		r.Get("/signup", auth.GetSignupPage)
 		r.Post("/signup", auth.EmailSignup)
 		r.Post("/register", auth.RegisterSignup)
+
 		r.Get("/leaderboard", leaderBoard)
 
 		// shopify related endpoints
@@ -116,6 +118,12 @@ func (h *Handler) Routes() chi.Router {
 		r.Mount("/search", search.Routes())
 		r.Mount("/categories", category.Routes())
 		r.Mount("/locales", locale.Routes())
+	})
+
+	// Semi-authed route.
+	r.Group(func(r chi.Router) {
+		r.Use(session.DeviceCtx)
+		r.Mount("/carts/express", express.Routes())
 	})
 
 	// Authed Routes

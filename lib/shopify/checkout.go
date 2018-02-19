@@ -18,10 +18,10 @@ type Checkout struct {
 	CustomerID int64       `json:"customer_id,omitempty"`
 
 	// Totals
-	SubtotalPrice string `json:"subtotal_price"`
-	TotalTax      string `json:"total_tax"`
-	TotalPrice    string `json:"total_price"`
-	PaymentDue    string `json:"payment_due"`
+	SubtotalPrice string `json:"subtotal_price,omitempty"`
+	TotalTax      string `json:"total_tax,omitempty"`
+	TotalPrice    string `json:"total_price,omitempty"`
+	PaymentDue    string `json:"payment_due,omitempty"`
 
 	// ShopifyPaymentAccountID is used to use stripe as a payment token provider
 	ShopifyPaymentAccountID string `json:"shopify_payments_account_id,omitempty"`

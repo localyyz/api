@@ -128,22 +128,14 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 }
 
 type cartPaymentRequest struct {
-	ShippingAddress     *data.CartAddress        `json:"shippingAddress"`
-	BillingAddress      *data.CartAddress        `json:"billingAddress"`
-	ShippingMethod      *data.CartShippingMethod `json:"shippingMethod"`
-	ExpressPaymentToken string                   `json:"expressPaymentToken"`
-	Email               string                   `json:"email,omitempty"`
+	BillingAddress      *data.CartAddress `json:"billingAddress"`
+	ExpressPaymentToken string            `json:"expressPaymentToken"`
+	Email               string            `json:"email,omitempty"`
 }
 
 func (p *cartPaymentRequest) Bind(r *http.Request) error {
-	if p.ShippingAddress == nil {
-		return errors.New("invalid shipping address")
-	}
 	if p.BillingAddress == nil {
 		return errors.New("invalid billing address")
-	}
-	if p.ShippingMethod == nil {
-		return errors.New("invalid shipping method")
 	}
 	if len(p.ExpressPaymentToken) == 0 {
 		return errors.New("invalid token")
@@ -152,6 +144,9 @@ func (p *cartPaymentRequest) Bind(r *http.Request) error {
 		user := r.Context().Value("session.user").(*data.User)
 		p.Email = user.Email
 	}
+	if len(p.Email) == 0 {
+		return errors.New("email must be provided")
+	}
 	return nil
 }
 
@@ -159,7 +154,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
 
-	lg.Infof("express cart(%d) payment", cart.ID)
+	lg.Infof("express cart(%d) start payment", cart.ID)
 	var payload cartPaymentRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
@@ -176,34 +171,12 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		shopifyData = sh
 	}
 
-	// shopify throws error if we update shipping address and
-	// shipping line in the same request.
-	creds, err := data.DB.ShopifyCred.FindByPlaceID(placeID)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	cl := shopify.NewClient(nil, creds.AccessToken)
-	cl.BaseURL, _ = url.Parse(creds.ApiURL)
-	cl.Debug = true
-
-	cart.Etc.ShippingAddress = payload.ShippingAddress
-	lg.Infof("express cart(%d) payment update shipping addy(%+v) and email", cart.ID, payload.ShippingAddress)
-	_, _, err = cl.Checkout.Update(
+	client := ctx.Value("shopify.client").(*shopify.Client)
+	cc, _, err := client.Checkout.Update(
 		ctx,
 		&shopify.CheckoutRequest{
 			&shopify.Checkout{
 				Token: shopifyData.Token,
-				ShippingAddress: &shopify.CustomerAddress{
-					Address1:  payload.ShippingAddress.Address,
-					Address2:  payload.ShippingAddress.AddressOpt,
-					City:      payload.ShippingAddress.City,
-					Country:   payload.ShippingAddress.Country,
-					FirstName: payload.ShippingAddress.FirstName,
-					LastName:  payload.ShippingAddress.LastName,
-					Province:  payload.ShippingAddress.Province,
-					Zip:       payload.ShippingAddress.Zip,
-				},
 				BillingAddress: &shopify.CustomerAddress{
 					Address1:  payload.BillingAddress.Address,
 					Address2:  payload.BillingAddress.AddressOpt,
@@ -223,23 +196,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lg.Infof("express cart(%d) payment update shipping method(%+v)", cart.ID, payload.ShippingMethod)
-	cc, _, err := cl.Checkout.Update(
-		ctx,
-		&shopify.CheckoutRequest{
-			&shopify.Checkout{
-				Token: shopifyData.Token,
-				ShippingLine: &shopify.ShippingLine{
-					Handle: payload.ShippingMethod.Handle,
-				},
-			},
-		},
-	)
-	if err != nil {
-		lg.Alert(errors.Wrapf(err, "failed to update shipping method on cart(%d). shopify(%v)", cart.ID, placeID))
-		return
-	}
-
 	u, _ := uuid.NewUUID()
 	payment := &shopify.PaymentRequest{
 		Payment: &shopify.Payment{
@@ -256,7 +212,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. send payment to shopify
-	p, _, err := cl.Checkout.Payment(ctx, shopifyData.Token, payment)
+	p, _, err := client.Checkout.Payment(ctx, shopifyData.Token, payment)
 	if err != nil {
 		lg.Alertf("payment fail: cart(%d) place(%d) with err %+v", cart.ID, placeID, err)
 		render.Respond(w, r, err)
@@ -287,6 +243,10 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	shopifyData.TotalTax = atoi(cc.TotalTax)
 	shopifyData.TotalPrice = atoi(cc.TotalPrice)
 
+	// TODO: sync user email and name
+	cart.Etc.BillingAddress = payload.BillingAddress
+	cart.Etc.BillingAddress.Email = payload.Email
+
 	// mark checkout as has payed
 	cart.Status = data.CartStatusPaymentSuccess
 	if err := data.DB.Cart.Save(cart); err != nil {
@@ -294,6 +254,12 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO: create a customer on stripe after the first
 	// tokenization so we can send stripe customer id moving forward
+
+	// save email and name to user object
+	user := ctx.Value("session.user").(*data.User)
+	user.Email = payload.Email
+	user.Name = fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName)
+	data.DB.User.Save(user)
 
 	render.Render(w, r, presenter.NewCart(ctx, cart))
 }
