@@ -2,16 +2,20 @@ package place
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/lib/slack"
+	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	db "upper.io/db.v3"
@@ -67,6 +71,18 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// find the shopify credentials
+	creds, err := data.DB.ShopifyCred.FindOne(
+		db.Cond{
+			"place_id": placeID,
+			"status":   data.ShopifyCredStatusActive,
+		},
+	)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
 	// send a response back to slack
 	var actionResponse struct {
 		Text        string              `json:"text"`
@@ -81,6 +97,29 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 			if a.Value == ApprovalActionApprove {
 				place.Status = data.PlaceStatusActive
 				place.ApprovedAt = data.GetTimeUTCPointer()
+
+				// check if the merchant has already published item to us. and
+				// if they have. pull and create the products on our side
+				ctx := context.WithValue(r.Context(), "sync.place", place)
+				cl := shopify.NewClient(nil, creds.AccessToken)
+				cl.BaseURL, _ = url.Parse(creds.ApiURL)
+
+				if count, _, _ := cl.ProductList.Count(ctx); count > 0 {
+					page := 1
+					for {
+						productList, _, _ := cl.ProductList.Get(
+							ctx,
+							&shopify.ProductListParam{Limit: 50, Page: page},
+						)
+						if len(productList) == 0 {
+							break
+						}
+						ctx = context.WithValue(ctx, "sync.list", productList)
+						sync.ShopifyProductListingsCreate(ctx)
+						page += 1
+					}
+					actionResponse.Text = fmt.Sprintf("found %d products already published\n", count)
+				}
 
 				// register the webhooks
 				connect.SH.RegisterWebhooks(r.Context(), place)
@@ -120,7 +159,11 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 				place.Status = data.PlaceStatusInActive
 			}
 			// approved or rejected.
-			actionResponse.Text = fmt.Sprintf("%s is now %s! (by: %s)", place.Name, place.Status, payload.User.Name)
+			actionResponse.Text = fmt.Sprintf(
+				"%s%s",
+				actionResponse.Text,
+				fmt.Sprintf("%s is now %s! (by: %s)", place.Name, place.Status, payload.User.Name),
+			)
 		case GenderActionName:
 			if a.Value == "male" {
 				place.Gender = data.PlaceGender(data.ProductGenderMale)
