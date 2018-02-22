@@ -148,3 +148,32 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 	}
 }
+
+// Shadow login is called when an user lands in the app via deep linking
+// backend creates a "shadow" user account for the user
+func ShadowLogin(w http.ResponseWriter, r *http.Request) {
+	payload := &fbLogin{}
+	if err := render.Bind(r, payload); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	// inspect the token for userId and expiry
+	user, err := connect.FB.Login(payload.Token, payload.InviteCode)
+	if err != nil {
+		if err == connect.ErrTokenExpired {
+			render.Status(r, http.StatusUnauthorized)
+			render.Respond(w, r, connect.ErrTokenExpired)
+			return
+		}
+		render.Status(r, http.StatusServiceUnavailable)
+		render.Respond(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+	authUser := NewAuthUser(ctx, user)
+	if err := render.Render(w, r, authUser); err != nil {
+		render.Respond(w, r, err)
+	}
+}

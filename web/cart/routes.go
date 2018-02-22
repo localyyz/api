@@ -19,6 +19,7 @@ func Routes() chi.Router {
 
 	r.Get("/", ListCarts)
 	r.Post("/", CreateCart)
+
 	r.Route("/default", func(r chi.Router) {
 		r.Use(DefaultCartCtx)
 		r.Mount("/", cartRoutes())
@@ -34,14 +35,15 @@ func Routes() chi.Router {
 func cartRoutes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Get("/", GetCart)
+	r.Delete("/", ClearCart)
+
 	r.Mount("/items", cartitem.Routes())
 	r.Mount("/checkout", checkout.Routes())
 
 	r.Get("/shipping", ListShippingRates)
 	r.Post("/pay", CreatePayment)
 
-	r.Get("/", GetCart)
-	r.Delete("/", ClearCart)
 	return r
 }
 
@@ -53,8 +55,9 @@ func DefaultCartCtx(next http.Handler) http.Handler {
 		var cart *data.Cart
 		err := data.DB.Cart.Find(
 			db.Cond{
-				"status <=": data.CartStatusCheckout,
-				"user_id":   user.ID,
+				"status <=":  data.CartStatusCheckout,
+				"is_express": false,
+				"user_id":    user.ID,
 			},
 		).OrderBy("-id").One(&cart)
 		if err != nil {

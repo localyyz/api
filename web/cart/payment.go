@@ -149,7 +149,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			u, _ := uuid.NewUUID()
 			payment = &shopify.PaymentRequest{
 				Payment: &shopify.Payment{
-					Amount:      cc.CheckoutPrice.PaymentDue,
+					Amount:      cc.PaymentDue,
 					UniqueToken: u.String(),
 					PaymentToken: &shopify.PaymentToken{
 						PaymentData: stripeToken.ID,
@@ -167,7 +167,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			u, _ := uuid.NewUUID()
 			vaultRequest := &cardvault.PaymentRequest{
 				Payment: &cardvault.Payment{
-					Amount:      cc.CheckoutPrice.PaymentDue,
+					Amount:      cc.PaymentDue,
 					CreditCard:  payload.parseCardVault(),
 					UniqueToken: u.String(),
 				},
@@ -180,7 +180,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 			lg.Infof("received cardvault token %s for place(%d) on cart(%d)", cardVaultID, placeID, cart.ID)
 			payment = &shopify.PaymentRequest{
 				Payment: &shopify.Payment{
-					Amount:      cc.CheckoutPrice.PaymentDue,
+					Amount:      cc.PaymentDue,
 					UniqueToken: u.String(),
 					SessionID:   cardVaultID,
 					RequestDetails: &shopify.RequestDetail{
@@ -218,9 +218,9 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 		// 5. save shopify payment id
 		sh.PaymentID = p.ID
-		sh.PaymentDue = cc.CheckoutPrice.PaymentDue
-		sh.TotalTax = atoi(cc.CheckoutPrice.TotalTax)
-		sh.TotalPrice = atoi(cc.CheckoutPrice.TotalPrice)
+		sh.PaymentDue = cc.PaymentDue
+		sh.TotalTax = atoi(cc.TotalTax)
+		sh.TotalPrice = atoi(cc.TotalPrice)
 	}
 
 	// mark checkout as has payed

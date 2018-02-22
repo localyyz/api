@@ -14,7 +14,12 @@ import (
 type Cart struct {
 	*data.Cart
 
-	CartItems CartItemList `json:"items"`
+	// For express carts quick access values
+	Currency        string `json:"currency,omitempty"`
+	StripeAccountID string `json:"stripeAccountId,omitempty"`
+
+	CartItems     CartItemList               `json:"items"`
+	ShippingRates []*data.CartShippingMethod `json:"shippingRates"`
 
 	TotalShipping int64 `json:"totalShipping"`
 	TotalTax      int64 `json:"totalTax"`
@@ -25,6 +30,15 @@ type Cart struct {
 }
 
 func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
+	if c.IsExpress {
+		// if cart is express. pull values to the top
+		for _, d := range c.Etc.ShopifyData {
+			c.StripeAccountID = d.ShopifyPaymentAccountID
+			c.Currency = d.Currency
+			break
+		}
+	}
+
 	return nil
 }
 
@@ -43,6 +57,10 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 		resp.CartItems = cartItems
 	}
 
+	if rates, _ := ctx.Value("rates").([]*data.CartShippingMethod); rates != nil {
+		resp.ShippingRates = rates
+	}
+
 	// calculate cart subtotal by line item
 	if cart.Etc.ShopifyData != nil {
 		for k, d := range cart.Etc.ShopifyData {
@@ -55,7 +73,6 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 				resp.TotalShipping += s.Price
 			}
 		}
-
 	}
 
 	return resp

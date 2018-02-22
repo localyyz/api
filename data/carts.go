@@ -16,6 +16,8 @@ type Cart struct {
 	UserID int64      `db:"user_id" json:"userId"`
 	Status CartStatus `db:"status" json:"status"`
 
+	IsExpress bool `db:"is_express" json:"isExpress"`
+
 	Etc CartEtc `db:"etc" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
@@ -26,14 +28,19 @@ type Cart struct {
 type CartStatus uint
 
 type CartAddress struct {
-	FirstName  string `json:"firstName"`
-	LastName   string `json:"lastName"`
-	Address    string `json:"address"`
-	AddressOpt string `json:"addressOpt"`
-	City       string `json:"city"`
-	Country    string `json:"country"`
-	Province   string `json:"province"`
-	Zip        string `json:"zip"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
+	Address      string `json:"address"`
+	AddressOpt   string `json:"addressOpt"`
+	City         string `json:"city"`
+	Country      string `json:"country"`
+	CountryCode  string `json:"countryCode"`
+	Province     string `json:"province"`
+	ProvinceCode string `json:"provinceCode"`
+	Zip          string `json:"zip"`
+
+	Email string `json:"email,omitempty"`
+	Phone string `json:"phone,omitempty"`
 }
 
 type CartShippingMethod struct {
@@ -63,10 +70,14 @@ type CartShopifyData struct {
 
 	PaymentID int64 `json:"paymentId"`
 
+	Currency   string                   `json:"currency,omitempty"`
 	Discount   *shopify.AppliedDiscount `json:"discount,omitempty"`
 	TotalTax   int64                    `json:"totalTax"`
 	TotalPrice int64                    `json:"totalPrice"`
 	PaymentDue string                   `json:"paymentDue"`
+
+	// INTERNAL place id reference
+	PlaceID int64 `json:"-"`
 }
 
 type CartStore struct {

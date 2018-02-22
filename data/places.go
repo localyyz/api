@@ -29,7 +29,8 @@ type Place struct {
 	Distance  float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
 	TOSIP     string         `db:"tos_ip" json:"-"`
 
-	Billing PlaceBilling `db:"billing" json:"billing"`
+	PaymentMethods []*PaymentMethod `db:"payment_methods" json:"paymentMethods"`
+	Billing        PlaceBilling     `db:"billing" json:"billing"`
 
 	CreatedAt   *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt   *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -42,6 +43,12 @@ type Place struct {
 // NOTE: breaks godef https://github.com/rogpeppe/godef/issues/71
 // pretty much a deal breaker.. sucks because type aliasing would be amazing here
 type PlaceGender ProductGender
+
+type PaymentMethod struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+	*postgresql.JSONBConverter
+}
 
 var (
 	PlaceGenderUnknown = PlaceGender(ProductGenderUnknown)
