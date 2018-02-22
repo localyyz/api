@@ -112,6 +112,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 				TotalPrice:              atoi(checkout.TotalPrice),
 				PaymentDue:              checkout.PaymentDue,
 				Discount:                checkout.AppliedDiscount,
+				Currency:                checkout.Currency,
 			},
 		},
 	}

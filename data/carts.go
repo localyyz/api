@@ -70,6 +70,7 @@ type CartShopifyData struct {
 
 	PaymentID int64 `json:"paymentId"`
 
+	Currency   string                   `json:"currency,omitempty"`
 	Discount   *shopify.AppliedDiscount `json:"discount,omitempty"`
 	TotalTax   int64                    `json:"totalTax"`
 	TotalPrice int64                    `json:"totalPrice"`

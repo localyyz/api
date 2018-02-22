@@ -14,9 +14,12 @@ import (
 type Cart struct {
 	*data.Cart
 
-	StripeAccountID string                     `json:"stripeAccountId"`
-	CartItems       CartItemList               `json:"items"`
-	ShippingRates   []*data.CartShippingMethod `json:"shippingRates"`
+	// For express carts quick access values
+	Currency        string `json:"currency,omitempty"`
+	StripeAccountID string `json:"stripeAccountId,omitempty"`
+
+	CartItems     CartItemList               `json:"items"`
+	ShippingRates []*data.CartShippingMethod `json:"shippingRates"`
 
 	TotalShipping int64 `json:"totalShipping"`
 	TotalTax      int64 `json:"totalTax"`
@@ -28,9 +31,10 @@ type Cart struct {
 
 func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 	if c.IsExpress {
-		// if cart is express. pull shopify account id to the top
+		// if cart is express. pull values to the top
 		for _, d := range c.Etc.ShopifyData {
 			c.StripeAccountID = d.ShopifyPaymentAccountID
+			c.Currency = d.Currency
 			break
 		}
 	}

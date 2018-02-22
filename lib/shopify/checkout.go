@@ -22,6 +22,7 @@ type Checkout struct {
 	TotalTax      string `json:"total_tax,omitempty"`
 	TotalPrice    string `json:"total_price,omitempty"`
 	PaymentDue    string `json:"payment_due,omitempty"`
+	Currency      string `json:"currency,omitempty"`
 
 	// ShopifyPaymentAccountID is used to use stripe as a payment token provider
 	ShopifyPaymentAccountID string `json:"shopify_payments_account_id,omitempty"`
