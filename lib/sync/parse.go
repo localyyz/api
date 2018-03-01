@@ -135,6 +135,7 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 	if categoryCache == nil {
 		// if by chance category cache is not given, generate it here
 		if categories, _ := data.DB.Category.FindAll(nil); categories != nil {
+			categoryCache = make(map[string]*data.Category, len(categories))
 			for _, c := range categories {
 				categoryCache[c.Value] = c
 			}
