@@ -131,7 +131,15 @@ func parseGender(ctx context.Context, tokens []string) data.ProductGender {
 }
 
 func ParseProduct(ctx context.Context, inputs ...string) data.Category {
-	categoryCache := ctx.Value(cacheKey).(map[string]*data.Category)
+	categoryCache, _ := ctx.Value(cacheKey).(map[string]*data.Category)
+	if categoryCache == nil {
+		// if by chance category cache is not given, generate it here
+		if categories, _ := data.DB.Category.FindAll(nil); categories != nil {
+			for _, c := range categories {
+				categoryCache[c.Value] = c
+			}
+		}
+	}
 	place := ctx.Value("sync.place").(*data.Place)
 
 	var (
