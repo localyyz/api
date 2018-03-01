@@ -62,7 +62,6 @@ func GenderCtx(next http.Handler) http.Handler {
 }
 
 func ExportProducts(w http.ResponseWriter, r *http.Request) {
-
 	type exportProduct struct {
 		ID            int64   `db:"id" json:"id"`
 		Title         string  `db:"title" json:"title"`
@@ -72,9 +71,6 @@ func ExportProducts(w http.ResponseWriter, r *http.Request) {
 		Price         float64 `db:"price" json:"price"`
 		PreviousPrice float64 `db:"previous" json:"previous_price"`
 	}
-
-	ctx := r.Context()
-	cursor := ctx.Value("cursor").(*api.Page)
 
 	query := data.DB.Select(
 		"p.id",
@@ -91,12 +87,10 @@ func ExportProducts(w http.ResponseWriter, r *http.Request) {
 		OrderBy("id DESC")
 
 	var products []*exportProduct
-	paginate := cursor.UpdateQueryBuilder(query)
-	if err := paginate.All(&products); err != nil {
+	if err := query.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
-	cursor.Update(products)
 
 	render.Respond(w, r, products)
 }
