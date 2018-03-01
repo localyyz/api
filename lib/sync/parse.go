@@ -140,6 +140,7 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 				categoryCache[c.Value] = c
 			}
 		}
+		ctx = context.WithValue(ctx, cacheKey, categoryCache)
 	}
 	place := ctx.Value("sync.place").(*data.Place)
 
