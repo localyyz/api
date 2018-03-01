@@ -98,28 +98,33 @@ func HandleApproval(w http.ResponseWriter, r *http.Request) {
 				place.Status = data.PlaceStatusActive
 				place.ApprovedAt = data.GetTimeUTCPointer()
 
-				// check if the merchant has already published item to us. and
-				// if they have. pull and create the products on our side
-				ctx := context.WithValue(r.Context(), "sync.place", place)
-				cl := shopify.NewClient(nil, creds.AccessToken)
-				cl.BaseURL, _ = url.Parse(creds.ApiURL)
+				go func() {
+					// Run this in a separate go func so it doesn't block
+					// returning to slack
 
-				if count, _, _ := cl.ProductList.Count(ctx); count > 0 {
-					page := 1
-					for {
-						productList, _, _ := cl.ProductList.Get(
-							ctx,
-							&shopify.ProductListParam{Limit: 50, Page: page},
-						)
-						if len(productList) == 0 {
-							break
+					// check if the merchant has already published item to us. and
+					// if they have. pull and create the products on our side
+					ctx := context.WithValue(r.Context(), "sync.place", place)
+					cl := shopify.NewClient(nil, creds.AccessToken)
+					cl.BaseURL, _ = url.Parse(creds.ApiURL)
+
+					if count, _, _ := cl.ProductList.Count(ctx); count > 0 {
+						page := 1
+						for {
+							productList, _, _ := cl.ProductList.Get(
+								ctx,
+								&shopify.ProductListParam{Limit: 50, Page: page},
+							)
+							if len(productList) == 0 {
+								break
+							}
+							ctx = context.WithValue(ctx, "sync.list", productList)
+							sync.ShopifyProductListingsCreate(ctx)
+							page += 1
 						}
-						ctx = context.WithValue(ctx, "sync.list", productList)
-						sync.ShopifyProductListingsCreate(ctx)
-						page += 1
+						actionResponse.Text = fmt.Sprintf("found %d products already published\n", count)
 					}
-					actionResponse.Text = fmt.Sprintf("found %d products already published\n", count)
-				}
+				}()
 
 				// register the webhooks
 				connect.SH.RegisterWebhooks(r.Context(), place)
