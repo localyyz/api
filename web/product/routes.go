@@ -78,8 +78,8 @@ func ExportProducts(w http.ResponseWriter, r *http.Request) {
 		"p.image_url",
 		"pl.name as merchant",
 		db.Raw("p.category->>'value' as category"),
-		db.Raw("max((pv.etc->>'prc')::numeric) as price"),
-		db.Raw("max((pv.etc->>'prv')::numeric) previous")).
+		db.Raw("max(price) as price"),
+		db.Raw("max(prev_price) previous")).
 		From("products p").
 		LeftJoin("places pl").On("pl.id = p.place_id").
 		LeftJoin("product_variants pv").On("pv.product_id = p.id").
