@@ -67,7 +67,7 @@ func New(h *Handler) chi.Router {
 			r.Use(VerifySignature)
 		}
 		r.Use(ShopifyShopCtx)
-		r.Use(ShopifyChargeCtx)
+		//r.Use(ShopifyChargeCtx)
 		r.Get("/", Index)
 	})
 
@@ -97,7 +97,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	if place.Status == data.PlaceStatusWaitApproval {
 		pageContext["approvalTs"] = place.TOSAgreedAt.Add(1 * 24 * time.Hour)
 	}
-	if place.Billing.Billing.Status == shopify.BillingStatusPending {
+	if place.Billing.Status == shopify.BillingStatusPending {
 		u, err := url.Parse(place.Billing.ConfirmationUrl)
 		if err != nil {
 			lg.Alertf("merchant (%d) malformed billing confirmatin url with: %+v", place.ID, err)
