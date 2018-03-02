@@ -45,7 +45,7 @@ var (
 		"read_price_rules",
 	}
 	WebhookTopics = []shopify.Topic{
-		//shopify.TopicAppUninstalled,
+		shopify.TopicAppUninstalled,
 		shopify.TopicProductListingsAdd,
 		shopify.TopicProductListingsUpdate,
 		shopify.TopicProductListingsRemove,
