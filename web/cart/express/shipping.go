@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
 )
@@ -39,7 +40,28 @@ type shippingAddressRequest struct {
 }
 
 func (p *shippingAddressRequest) Bind(r *http.Request) error {
+	// Make sure there're no extra spaces at the beginning or end
+	p.FirstName = strings.TrimSpace(p.FirstName)
+	p.LastName = strings.TrimSpace(p.LastName)
+
 	if !p.IsPartial {
+		// Make sure all fields are present, or return error
+		if len(p.FirstName) == 0 {
+			return errors.New("First name field is required. Please double check your input.")
+		}
+		if len(p.LastName) == 0 {
+			return errors.New("Last name field is required. Please double check your input.")
+		}
+		if len(p.Address) == 0 {
+			return errors.New("Address field is required. Please double check your input.")
+		}
+		if len(p.City) == 0 {
+			return errors.New("City field is required. Please double check your input.")
+		}
+		if len(p.Country) == 0 {
+			return errors.New("Country field is required. Please double check your input.")
+		}
+
 		// If not partial, skip the rest
 		return nil
 	}
@@ -82,7 +104,7 @@ func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 
 	var payload shippingAddressRequest
 	if err := render.Bind(r, &payload); err != nil {
-		render.Respond(w, r, err)
+		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
