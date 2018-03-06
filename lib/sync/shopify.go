@@ -21,14 +21,18 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 
 	for _, p := range list {
 		// check if product already exists in our system
-		err := data.DB.Product.Find(db.Cond{
-			"place_id":    place.ID,
-			"external_id": p.ProductID,
-		}).Delete()
+		dbProduct, err := data.DB.Product.FindOne(db.Cond{
+			"place_id":      place.ID,
+			"external_id":   p.ProductID,
+			"deleted_at <>": nil,
+		})
 		if err != nil {
 			lg.Warnf("failed to delete product %s with %+v", p.Handle, err)
 			return nil
 		}
+		// Mark as deleted at and save
+		dbProduct.DeletedAt = data.GetTimeUTCPointer()
+		data.DB.Product.Save(dbProduct)
 	}
 
 	return nil
