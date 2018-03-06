@@ -3,6 +3,7 @@ package presenter
 import (
 	"context"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/go-chi/render"
@@ -11,6 +12,7 @@ import (
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/apparelsorter"
 	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 )
 
@@ -36,7 +38,6 @@ type Product struct {
 
 type VariantCache map[int64][]*ProductVariant
 type PlaceCache map[int64]*data.Place
-
 type SearchProductList []*Product
 
 func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error {
@@ -143,7 +144,9 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 			sizeSet.Add(v.Etc.Size)
 		}
 	}
-	p.Sizes = set.StringSlice(sizeSet)
+	sizesorter := apparelsorter.New(set.StringSlice(sizeSet)...)
+	sort.Sort(sizesorter)
+	p.Sizes = sizesorter.StringSlice()
 	p.Colors = set.StringSlice(colorSet)
 
 	if cache, _ := ctx.Value("place.cache").(PlaceCache); cache != nil {
