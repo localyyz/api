@@ -46,7 +46,12 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 
 	var products []*data.Product
-	cond := db.And(db.Cond{"gender": gender})
+	cond := db.And(
+		db.Cond{
+			"gender":     gender,
+			"deleted_at": nil,
+		},
+	)
 	if extraCond, ok := ctx.Value("product.filter").(db.Cond); ok && len(extraCond) > 0 {
 		cond = cond.And(extraCond)
 		query := data.DB.Select(db.Raw("distinct *")).
@@ -146,6 +151,7 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 			and pl.status = 3
 			and category ->> 'type' = 'apparel'
 			and p.image_url != ''
+			and p.deleted_at is null
 		) x`)).
 		Where("x.r = ?", cursor.Page).
 		OrderBy("created_at desc").

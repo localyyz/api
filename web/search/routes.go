@@ -67,7 +67,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	// find products by title
 	query := data.DB.Select("*", db.Raw("ts_rank(tsv, plainto_tsquery('?')) + weight as rank", db.Raw(p.Query))).
 		From("products").
-		Where(db.Raw(`tsv @@ plainto_tsquery('?')`, db.Raw(p.Query))).
+		Where(db.Raw(`tsv @@ plainto_tsquery('?') and deleted_at is null`, db.Raw(p.Query))).
 		OrderBy("rank DESC")
 
 	cursor := ctx.Value("cursor").(*api.Page)
