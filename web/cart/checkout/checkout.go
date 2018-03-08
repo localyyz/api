@@ -32,6 +32,10 @@ type checkoutRequest struct {
 }
 
 func (c *checkoutRequest) Bind(r *http.Request) error {
+	if c.ShippingAddress != nil && c.Shipping != nil {
+		return errors.New("invalid update: cannot update shipping address and method in the same request")
+	}
+
 	return nil
 }
 
@@ -289,6 +293,40 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 			lg.Warn(errors.Wrapf(err, "failed to update shopify(%v)", placeID))
 			continue
 		}
+
+		if checkout.ShippingAddress != nil {
+			// Updated shipping address? Need to repick the first shipping
+			// address
+			updateCheckout := &shopify.Checkout{
+				Token: c.Token,
+			}
+			// check the shipping rate
+			// TODO: make proper shipping. For now, pick the cheapest one.
+			rates, _, _ := cl.Checkout.ListShippingRates(ctx, c.Token)
+			// for now, pick the first rate and apply to the checkout
+			// make this proper
+			if len(rates) > 0 {
+				//update the checkout with the shipping line
+				updateCheckout.ShippingLine = &shopify.ShippingLine{Handle: rates[0].Handle}
+				cart.Etc.ShippingMethods[placeID] = &data.CartShippingMethod{
+					rates[0].Handle,
+					rates[0].Title,
+					atoi(rates[0].Price),
+					rates[0].DeliveryRange,
+				}
+			}
+			cc, _, _ := cl.Checkout.Update(
+				ctx,
+				&shopify.CheckoutRequest{Checkout: updateCheckout},
+			)
+			cart.Etc.ShopifyData[placeID].TotalPrice = atoi(cc.TotalPrice)
+			cart.Etc.ShopifyData[placeID].TotalTax = atoi(cc.TotalTax)
+			cart.Etc.ShopifyData[placeID].PaymentDue = cc.PaymentDue
+			cart.Etc.ShopifyData[placeID].Discount = cc.AppliedDiscount
+
+			continue
+		}
+
 		cart.Etc.ShopifyData[placeID].TotalPrice = atoi(c.TotalPrice)
 		cart.Etc.ShopifyData[placeID].TotalTax = atoi(c.TotalTax)
 		cart.Etc.ShopifyData[placeID].PaymentDue = c.PaymentDue
