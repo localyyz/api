@@ -189,6 +189,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		u.Scheme = "https"
 		place = &data.Place{
 			ShopifyID: shopID,
+			Plan:      shop.PlanName,
 			LocaleID:  locale.ID,
 			Geo:       *geotools.NewPointFromLatLng(shop.Latitude, shop.Longitude),
 			Name:      shop.Name,

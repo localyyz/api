@@ -6,6 +6,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/goware/geotools"
+	"upper.io/bond"
 	"upper.io/db.v3/postgresql"
 )
 
@@ -25,6 +26,7 @@ type Place struct {
 	Weight      int32       `db:"weight" json:"weight"`
 
 	ShopifyID string         `db:"shopify_id,omitempty" json:"-"`
+	Plan      string         `db:"shopify_plan,omitempty" json:"-"`
 	Geo       geotools.Point `db:"geo" json:"-"`
 	Distance  float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
 	TOSIP     string         `db:"tos_ip" json:"-"`
@@ -44,21 +46,12 @@ type Place struct {
 // pretty much a deal breaker.. sucks because type aliasing would be amazing here
 type PlaceGender ProductGender
 
+type PlaceStatus uint32
+
 type PaymentMethod struct {
 	ID   string `json:"id"`
 	Type string `json:"type"`
 	*postgresql.JSONBConverter
-}
-
-var (
-	PlaceGenderUnknown = PlaceGender(ProductGenderUnknown)
-	PlaceGenderMale    = PlaceGender(ProductGenderMale)
-	PlaceGenderFemale  = PlaceGender(ProductGenderFemale)
-	PlaceGenderUnisex  = PlaceGender(ProductGenderUnisex)
-)
-
-func (p *Place) CollectionName() string {
-	return `places`
 }
 
 type PlaceBilling struct {
@@ -66,14 +59,24 @@ type PlaceBilling struct {
 	*postgresql.JSONBConverter
 }
 
-type PlaceStatus uint32
-
 const (
 	PlaceStatusUnknown       PlaceStatus = iota // 0
 	PlaceStatusWaitAgreement                    // 1
 	PlaceStatusWaitApproval                     // 2
 	PlaceStatusActive                           // 3
 	PlaceStatusInActive                         // 4
+)
+
+var _ interface {
+	bond.HasBeforeCreate
+	bond.HasBeforeUpdate
+} = &Place{}
+
+var (
+	PlaceGenderUnknown = PlaceGender(ProductGenderUnknown)
+	PlaceGenderMale    = PlaceGender(ProductGenderMale)
+	PlaceGenderFemale  = PlaceGender(ProductGenderFemale)
+	PlaceGenderUnisex  = PlaceGender(ProductGenderUnisex)
 )
 
 var (
@@ -84,7 +87,46 @@ var (
 		"active",
 		"inactive",
 	}
+	planWeighting = map[string]int32{
+		"":         0,
+		"dormant":  0,
+		"affliate": 0,
+		// above will not have currency modifier
+
+		"starter":      1,
+		"basic":        1,
+		"custom":       3,
+		"professional": 3,
+		"unlimited":    5,
+		"shopify_plus": 8,
+	}
+	currencyWeighting = map[string]int32{
+		"USD": 1,
+		"CAD": 1,
+	}
 )
+
+func (p *Place) CollectionName() string {
+	return `places`
+}
+
+func (p *Place) BeforeCreate(sess bond.Session) error {
+	p.BeforeUpdate(sess)
+
+	p.UpdatedAt = nil
+	return nil
+}
+
+func (p *Place) BeforeUpdate(bond.Session) error {
+	p.UpdatedAt = GetTimeUTCPointer()
+
+	w := planWeighting[p.Plan]
+	// update place weighting if lower than the plan weighting
+	if w > p.Weight {
+		p.Weight = w + currencyWeighting[p.Currency]
+	}
+	return nil
+}
 
 // String returns the string value of the status.
 func (s PlaceStatus) String() string {

@@ -24,6 +24,10 @@ type Checkout struct {
 	PaymentDue    string `json:"payment_due,omitempty"`
 	Currency      string `json:"currency,omitempty"`
 
+	// Order
+	OrderID        int64  `json:"order_id,omitempty"`
+	OrderStatusURL string `json:"order_status_url,omitempty"`
+
 	// ShopifyPaymentAccountID is used to use stripe as a payment token provider
 	ShopifyPaymentAccountID string `json:"shopify_payments_account_id,omitempty"`
 	// Use payment url with the other direct payment providers to generate a token
@@ -39,6 +43,8 @@ type Checkout struct {
 
 	ShippingLine *ShippingLine `json:"shipping_line,omitempty"`
 	TaxLines     []*TaxLine    `json:"tax_lines,omitempty"`
+
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 type TaxLine struct {
@@ -120,6 +126,21 @@ type PaymentRequest struct {
 }
 
 const StripeVaultToken = `stripe_vault_token`
+
+func (c *CheckoutService) Get(ctx context.Context, token string) (*Checkout, *http.Response, error) {
+	req, err := c.client.NewRequest("GET", fmt.Sprintf("/admin/checkouts/%s.json", token), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	checkoutWrapper := new(CheckoutRequest)
+	resp, err := c.client.Do(ctx, req, checkoutWrapper)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return checkoutWrapper.Checkout, resp, nil
+}
 
 func (c *CheckoutService) Create(ctx context.Context, checkout *CheckoutRequest) (*Checkout, *http.Response, error) {
 	req, err := c.client.NewRequest("POST", "/admin/checkouts.json", checkout)
