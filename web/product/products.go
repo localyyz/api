@@ -57,7 +57,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 		query := data.DB.Select(db.Raw("distinct *")).
 			From("products").
 			Where(cond).
-			OrderBy("-weight", "-id")
+			OrderBy("-id")
 		paginate := cursor.UpdateQueryBuilder(query)
 		if err := paginate.All(&products); err != nil {
 			render.Respond(w, r, err)
@@ -69,7 +69,7 @@ func ListGenderProduct(w http.ResponseWriter, r *http.Request) {
 			db.Raw(`not (category @> '{"type": "swimwear"}')`),
 			db.Raw(`category ?? 'type'`),
 		)
-		query := data.DB.Product.Find(cond).OrderBy("-weight", "-id")
+		query := data.DB.Product.Find(cond).OrderBy("-id")
 		query = cursor.UpdateQueryUpper(query)
 		if err := query.All(&products); err != nil {
 			render.Respond(w, r, err)
