@@ -29,13 +29,14 @@ func TestSizeSorter(t *testing.T) {
 		{"shoe size with string 2", []string{"women-5", "women-10", "women-8"}, []*Size{{Size: "women-5"}, {Size: "women-8"}, {Size: "women-10"}}},
 		{"shoe size with string mixed float", []string{"women-5.5", "women-5", "women-8"}, []*Size{{Size: "women-5"}, {Size: "women-5.5"}, {Size: "women-8"}}},
 		{"mixed eu and us", []string{"40 eur - 7 us", "39 eur - 6 us", "41 eur - 8 us"}, []*Size{{Size: "39 eur - 6 us"}, {Size: "40 eur - 7 us"}, {Size: "41 eur - 8 us"}}},
+		{"unmatched size", []string{"one-size"}, []*Size{{Size: "one-size", Order: postpendIdx}}},
+		{"mixed with unmatched size", []string{"some size", "m", "l"}, []*Size{{Size: "m"}, {Size: "l"}, {Size: "some size", Order: postpendIdx}}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := New(tt.inputs...)
 			Sort(actual)
-
 			tt.compare(t, actual)
 		})
 	}
@@ -49,6 +50,9 @@ func (tt sizeTest) compare(t *testing.T, actual []*Size) {
 	for i, e := range tt.expected {
 		if e.Size != actual[i].Size {
 			t.Errorf("test '%s': expected size '%s' at %d, got '%s'", tt.name, e.Size, i, actual[i].Size)
+		}
+		if e.Order != 0 && e.Order != actual[i].Order {
+			t.Errorf("test '%s': expected order '%d', got '%d'", tt.name, e.Order, actual[i].Order)
 		}
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+const postpendIdx = int(^uint(0) >> 1)
 const shoesizes = `([0-9]+)(\.([0-9]+))?`
 
 var apparelsizes = []string{
@@ -97,7 +98,8 @@ func matchSize(s string) *Size {
 		}
 		return s
 	}
-	return nil
+	// unmatched size. postpend
+	return &Size{Size: s, Order: postpendIdx}
 }
 
 func init() {
