@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -57,6 +58,74 @@ func setPrices(a, b string) (price, comparePrice float64) {
 	return
 }
 
+func setSearchVector(product *data.Product, extras ...string) error {
+	extraVectors := ""
+	for _, e := range extras {
+		extraVectors += fmt.Sprintf(` || setweight(to_tsvector(?), 'A')`, e)
+	}
+	// update product tsv
+	_, err := data.DB.Exec(`
+		UPDATE products SET tsv =
+			setweight(to_tsvector(
+				COALESCE(
+					CASE WHEN gender = 1 THEN 'man'
+							WHEN gender = 2 THEN 'woman'
+					END, '')), 'A') ||
+			setweight(to_tsvector(COALESCE(title,'')), 'A') ||
+			setweight(to_tsvector(COALESCE(category->>'type','')), 'A') ||
+			setweight(to_tsvector(COALESCE(brand,'')), 'A')
+			%s
+		WHERE id = ?`, extraVectors, product.ID)
+	return err
+}
+
+func setImages(p *data.Product, imgs ...*shopify.ProductImage) {
+	// parse product images
+	for _, img := range imgs {
+		imgUrl, _ := url.Parse(img.Src)
+		imgUrl.Scheme = "https"
+		if img.Position == 1 {
+			p.ImageUrl = imgUrl.String()
+		}
+		// TODO: -> product_images table and reference a variant
+		p.Etc.Images = append(p.Etc.Images, imgUrl.String())
+	}
+}
+
+func setVariants(p *data.Product, variants ...*shopify.ProductVariant) error {
+	// bulk insert variants
+	q := data.DB.InsertInto("product_variants").
+		Columns("product_id", "place_id", "limits", "description", "offer_id", "price", "prev_price", "etc")
+	b := q.Batch(len(variants))
+	go func() {
+		defer b.Done()
+		for _, v := range variants {
+			price, prevPrice := setPrices(
+				v.Price,
+				v.CompareAtPrice,
+			)
+			etc := data.ProductVariantEtc{Sku: v.Sku}
+			// variant option values
+			for _, o := range v.OptionValues {
+				vv := strings.ToLower(o.Value)
+				switch strings.ToLower(o.Name) {
+				case "size":
+					etc.Size = vv
+				case "color":
+					etc.Color = vv
+				default:
+					// pass
+				}
+			}
+			b.Values(p.ID, p.PlaceID, v.InventoryQuantity, v.Title, v.ID, price, prevPrice, etc)
+		}
+	}()
+	if err := b.Wait(); err != nil {
+		return errors.Wrap(err, "failed to create product variants")
+	}
+	return nil
+}
+
 func ShopifyProductListingsUpdate(ctx context.Context) error {
 	place := ctx.Value("sync.place").(*data.Place)
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
@@ -80,19 +149,9 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
-		// if product image is empty
+		// update product images if product image is empty
 		if product.ImageUrl == "" {
-			// parse product images
-			for _, img := range p.Images {
-				imgUrl, _ := url.Parse(img.Src)
-				imgUrl.Scheme = "https"
-				if img.Position == 1 {
-					product.ImageUrl = imgUrl.String()
-				}
-				// TODO: -> product_images table and reference a variant
-				product.Etc.Images = append(product.Etc.Images, imgUrl.String())
-			}
-			// save product
+			setImages(product, p.Images...)
 			data.DB.Product.Save(product)
 		}
 
@@ -118,9 +177,6 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 				v.Price,
 				v.CompareAtPrice,
 			)
-			// NOTE: backwards compatible
-			dbVariant.Etc.Price = dbVariant.Price
-			dbVariant.Etc.PrevPrice = dbVariant.PrevPrice
 
 			for _, o := range v.OptionValues {
 				vv := strings.ToLower(o.Value)
@@ -160,18 +216,8 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			ExternalHandle: p.Handle,
 			Title:          p.Title,
 			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
+			Brand:          p.Vendor,
 			Etc:            data.ProductEtc{},
-		}
-
-		// parse product images if adding for the first time
-		for _, img := range p.Images {
-			imgUrl, _ := url.Parse(img.Src)
-			imgUrl.Scheme = "https"
-			if img.Position == 1 {
-				product.ImageUrl = imgUrl.String()
-			}
-			// TODO: -> product_images table and reference a variant
-			product.Etc.Images = append(product.Etc.Images, imgUrl.String())
 		}
 
 		// find product category + gender
@@ -188,45 +234,12 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
-		// update product tsv
-		data.DB.Exec("UPDATE products SET tsv = to_tsvector(title) WHERE ID = ?", product.ID)
-
-		// bulk insert variants
-		q := data.DB.InsertInto("product_variants").
-			Columns("product_id", "place_id", "limits", "description", "offer_id", "price", "prev_price", "etc")
-		b := q.Batch(len(p.Variants))
-		go func() {
-			defer b.Done()
-			for _, v := range p.Variants {
-				price, prevPrice := setPrices(
-					v.Price,
-					v.CompareAtPrice,
-				)
-				etc := data.ProductVariantEtc{
-					Sku: v.Sku,
-					// NOTE: backwards compatible
-					Price:     price,
-					PrevPrice: prevPrice,
-				}
-				// variant option values
-				for _, o := range v.OptionValues {
-					vv := strings.ToLower(o.Value)
-					switch strings.ToLower(o.Name) {
-					case "size":
-						etc.Size = vv
-					case "color":
-						etc.Color = vv
-					default:
-						// pass
-					}
-				}
-				b.Values(product.ID, place.ID, v.InventoryQuantity, v.Title, v.ID, price, prevPrice, etc)
-			}
-		}()
-		if err := b.Wait(); err != nil {
-			return errors.Wrap(err, "failed to create product variants")
-		}
-
+		// parse product images if adding for the first time
+		setImages(product, p.Images...)
+		// search vector
+		setSearchVector(product, place.Name)
+		// product variants
+		setVariants(product, p.Variants...)
 	}
 	return nil
 }
