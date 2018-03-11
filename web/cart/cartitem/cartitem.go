@@ -197,14 +197,6 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if the cart hasn't been checked out yet. no need
-	// to sync status to the stores
-	if cart.Status != data.CartStatusCheckout {
-		render.Status(r, http.StatusNoContent)
-		render.Respond(w, r, "")
-		return
-	}
-
 	// 1. Check if this cart has been "checked" out, and
 	// that this specific store has a checkout created
 	var token string
@@ -242,6 +234,7 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 	if len(lineItems) == 0 {
 		// if there are no line items. remove the checkout from shopify data
 		delete(cart.Etc.ShopifyData, cartItem.PlaceID)
+		delete(cart.Etc.ShippingMethods, cartItem.PlaceID)
 		// mark cart status as in progress
 		cart.Status = data.CartStatusInProgress
 	} else {
