@@ -165,7 +165,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	//transform address to shopify
+	// transform address to shopify
 	shippingAddress := &shopify.CustomerAddress{
 		Address1:  cart.Etc.ShippingAddress.Address,
 		Address2:  cart.Etc.ShippingAddress.AddressOpt,
