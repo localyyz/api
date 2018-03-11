@@ -56,9 +56,10 @@ type TaxLine struct {
 }
 
 type ShippingLine struct {
-	Handle string `json:"handle,omitempty"`
-	Price  string `json:"price,omitempty"`
-	Title  string `json:"title,omitempty"`
+	Handle        string      `json:"handle,omitempty"`
+	Price         string      `json:"price,omitempty"`
+	Title         string      `json:"title,omitempty"`
+	DeliveryRange []time.Time `json:"delivery_range,omitempty"`
 }
 
 type CheckoutShipping struct {

@@ -16,14 +16,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
-type cartPayment struct {
-	Number string `json:"number"`
-	Type   string `json:"type"`
-	Expiry string `json:"expiry"`
-	Name   string `json:"name"`
-	CVC    string `json:"cvc"`
-}
-
 type checkoutRequest struct {
 	ShippingAddress *data.CartAddress        `json:"shippingAddress,omitempty"`
 	BillingAddress  *data.CartAddress        `json:"billingAddress,omitempty"`
