@@ -87,8 +87,9 @@ func CartCtx(next http.Handler) http.Handler {
 
 		cart, err := data.DB.Cart.FindOne(
 			db.Cond{
-				"id":      cartID,
-				"user_id": user.ID,
+				"id":         cartID,
+				"is_express": false,
+				"user_id":    user.ID,
 			},
 		)
 		if err != nil {
