@@ -59,8 +59,7 @@ func validateVariants(variants []*data.ProductVariant) error {
 
 func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.Checkout) error {
 	var (
-		err error
-		fn  shopify.CheckoutFn
+		fn shopify.CheckoutFn
 	)
 
 	// check if we're updating an already exiting checkout
@@ -69,14 +68,14 @@ func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.C
 	} else {
 		fn = cl.Checkout.Update
 	}
-	checkout, _, err = fn(ctx, &shopify.CheckoutRequest{checkout})
+	ch, _, err := fn(ctx, &shopify.CheckoutRequest{checkout})
 
 	if err != nil {
 		return err
 	}
 
 	// TODO: make proper shipping. For now, pick the cheapest one.
-	rates, _, err := cl.Checkout.ListShippingRates(ctx, checkout.Token)
+	rates, _, err := cl.Checkout.ListShippingRates(ctx, ch.Token)
 	if err != nil {
 		return err
 	}
@@ -85,11 +84,11 @@ func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.C
 	}
 	// for now, pick the first rate and apply to the checkout.. TODO make this proper
 	// sync the cart shipping method
-	checkout, _, err = cl.Checkout.Update(
+	ch, _, err = cl.Checkout.Update(
 		ctx,
 		&shopify.CheckoutRequest{
 			Checkout: &shopify.Checkout{
-				Token: checkout.Token,
+				Token: ch.Token,
 				ShippingLine: &shopify.ShippingLine{
 					Handle: rates[0].Handle,
 				},
@@ -102,9 +101,25 @@ func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.C
 
 	// Cache delivery range. *NOTE: shopify doesn't return the delivery range
 	// when updating the shipping line.. need to pull it from the rates
+	*checkout = *ch
 	checkout.ShippingLine.DeliveryRange = rates[0].DeliveryRange
 
 	return nil
+}
+
+// IntSlice is a helper function that returns a slice of ints of s. If
+// the set contains mixed types of items only items of type int are returned.
+func int64Slice(s set.Interface) []int64 {
+	slice := make([]int64, 0)
+	for _, item := range s.List() {
+		v, ok := item.(int64)
+		if !ok {
+			continue
+		}
+
+		slice = append(slice, v)
+	}
+	return slice
 }
 
 // Create checkout on shopify
@@ -143,7 +158,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 	creds, err := data.DB.ShopifyCred.FindAll(
 		db.Cond{
-			"place_id": set.IntSlice(merchantIDset),
+			"place_id": int64Slice(merchantIDset),
 		},
 	)
 	if err != nil {
@@ -198,6 +213,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	for _, cred := range creds {
 		cl := shopify.NewClient(nil, cred.AccessToken)
 		cl.BaseURL, _ = url.Parse(cred.ApiURL)
+		cl.Debug = true
 
 		checkout := &shopify.Checkout{
 			Email:           user.Email,
@@ -211,8 +227,8 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := createCheckout(ctx, cl, checkout); err != nil {
-			err := errors.Wrapf(err, "checkout: cart(%d) pl(%d) user(%d)", cart.ID, cred.PlaceID, user.ID, err)
-			lg.Alert(err)
+			err := errors.Wrapf(err, "checkout: cart(%d) pl(%d) user(%d)", cart.ID, cred.PlaceID, user.ID)
+			lg.Alertf("%v", err)
 
 			// TODO: what do we do here? how do we tell frontend we completely borked
 			// this update?
