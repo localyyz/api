@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
+	"github.com/pkg/errors"
 
 	db "upper.io/db.v3"
 
@@ -33,6 +34,12 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
 
+	if cart.Status > data.CartStatusCheckout {
+		err := errors.New("invalid cart status")
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
 	var payload cartRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
@@ -46,6 +53,7 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 		cart.Etc.BillingAddress = b
 	}
 
+	cart.Status = data.CartStatusInProgress
 	if err := data.DB.Cart.Save(cart); err != nil {
 		render.Respond(w, r, err)
 		return
@@ -57,11 +65,24 @@ func ClearCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
 
+	if cart.Status > data.CartStatusCheckout {
+		err := errors.New("invalid cart status")
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
 	err := data.DB.CartItem.Find(db.Cond{"cart_id": cart.ID}).Delete()
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
+
+	cart.Status = data.CartStatusInProgress
+	if err := data.DB.Save(cart); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
 	render.Status(r, http.StatusNoContent)
 	render.Respond(w, r, "")
 }

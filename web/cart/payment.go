@@ -89,6 +89,12 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if cart.Status != data.CartStatusCheckout {
+		err := errors.New("invalid cart status")
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
 	checkout := shopify.Checkout{}
 	// update billing address, if specified
 	if b := payload.BillingAddress; b != nil {
