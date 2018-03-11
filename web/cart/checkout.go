@@ -58,14 +58,25 @@ func validateVariants(variants []*data.ProductVariant) error {
 }
 
 func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.Checkout) error {
-	// create the checkout on shopify
-	cc, _, err := cl.Checkout.Create(ctx, &shopify.CheckoutRequest{checkout})
-	if err != nil {
+	var (
+		err error
+		fn  shopify.CheckoutFn
+	)
+
+	// check if we're updating an already exiting checkout
+	if len(checkout.Token) == 0 {
+		fn = cl.Checkout.Create
+	} else {
+		fn = cl.Checkout.Update
 	}
-	// end create checkout
+	checkout, _, err = fn(ctx, &shopify.CheckoutRequest{checkout})
+
+	if err != nil {
+		return err
+	}
 
 	// TODO: make proper shipping. For now, pick the cheapest one.
-	rates, _, err := cl.Checkout.ListShippingRates(ctx, cc.Token)
+	rates, _, err := cl.Checkout.ListShippingRates(ctx, checkout.Token)
 	if err != nil {
 		return err
 	}
@@ -74,11 +85,11 @@ func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.C
 	}
 	// for now, pick the first rate and apply to the checkout.. TODO make this proper
 	// sync the cart shipping method
-	cc, _, err = cl.Checkout.Update(
+	checkout, _, err = cl.Checkout.Update(
 		ctx,
 		&shopify.CheckoutRequest{
 			Checkout: &shopify.Checkout{
-				Token: cc.Token,
+				Token: checkout.Token,
 				ShippingLine: &shopify.ShippingLine{
 					Handle: rates[0].Handle,
 				},
@@ -89,7 +100,8 @@ func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.C
 		return err
 	}
 
-	checkout = cc
+	// Cache delivery range. *NOTE: shopify doesn't return the delivery range
+	// when updating the shipping line.. need to pull it from the rates
 	checkout.ShippingLine.DeliveryRange = rates[0].DeliveryRange
 
 	return nil
@@ -102,7 +114,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	cart := ctx.Value("cart").(*data.Cart)
 
 	if cart.Status != data.CartStatusInProgress {
-		// can't create another checkout on a completed cart
+		// can't create another checkout on an already checkout cart
 		err := errors.New("invalid cart status, already completed.")
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
@@ -176,8 +188,13 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create shipify data holder on the cart
-	cart.Etc.ShopifyData = make(map[int64]*data.CartShopifyData)
-	cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
+	if cart.Etc.ShopifyData == nil {
+		cart.Etc.ShopifyData = make(map[int64]*data.CartShopifyData)
+	}
+	if cart.Etc.ShippingMethods == nil {
+		cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
+	}
+
 	for _, cred := range creds {
 		cl := shopify.NewClient(nil, cred.AccessToken)
 		cl.BaseURL, _ = url.Parse(cred.ApiURL)
@@ -188,6 +205,11 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 			ShippingAddress: shippingAddress,
 			BillingAddress:  billingAddress,
 		}
+		// check if there is an existing checkout, if there is, set the checkout token
+		if sh, ok := cart.Etc.ShopifyData[cred.PlaceID]; sh != nil && ok {
+			checkout.Token = sh.Token
+		}
+
 		if err := createCheckout(ctx, cl, checkout); err != nil {
 			err := errors.Wrapf(err, "checkout: cart(%d) pl(%d) user(%d)", cart.ID, cred.PlaceID, user.ID, err)
 			lg.Alert(err)
