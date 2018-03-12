@@ -143,8 +143,6 @@ func (c *CheckoutService) Get(ctx context.Context, token string) (*Checkout, *ht
 	return checkoutWrapper.Checkout, resp, nil
 }
 
-type CheckoutFn = func(ctx context.Context, checkout *CheckoutRequest) (*Checkout, *http.Response, error)
-
 func (c *CheckoutService) Create(ctx context.Context, checkout *CheckoutRequest) (*Checkout, *http.Response, error) {
 	req, err := c.client.NewRequest("POST", "/admin/checkouts.json", checkout)
 	if err != nil {

@@ -17,7 +17,8 @@ type CartItem struct {
 	Product *Product        `json:"product,omitempty"`
 	Variant *ProductVariant `json:"variant,omitempty"`
 
-	Price float64 `json:"price"`
+	Price    float64 `json:"price"`
+	HasError bool    `json:"hasError"`
 
 	ctx context.Context
 }

@@ -16,6 +16,11 @@ import (
 	db "upper.io/db.v3"
 )
 
+type checkoutError struct {
+	placeID int64
+	err     error
+}
+
 func fetchCartItemVariant(cart *data.Cart) ([]*data.ProductVariant, error) {
 	// Find the cart item -> product variants
 	cartItems, err := data.DB.CartItem.FindByCartID(cart.ID)
@@ -27,7 +32,6 @@ func fetchCartItemVariant(cart *data.Cart) ([]*data.ProductVariant, error) {
 	for i, ci := range cartItems {
 		variantIDs[i] = ci.VariantID
 	}
-
 	return data.DB.ProductVariant.FindAll(db.Cond{"id": variantIDs})
 }
 
@@ -59,17 +63,15 @@ func validateVariants(variants []*data.ProductVariant) error {
 
 func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.Checkout) error {
 	var (
-		fn shopify.CheckoutFn
+		err error
+		ch  *shopify.Checkout
 	)
-
 	// check if we're updating an already exiting checkout
 	if len(checkout.Token) == 0 {
-		fn = cl.Checkout.Create
+		ch, _, err = cl.Checkout.Create(ctx, &shopify.CheckoutRequest{checkout})
 	} else {
-		fn = cl.Checkout.Update
+		ch, _, err = cl.Checkout.Update(ctx, &shopify.CheckoutRequest{checkout})
 	}
-	ch, _, err := fn(ctx, &shopify.CheckoutRequest{checkout})
-
 	if err != nil {
 		return err
 	}
@@ -210,6 +212,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
 	}
 
+	var lastError *checkoutError
 	for _, cred := range creds {
 		cl := shopify.NewClient(nil, cred.AccessToken)
 		cl.BaseURL, _ = url.Parse(cred.ApiURL)
@@ -227,11 +230,8 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := createCheckout(ctx, cl, checkout); err != nil {
-			err := errors.Wrapf(err, "checkout: cart(%d) pl(%d) user(%d)", cart.ID, cred.PlaceID, user.ID)
-			lg.Alertf("%v", err)
-
-			// TODO: what do we do here? how do we tell frontend we completely borked
-			// this update?
+			lg.Alert(errors.Wrapf(err, "checkout: cart(%d) pl(%d) user(%d)", cart.ID, cred.PlaceID, user.ID))
+			lastError = &checkoutError{placeID: cred.PlaceID, err: err}
 			continue
 		}
 
@@ -265,5 +265,13 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Render(w, r, presenter.NewCart(ctx, cart))
+	presented := presenter.NewCart(ctx, cart)
+	if lastError != nil {
+		presented.Error = lastError.err.Error()
+		for _, ci := range presented.CartItems {
+			ci.HasError = ci.PlaceID == lastError.placeID
+		}
+	}
+
+	render.Render(w, r, presented)
 }

@@ -26,6 +26,8 @@ type Cart struct {
 	TotalPrice    int64 `json:"totalPrice"`
 	TotalDiscount int64 `json:"totalDiscount"`
 
+	Error string `json:"error"`
+
 	ctx context.Context
 }
 
