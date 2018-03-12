@@ -40,6 +40,13 @@ type DiscountCodeError struct {
 	ShopifyErrorer
 }
 
+type ShippingAddressError struct {
+	Field   string `json:"field"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	ShopifyErrorer
+}
+
 type ErrorResponse struct {
 	Errors interface{} `json:"errors"`
 }
@@ -51,7 +58,7 @@ var (
 
 func (e *LineItemError) Error() string {
 	for _, q := range e.Quantity {
-		return fmt.Sprintf("[line_item] pos(%s) %s %s", e.Position, q.Code, q.Message)
+		return fmt.Sprintf("line_item at pos(%s) %s", e.Position, q.Message)
 	}
 	return fmt.Sprintf("line_item at pos(%s) has errors", e.Position)
 }
@@ -66,6 +73,14 @@ func (e *DiscountCodeError) Error() string {
 
 func (e *DiscountCodeError) Type() string {
 	return `discount_code`
+}
+
+func (e *ShippingAddressError) Error() string {
+	return fmt.Sprintf("%s: %s %s", e.Type(), e.Field, e.Message)
+}
+
+func (e *ShippingAddressError) Type() string {
+	return `shipping_address`
 }
 
 func (r *ErrorResponse) Error() string {
@@ -138,6 +153,25 @@ func findFirstError(r *ErrorResponse) error {
 							if ex, _ := ee.(map[string]interface{}); ex != nil {
 								for _, reason := range ex {
 									return &DiscountCodeError{Reason: reason}
+								}
+							}
+						}
+					}
+				}
+			}
+		case "shipping_address":
+			for kk, vvv := range vv {
+				switch kk {
+				case "country":
+					if e, _ := vvv.([]interface{}); e != nil {
+						for _, ee := range e {
+							if ex, _ := ee.(map[string]interface{}); ex != nil {
+								code, _ := ex["code"].(string)
+								message, _ := ex["message"].(string)
+								return &ShippingAddressError{
+									Field:   "country",
+									Code:    code,
+									Message: message,
 								}
 							}
 						}

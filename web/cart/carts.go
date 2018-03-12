@@ -4,32 +4,14 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
+	"github.com/pkg/errors"
 
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
-
-func ListCarts(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
-	scope, ok := ctx.Value("scope").(db.Cond)
-	if !ok {
-		scope = db.Cond{}
-	}
-	scope["user_id"] = user.ID
-	var carts []*data.Cart
-	err := data.DB.Cart.Find(scope).OrderBy("status").All(&carts)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	presented := presenter.NewUserCartList(ctx, carts)
-	if err := render.RenderList(w, r, presented); err != nil {
-		render.Respond(w, r, err)
-	}
-}
 
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -37,29 +19,70 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, presenter.NewCart(ctx, cart))
 }
 
-func CreateCart(w http.ResponseWriter, r *http.Request) {
+type cartRequest struct {
+	ShippingAddress *data.CartAddress `json:"shippingAddress,omitempty"`
+	BillingAddress  *data.CartAddress `json:"billingAddress,omitempty"`
+	//Shipping        *data.CartShippingMethod `json:"shipping,omitempty"`
+	DiscountCode string `json:"discountCode,omitempty"`
+}
+
+func (c *cartRequest) Bind(r *http.Request) error {
+	return nil
+}
+
+func UpdateCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
-	newCart := &data.Cart{
-		UserID: user.ID,
-		Status: data.CartStatusInProgress,
+	cart := ctx.Value("cart").(*data.Cart)
+
+	if cart.Status > data.CartStatusCheckout {
+		err := errors.New("invalid cart status")
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
 	}
-	if err := data.DB.Cart.Save(newCart); err != nil {
+
+	var payload cartRequest
+	if err := render.Bind(r, &payload); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	if a := payload.ShippingAddress; a != nil {
+		cart.Etc.ShippingAddress = a
+	}
+	if b := payload.BillingAddress; b != nil {
+		cart.Etc.BillingAddress = b
+	}
+
+	cart.Status = data.CartStatusInProgress
+	if err := data.DB.Cart.Save(cart); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
-	render.Render(w, r, presenter.NewCart(ctx, newCart))
+	render.Render(w, r, presenter.NewCart(ctx, cart))
 }
 
 func ClearCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
 
+	if cart.Status > data.CartStatusCheckout {
+		err := errors.New("invalid cart status")
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
 	err := data.DB.CartItem.Find(db.Cond{"cart_id": cart.ID}).Delete()
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
+
+	cart.Status = data.CartStatusInProgress
+	if err := data.DB.Save(cart); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
 	render.Status(r, http.StatusNoContent)
 	render.Respond(w, r, "")
 }
