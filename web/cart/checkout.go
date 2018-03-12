@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -18,6 +19,7 @@ import (
 
 type checkoutError struct {
 	placeID int64
+	itemID  int64
 	err     error
 }
 
@@ -231,7 +233,18 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 
 		if err := createCheckout(ctx, cl, checkout); err != nil {
 			lg.Alert(errors.Wrapf(err, "checkout: cart(%d) pl(%d) user(%d)", cart.ID, cred.PlaceID, user.ID))
-			lastError = &checkoutError{placeID: cred.PlaceID, err: err}
+			if le, ok := err.(*shopify.LineItemError); ok && le != nil && le.Position != "" {
+				idx, _ := strconv.Atoi(le.Position)
+				lastError = &checkoutError{
+					itemID: lineItemsMap[cred.PlaceID][idx].VariantID,
+					err:    errors.New("item is out of stock"),
+				}
+				continue
+			}
+			lastError = &checkoutError{
+				placeID: cred.PlaceID,
+				err:     err,
+			}
 			continue
 		}
 
@@ -269,7 +282,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	if lastError != nil {
 		presented.Error = lastError.err.Error()
 		for _, ci := range presented.CartItems {
-			ci.HasError = ci.PlaceID == lastError.placeID
+			ci.HasError = (ci.PlaceID == lastError.placeID) || (ci.Variant.OfferID == lastError.itemID)
 		}
 	}
 

@@ -58,7 +58,7 @@ var (
 
 func (e *LineItemError) Error() string {
 	for _, q := range e.Quantity {
-		return fmt.Sprintf("line_item at pos(%s) %s %s", e.Position, q.Code, q.Message)
+		return fmt.Sprintf("line_item at pos(%s) %s", e.Position, q.Message)
 	}
 	return fmt.Sprintf("line_item at pos(%s) has errors", e.Position)
 }
