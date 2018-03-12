@@ -35,7 +35,6 @@ type Place struct {
 	Billing        PlaceBilling     `db:"billing" json:"billing"`
 
 	CreatedAt   *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
-	UpdatedAt   *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
 	TOSAgreedAt *time.Time `db:"tos_agreed_at,omitempty" json:"tosAgreedAt,omitempty"`
 	ApprovedAt  *time.Time `db:"approved_at,omitempty" json:"approvedAt,omitempty"`
 }
@@ -112,14 +111,10 @@ func (p *Place) CollectionName() string {
 
 func (p *Place) BeforeCreate(sess bond.Session) error {
 	p.BeforeUpdate(sess)
-
-	p.UpdatedAt = nil
 	return nil
 }
 
 func (p *Place) BeforeUpdate(bond.Session) error {
-	p.UpdatedAt = GetTimeUTCPointer()
-
 	w := planWeighting[p.Plan]
 	// update place weighting if lower than the plan weighting
 	if w > p.Weight {
