@@ -269,6 +269,14 @@ func DeleteCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
 
+	if itemCount, _ := data.DB.CartItem.Find(
+		db.Cond{"cart_id": cart.ID},
+	).Count(); itemCount == 0 {
+		render.Status(r, http.StatusNoContent)
+		render.Respond(w, r, "")
+	}
+
+	cart.DeletedAt = data.GetTimeUTCPointer()
 	if err := data.DB.Cart.Delete(cart); err != nil {
 		render.Respond(w, r, err)
 		return
