@@ -261,7 +261,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		lg.Alertf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
 	}
 
-	SL.Notify("store", fmt.Sprintf("%s (id: %v) just connected!", place.Name, place.ID))
+	SL.Notify("store", fmt.Sprintf("%s (id: %d - %s) just connected!", place.Name, place.ID, place.Plan))
 	return nil
 }
 

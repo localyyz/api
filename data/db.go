@@ -37,6 +37,8 @@ type Database struct {
 
 	Cart     CartStore
 	CartItem CartItemStore
+
+	SearchWord SearchWordStore
 }
 
 type DBConf struct {
@@ -100,6 +102,8 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 
 	db.Cart = CartStore{db.Store(&Cart{})}
 	db.CartItem = CartItemStore{db.Store(&CartItem{})}
+
+	db.SearchWord = SearchWordStore{db.Store(&SearchWord{})}
 
 	// set max db open connection
 	db.SetMaxOpenConns(conf.MaxConnection)

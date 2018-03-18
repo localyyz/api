@@ -111,11 +111,10 @@ func (h *Handler) Routes() chi.Router {
 		r.Post("/echo", echoPush)
 
 		// public api routes
+		r.Mount("/search", search.Routes())
 		r.Mount("/collections", collection.Routes())
 		r.Mount("/places", place.Routes())
-		r.Post("/search", search.OmniSearch)
 		r.Mount("/products", product.Routes())
-		r.Mount("/search", search.Routes())
 		r.Mount("/categories", category.Routes())
 		r.Mount("/locales", locale.Routes())
 	})

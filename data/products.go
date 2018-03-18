@@ -16,6 +16,7 @@ type Product struct {
 	Title       string        `db:"title" json:"title"`
 	Description string        `db:"description" json:"description"`
 	ImageUrl    string        `db:"image_url" json:"imageUrl"`
+	Brand       string        `db:"brand" json:"brand"`
 	Gender      ProductGender `db:"gender" json:"genderHint"`
 	Etc         ProductEtc    `db:"etc" json:"etc"`
 

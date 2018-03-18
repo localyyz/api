@@ -20,6 +20,37 @@ var (
 	placeUnisex = &data.Place{Gender: data.PlaceGenderUnisex}
 )
 
+func TestProductCategory(t *testing.T) {
+	t.Parallel()
+	cache := map[string]*data.Category{
+		"dress": &data.Category{
+			Gender:  data.ProductGenderFemale,
+			Type:    data.CategoryApparel,
+			Value:   "dress",
+			Mapping: "dresses",
+		},
+	}
+	ctx := context.WithValue(context.Background(), cacheKey, cache)
+
+	tests := []tagTest{
+		{
+			name:     "parse test",
+			inputs:   []string{"Basic Dress in Light Gray Stine Ladefoged Basic Dress - LGHTGREY"},
+			place:    placeUnisex,
+			expected: cache["dress"],
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx = context.WithValue(ctx, "sync.place", tt.place)
+			actual := ParseProduct(ctx, tt.inputs...)
+			tt.compare(t, actual)
+		})
+	}
+
+}
+
 func TestProductGender(t *testing.T) {
 	t.Parallel()
 	cache := map[string]*data.Category{

@@ -115,10 +115,12 @@ func (p *Place) BeforeCreate(sess bond.Session) error {
 }
 
 func (p *Place) BeforeUpdate(bond.Session) error {
-	w := planWeighting[p.Plan]
-	// update place weighting if lower than the plan weighting
-	if w > p.Weight {
-		p.Weight = w + currencyWeighting[p.Currency]
+	if p.Status == PlaceStatusActive {
+		w := planWeighting[p.Plan]
+		// update place weighting if lower than the plan weighting
+		if w > p.Weight {
+			p.Weight = w + currencyWeighting[p.Currency]
+		}
 	}
 	return nil
 }
