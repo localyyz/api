@@ -64,6 +64,9 @@ const (
 	PlaceStatusWaitApproval                     // 2
 	PlaceStatusActive                           // 3
 	PlaceStatusInActive                         // 4
+
+	// featured merchant cutoff
+	PlaceFeatureWeightCutoff = 5
 )
 
 var _ interface {
