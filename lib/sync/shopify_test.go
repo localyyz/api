@@ -38,10 +38,10 @@ func TestSetPrices(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			price, prevPrice := setPrices(tt.price, tt.comparePrice)
 			if price != tt.expectedPrice {
-				t.Errorf("test '%s': expected '%d', got '%d'", tt.name, tt.expectedPrice, price)
+				t.Errorf("test '%s': expected '%.2f', got '%.2f'", tt.name, tt.expectedPrice, price)
 			}
 			if prevPrice != tt.expectedPrev {
-				t.Errorf("test '%s': expected '%d', got '%d'", tt.name, tt.expectedPrev, prevPrice)
+				t.Errorf("test '%s': expected '%.2f', got '%.2f'", tt.name, tt.expectedPrev, prevPrice)
 			}
 		})
 	}

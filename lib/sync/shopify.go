@@ -61,7 +61,7 @@ func setPrices(a, b string) (price, comparePrice float64) {
 func setSearchVector(product *data.Product, extras ...string) error {
 	extraVectors := ""
 	for _, e := range extras {
-		extraVectors += fmt.Sprintf(` || setweight(to_tsvector(?), 'A')`, e)
+		extraVectors += fmt.Sprintf(` || setweight(to_tsvector(%s), 'A')`, e)
 	}
 	// update product tsv
 	_, err := data.DB.Exec(`
