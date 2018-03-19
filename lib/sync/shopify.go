@@ -234,12 +234,15 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
-		// parse product images if adding for the first time
-		setImages(product, p.Images...)
 		// search vector
 		setSearchVector(product, place.Name)
 		// product variants
 		setVariants(product, p.Variants...)
+
+		// set image and save
+		setImages(product, p.Images...)
+		// save
+		data.DB.Product.Save(product)
 	}
 	return nil
 }
