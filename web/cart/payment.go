@@ -95,22 +95,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checkout := shopify.Checkout{}
-	// update billing address, if specified
-	if b := payload.BillingAddress; b != nil {
-		checkout.BillingAddress = &shopify.CustomerAddress{
-			Address1:  b.Address,
-			Address2:  b.AddressOpt,
-			City:      b.City,
-			Country:   b.Country,
-			FirstName: b.FirstName,
-			LastName:  b.LastName,
-			Province:  b.Province,
-			Zip:       b.Zip,
-		}
-		cart.Etc.BillingAddress = payload.BillingAddress
-	}
-
 	// 1. exchange user credit card information for stripe token
 	for placeID, sh := range cart.Etc.ShopifyData {
 		lg.Infof("payment processing cart(%d) for place(%d)", cart.ID, placeID)
@@ -122,18 +106,29 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 		cl := shopify.NewClient(nil, creds.AccessToken)
 		cl.BaseURL, _ = url.Parse(creds.ApiURL)
+		cl.Debug = true
 
 		// 2. Check update the shipping line and billing address if set
-		ch := checkout
-		if m, ok := cart.Etc.ShippingMethods[placeID]; ok {
-			ch.ShippingLine = &shopify.ShippingLine{
-				Handle: m.Handle,
+		ch := shopify.Checkout{
+			Token: sh.Token,
+		}
+		// update billing address, if specified
+		if b := payload.BillingAddress; b != nil {
+			ch.BillingAddress = &shopify.CustomerAddress{
+				Address1:  b.Address,
+				Address2:  b.AddressOpt,
+				City:      b.City,
+				Country:   b.Country,
+				FirstName: b.FirstName,
+				LastName:  b.LastName,
+				Province:  b.Province,
+				Zip:       b.Zip,
 			}
+			cart.Etc.BillingAddress = payload.BillingAddress
 		}
 		if sh.Discount != nil && !sh.Discount.Applicable {
 			ch.DiscountCode = ""
 		}
-		ch.Token = sh.Token
 		cc, _, err := cl.Checkout.Update(ctx, &shopify.CheckoutRequest{&ch})
 		if err != nil {
 			lg.Alert(errors.Wrapf(err, "failed to pay cart(%d). shopify(%v)", cart.ID, placeID))
