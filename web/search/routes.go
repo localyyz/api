@@ -77,11 +77,12 @@ func RelatedTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filterTags := append(p.rawParts, p.FilterTags...)
 	iter := data.DB.Select("word").
 		From(db.Raw("related_tags(?)", p.Query)).
 		Where(db.Cond{
 			db.Raw("to_tsvector(word)"): db.NotEq(""),
-			"word": db.NotIn(p.rawParts),
+			"word": db.NotIn(filterTags),
 		}).
 		OrderBy("ndoc DESC").
 		Limit(10).
