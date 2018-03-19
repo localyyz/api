@@ -66,6 +66,7 @@ func Routes() chi.Router {
 
 	r.Get("/recent", ListRecentProduct)
 	r.Get("/featured", ListFeaturedProduct)
+	r.Get("/onsale", ListOnsaleProduct)
 	r.With(GenderCtx).
 		With(CategoryCtx).
 		Get("/gender/{gender}", ListGenderProduct)

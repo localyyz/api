@@ -169,6 +169,67 @@ func ListRecentProduct(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
+
+	// Only show on sale products from place weight >= 5
+	featuredPlaces, _ := data.DB.Place.FindFeaturedMerchants()
+	placeIDs := make([]int64, len(featuredPlaces))
+	for i, p := range featuredPlaces {
+		placeIDs[i] = p.ID
+	}
+
+	query := data.DB.Select(db.Raw("product_id")).
+		From("product_variants pv").
+		Where(db.Cond{
+			"place_id":      placeIDs,
+			"prev_price !=": 0,
+			"prev_price >":  db.Raw("price"),
+		}).
+		GroupBy("place_id", "product_id").
+		OrderBy(data.MaintainOrder("place_id", placeIDs))
+	paginator := cursor.UpdateQueryBuilder(query)
+
+	rows, err := paginator.QueryContext(ctx)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	defer rows.Close()
+
+	var productIDs []int64
+	for rows.Next() {
+		var pId int64
+		if err := rows.Scan(&pId); err != nil {
+			lg.Warnf("error scanning query: %+v", err)
+			break
+		}
+		productIDs = append(productIDs, pId)
+	}
+	if err := rows.Err(); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	result := data.DB.Product.Find(
+		db.Cond{"id": productIDs},
+	).OrderBy(
+		data.MaintainOrder("id", productIDs),
+	)
+	var products []*data.Product
+	if err := result.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	cursor.Update(products)
+
+	presented := presenter.NewProductList(ctx, products)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
 func GetProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)

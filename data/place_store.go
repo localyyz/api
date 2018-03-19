@@ -11,6 +11,20 @@ type PlaceStore struct {
 	bond.Store
 }
 
+func (store PlaceStore) FindFeaturedMerchants() ([]*Place, error) {
+	query := store.Find(
+		db.Cond{
+			"status":    PlaceStatusActive,
+			"weight >=": PlaceFeatureWeightCutoff,
+		},
+	).OrderBy("weight DESC")
+	var places []*Place
+	if err := query.All(&places); err != nil {
+		return nil, err
+	}
+	return places, nil
+}
+
 func (store PlaceStore) FindByLocaleID(localeID int64) ([]*Place, error) {
 	return store.FindAll(db.Cond{"locale_id": localeID})
 }
