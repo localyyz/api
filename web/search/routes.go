@@ -29,7 +29,9 @@ func Routes() chi.Router {
 }
 
 type omniSearchRequest struct {
-	Query      string `json:"query,required"`
+	Query string `json:"query,required"`
+	// Tags to filter out
+	FilterTags []string `json:"filterTags,omitempty"`
 	queryParts []string
 
 	rawParts []string
@@ -69,7 +71,39 @@ func (o *omniSearchRequest) Bind(r *http.Request) error {
 }
 
 func RelatedTags(w http.ResponseWriter, r *http.Request) {
-	// TODO, to be implemented
+	var p omniSearchRequest
+	if err := render.Bind(r, &p); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	filterTags := append(p.rawParts, p.FilterTags...)
+	iter := data.DB.Select("word").
+		From(db.Raw("related_tags(?)", p.Query)).
+		Where(db.Cond{
+			db.Raw("to_tsvector(word)"): db.NotEq(""),
+			"word": db.NotIn(filterTags),
+		}).
+		OrderBy("ndoc DESC").
+		Limit(10).
+		Iterator()
+	defer iter.Close()
+
+	var relatedTags []string
+	for iter.Next() {
+		var tag string
+		if err := iter.Scan(&tag); err != nil {
+			lg.Warn(err)
+			break
+		}
+		relatedTags = append(relatedTags, tag)
+	}
+	if err := iter.Err(); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	render.Respond(w, r, relatedTags)
 }
 
 // OmniSearch catch all search endpoint and returns categorized

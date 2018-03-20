@@ -1,0 +1,21 @@
+
+-- +goose Up
+
+-- +goose StatementBegin
+CREATE OR REPLACE FUNCTION related_tags(q text default '')
+RETURNS table(word text, ndoc integer, nentry integer) AS $$
+declare
+	vectors text := format('SELECT to_tsvector(''simple'', title)
+	FROM products
+	WHERE tsv @@ plainto_tsquery(''%s'')', q);
+begin
+	return query select (ts_stat(vectors)).*;
+end;
+$$ LANGUAGE plpgsql STABLE;
+-- +goose StatementEnd
+
+
+-- +goose Down
+-- SQL section 'Down' is executed when this migration is rolled back
+
+drop function if exist related_tags;
