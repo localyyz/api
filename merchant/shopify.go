@@ -92,7 +92,7 @@ func ShopifyChargeCtx(next http.Handler) http.Handler {
 		if place.Billing.Billing.Status == shopify.BillingStatusAccepted {
 			_, _, err = sh.Billing.Activate(ctx, place.Billing.Billing)
 			if err != nil {
-				lg.Alertf("merchant (%d) failed to activate billing with: %+v", place.ID, err)
+				lg.Warnf("merchant (%d) failed to activate billing with: %+v", place.ID, err)
 				next.ServeHTTP(w, r)
 				return
 			}
