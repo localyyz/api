@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-chi/render"
-	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 
 	"golang.org/x/crypto/bcrypt"
@@ -85,9 +84,9 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	// encrypt with bcrypt
 	epw, err := bcrypt.GenerateFromPassword([]byte(newSignup.Password), bCryptCost)
 	if err != nil {
+		lg.Warn(err)
 		// mask the encryption error and return
 		render.Respond(w, r, api.ErrEncryptinError)
-		lg.Alert(errors.Wrap(err, "encryption error"))
 		return
 	}
 
@@ -105,7 +104,8 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	if newSignup.InviteCode != "" {
 		invitor, err := data.DB.User.FindByInviteCode(newSignup.InviteCode)
 		if err != nil {
-			lg.Alertf("invitor with code %s lookup error: %v", newSignup.InviteCode, err)
+			lg.Warnf("invitor with code %s lookup error: %v", newSignup.InviteCode, err)
+			return
 		}
 		lg.Info("new user invited by: %d", invitor.ID)
 		newUser.Etc = data.UserEtc{

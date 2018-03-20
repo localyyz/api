@@ -76,11 +76,15 @@ func (h *Handler) Routes() chi.Router {
 		return http.HandlerFunc(fn)
 	})
 
-	r.Use(middleware.Recoverer)
+	//r.Use(middleware.Recoverer)
 	r.Use(token.Verify())
 	r.Use(session.SessionCtx)
 	r.Use(session.UserRefresh)
 	r.Use(api.PaginateCtx)
+
+	if h.Debug {
+		r.Use(lg.PrintPanics)
+	}
 
 	// Public Routes
 	r.Group(func(r chi.Router) {
@@ -95,8 +99,6 @@ func (h *Handler) Routes() chi.Router {
 		r.Get("/signup", auth.GetSignupPage)
 		r.Post("/signup", auth.EmailSignup)
 		r.Post("/register", auth.RegisterSignup)
-
-		r.Get("/leaderboard", leaderBoard)
 
 		// shopify related endpoints
 		r.Get("/connect", shopify.Connect)
@@ -138,7 +140,7 @@ func (h *Handler) Routes() chi.Router {
 }
 
 func NewStructuredLogger() func(next http.Handler) http.Handler {
-	return lg.RequestLogger(lg.DefaultLogger)
+	return api.RequestLogger(lg.DefaultLogger)
 }
 
 type pushRequest struct {
@@ -163,36 +165,4 @@ func echoPush(w http.ResponseWriter, r *http.Request) {
 	if err := pusher.Push(t, b); err != nil {
 		render.Respond(w, r, err)
 	}
-}
-
-func leaderBoard(w http.ResponseWriter, r *http.Request) {
-	query := data.DB.Select(
-		db.Raw("v.etc->>'firstName' as name"),
-		"v.avatar_url",
-		db.Raw("count(*) count")).
-		From("users u").
-		LeftJoin("users v").
-		On("v.id = (u.etc->>'invitedBy')::bigint").
-		Where(
-			db.And(
-				db.Raw("u.etc->>'invitedBy' is not null"),
-				db.Cond{"v.id !=": 0},
-			),
-		).
-		GroupBy("v.id").
-		OrderBy("count desc").
-		Limit(10)
-
-	type leader struct {
-		FirstName string `db:"name" json:"name"`
-		AvatarURL string `db:"avatar_url" json:"avatarUrl"`
-		Count     int64  `db:"count" json:"count"`
-	}
-	var leaders []*leader
-	if err := query.All(&leaders); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	render.Respond(w, r, leaders)
 }

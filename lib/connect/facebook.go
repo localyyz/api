@@ -78,7 +78,8 @@ func (f *Facebook) Login(token, inviteCode string) (*data.User, error) {
 	if inviteCode != "" {
 		invitor, err := data.DB.User.FindByInviteCode(inviteCode)
 		if err != nil {
-			lg.Alertf("invitor with code %s lookup error: %v", inviteCode, err)
+			lg.Warnf("invitor with code %s lookup error: %v", inviteCode, err)
+			return nil, err
 		}
 		lg.Info("new user invited by: %d", invitor.ID)
 		user.Etc = data.UserEtc{

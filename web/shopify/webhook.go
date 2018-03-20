@@ -89,7 +89,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		// clean up products
 		data.DB.Product.Find(db.Cond{"place_id": place.ID}).Delete()
 
-		lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
+		lg.Warnf("webhook: place(%s) uninstalled Localyyz", place.Name)
 	default:
 		lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
 	}

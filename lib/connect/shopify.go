@@ -76,7 +76,7 @@ func (s *Shopify) ClientID() string {
 func (s *Shopify) RegisterWebhooks(ctx context.Context, place *data.Place) {
 	creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
 	if err != nil {
-		lg.Alertf("register webhook: %s(id:%v) %+v", place.Name, place.ID, err)
+		lg.Warnf("register webhook: %s(id:%v) %+v", place.Name, place.ID, err)
 		return
 	}
 	sh := shopify.NewClient(nil, creds.AccessToken)
@@ -92,7 +92,7 @@ func (s *Shopify) RegisterWebhooks(ctx context.Context, place *data.Place) {
 				},
 			})
 		if err != nil {
-			lg.Alertf("register webhook: %s(id:%v) %s with %+v", place.Name, place.ID, topic, err)
+			lg.Warnf("register webhook: %s(id:%v) %s with %+v", place.Name, place.ID, topic, err)
 			continue
 		}
 		if err := data.DB.Webhook.Save(&data.Webhook{
@@ -100,10 +100,10 @@ func (s *Shopify) RegisterWebhooks(ctx context.Context, place *data.Place) {
 			Topic:      string(topic),
 			ExternalID: int64(wh.ID),
 		}); err != nil {
-			lg.Alertf("register webhook: %s (id:%v) %s with %+v", place.Name, place.ID, topic, err)
+			lg.Warnf("register webhook: %s (id:%v) %s with %+v", place.Name, place.ID, topic, err)
 		}
 	}
-	lg.Alertf("registered webhooks for place(%d)", place.ID)
+	lg.Warnf("registered webhooks for place(%d)", place.ID)
 }
 
 func (s *Shopify) AuthCodeURL(ctx context.Context) string {
@@ -153,7 +153,7 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.finalizeCallback(r.Context(), shopID, creds); err != nil {
-		lg.Alertf("connect %s: failed with %+v", shopID, err)
+		lg.Alertf("connect finalize %s: failed with %+v", shopID, err)
 		render.Status(r, http.StatusInternalServerError)
 		render.Respond(w, r, err)
 		return
@@ -249,7 +249,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			},
 		})
 	if err != nil {
-		lg.Alertf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
+		lg.Warnf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
 		return nil
 	}
 	err = data.DB.Webhook.Save(&data.Webhook{
@@ -258,7 +258,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		ExternalID: int64(wh.ID),
 	})
 	if err != nil {
-		lg.Alertf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
+		lg.Warnf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
 	}
 
 	SL.Notify("store", fmt.Sprintf("%s (id: %d - %s) just connected!", place.Name, place.ID, place.Plan))

@@ -100,7 +100,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	if place.Billing.Status == shopify.BillingStatusPending {
 		u, err := url.Parse(place.Billing.ConfirmationUrl)
 		if err != nil {
-			lg.Alertf("merchant (%d) malformed billing confirmatin url with: %+v", place.ID, err)
+			lg.Warnf("merchant (%d) malformed billing confirmatin url with: %+v", place.ID, err)
 			return
 		}
 		u.Host = ""
