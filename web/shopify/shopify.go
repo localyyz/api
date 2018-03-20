@@ -51,6 +51,8 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, "place", place)
 		ctx = context.WithValue(ctx, "sync.place", place)
 		ctx = context.WithValue(ctx, "sync.topic", topic)
+		ctx = context.WithValue(ctx, "category.cache", categoryCache)
+		ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
