@@ -74,7 +74,7 @@ func setSearchVector(product *data.Product, extras ...string) error {
 			setweight(to_tsvector(COALESCE(title,'')), 'A') ||
 			setweight(to_tsvector(COALESCE(category->>'type','')), 'A') ||
 			setweight(to_tsvector(COALESCE(brand,'')), 'A')
-			%s
+			?
 		WHERE id = ?`, extraVectors, product.ID)
 	return err
 }
