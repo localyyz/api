@@ -12,6 +12,7 @@ import (
 	"github.com/pressly/lg"
 
 	db "upper.io/db.v3"
+	"upper.io/db.v3/lib/sqlbuilder"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -111,16 +112,32 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
 
-	rawCategory, _ := json.Marshal(product.Category)
-	relatedCond := db.And(
-		db.Cond{"p.gender": product.Gender, "p.id <>": product.ID},
-		db.Raw(fmt.Sprintf("category @> '%s'", string(rawCategory))),
-	)
-	// find the products
-	query := data.DB.Select(db.Raw("distinct p.*")).
-		From("products p").
-		Where(relatedCond).
-		OrderBy("p.id desc")
+	// if the product is featured, return "related" featured products
+	exists, _ := data.DB.FeatureProduct.Find(db.Cond{"product_id": product.ID}).Exists()
+	var query sqlbuilder.Selector
+	if exists {
+		query = data.DB.Select(db.Raw("p.*")).
+			From("feature_products fp").
+			LeftJoin("products p").
+			On("p.id = fp.product_id").
+			Where(db.Cond{"product_id": db.NotEq(product.ID)}).
+			OrderBy("fp.ordering")
+	} else {
+		rawCategory, _ := json.Marshal(product.Category)
+		relatedCond := db.And(
+			db.Cond{"p.gender": product.Gender, "p.id <>": product.ID},
+			db.Raw(fmt.Sprintf("category @> '%s'", string(rawCategory))),
+		)
+		// find the products
+		query = data.DB.Select(
+			db.Raw("distinct p.*"),
+			db.Raw(data.ProductWeightWithID),
+		).
+			From("products p").
+			LeftJoin("places pl").On("pl.id = p.place_id").
+			Where(relatedCond).
+			OrderBy("_rank desc")
+	}
 	cursor := ctx.Value("cursor").(*api.Page)
 	paginate := cursor.UpdateQueryBuilder(query)
 	var relatedProducts []*data.Product

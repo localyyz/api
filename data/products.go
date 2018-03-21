@@ -29,6 +29,9 @@ type Product struct {
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
+
+	// Database side readonly columns
+	Rank float64 `db:"rank"`
 }
 
 type ProductCategory struct {
@@ -44,6 +47,13 @@ const (
 	ProductGenderMale
 	ProductGenderFemale
 	ProductGenderUnisex
+)
+
+const (
+	ProductWeight            = `pl.weight / (4+pl.weight::float) as _rank`
+	ProductWeightWithID      = `(ln(p.id)+pl.weight) / (4+ln(p.id)+pl.weight::float) as _rank`
+	ProductQueryWeightWithID = `ts_rank_cd(tsv, to_tsquery($$?$$), 32) + (ln(p.id)+pl.weight) / (4+ln(p.id)+pl.weight::float) as _rank`
+	ProductFuzzyWeightWithID = `CASE WHEN category != '{}' THEN 1 ELSE 0 END + ts_rank_cd(tsv, to_tsquery(?), 16) + ((ln(p.id)+pl.weight) / (4+ln(p.id)+pl.weight::float)) as _rank`
 )
 
 type ProductEtc struct {

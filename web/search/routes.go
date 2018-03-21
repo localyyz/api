@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -37,15 +36,13 @@ type omniSearchRequest struct {
 	rawParts []string
 }
 
-var alphanumRx = regexp.MustCompile("[^a-zA-Z0-9-]+")
-
 func (o *omniSearchRequest) Bind(r *http.Request) error {
 	if len(o.Query) == 0 {
 		return errors.New("invalid empty search query")
 	}
 
 	qSet := set.New()
-	for _, t := range alphanumRx.Split(strings.ToLower(o.Query), -1) {
+	for _, t := range strings.Split(strings.ToLower(o.Query), " ") {
 		o.rawParts = append(o.rawParts, t)
 
 		tt := inflector.Singularize(t)
@@ -154,7 +151,8 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		// modifier 4 => is the top 70th (another magical number) of our merchant
 		//      weights greater than 0
 		query = data.DB.Select(
-			db.Raw("distinct p.id, ts_rank_cd(tsv, to_tsquery($$?$$), 32) + pl.weight/(4 + pl.weight::float) as _rank", qraw)).
+			db.Raw("distinct p.id"),
+			db.Raw(data.ProductQueryWeightWithID, qraw)).
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
 			LeftJoin("product_variants pv").On("p.id = pv.product_id").
@@ -169,7 +167,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 					},
 				),
 			).
-			OrderBy("_rank DESC", "p.id DESC")
+			OrderBy("_rank DESC")
 	} else {
 		// find best matched spellings for each word in the query
 		// NOTE: make sure to fuzzy search with raw and unparsed query
@@ -201,29 +199,26 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		sort.Sort(fuzzySorter)
 
 		// for each fuzzyWords, search again in products for the "corrected" query
-		var (
-			andTerms []string
-			orTerm   string
-		)
+		var andTerm, orTerm string
 		for i, w := range fuzzySorter {
 			if i == 0 {
 				orTerm = fmt.Sprintf("%s", w.Word)
+				andTerm = fmt.Sprintf("%s:B", w.Word)
+				continue
 			}
-			andTerms = append(andTerms, fmt.Sprintf("%s:B", w.Word))
+			andTerm += fmt.Sprintf(" & %s:B", w.Word)
 		}
 
-		rq := fmt.Sprintf("%s | %s", orTerm, strings.Join(andTerms, "&"))
+		term := fmt.Sprintf("%s | %s", orTerm, andTerm)
 		query = data.DB.Select(
 			db.Raw("distinct p.id"),
-			db.Raw(`CASE WHEN category != '{}' THEN 1 ELSE 0 END
-			+ ts_rank_cd(tsv, to_tsquery('adidas'), 16)
-			+ pl.weight/(4 + pl.weight::float) as _rank`)).
+			db.Raw(data.ProductFuzzyWeightWithID, term)).
 			From("products p").
-			LeftJoin("product_variants pv").On("p.id = pv.product_id").
 			LeftJoin("places pl").On("pl.id = p.place_id").
+			LeftJoin("product_variants pv").On("p.id = pv.product_id").
 			Where(
 				db.And(
-					db.Raw(`tsv @@ to_tsquery(?)`, rq),
+					db.Raw(`tsv @@ to_tsquery(?)`, term),
 					db.Cond{
 						"p.deleted_at IS": nil,
 						"p.image_url <>":  "",
@@ -232,7 +227,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 					},
 				),
 			).
-			OrderBy("_rank DESC", "p.id DESC")
+			OrderBy("_rank DESC")
 	}
 	paginate := cursor.UpdateQueryBuilder(query)
 
