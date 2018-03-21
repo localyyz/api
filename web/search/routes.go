@@ -75,11 +75,12 @@ func RelatedTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filterTags := append(p.rawParts, p.FilterTags...)
+	filterTags = append(filterTags, p.queryParts...)
 	iter := data.DB.Select("word").
 		From(db.Raw("related_tags(?)", p.Query)).
 		Where(db.Cond{
-			db.Raw("to_tsvector(word)"): db.NotEq(""),
-			"word": db.NotIn(filterTags),
+			db.Raw("to_tsvector(word)"):        db.NotEq(""),
+			db.Raw("strip(to_tsvector(word))"): db.NotIn(filterTags),
 		}).
 		OrderBy("ndoc DESC").
 		Limit(10).
@@ -152,7 +153,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		//      weights greater than 0
 		query = data.DB.Select(
 			db.Raw("distinct p.id"),
-			db.Raw(data.ProductQueryWeightWithID, qraw)).
+			db.Raw(data.ProductQueryWeight, qraw)).
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
 			LeftJoin("product_variants pv").On("p.id = pv.product_id").
@@ -212,7 +213,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		term := fmt.Sprintf("%s | %s", orTerm, andTerm)
 		query = data.DB.Select(
 			db.Raw("distinct p.id"),
-			db.Raw(data.ProductFuzzyWeightWithID, term)).
+			db.Raw(data.ProductFuzzyWeight, term)).
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
 			LeftJoin("product_variants pv").On("p.id = pv.product_id").
