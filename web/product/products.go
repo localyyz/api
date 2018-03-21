@@ -129,10 +129,14 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 			db.Raw(fmt.Sprintf("category @> '%s'", string(rawCategory))),
 		)
 		// find the products
-		query = data.DB.Select(db.Raw("distinct p.*")).
+		query = data.DB.Select(
+			db.Raw("distinct p.*"),
+			db.Raw(data.ProductWeightWithID),
+		).
 			From("products p").
+			LeftJoin("places pl").On("pl.id = p.place_id").
 			Where(relatedCond).
-			OrderBy("p.id desc")
+			OrderBy("_rank desc")
 	}
 	cursor := ctx.Value("cursor").(*api.Page)
 	paginate := cursor.UpdateQueryBuilder(query)
