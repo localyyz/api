@@ -123,6 +123,10 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 			Where(db.Cond{"product_id": db.NotEq(product.ID)}).
 			OrderBy("fp.ordering")
 	} else {
+		if product.Category.Value == "" {
+			render.Respond(w, r, []struct{}{})
+			return
+		}
 		rawCategory, _ := json.Marshal(product.Category)
 		relatedCond := db.And(
 			db.Cond{"p.gender": product.Gender, "p.id <>": product.ID},
