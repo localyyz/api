@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -56,27 +55,6 @@ func setPrices(a, b string) (price, comparePrice float64) {
 		price = price1
 	}
 	return
-}
-
-func setSearchVector(product *data.Product, extras ...string) error {
-	extraVectors := ""
-	for _, e := range extras {
-		extraVectors += fmt.Sprintf(` || setweight(to_tsvector(%s), 'A')`, e)
-	}
-	// update product tsv
-	_, err := data.DB.Exec(`
-		UPDATE products SET tsv =
-			setweight(to_tsvector(
-				COALESCE(
-					CASE WHEN gender = 1 THEN 'man'
-							WHEN gender = 2 THEN 'woman'
-					END, '')), 'A') ||
-			setweight(to_tsvector(COALESCE(title,'')), 'A') ||
-			setweight(to_tsvector(COALESCE(category->>'type','')), 'A') ||
-			setweight(to_tsvector(COALESCE(brand,'')), 'A')
-			?
-		WHERE id = ?`, extraVectors, product.ID)
-	return err
 }
 
 func setImages(p *data.Product, imgs ...*shopify.ProductImage) {
@@ -234,8 +212,6 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
-		// search vector
-		setSearchVector(product, place.Name)
 		// product variants
 		setVariants(product, p.Variants...)
 

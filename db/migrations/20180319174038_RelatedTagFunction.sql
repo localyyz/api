@@ -12,6 +12,8 @@ begin
 	return query select (ts_stat(vectors)).*;
 end;
 $$ LANGUAGE plpgsql STABLE;
+
+ALTER FUNCTION related_tags OWNER TO localyyz;
 -- +goose StatementEnd
 
 
