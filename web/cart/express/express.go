@@ -94,7 +94,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 	if err != nil || checkout == nil {
-		lg.Alertf("failed to create new checkout place(%d) with err: %+v", variant.PlaceID, err)
+		lg.Alertf("failed to create express checkout(%d) with err: %+v", cart.ID, err)
 		render.Respond(w, r, err)
 		return
 	}
@@ -121,6 +121,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 
 	// save the cart item
 	if err := data.DB.CartItem.Save(toSave); err != nil {
+		lg.Alertf("failed to save express cart item(%d) on cart(%d) with err: %+v", variant.ID, cart.ID, err)
 		render.Respond(w, r, err)
 		return
 	}

@@ -127,11 +127,12 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
+		// Update the vendor
+		product.Brand = p.Vendor
 		// update product images if product image is empty
-		if product.ImageUrl == "" {
-			setImages(product, p.Images...)
-			data.DB.Product.Save(product)
-		}
+		setImages(product, p.Images...)
+		// Save
+		data.DB.Product.Save(product)
 
 		// iterate product variants and update quantity limit
 		for _, v := range p.Variants {
