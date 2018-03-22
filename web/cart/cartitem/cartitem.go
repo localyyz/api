@@ -81,12 +81,17 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 	cart := ctx.Value("cart").(*data.Cart)
 	cartItem := ctx.Value("cart_item").(*data.CartItem)
 
+	// Remove the cart item
+	if err := data.DB.CartItem.Delete(cartItem); err != nil {
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
 	// check if this is the last item in cart -> shopifyData [ merchant ]
 	numItems, err := data.DB.CartItem.Find(
 		db.Cond{
 			"cart_id":  cart.ID,
 			"place_id": cartItem.PlaceID,
-			"id <>":    cartItem.ID,
 		},
 	).Count()
 	if err != nil {
@@ -100,19 +105,13 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		delete(cart.Etc.ShippingMethods, cartItem.PlaceID)
 	}
 
-	// Remove the cart item
-	if err := data.DB.CartItem.Delete(cartItem); err != nil {
-		render.Respond(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
 	// Reset cart status to inProgress
 	if cart.Status != data.CartStatusInProgress {
 		cart.Status = data.CartStatusInProgress
-		if err := data.DB.Cart.Save(cart); err != nil {
-			render.Render(w, r, api.ErrInvalidRequest(err))
-			return
-		}
+	}
+	if err := data.DB.Cart.Save(cart); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
 	}
 
 	render.Status(r, http.StatusNoContent)
