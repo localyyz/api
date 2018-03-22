@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -201,15 +202,20 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 		placeIDs[i] = p.ID
 	}
 
-	query := data.DB.Select(db.Raw("product_id")).
-		From("product_variants pv").
+	dayOfWeek := int(time.Now().Weekday())
+	query := data.DB.Select("*").
+		From(db.Raw(`(
+			SELECT product_id, row_number() over (partition by place_id, product_id % ?) as rank
+			FROM product_variants
+			WHERE place_id IN ?
+			AND prev_price != 0
+			AND prev_price > price
+			GROUP BY place_id, product_id
+		) x`, dayOfWeek, placeIDs)).
 		Where(db.Cond{
-			"place_id":      placeIDs,
-			"prev_price !=": 0,
-			"prev_price >":  db.Raw("price"),
+			"rank": dayOfWeek,
 		}).
-		GroupBy("place_id", "product_id").
-		OrderBy(data.MaintainOrder("place_id", placeIDs))
+		OrderBy(db.Raw("product_id % ?", dayOfWeek))
 	paginator := cursor.UpdateQueryBuilder(query)
 
 	rows, err := paginator.QueryContext(ctx)
@@ -222,7 +228,8 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 	var productIDs []int64
 	for rows.Next() {
 		var pId int64
-		if err := rows.Scan(&pId); err != nil {
+		var rank interface{}
+		if err := rows.Scan(&pId, &rank); err != nil {
 			lg.Warnf("error scanning query: %+v", err)
 			break
 		}
