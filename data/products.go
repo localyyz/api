@@ -29,9 +29,6 @@ type Product struct {
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
-
-	// Database side readonly columns
-	Rank float64 `db:"rank"`
 }
 
 type ProductCategory struct {
