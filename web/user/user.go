@@ -27,6 +27,37 @@ func MeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+type userRequest struct {
+	Gender  data.UserGender `json:"gender"`
+	Name    string          `json:"name"`
+	Network string          `json:"network"`
+}
+
+func (u *userRequest) Bind(r *http.Request) error {
+	return nil
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	me := ctx.Value("session.user").(*data.User)
+
+	var payload *userRequest
+	if err := render.Bind(r, payload); err != nil {
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	if payload.Gender == data.UserGenderMale ||
+		payload.Gender == data.UserGenderFemale {
+		me.Etc.Gender = payload.Gender
+	}
+	if payload.Name != "" {
+		me.Name = payload.Name
+	}
+
+	render.Respond(w, r, presenter.NewUser(ctx, me))
+}
+
 // Use this endpoint to cache bust
 // TODO: is the proper way reissue the jwt?
 // ie bust the jwt and reissue...?

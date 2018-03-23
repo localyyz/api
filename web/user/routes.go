@@ -12,6 +12,7 @@ func Routes() chi.Router {
 		// Pong.
 		r.Get("/ping", Ping)
 
+		r.Put("/", UpdateUser)
 		r.Put("/device", SetDeviceToken)
 		r.Mount("/address", addressRoutes())
 	})
