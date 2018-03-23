@@ -95,6 +95,7 @@ func ListFeaturedProduct(w http.ResponseWriter, r *http.Request) {
 		From("feature_products fp").
 		LeftJoin("products p").
 		On("p.id = fp.product_id").
+		Where("fp.product_id % 7 = ?", time.Now().Weekday()-1).
 		OrderBy("fp.ordering")
 	paginate := cursor.UpdateQueryBuilder(query)
 	if err := paginate.All(&products); err != nil {
