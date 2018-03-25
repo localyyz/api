@@ -95,7 +95,7 @@ func ListFeaturedProduct(w http.ResponseWriter, r *http.Request) {
 		From("feature_products fp").
 		LeftJoin("products p").
 		On("p.id = fp.product_id").
-		Where("fp.product_id % 7 = ?", time.Now().Weekday()-1).
+		Where("fp.product_id % 7 = ?", time.Now().Weekday()+1).
 		OrderBy("fp.ordering")
 	paginate := cursor.UpdateQueryBuilder(query)
 	if err := paginate.All(&products); err != nil {
@@ -203,7 +203,7 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 		placeIDs[i] = p.ID
 	}
 
-	dayOfWeek := int(time.Now().Weekday())
+	dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
 	query := data.DB.Select("*").
 		From(db.Raw(`(
 			SELECT product_id, row_number() over (partition by place_id, product_id % ?) as rank
@@ -212,11 +212,11 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 			AND prev_price != 0
 			AND prev_price > price
 			GROUP BY place_id, product_id
-		) x`, dayOfWeek, placeIDs)).
+		) x`, dayOfWeekPlusOne, placeIDs)).
 		Where(db.Cond{
-			"rank": dayOfWeek,
+			"rank": dayOfWeekPlusOne,
 		}).
-		OrderBy(db.Raw("product_id % ?", dayOfWeek))
+		OrderBy(db.Raw("product_id % ?", dayOfWeekPlusOne))
 	paginator := cursor.UpdateQueryBuilder(query)
 
 	rows, err := paginator.QueryContext(ctx)
