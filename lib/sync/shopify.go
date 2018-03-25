@@ -59,6 +59,7 @@ func setPrices(a, b string) (price, comparePrice float64) {
 
 func setImages(p *data.Product, imgs ...*shopify.ProductImage) {
 	// parse product images
+	p.Etc.Images = []string{}
 	for _, img := range imgs {
 		imgUrl, _ := url.Parse(img.Src)
 		imgUrl.Scheme = "https"
