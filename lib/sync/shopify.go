@@ -2,8 +2,6 @@ package sync
 
 import (
 	"context"
-	"net/url"
-	"strconv"
 	"strings"
 
 	db "upper.io/db.v3"
@@ -36,39 +34,6 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func setPrices(a, b string) (price, comparePrice float64) {
-	price1, _ := strconv.ParseFloat(a, 64)
-	if len(b) == 0 {
-		price = price1
-		return
-	}
-	price2, _ := strconv.ParseFloat(b, 64)
-	if price2 > 0 && price1 > price2 {
-		price = price2
-		comparePrice = price1
-	} else if price2 > 0 && price2 > price1 {
-		price = price1
-		comparePrice = price2
-	} else {
-		price = price1
-	}
-	return
-}
-
-func setImages(p *data.Product, imgs ...*shopify.ProductImage) {
-	// parse product images
-	p.Etc.Images = []string{}
-	for _, img := range imgs {
-		imgUrl, _ := url.Parse(img.Src)
-		imgUrl.Scheme = "https"
-		if img.Position == 1 {
-			p.ImageUrl = imgUrl.String()
-		}
-		// TODO: -> product_images table and reference a variant
-		p.Etc.Images = append(p.Etc.Images, imgUrl.String())
-	}
 }
 
 func setVariants(p *data.Product, variants ...*shopify.ProductVariant) error {
@@ -131,7 +96,7 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		// Update the vendor
 		product.Brand = p.Vendor
 		// update product images if product image is empty
-		setImages(product, p.Images...)
+		setImages(&shopifyImageSyncer{Product: product}, p.Images...)
 		// Save
 		data.DB.Product.Save(product)
 
@@ -218,7 +183,7 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		setVariants(product, p.Variants...)
 
 		// set image and save
-		setImages(product, p.Images...)
+		setImages(&shopifyImageSyncer{Product: product}, p.Images...)
 		// save
 		data.DB.Product.Save(product)
 	}
