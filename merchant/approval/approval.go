@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	indexTmpl = pongo2.Must(pongo2.FromFile("./merchant/approval/index.html"))
+	indexTmpl = pongo2.Must(pongo2.FromFile("/merchant/approval.html"))
 )
 
 func Routes() chi.Router {

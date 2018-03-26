@@ -10,6 +10,7 @@ RUN GOGO=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asm
 FROM scratch
 COPY ./db /db
 COPY ./merchant/index.html /merchant/index.html
+COPY ./merchant/approval.html /merchant/approval.html
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/api /bin/api
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/merchant /bin/merchant
 COPY --from=0 /bin/goose /bin/goose
