@@ -33,10 +33,10 @@ type MerchantApprovalPriceRange uint32
 type MerchantApprovalRejection uint32
 
 const (
-	_ MerchantApprovalCollection = iota // 0
-	MerchantApprovalCollectionSmart
-	MerchantApprovalCollectionBoutique
-	MerchantApprovalCollectionLuxury
+	_                                  MerchantApprovalCollection = iota // 0
+	MerchantApprovalCollectionBoutique                                   // 1
+	MerchantApprovalCollectionLuxury                                     // 2
+	MerchantApprovalCollectionSmart                                      // 3
 )
 
 const (
@@ -63,12 +63,12 @@ const (
 )
 
 const (
-	_ MerchantApprovalRejection = iota
-	MerchantApprovalRejectionProductQuality
-	MerchantApprovalRejectionProductVertical
-	MerchantApprovalRejectionReputation
-	MerchantApprovalRejectionReturns
-	MerchantApprovalRejectionWebsite
+	_                                        MerchantApprovalRejection = iota
+	MerchantApprovalRejectionProductQuality                            // 1
+	MerchantApprovalRejectionProductVertical                           // 2
+	MerchantApprovalRejectionReputation                                // 3
+	MerchantApprovalRejectionReturns                                   // 4
+	MerchantApprovalRejectionWebsite                                   // 5
 )
 
 const (
