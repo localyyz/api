@@ -65,6 +65,9 @@ const (
 	PlaceStatusActive                           // 3
 	PlaceStatusInActive                         // 4
 
+	// started review process
+	PlaceStatusReviewing // 5
+
 	// featured merchant cutoff
 	PlaceFeatureWeightCutoff = 5
 )
@@ -88,6 +91,7 @@ var (
 		"waitApproval",
 		"active",
 		"inactive",
+		"reviewing",
 	}
 	planWeighting = map[string]int32{
 		"":         0,
