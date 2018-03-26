@@ -17,6 +17,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
+	"bitbucket.org/moodie-app/moodie-api/merchant/approval"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
@@ -78,6 +79,8 @@ func New(h *Handler) chi.Router {
 		r.Post("/tos", AcceptTOS)
 		r.Post("/img", UploadImageUrl)
 	})
+
+	r.Mount("/approval/{placeID}", approval.Routes())
 
 	return r
 }
@@ -147,32 +150,11 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 		"store",
 		fmt.Sprintf("<%s|%s> (id: %v) just accepted the TOS!", place.Website, place.Name, place.ID),
 		&slack.Attachment{
-			Text:       "ready to be approved or rejected",
+			Title:      "start review process:",
+			TitleLink:  fmt.Sprintf("https://merchant.localyyz.com/approval/%d", place.ID),
 			Fallback:   "You are unable to approve / reject the store.",
 			CallbackID: fmt.Sprintf("placeid%d", place.ID),
 			Color:      "0195ff",
-			Actions: []*slack.AttachmentAction{
-				{
-					Name:  "approval",
-					Text:  "Approve",
-					Type:  "button",
-					Value: "approve",
-					Style: "primary",
-				},
-				{
-					Name:  "approval",
-					Text:  "Reject",
-					Type:  "button",
-					Value: "reject",
-					Style: "danger",
-					Confirm: &slack.AttachmentActionConfirm{
-						Title:       "Rejecting this store",
-						Text:        "Are you sure you want to reject this store?",
-						OkText:      "Yes",
-						DismissText: "No",
-					},
-				},
-			},
 		},
 	)
 

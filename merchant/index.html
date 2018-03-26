@@ -64,6 +64,10 @@
                                   <span class="Polaris-Badge Polaris-Badge--statusWarning">
                                     Inactive
                                   </span>
+                                {% elif (place.Status == 5) %}
+                                  <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
+                                    In Review
+                                  </span>
                                 {% endif %}
                               </span>
                             </div>
