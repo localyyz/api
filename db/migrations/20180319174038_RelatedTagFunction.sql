@@ -7,7 +7,7 @@ RETURNS table(word text, ndoc integer, nentry integer) AS $$
 declare
 	vectors text := format('SELECT to_tsvector(''simple'', title)
 	FROM products
-	WHERE tsv @@ plainto_tsquery(''%s'') AND gender = %d', q, gender);
+	WHERE tsv @@ plainto_tsquery(''%s'') AND gender = %s', q, gender);
 begin
 	return query select (ts_stat(vectors)).*;
 end;
