@@ -34,7 +34,6 @@ func ShopifyShopCtx(next http.Handler) http.Handler {
 		place, err := data.DB.Place.FindOne(
 			db.Cond{
 				"shopify_id": shopID,
-				"status <>":  data.PlaceStatusInActive,
 			},
 		)
 		if err != nil && err != db.ErrNoMoreRows {
