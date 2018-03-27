@@ -155,6 +155,7 @@ func (p *cartPaymentRequest) Bind(r *http.Request) error {
 func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
+	client := ctx.Value("shopify.client").(*shopify.Client)
 
 	lg.Infof("express cart(%d) start payment", cart.ID)
 	var payload cartPaymentRequest
@@ -173,7 +174,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		shopifyData = sh
 	}
 
-	client := ctx.Value("shopify.client").(*shopify.Client)
 	cc, _, err := client.Checkout.Update(
 		ctx,
 		&shopify.CheckoutRequest{

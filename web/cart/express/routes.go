@@ -7,8 +7,10 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
@@ -51,7 +53,7 @@ func ExpressShopifyClientCtx(next http.Handler) http.Handler {
 		cart := ctx.Value("cart").(*data.Cart)
 
 		if len(cart.Etc.ShopifyData) == 0 {
-			next.ServeHTTP(w, r.WithContext(ctx))
+			render.Respond(w, r, api.ErrInvalidRequest(errors.New("cart is empty")))
 			return
 		}
 
@@ -85,18 +87,21 @@ func ExpressShopifyClientCtx(next http.Handler) http.Handler {
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
+
 	r.Use(ExpressCartCtx)
-	r.Use(ExpressShopifyClientCtx)
 
 	r.Get("/", GetCart)
 	r.Delete("/", DeleteCart)
-
-	r.Get("/shipping/estimate", GetShippingRates)
-	r.Put("/shipping/address", UpdateShippingAddress)
-	r.Put("/shipping/method", UpdateShippingMethod)
-
 	r.Post("/items", CreateCartItem)
-	r.Post("/pay", CreatePayment)
+
+	r.Group(func(r chi.Router) {
+		r.Use(ExpressShopifyClientCtx)
+
+		r.Get("/shipping/estimate", GetShippingRates)
+		r.Put("/shipping/address", UpdateShippingAddress)
+		r.Put("/shipping/method", UpdateShippingMethod)
+		r.Post("/pay", CreatePayment)
+	})
 
 	return r
 }
