@@ -31,6 +31,14 @@ type Place struct {
 	Distance  float64        `db:"distance,omitempty" json:"distance"` // calculated, not stored in db
 	TOSIP     string         `db:"tos_ip" json:"-"`
 
+	// metadata
+	IsUsed         bool        `db:"is_used" json:"isUsed"` // merchant sells used goods
+	FacebookURL    string      `db:"fb_url" json:"facebookUrl"`
+	InstagramURL   string      `db:"instagram_url" json:"instagramUrl"`
+	ShippingPolicy PlacePolicy `db:"shipping_policy" json:"shippingPolicy"`
+	ReturnPolicy   PlacePolicy `db:"return_policy" json:"returnPolicy"`
+	Ratings        PlaceRating `db:"ratings" json:"ratings"`
+
 	PaymentMethods []*PaymentMethod `db:"payment_methods" json:"paymentMethods"`
 	Billing        PlaceBilling     `db:"billing" json:"billing"`
 
@@ -50,6 +58,18 @@ type PlaceStatus uint32
 type PaymentMethod struct {
 	ID   string `json:"id"`
 	Type string `json:"type"`
+	*postgresql.JSONBConverter
+}
+
+type PlaceRating struct {
+	Rating float32 `json:"rating"`
+	Count  int64   `json:"count"`
+	*postgresql.JSONBConverter
+}
+
+type PlacePolicy struct {
+	Description string `json:"desc"`
+	URL         string `json:"url"`
 	*postgresql.JSONBConverter
 }
 
