@@ -169,6 +169,12 @@ func TestProductGender(t *testing.T) {
 			inputs:   []string{"mens sexy something"},
 			expected: &data.Category{Gender: data.ProductGenderMale},
 		},
+		{
+			name:     "mixed signals",
+			place:    placeFemale,
+			inputs:   []string{"Fashion Shirt Dress Black Lapel Long Sleeve Belted A Line Dress Elegant Floral Long Dress"},
+			expected: &data.Category{Gender: data.ProductGenderFemale},
+		},
 	}
 
 	for _, tt := range tests {
@@ -184,10 +190,10 @@ func (tt tagTest) compare(t *testing.T, actual data.Category) {
 	if actual.Gender != tt.expected.Gender {
 		t.Errorf("test '%s': expected gender '%v', got '%v'", tt.name, tt.expected.Gender, actual.Gender)
 	}
-	if actual.Type != tt.expected.Type {
+	if tt.expected.Type != 0 && actual.Type != tt.expected.Type {
 		t.Errorf("test '%s': expected type '%s', got '%s'", tt.name, tt.expected.Type, actual.Type)
 	}
-	if actual.Value != tt.expected.Value {
+	if tt.expected.Value != "" && actual.Value != tt.expected.Value {
 		t.Errorf("test '%s': expected category '%s', got '%s'", tt.name, tt.expected.Value, actual.Value)
 	}
 }
