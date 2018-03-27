@@ -5,7 +5,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/web/product"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	db "upper.io/db.v3"
@@ -13,9 +12,6 @@ import (
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
-
-	r.With(product.GenderCtx).
-		Get("/gender/{gender}", ListCategory)
 
 	return r
 }

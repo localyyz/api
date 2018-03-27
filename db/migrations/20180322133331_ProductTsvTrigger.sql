@@ -17,7 +17,7 @@ begin
 	setweight(to_tsvector(COALESCE(new.category->>'type','')), 'A') ||
 	setweight(to_tsvector(COALESCE(new.category->>'value','')), 'A') ||
 	setweight(to_tsvector(COALESCE(new.brand,'')), 'A') ||
-	setweight(to_tsvector(name), 'A');
+	setweight(to_tsvector('simple', name), 'A');
   return new;
 end
 $$ LANGUAGE plpgsql;

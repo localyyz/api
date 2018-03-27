@@ -43,33 +43,11 @@ func CategoryCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func GenderCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		genderRaw := chi.URLParam(r, "gender")
-
-		gender := new(data.ProductGender)
-		if err := gender.UnmarshalText([]byte(genderRaw)); err != nil {
-			render.Respond(w, r, api.ErrInvalidRequest(err))
-			return
-		}
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "product.gender", *gender)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-
-	return http.HandlerFunc(handler)
-}
-
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/recent", ListRecentProduct)
 	r.Get("/featured", ListFeaturedProduct)
 	r.Get("/onsale", ListOnsaleProduct)
-	r.With(GenderCtx).
-		With(CategoryCtx).
-		Get("/gender/{gender}", ListGenderProduct)
 	r.Route("/{productID}", func(r chi.Router) {
 		r.Use(ProductCtx)
 		r.Get("/", GetProduct)

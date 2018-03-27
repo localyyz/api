@@ -74,10 +74,15 @@ func RelatedTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fnQuery := db.Raw("related_tags(?, ?)", p.Query, 0)
+	if gender, ok := r.Context().Value("session.gender").(data.UserGender); ok {
+		fnQuery = db.Raw("related_tags(?, ?)", p.Query, gender)
+	}
+
 	filterTags := append(p.rawParts, p.FilterTags...)
 	filterTags = append(filterTags, p.queryParts...)
 	iter := data.DB.Select("word").
-		From(db.Raw("related_tags(?)", p.Query)).
+		From(fnQuery).
 		Where(db.Cond{
 			db.Raw("to_tsvector(word)"):        db.NotEq(""),
 			db.Raw("strip(to_tsvector(word))"): db.NotIn(filterTags),
@@ -123,19 +128,20 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		// NOTE: the trade off between a real count (filtering products out of
 		// stock) and a "good enough" count in terms of query time is 10x. Not
 		// worth it.
+		cond := db.Cond{
+			"p.deleted_at IS": nil,
+			"pl.status":       data.PlaceStatusActive,
+			"p.category":      db.NotEq("{}"),
+		}
+		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+			cond["p.gender"] = gender
+		}
 		row, err := data.DB.Select(
 			db.Raw("count(1) AS _t")).
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
 			Where(
-				db.And(
-					db.Raw(`tsv @@ to_tsquery($$?$$)`, qraw),
-					db.Cond{
-						"p.deleted_at IS": nil,
-						"pl.status":       data.PlaceStatusActive,
-						"p.category":      db.NotEq("{}"),
-					},
-				),
+				db.And(db.Raw(`tsv @@ to_tsquery($$?$$)`, qraw), cond),
 			).
 			QueryRow()
 		var count uint64
@@ -152,6 +158,16 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		// ranking type 32 => normalizes the rank with `x / (1+x)` where x is the original rank
 		// modifier 4 => is the top 70th (another magical number) of our merchant
 		//      weights greater than 0
+		cond := db.Cond{
+			"p.deleted_at IS": nil,
+			"p.image_url <>":  "",
+			"pv.limits >":     0,
+			"pl.status":       data.PlaceStatusActive,
+			"p.category":      db.NotEq("{}"),
+		}
+		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+			cond["p.gender"] = gender
+		}
 		query = data.DB.Select(
 			db.Raw("distinct p.id"),
 			db.Raw(data.ProductQueryWeight, qraw)).
@@ -159,16 +175,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 			LeftJoin("places pl").On("pl.id = p.place_id").
 			LeftJoin("product_variants pv").On("p.id = pv.product_id").
 			Where(
-				db.And(
-					db.Raw(`tsv @@ to_tsquery($$?$$)`, qraw),
-					db.Cond{
-						"p.deleted_at IS": nil,
-						"p.image_url <>":  "",
-						"pv.limits >":     0,
-						"pl.status":       data.PlaceStatusActive,
-						"p.category":      db.NotEq("{}"),
-					},
-				),
+				db.And(db.Raw(`tsv @@ to_tsquery($$?$$)`, qraw), cond),
 			).
 			OrderBy("_rank DESC")
 	} else {
@@ -212,6 +219,17 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 			andTerm += fmt.Sprintf(" & %s:B", w.Word)
 		}
 
+		cond := db.Cond{
+			"p.deleted_at IS": nil,
+			"p.image_url <>":  "",
+			"p.category":      db.NotEq("{}"),
+			"pv.limits >":     0,
+			"pl.status":       data.PlaceStatusActive,
+		}
+		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+			cond["p.gender"] = gender
+		}
+
 		term := fmt.Sprintf("%s | %s", orTerm, andTerm)
 		query = data.DB.Select(
 			db.Raw("distinct p.id"),
@@ -220,16 +238,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 			LeftJoin("places pl").On("pl.id = p.place_id").
 			LeftJoin("product_variants pv").On("p.id = pv.product_id").
 			Where(
-				db.And(
-					db.Raw(`tsv @@ to_tsquery(?)`, term),
-					db.Cond{
-						"p.deleted_at IS": nil,
-						"p.image_url <>":  "",
-						"p.category":      db.NotEq("{}"),
-						"pv.limits >":     0,
-						"pl.status":       data.PlaceStatusActive,
-					},
-				),
+				db.And(db.Raw(`tsv @@ to_tsquery(?)`, term), cond),
 			).
 			OrderBy("_rank DESC")
 	}
