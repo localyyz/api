@@ -146,6 +146,7 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 			FROM product_variants
 			WHERE place_id IN ?
 			AND prev_price != 0
+			AND price != 0
 			AND prev_price > price
 			GROUP BY place_id, product_id
 		) x`, dayOfWeekPlusOne, placeIDs)).
