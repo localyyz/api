@@ -110,7 +110,7 @@ var (
 		"waitAgreement",
 		"waitApproval",
 		"active",
-		"inactive",
+		"notApproved",
 		"reviewing",
 	}
 	planWeighting = map[string]int32{
