@@ -79,7 +79,7 @@ func TestSetImages(t *testing.T) {
 		{
 			name:          "basic first add",
 			syncImages:    []*shopify.ProductImage{{ID: 1, Position: 1, Src: "https://link1"}},
-			expectedSaves: []*data.ProductImage{{Ordering: 1, ImageUrl: "https://link1", ProductID: 1, ExternalID: 1}},
+			expectedSaves: []*data.ProductImage{{Ordering: 1, ImageURL: "https://link1", ProductID: 1, ExternalID: 1}},
 			t:             t,
 		},
 		{
@@ -90,8 +90,8 @@ func TestSetImages(t *testing.T) {
 			},
 			fetchProductImages: func() ([]*data.ProductImage, error) {
 				return []*data.ProductImage{
-					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageUrl: "https://link1"},
-					{ProductID: 1, Ordering: 2, ExternalID: 2, ImageUrl: "https://link2"},
+					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageURL: "https://link1"},
+					{ProductID: 1, Ordering: 2, ExternalID: 2, ImageURL: "https://link2"},
 				}, nil
 			},
 			t: t,
@@ -103,11 +103,11 @@ func TestSetImages(t *testing.T) {
 				{ID: 2, Position: 2, Src: "https://link2"},
 			},
 			expectedSaves: []*data.ProductImage{
-				{Ordering: 2, ImageUrl: "https://link2", ProductID: 1, ExternalID: 2},
+				{Ordering: 2, ImageURL: "https://link2", ProductID: 1, ExternalID: 2},
 			},
 			fetchProductImages: func() ([]*data.ProductImage, error) {
 				return []*data.ProductImage{
-					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageUrl: "https://link1"},
+					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageURL: "https://link1"},
 				}, nil
 			},
 			t: t,
@@ -118,12 +118,12 @@ func TestSetImages(t *testing.T) {
 				{ID: 2, Position: 2, Src: "https://link2"},
 			},
 			expectedRemoves: []*data.ProductImage{
-				{Ordering: 1, ImageUrl: "https://link1", ProductID: 1, ExternalID: 1},
+				{Ordering: 1, ImageURL: "https://link1", ProductID: 1, ExternalID: 1},
 			},
 			fetchProductImages: func() ([]*data.ProductImage, error) {
 				return []*data.ProductImage{
-					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageUrl: "https://link1"},
-					{ProductID: 1, Ordering: 2, ExternalID: 2, ImageUrl: "https://link2"},
+					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageURL: "https://link1"},
+					{ProductID: 1, Ordering: 2, ExternalID: 2, ImageURL: "https://link2"},
 				}, nil
 			},
 			t: t,
@@ -135,15 +135,15 @@ func TestSetImages(t *testing.T) {
 				{ID: 3, Position: 2, Src: "https://link3"},
 			},
 			expectedRemoves: []*data.ProductImage{
-				{ExternalID: 2, Ordering: 2, ImageUrl: "https://link2", ProductID: 1},
+				{ExternalID: 2, Ordering: 2, ImageURL: "https://link2", ProductID: 1},
 			},
 			expectedSaves: []*data.ProductImage{
-				{ExternalID: 3, Ordering: 2, ImageUrl: "https://link3", ProductID: 1},
+				{ExternalID: 3, Ordering: 2, ImageURL: "https://link3", ProductID: 1},
 			},
 			fetchProductImages: func() ([]*data.ProductImage, error) {
 				return []*data.ProductImage{
-					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageUrl: "https://link1"},
-					{ProductID: 1, Ordering: 2, ExternalID: 2, ImageUrl: "https://link2"},
+					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageURL: "https://link1"},
+					{ProductID: 1, Ordering: 2, ExternalID: 2, ImageURL: "https://link2"},
 				}, nil
 			},
 			t: t,
@@ -151,11 +151,11 @@ func TestSetImages(t *testing.T) {
 		{
 			name:            "swap (add new one, remove old one)",
 			syncImages:      []*shopify.ProductImage{{ID: 2, Position: 1, Src: "https://link2"}},
-			expectedSaves:   []*data.ProductImage{{Ordering: 1, ImageUrl: "https://link2", ProductID: 1, ExternalID: 2}},
-			expectedRemoves: []*data.ProductImage{{Ordering: 1, ImageUrl: "https://link1", ProductID: 1, ExternalID: 1}},
+			expectedSaves:   []*data.ProductImage{{Ordering: 1, ImageURL: "https://link2", ProductID: 1, ExternalID: 2}},
+			expectedRemoves: []*data.ProductImage{{Ordering: 1, ImageURL: "https://link1", ProductID: 1, ExternalID: 1}},
 			fetchProductImages: func() ([]*data.ProductImage, error) {
 				return []*data.ProductImage{
-					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageUrl: "https://link1"},
+					{ProductID: 1, Ordering: 1, ExternalID: 1, ImageURL: "https://link1"},
 				}, nil
 			},
 			t: t,
@@ -163,7 +163,7 @@ func TestSetImages(t *testing.T) {
 		{
 			name:          "external variant id is set",
 			syncImages:    []*shopify.ProductImage{{ID: 2, Position: 1, Src: "https://link2", VariantIds: []int64{123}}},
-			expectedSaves: []*data.ProductImage{{ExternalID: 2, Ordering: 1, ImageUrl: "https://link2", ProductID: 1, VariantIDs: []int64{123}}},
+			expectedSaves: []*data.ProductImage{{ExternalID: 2, Ordering: 1, ImageURL: "https://link2", ProductID: 1, VariantIDs: []int64{123}}},
 			t:             t,
 		},
 		{
@@ -173,7 +173,7 @@ func TestSetImages(t *testing.T) {
 				{ID: 1, Position: 1, Src: "https://link2?v=9876543"},
 			},
 			expectedSaves: []*data.ProductImage{
-				{ExternalID: 1, Ordering: 1, ImageUrl: "https://link2", ProductID: 1},
+				{ExternalID: 1, Ordering: 1, ImageURL: "https://link2", ProductID: 1},
 			},
 			t: t,
 		},
