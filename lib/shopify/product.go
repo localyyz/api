@@ -85,13 +85,13 @@ type ProductImages struct {
 }
 
 type ProductImage struct {
-	ID         int64         `json:"id"`
-	ProductID  int64         `json:"product_id"`
-	Position   int           `json:"position"`
-	CreatedAt  string        `json:"created_at"`
-	UpdatedAt  string        `json:"updated_at"`
-	Src        string        `json:"src"`
-	VariantIds []interface{} `json:"variant_ids"`
+	ID         int64   `json:"id"`
+	ProductID  int64   `json:"product_id"`
+	Position   int     `json:"position"`
+	CreatedAt  string  `json:"created_at"`
+	UpdatedAt  string  `json:"updated_at"`
+	Src        string  `json:"src"`
+	VariantIds []int64 `json:"variant_ids"`
 }
 
 func (p *ProductService) List(ctx context.Context) ([]*Product, *http.Response, error) {

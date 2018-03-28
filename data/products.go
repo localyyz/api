@@ -15,7 +15,7 @@ type Product struct {
 
 	Title       string        `db:"title" json:"title"`
 	Description string        `db:"description" json:"description"`
-	ImageUrl    string        `db:"image_url" json:"imageUrl"`
+	ImageURL    string        `db:"image_url" json:"imageUrl"`
 	Brand       string        `db:"brand" json:"brand"`
 	Gender      ProductGender `db:"gender" json:"genderHint"`
 	Etc         ProductEtc    `db:"etc" json:"etc"`
@@ -55,6 +55,7 @@ const (
 	ProductFuzzyWeightWithID = `CASE WHEN category != '{}' THEN 1 ELSE 0 END + ts_rank_cd(tsv, to_tsquery(?), 16) + ((ln(p.id)+pl.weight) / (4+ln(p.id)+pl.weight::float)) as _rank`
 )
 
+// TODO: remove
 type ProductEtc struct {
 	Images []string `json:"images"`
 	*postgresql.JSONBConverter

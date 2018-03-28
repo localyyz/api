@@ -18,8 +18,9 @@ import (
 
 type Product struct {
 	*data.Product
-	Variants []*ProductVariant `json:"variants"`
-	Place    *data.Place       `json:"place"`
+	Variants []*ProductVariant    `json:"variants"`
+	Place    *Place               `json:"place"`
+	Images   []*data.ProductImage `json:"images"`
 
 	Sizes  []string `json:"sizes"`
 	Colors []string `json:"colors"`
@@ -28,7 +29,6 @@ type Product struct {
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 	DeleteAt  *time.Time `json:"deletedAt,omitempty"`
 
-	ThumbURL         string      `json:"thumbUrl"`
 	HtmlDescription  string      `json:"htmlDescription"`
 	NoTagDescription string      `json:"noTagDescription"`
 	Description      interface{} `json:"description"`
@@ -78,21 +78,23 @@ func NewCartProductList(ctx context.Context, products []*data.Product) CartProdu
 func newProductList(ctx context.Context, products []*data.Product) []render.Renderer {
 	list := []render.Renderer{}
 
-	productIDs := make([]int64, len(products))
+	productIDSet := set.New()
 	placeIDset := set.New()
-	for i, product := range products {
-		productIDs[i] = product.ID
+	for _, product := range products {
+		productIDSet.Add(int(product.ID))
 		placeIDset.Add(int(product.PlaceID))
 	}
 
 	// fetch product variants
+	variants, _ := data.DB.ProductVariant.FindAll(db.Cond{
+		"product_id": set.IntSlice(productIDSet),
+	})
 	variantCache := make(VariantCache)
-	if variants, _ := data.DB.ProductVariant.FindAll(db.Cond{"product_id": productIDs}); variants != nil {
-		for _, v := range variants {
-			variantCache[v.ProductID] = append(variantCache[v.ProductID], &ProductVariant{ProductVariant: v})
-		}
+	for _, v := range variants {
+		variantCache[v.ProductID] = append(variantCache[v.ProductID], &ProductVariant{ProductVariant: v})
 	}
 
+	// fetch places
 	placeCache := make(PlaceCache)
 	if place, _ := ctx.Value("place").(*data.Place); place != nil {
 		placeCache[place.ID] = place
@@ -144,18 +146,48 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 			sizeSet.Add(v.Etc.Size)
 		}
 	}
+
+	// check and load product images
+	p.Images, _ = data.DB.ProductImage.FindByProductID(p.ID)
+	for i, img := range p.Images {
+		if i == 0 {
+			if len(p.ImageURL) == 0 {
+				p.ImageURL = img.ImageURL
+			}
+		}
+		// TODO: backwards compart + REMOVE
+		if p.Etc.Images == nil {
+			p.Etc.Images = append(p.Etc.Images, img.ImageURL)
+		}
+	}
+	if len(p.Images) == 0 {
+		for i, imgURL := range p.Etc.Images {
+			p.Images = append(
+				p.Images,
+				&data.ProductImage{ImageURL: imgURL, Ordering: int32(i)},
+			)
+		}
+	}
+
+	// update product variants with the variant image pivot value
+	for _, v := range p.Variants {
+		if img, _ := data.DB.VariantImage.FindByVariantID(v.ID); img != nil {
+			v.ImageID = img.ImageID
+		}
+	}
+
 	sizesorter := apparelsorter.New(set.StringSlice(sizeSet)...)
 	sort.Sort(sizesorter)
 	p.Sizes = sizesorter.StringSlice()
 	p.Colors = set.StringSlice(colorSet)
 
 	if cache, _ := ctx.Value("place.cache").(PlaceCache); cache != nil {
-		p.Place = cache[p.PlaceID]
+		p.Place = &Place{Place: cache[p.PlaceID]}
 	} else {
 		// if place is not in the context, return it as part of presenter
 		if _, ok := ctx.Value("place").(*data.Place); !ok {
 			if place, _ := data.DB.Place.FindByID(p.PlaceID); place != nil {
-				p.Place = place
+				p.Place = &Place{Place: place}
 			}
 		}
 	}
@@ -166,7 +198,6 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Product.Description, -1)
 	p.NoTagDescription = htmlx.StripTags(p.Product.Description)
-	p.ThumbURL = p.Product.ImageUrl
 
 	return nil
 }

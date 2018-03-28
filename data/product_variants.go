@@ -13,7 +13,6 @@ type ProductVariant struct {
 	PlaceID   int64 `db:"place_id" json:"placeId"`
 	ProductID int64 `db:"product_id" json:"productId"`
 
-	// Limits
 	Limits      int64  `db:"limits" json:"limits"`
 	Description string `db:"description" json:"description"`
 	// external offer id refering to specific variant

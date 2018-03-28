@@ -15,6 +15,7 @@ type ProductVariant struct {
 	*data.ProductVariant
 	Place   *Place        `json:"place,omitempty"`
 	Product *data.Product `json:"product,omitempty"`
+	ImageID int64         `json:"imageId,omitempty"`
 
 	// Hide fields
 	ProductID interface{} `json:"productId,omitempty"`

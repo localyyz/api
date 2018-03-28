@@ -28,9 +28,12 @@ type Database struct {
 	Collection        CollectionStore
 	CollectionProduct CollectionProductStore
 
-	ShopifyCred    ShopifyCredStore
 	Product        ProductStore
 	ProductVariant ProductVariantStore
+	ProductImage   ProductImageStore
+	VariantImage   VariantImageStore
+
+	ShopifyCred    ShopifyCredStore
 	Category       CategoryStore
 	FeatureProduct FeatureProductStore
 	Share          ShareStore
@@ -94,9 +97,12 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Collection = CollectionStore{db.Store(&Collection{})}
 	db.CollectionProduct = CollectionProductStore{db.Store(&CollectionProduct{})}
 
-	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}
 	db.Product = ProductStore{db.Store(&Product{})}
 	db.ProductVariant = ProductVariantStore{db.Store(&ProductVariant{})}
+	db.ProductImage = ProductImageStore{db.Store(&ProductImage{})}
+	db.VariantImage = VariantImageStore{db.Store(&VariantImage{})}
+
+	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}
 	db.Category = CategoryStore{db.Store(&Category{})}
 	db.FeatureProduct = FeatureProductStore{db.Store(&FeatureProduct{})}
 	db.Share = ShareStore{db.Store(&Share{})}
