@@ -62,7 +62,7 @@
                                   </span>
                                 {% elif (place.Status == 4) %}
                                   <span class="Polaris-Badge Polaris-Badge--statusWarning">
-                                    Inactive
+                                    Not Approved
                                   </span>
                                 {% elif (place.Status == 5) %}
                                   <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
@@ -88,7 +88,8 @@
                   <div class="Polaris-AccountConnection__TermsOfService">
                     <p>
                       {% if (place.Status == 0 or place.Status == 4) %}
-                        Please <a href="mailto:support@localyyz.com?subject={{name}}: {{status}} status help">contact Localyyz Support for help.</a>
+                        Sorry! Looks like your store was "Not Approved".
+                        Please <a href="mailto:support@localyyz.com?subject={{name}}: {{status}} status help" target="_blank">contact Localyyz Support for help.</a>
                       {% elif (place.Status == 1) %}
                         By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/terms-and-conditions-businesses.html" data-polaris-unstyled="true">Terms and Conditions</a>,
                           and <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/services-subscription-agreement.html" data-polaris-unstyled="true">Services Subscription</a>.
