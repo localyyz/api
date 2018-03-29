@@ -46,21 +46,37 @@ func ListFeaturedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	cond := db.Cond{
-		db.Raw("fp.product_id % 7"): db.Eq(time.Now().Weekday() + 1),
-	}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["gender"] = gender
+	// Only show on sale products from place weight >= 5
+	featuredPlaces, _ := data.DB.Place.FindFeaturedMerchants()
+	placeIDs := make([]int64, len(featuredPlaces))
+	for i, p := range featuredPlaces {
+		placeIDs[i] = p.ID
 	}
 
-	var products []*data.Product
-	query := data.DB.Select(db.Raw("p.*")).
-		From("feature_products fp").
-		LeftJoin("products p").
-		On("p.id = fp.product_id").
-		Where(cond).
-		OrderBy("fp.ordering")
+	condGenders := []int{1, 2, 3}
+	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+		condGenders = []int{int(gender)}
+	}
+
+	dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
+	query := data.DB.Select("*").
+		From(db.Raw(`(
+			SELECT *, row_number() over (partition by place_id) as rank
+			FROM products
+			WHERE place_id IN ?
+			AND gender IN ?
+			AND deleted_at IS NULL
+			ORDER BY external_id % ?
+		) x`,
+			placeIDs,
+			condGenders,
+			dayOfWeekPlusOne,
+		)).
+		Where(db.Cond{
+			"rank": db.Lt(3),
+		})
 	paginate := cursor.UpdateQueryBuilder(query)
+	var products []*data.Product
 	if err := paginate.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
