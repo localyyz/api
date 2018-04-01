@@ -11,6 +11,7 @@ FROM scratch
 COPY ./db /db
 COPY ./merchant/index.html /merchant/index.html
 COPY ./merchant/approval.html /merchant/approval.html
+COPY ./merchant/approvallist.html /merchant/approvallist.html
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/api /bin/api
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/merchant /bin/merchant
 COPY --from=0 /bin/goose /bin/goose
