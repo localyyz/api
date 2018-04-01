@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    </head>
+
+    <body>
+
+        <div id="modal" class="modal modal-fixed-footer">
+            <div class="modal-content">
+            <h4 id="modal_title"></h4>
+            <p id="modal_text"></p>
+            </div>
+            <div class="modal-footer">
+            <a href="#!" class="modal-action modal-close waves-effect waves-green btn-flat ">OK</a>
+            </div>
+        </div>
+	     
+        <div class="container">
+          <div class="row">
+            <h2>Waiting Approval</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Plan</th>
+                  <th>Website</th>
+                  <th>Applied On</th>
+                  <th>Approval Link</th>
+                </tr>
+              </thead>
+              {% for p in wait %}
+              <tr>
+                <td>{{ p.ID }}</td>
+                <td>{{ p.Name }}</td>
+                <td>{{ p.Plan }}</td>
+                <td><a href="{{ p.Website }}" target="_blank">Website</a></td>
+                <td>{{ p.TOSAgreedAt }}</td>
+                <td><a href="places/{{ p.ID }}">Approval Link</a></td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+          <div class="row">
+            <h2>Reviewing</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Plan</th>
+                  <th>Website</th>
+                  <th>Applied On</th>
+                  <th>Approval Link</th>
+                </tr>
+              </thead>
+              {% for p in reviewing %}
+              <tr>
+                <td>{{ p.ID }}</td>
+                <td>{{ p.Name }}</td>
+                <td>{{ p.Plan }}</td>
+                <td><a href="{{ p.Website }}" target="_blank">Website</a></td>
+                <td>{{ p.TOSAgreedAt }}</td>
+                <td><a href="places/{{ p.ID }}">Approval Link</a></td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+          <div class="row">
+            <h2>Recently Approved</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Plan</th>
+                  <th>Website</th>
+                  <th>Approved On</th>
+                </tr>
+              </thead>
+              {% for p in approved %}
+              <tr>
+                <td>{{ p.ID }}</td>
+                <td>{{ p.Name }}</td>
+                <td>{{ p.Plan }}</td>
+                <td><a href="{{ p.Website }}" target="_blank">Website</a></td>
+                <td>{{ p.ApprovedAt }}</td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+
+        </div>
+
+
+        <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
+
+        <script type="text/javascript">
+
+          $(document).ready(function(){
+          });
+        </script>
+    </body>
+</html>

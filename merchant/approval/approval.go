@@ -19,19 +19,31 @@ import (
 )
 
 var (
-	indexTmpl = pongo2.Must(pongo2.FromFile("/merchant/approval.html"))
+	indexTmpl *pongo2.Template
+	listTmpl  *pongo2.Template
 )
+
+func Init(env string) {
+	filePath := ""
+	if env == "development" {
+		filePath = "."
+	}
+	indexTmpl = pongo2.Must(pongo2.FromFile(filePath + "/merchant/approval.html"))
+	listTmpl = pongo2.Must(pongo2.FromFile(filePath + "/merchant/approvallist.html"))
+}
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(PlaceCtx)
+	r.Get("/", List)
+	r.Route("/{placeID}", func(r chi.Router) {
+		r.Use(PlaceCtx)
 
-	r.Get("/", Index)
-
-	r.Put("/", Update)
-	r.Post("/approve", Approve)
-	r.Post("/reject", Reject)
+		r.Get("/", Index)
+		r.Put("/", Update)
+		r.Post("/approve", Approve)
+		r.Post("/reject", Reject)
+	})
 
 	return r
 }
@@ -47,13 +59,13 @@ func PlaceCtx(next http.Handler) http.Handler {
 		var place *data.Place
 		err = data.DB.Place.Find(db.Cond{
 			"id": placeID,
-			//"status": data.PlaceStatusWaitApproval,
 		}).One(&place)
 		if err != nil {
 			render.Respond(w, r, err)
 			return
 		}
 
+		ctx := r.Context()
 		approval, err := data.DB.MerchantApproval.FindByPlaceID(place.ID)
 		if err != nil {
 			if err != db.ErrNoMoreRows {
@@ -63,17 +75,47 @@ func PlaceCtx(next http.Handler) http.Handler {
 			approval = &data.MerchantApproval{
 				PlaceID: place.ID,
 			}
-			// Change the status to "reviewing" if it's the first time
+		}
+		ctx = context.WithValue(ctx, "approval", approval)
+
+		if place.Status == data.PlaceStatusWaitApproval {
+			// Change the status to "reviewing" if waiting for approval
 			place.Status = data.PlaceStatusReviewing
 			data.DB.Place.Save(place)
 		}
 
-		ctx := r.Context()
 		ctx = context.WithValue(ctx, "place", place)
-		ctx = context.WithValue(ctx, "approval", approval)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
+}
+
+func List(w http.ResponseWriter, r *http.Request) {
+	var waitApprovals []*data.Place
+	data.DB.Place.Find(
+		db.Cond{"status": data.PlaceStatusWaitApproval},
+	).OrderBy("-id").All(&waitApprovals)
+
+	var reviewing []*data.Place
+	data.DB.Place.Find(
+		db.Cond{"status": data.PlaceStatusReviewing},
+	).OrderBy("-id").Limit(10).All(&reviewing)
+
+	var recentApproved []*data.Place
+	data.DB.Place.Find(
+		db.Cond{"status": data.PlaceStatusActive},
+	).OrderBy("-id").Limit(10).All(&recentApproved)
+
+	pageContext := pongo2.Context{
+		"wait":     waitApprovals,
+		"review":   reviewing,
+		"approved": recentApproved,
+	}
+	t, err := listTmpl.Execute(pageContext)
+	if err != nil {
+		lg.Warn(err)
+	}
+	render.HTML(w, r, t)
 }
 
 func Approve(w http.ResponseWriter, r *http.Request) {

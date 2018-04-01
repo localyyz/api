@@ -54,6 +54,9 @@ func New(h *Handler) chi.Router {
 		indexTmpl = pongo2.Must(pongo2.FromFile("/merchant/index.html"))
 	}
 
+	// initialize approval
+	approval.Init(h.Environment)
+
 	r.Use(middleware.RealIP)
 	r.Use(middleware.NoCache)
 	r.Use(middleware.Logger)
@@ -80,7 +83,7 @@ func New(h *Handler) chi.Router {
 		r.Post("/img", UploadImageUrl)
 	})
 
-	r.Mount("/approval/{placeID}", approval.Routes())
+	r.Mount("/approval", approval.Routes())
 
 	return r
 }
