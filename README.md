@@ -34,3 +34,8 @@ gcloud container images delete gcr.io/<project>/api@sha256:<tag> --force-delete-
 Sup connection error. Check Sup documentation.
 if `ssh-add -l` returns `The agent has no identities`
 do `ssh-add` and enter the passphrase.
+
+
+### Refresh search word materialized view
+
+`REFRESH MATERIALIZED VIEW search_words;`
