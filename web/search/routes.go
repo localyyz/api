@@ -67,48 +67,6 @@ func (o *omniSearchRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func RelatedTags(w http.ResponseWriter, r *http.Request) {
-	var p omniSearchRequest
-	if err := render.Bind(r, &p); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	fnQuery := db.Raw("related_tags(?, ?)", p.Query, 0)
-	if gender, ok := r.Context().Value("session.gender").(data.UserGender); ok {
-		fnQuery = db.Raw("related_tags(?, ?)", p.Query, gender)
-	}
-
-	filterTags := append(p.rawParts, p.FilterTags...)
-	filterTags = append(filterTags, p.queryParts...)
-	iter := data.DB.Select("word").
-		From(fnQuery).
-		Where(db.Cond{
-			db.Raw("to_tsvector(word)"):        db.NotEq(""),
-			db.Raw("strip(to_tsvector(word))"): db.NotIn(filterTags),
-		}).
-		OrderBy("ndoc DESC").
-		Limit(10).
-		Iterator()
-	defer iter.Close()
-
-	var relatedTags []string
-	for iter.Next() {
-		var tag string
-		if err := iter.Scan(&tag); err != nil {
-			lg.Warn(err)
-			break
-		}
-		relatedTags = append(relatedTags, tag)
-	}
-	if err := iter.Err(); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	render.Respond(w, r, relatedTags)
-}
-
 // OmniSearch catch all search endpoint and returns categorized
 // json search results
 func OmniSearch(w http.ResponseWriter, r *http.Request) {
