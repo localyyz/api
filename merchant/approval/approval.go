@@ -81,7 +81,9 @@ func PlaceCtx(next http.Handler) http.Handler {
 		if place.Status == data.PlaceStatusWaitApproval {
 			// Change the status to "reviewing" if waiting for approval
 			place.Status = data.PlaceStatusReviewing
-			data.DB.Place.Save(place)
+			if err := data.DB.Place.Save(place); err != nil {
+				lg.Warn(err)
+			}
 		}
 
 		ctx = context.WithValue(ctx, "place", place)
@@ -107,9 +109,9 @@ func List(w http.ResponseWriter, r *http.Request) {
 	).OrderBy("-id").Limit(10).All(&recentApproved)
 
 	pageContext := pongo2.Context{
-		"wait":     waitApprovals,
-		"review":   reviewing,
-		"approved": recentApproved,
+		"wait":      waitApprovals,
+		"reviewing": reviewing,
+		"approved":  recentApproved,
 	}
 	t, err := listTmpl.Execute(pageContext)
 	if err != nil {

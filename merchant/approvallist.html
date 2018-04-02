@@ -38,7 +38,7 @@
                 <td>{{ p.Plan }}</td>
                 <td><a href="{{ p.Website }}" target="_blank">Website</a></td>
                 <td>{{ p.TOSAgreedAt }}</td>
-                <td><a href="places/{{ p.ID }}">Approval Link</a></td>
+                <td><a href="/approval/{{ p.ID }}">Approval Link</a></td>
               </tr>
               {% endfor %}
             </table>
@@ -63,7 +63,7 @@
                 <td>{{ p.Plan }}</td>
                 <td><a href="{{ p.Website }}" target="_blank">Website</a></td>
                 <td>{{ p.TOSAgreedAt }}</td>
-                <td><a href="places/{{ p.ID }}">Approval Link</a></td>
+                <td><a href="/approval/{{ p.ID }}">Approval Link</a></td>
               </tr>
               {% endfor %}
             </table>
