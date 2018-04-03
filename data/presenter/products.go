@@ -37,7 +37,9 @@ type Product struct {
 }
 
 type VariantCache map[int64][]*ProductVariant
+type VariantImageCache map[int64]int64
 type PlaceCache map[int64]*data.Place
+type ImageCache map[int64][]*data.ProductImage
 type SearchProductList []*Product
 
 func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error {
@@ -90,8 +92,19 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 		"product_id": set.IntSlice(productIDSet),
 	})
 	variantCache := make(VariantCache)
+	variantIDSet := set.New()
 	for _, v := range variants {
 		variantCache[v.ProductID] = append(variantCache[v.ProductID], &ProductVariant{ProductVariant: v})
+		variantIDSet.Add(int(v.ID))
+	}
+
+	// fetch variant image pivotes
+	variantImageCache := make(VariantImageCache)
+	variantImages, _ := data.DB.VariantImage.FindAll(db.Cond{
+		"variant_id": set.IntSlice(variantIDSet),
+	})
+	for _, v := range variantImages {
+		variantImageCache[v.VariantID] = v.ImageID
 	}
 
 	// fetch places
@@ -106,7 +119,18 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 		}
 	}
 
+	// fetch product images
+	images, _ := data.DB.ProductImage.FindAll(db.Cond{
+		"product_id": set.IntSlice(productIDSet),
+	})
+	imageCache := make(ImageCache)
+	for _, v := range images {
+		imageCache[v.ProductID] = append(imageCache[v.ProductID], v)
+	}
+
 	ctx = context.WithValue(ctx, "variant.cache", variantCache)
+	ctx = context.WithValue(ctx, "variant.image.cache", variantImageCache)
+	ctx = context.WithValue(ctx, "image.cache", imageCache)
 	ctx = context.WithValue(ctx, "place.cache", placeCache)
 
 	for _, product := range products {
@@ -148,7 +172,11 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	}
 
 	// check and load product images
-	p.Images, _ = data.DB.ProductImage.FindByProductID(p.ID)
+	if cache, _ := ctx.Value("image.cache").(ImageCache); cache != nil {
+		p.Images = cache[p.ID]
+	} else {
+		p.Images, _ = data.DB.ProductImage.FindByProductID(p.ID)
+	}
 	for i, img := range p.Images {
 		if i == 0 {
 			if len(p.ImageURL) == 0 {
@@ -171,8 +199,12 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 
 	// update product variants with the variant image pivot value
 	for _, v := range p.Variants {
-		if img, _ := data.DB.VariantImage.FindByVariantID(v.ID); img != nil {
-			v.ImageID = img.ImageID
+		if cache, _ := ctx.Value("variant.image.cache").(VariantImageCache); cache != nil {
+			v.ImageID = cache[v.ID]
+		} else {
+			if img, _ := data.DB.VariantImage.FindByVariantID(v.ID); img != nil {
+				v.ImageID = img.ImageID
+			}
 		}
 	}
 

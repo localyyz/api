@@ -34,6 +34,7 @@ type Client struct {
 	Checkout         *CheckoutService
 	ProductList      *ProductListService
 	CustomCollection *CustomCollectionService
+	PriceRule        *PriceRuleService
 }
 
 type service struct {
@@ -60,6 +61,7 @@ func NewClient(httpClient *http.Client, token string) *Client {
 	c.Checkout = (*CheckoutService)(&c.common)
 	c.ProductList = (*ProductListService)(&c.common)
 	c.CustomCollection = (*CustomCollectionService)(&c.common)
+	c.PriceRule = (*PriceRuleService)(&c.common)
 	return c
 }
 

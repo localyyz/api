@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"time"
 
 	"upper.io/bond"
@@ -83,6 +84,33 @@ var _ interface {
 	bond.HasBeforeUpdate
 } = &MerchantApproval{}
 
+var (
+	merchantApprovalCategories = []string{
+		"-",
+		"accessories",
+		"athletic/outdoor apparel",
+		"beauty/cosmetics",
+		"consignment",
+		"electronics",
+		"fashion apparel",
+		"fashion multiple",
+		"footwear",
+		"general store",
+		"home",
+		"industrial",
+		"infant",
+		"jewelry",
+		"nightwear",
+		"other",
+		"pet",
+		"preworn",
+		"swimwear",
+		"unknown",
+	}
+
+	merchantApprovalPriceRanges = []string{"-", "low", "medium", "high"}
+)
+
 func (m *MerchantApproval) CollectionName() string {
 	return `merchant_approvals`
 }
@@ -113,4 +141,48 @@ func (store MerchantApprovalStore) FindOne(cond db.Cond) (*MerchantApproval, err
 		return nil, err
 	}
 	return approval, nil
+}
+
+// String returns the string value of the status.
+func (s MerchantApprovalCategory) String() string {
+	return merchantApprovalCategories[s]
+}
+
+// MarshalText satisfies TextMarshaler
+func (s MerchantApprovalCategory) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (s *MerchantApprovalCategory) UnmarshalText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(merchantApprovalCategories); i++ {
+		if enum == merchantApprovalCategories[i] {
+			*s = MerchantApprovalCategory(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown merchant category %s", enum)
+}
+
+// String returns the string value of the status.
+func (s MerchantApprovalPriceRange) String() string {
+	return merchantApprovalPriceRanges[s]
+}
+
+// MarshalText satisfies TextMarshaler
+func (s MerchantApprovalPriceRange) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (s *MerchantApprovalPriceRange) UnmarshalText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(merchantApprovalPriceRanges); i++ {
+		if enum == merchantApprovalPriceRanges[i] {
+			*s = MerchantApprovalPriceRange(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown merchant price range %s", enum)
 }

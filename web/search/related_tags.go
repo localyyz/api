@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
+	set "gopkg.in/fatih/set.v0"
 	db "upper.io/db.v3"
 )
 
@@ -39,8 +40,16 @@ func RelatedTags(w http.ResponseWriter, r *http.Request) {
 		genderQuery = db.Raw(fmt.Sprintf("p.gender = %d", gender))
 	}
 
-	filterTags := append(p.rawParts, p.FilterTags...)
-	filterTags = append(filterTags, p.queryParts...)
+	filterTagsSet := set.New()
+	for _, p := range p.rawParts {
+		filterTagsSet.Add(p)
+	}
+	for _, p := range p.FilterTags {
+		filterTagsSet.Add(p)
+	}
+	for _, p := range p.queryParts {
+		filterTagsSet.Add(p)
+	}
 
 	rows, err := data.DB.Select(db.Raw(`json_agg(json_build_object('lexeme', lexeme, 'positions', positions)) as words`)).
 		From(db.Raw(`(
@@ -57,7 +66,7 @@ func RelatedTags(w http.ResponseWriter, r *http.Request) {
 		) x`, p.Query, genderQuery)).
 		Where(db.Cond{
 			db.Raw("to_tsvector(lexeme)"): db.NotEq(""),
-			"lexeme":                      db.NotIn(filterTags),
+			"lexeme":                      db.NotIn(set.StringSlice(filterTagsSet)),
 		}).
 		GroupBy("id").
 		Query()

@@ -67,8 +67,12 @@ func (v *VariantImage) CollectionName() string {
 }
 
 func (store VariantImageStore) FindByVariantIDs(variantIDs ...int64) ([]*VariantImage, error) {
+	return store.FindAll(db.Cond{"variant_id": variantIDs})
+}
+
+func (store VariantImageStore) FindAll(cond db.Cond) ([]*VariantImage, error) {
 	var images []*VariantImage
-	if err := store.Find(db.Cond{"variant_id": variantIDs}).All(&images); err != nil {
+	if err := store.Find(cond).All(&images); err != nil {
 		return nil, err
 	}
 	return images, nil
