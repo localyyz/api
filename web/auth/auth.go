@@ -8,8 +8,8 @@ import (
 
 	db "upper.io/db.v3"
 
+	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
-	"github.com/goware/jwtauth"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"

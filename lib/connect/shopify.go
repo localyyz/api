@@ -13,9 +13,9 @@ import (
 
 	db "upper.io/db.v3"
 
+	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
 	"github.com/goware/geotools"
-	"github.com/goware/jwtauth"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 
@@ -119,14 +119,15 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 	// TODO: check HMAC signature
 	//code := q.Get("code")
 
-	token, err := token.Decode(q.Get("state"))
+	decodeToken, err := token.Decode(q.Get("state"))
 	if err != nil {
 		render.Status(r, http.StatusBadRequest)
 		render.Respond(w, r, err)
 		return
 	}
 
-	shopID, ok := token.Claims["place_shop_id"].(string)
+	claims := decodeToken.Claims.(jwtauth.Claims)
+	shopID, ok := claims["place_shop_id"].(string)
 	if !ok {
 		render.Status(r, http.StatusBadRequest)
 		render.Respond(w, r, ErrInvalidState)
@@ -139,7 +140,7 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tok, err := s.Exchange(shopID, r)
+	oauthToken, err := s.Exchange(shopID, r)
 	if err != nil {
 		render.Status(r, http.StatusBadRequest)
 		render.Respond(w, r, err)
@@ -147,7 +148,7 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 	}
 
 	creds := &data.ShopifyCred{
-		AccessToken: tok.AccessToken,
+		AccessToken: oauthToken.AccessToken,
 		ApiURL:      fmt.Sprintf("https://%s.myshopify.com", shopID),
 		Status:      data.ShopifyCredStatusActive,
 	}

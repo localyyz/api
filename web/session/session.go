@@ -8,14 +8,13 @@ import (
 
 	db "upper.io/db.v3"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
@@ -23,20 +22,14 @@ func SessionCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		tok, ok := ctx.Value("jwt").(*jwt.Token)
-		if tok == nil {
+		token, claims, err := jwtauth.FromContext(ctx)
+		if token == nil || err != nil {
+			lg.Infof("session ctx token is nil (%s): %+v", r.URL.Path, err)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
-		token, err := token.Decode(tok.Raw)
-		if err != nil {
-			lg.Errorf("invalid session token: %+v", err)
-			render.Render(w, r, api.ErrInvalidSession)
-			return
-		}
-
-		rawUserID, ok := token.Claims["user_id"].(json.Number)
+		rawUserID, ok := claims["user_id"].(json.Number)
 		if !ok {
 			lg.Error("invalid session token, no user_id found")
 			render.Render(w, r, api.ErrInvalidSession)
