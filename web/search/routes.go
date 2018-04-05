@@ -118,7 +118,6 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		//      weights greater than 0
 		cond := db.Cond{
 			"p.deleted_at IS": nil,
-			"p.image_url <>":  "",
 			"pv.limits >":     0,
 			"pl.status":       data.PlaceStatusActive,
 			"p.category":      db.NotEq("{}"),
@@ -179,7 +178,6 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 
 		cond := db.Cond{
 			"p.deleted_at IS": nil,
-			"p.image_url <>":  "",
 			"p.category":      db.NotEq("{}"),
 			"pv.limits >":     0,
 			"pl.status":       data.PlaceStatusActive,
