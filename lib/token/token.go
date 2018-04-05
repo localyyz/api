@@ -4,15 +4,15 @@ import (
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/goware/jwtauth"
+	"github.com/go-chi/jwtauth"
 )
 
 var (
-	tokenAuth *jwtauth.JwtAuth
+	tokenAuth *jwtauth.JWTAuth
 )
 
 func Verify() func(http.Handler) http.Handler {
-	return tokenAuth.Verify()
+	return jwtauth.Verifier(tokenAuth)
 }
 
 func SetupJWTAuth(secret string) {

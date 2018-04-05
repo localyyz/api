@@ -65,7 +65,11 @@ func (h *Handler) Routes() chi.Router {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.NoCache)
 	r.Use(middleware.RequestID)
-	r.Use(NewStructuredLogger())
+	if h.Debug {
+		r.Use(middleware.Logger)
+	} else {
+		r.Use(NewStructuredLogger())
+	}
 	r.Use(func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			if h.Debug {
@@ -76,7 +80,6 @@ func (h *Handler) Routes() chi.Router {
 		return http.HandlerFunc(fn)
 	})
 
-	//r.Use(middleware.Recoverer)
 	r.Use(token.Verify())
 	r.Use(session.SessionCtx)
 	r.Use(session.UserRefresh)

@@ -18,13 +18,12 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/merchant/approval"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
-	"github.com/goware/jwtauth"
 	"github.com/pressly/lg"
 )
 
@@ -194,26 +193,22 @@ func SessionCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		tok, _ := ctx.Value("jwt").(*jwt.Token)
-		if tok == nil {
+		token, claims, err := jwtauth.FromContext(ctx)
+		if token == nil || err != nil {
+			lg.Infof("invalid merchant ctx token is nil (%s): %+v", r.URL.Path, err)
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
-		token, err := token.Decode(tok.Raw)
-		if err != nil {
-			lg.Errorf("invalid session token: %+v", err)
-			return
-		}
-
-		rawPlaceID, ok := token.Claims["place_id"].(json.Number)
+		rawPlaceID, ok := claims["place_id"].(json.Number)
 		if !ok {
-			lg.Error("invalid session token, no user_id found")
+			lg.Error("invalid session merchant, no place_id found")
 			return
 		}
 
 		placeID, err := rawPlaceID.Int64()
 		if err != nil {
-			lg.Errorf("invalid session token: %+v", err)
+			lg.Errorf("invalid session merchant: %+v", err)
 			return
 		}
 
@@ -222,7 +217,7 @@ func SessionCtx(next http.Handler) http.Handler {
 			db.Cond{"id": placeID},
 		)
 		if err != nil {
-			lg.Errorf("invalid session user: %+v", err)
+			lg.Errorf("invalid session merchant: %+v", err)
 			return
 		}
 

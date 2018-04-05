@@ -60,13 +60,13 @@ func NewFromFile(fileConfig, envConfig string) (*Config, error) {
 	// it to use a custom JSONFormatter. See the logrus docs for how to
 	// configure the backend at github.com/sirupsen/logrus
 	logger := logrus.New()
-	logger.Formatter = &logrus.JSONFormatter{}
 	// If development, set lg to debug
 	if conf.Environment == "development" {
 		debugLv, _ := logrus.ParseLevel("debug")
 		logger.SetLevel(debugLv)
 	}
 	if conf.Environment == "production" {
+		logger.Formatter = &logrus.JSONFormatter{}
 		lg.AlertFn = func(level logrus.Level, msg string) {
 			switch level {
 			case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
