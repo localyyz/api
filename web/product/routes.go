@@ -46,6 +46,7 @@ func CategoryCtx(next http.Handler) http.Handler {
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Get("/history", ListHistoryProduct)
 	r.Get("/featured", ListFeaturedProduct)
 	r.Get("/onsale", ListOnsaleProduct)
 	r.Route("/{productID}", func(r chi.Router) {
