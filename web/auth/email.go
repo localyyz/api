@@ -14,24 +14,10 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
-type userSignup struct {
-	FullName        string          `json:"fullName,required"`
-	Email           string          `json:"email,required"`
-	Password        string          `json:"password,required"`
-	PasswordConfirm string          `json:"passwordConfirm,required"`
-	Dob             time.Time       `json:"dob"`
-	Gender          data.UserGender `json:"gender"`
-	InviteCode      string          `json:"inviteCode"`
-}
-
 const (
 	MinPasswordLength int = 8
 	bCryptCost        int = 10
 )
-
-func (u *userSignup) Bind(r *http.Request) error {
-	return nil
-}
 
 // Signup via website
 func RegisterSignup(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +48,20 @@ func RegisterSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	return
+}
+
+type userSignup struct {
+	FullName        string          `json:"fullName,required"`
+	Email           string          `json:"email,required"`
+	Password        string          `json:"password,required"`
+	PasswordConfirm string          `json:"passwordConfirm,required"`
+	Dob             time.Time       `json:"dob"`
+	Gender          data.UserGender `json:"gender"`
+	InviteCode      string          `json:"inviteCode"`
+}
+
+func (u *userSignup) Bind(r *http.Request) error {
+	return nil
 }
 
 func EmailSignup(w http.ResponseWriter, r *http.Request) {
@@ -98,6 +98,9 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: string(epw),
 		LastLogInAt:  data.GetTimeUTCPointer(),
 		LoggedIn:     true,
+		Etc: data.UserEtc{
+			Gender: newSignup.Gender,
+		},
 	}
 
 	// check if invite code exists
