@@ -13,6 +13,7 @@ import (
 
 	db "upper.io/db.v3"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
 	"github.com/goware/geotools"
@@ -126,7 +127,14 @@ func (s *Shopify) OAuthCb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims := decodeToken.Claims.(jwtauth.Claims)
+	// TODO: do this with context
+	claims, ok := decodeToken.Claims.(jwt.MapClaims)
+	if !ok {
+		render.Status(r, http.StatusBadRequest)
+		render.Respond(w, r, err)
+		return
+	}
+
 	shopID, ok := claims["place_shop_id"].(string)
 	if !ok {
 		render.Status(r, http.StatusBadRequest)
