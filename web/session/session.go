@@ -24,7 +24,6 @@ func SessionCtx(next http.Handler) http.Handler {
 
 		token, claims, err := jwtauth.FromContext(ctx)
 		if token == nil || err != nil {
-			lg.Infof("session ctx token is nil (%s): %+v", r.URL.Path, err)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
