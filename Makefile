@@ -4,6 +4,7 @@ TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf
 MERCHANT_CONFIG := $$PWD/config/merchant.conf
 PEM := ./config/push.pem
+TAG_CONTAINER := gcr.io/verdant-descent-153101/api
 
 all:
 	@echo "****************************"
@@ -74,7 +75,12 @@ db-loadprod:
 ##
 
 list-tags:
-	@gcloud container images list-tags gcr.io/verdant-descent-153101/api
+	@(export IMAGE=${TAG_CONTAINER}; ./scripts/tags.sh list);
+
+clean-tags:
+	@(export IMAGE=${TAG_CONTAINER}; ./scripts/tags.sh clean);
+
+# LOCAL
 
 run:
 	@(export CONFIG=${API_CONFIG}; export PEM=${PEM}; fresh -c runner.conf -p ./cmd/api)

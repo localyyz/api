@@ -116,7 +116,11 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 		}
 		rawCategory, _ := json.Marshal(product.Category)
 		cond := db.And(
-			db.Cond{"p.gender": product.Gender, "p.id <>": product.ID},
+			db.Cond{
+				"p.place_id": product.PlaceID,
+				"p.gender":   product.Gender,
+				"p.id <>":    product.ID,
+			},
 			db.Raw(fmt.Sprintf("category @> '%s'", string(rawCategory))),
 		)
 		// find the products
