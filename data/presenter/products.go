@@ -134,7 +134,9 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 	ctx = context.WithValue(ctx, "place.cache", placeCache)
 
 	for _, product := range products {
-		list = append(list, NewProduct(ctx, product))
+		if presented := NewProduct(ctx, product); presented != nil {
+			list = append(list, presented)
+		}
 	}
 	return list
 }
@@ -149,15 +151,28 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		ctx:     ctx,
 	}
 
-	p.Variants = []*ProductVariant{}
+	var variants []*ProductVariant
 	if cache, _ := ctx.Value("variant.cache").(VariantCache); cache != nil {
-		p.Variants = cache[p.ID]
+		variants = cache[p.ID]
 	} else {
-		if dbVariants, _ := data.DB.ProductVariant.FindByProductID(product.ID); dbVariants != nil {
-			for _, v := range dbVariants {
-				p.Variants = append(p.Variants, &ProductVariant{ProductVariant: v})
+		if vv, _ := data.DB.ProductVariant.FindByProductID(product.ID); vv != nil {
+			for _, v := range vv {
+				variants = append(p.Variants, &ProductVariant{ProductVariant: v})
 			}
 		}
+	}
+
+	// filter variants for ones that are in stock
+	p.Variants = variants[:0]
+	for _, v := range variants {
+		if v.Limits > 0 {
+			p.Variants = append(p.Variants, v)
+		}
+	}
+
+	// out of stock, filter
+	if len(p.Variants) == 0 {
+		return nil
 	}
 
 	sizeSet := set.New()
@@ -195,6 +210,11 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 				&data.ProductImage{ImageURL: imgURL, Ordering: int32(i)},
 			)
 		}
+	}
+
+	// if still no image, return
+	if len(p.Images) == 0 {
+		return nil
 	}
 
 	// update product variants with the variant image pivot value

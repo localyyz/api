@@ -62,8 +62,10 @@ type PaymentMethod struct {
 }
 
 type PlaceRating struct {
-	Rating float32 `json:"rating"`
-	Count  int64   `json:"count"`
+	Rating        float32 `json:"rating"`
+	Count         int64   `json:"count"`
+	FBFans        int64   `json:"fbFans"`
+	InstFollowers int64   `json:"instFollowers"`
 	*postgresql.JSONBConverter
 }
 
