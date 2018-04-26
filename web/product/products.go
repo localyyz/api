@@ -58,32 +58,50 @@ func ListFeaturedProduct(w http.ResponseWriter, r *http.Request) {
 		condGenders = []int{int(gender)}
 	}
 
-	dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
-	query := data.DB.Select("*").
-		From(db.Raw(`(
-			SELECT *, row_number() over (partition by place_id) as rank
-			FROM products
-			WHERE place_id IN ?
-			AND gender IN ?
-			AND deleted_at IS NULL
-			ORDER BY external_id % ?
-		) x`,
-			placeIDs,
-			condGenders,
-			dayOfWeekPlusOne,
-		)).
-		Where(db.Cond{
-			"rank": db.Lt(3),
-		})
-	paginate := cursor.UpdateQueryBuilder(query)
-	var products []*data.Product
-	if err := paginate.All(&products); err != nil {
-		render.Respond(w, r, err)
-		return
+	// if this is the first page. get the feature_product list
+	var featuredProducts []*data.Product
+	if cursor.Page <= 1 {
+		data.DB.Select("p.*").
+			From("products p").
+			RightJoin("feature_products fp").
+			On("fp.product_id = p.id").
+			Where(db.Cond{"gender": condGenders}).
+			OrderBy("fp.ordering").
+			All(&featuredProducts)
+		cursor.NextPage = true
 	}
-	cursor.Update(products)
 
-	presented := presenter.NewProductList(ctx, products)
+	// fetch auto generated products
+	var products []*data.Product
+	if len(featuredProducts) == 0 {
+		dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
+		query := data.DB.Select("*").
+			From(db.Raw(`(
+					SELECT *, row_number() over (partition by place_id) as rank
+					FROM products
+					WHERE place_id IN ?
+					AND gender IN ?
+					AND deleted_at IS NULL
+					ORDER BY external_id % ?
+				) x`,
+				placeIDs,
+				condGenders,
+				dayOfWeekPlusOne,
+			)).
+			Where(db.Cond{
+				"rank": db.Lt(3),
+			})
+
+		paginate := cursor.UpdateQueryBuilder(query)
+		if err := paginate.All(&products); err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+		cursor.Update(products)
+	}
+
+	featuredProducts = append(featuredProducts, products...)
+	presented := presenter.NewProductList(ctx, featuredProducts)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}
