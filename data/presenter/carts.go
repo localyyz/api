@@ -67,17 +67,13 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 		resp.ShippingRates = rates
 	}
 
+	resp.ShippingAddress = &CartAddress{IsShipping: true}
+	resp.BillingAddress = &CartAddress{IsBilling: true}
 	if s := cart.Etc.ShippingAddress; s != nil {
-		resp.ShippingAddress = &CartAddress{
-			CartAddress: s,
-			IsShipping:  true,
-		}
+		resp.ShippingAddress.CartAddress = s
 	}
 	if s := cart.Etc.BillingAddress; s != nil {
-		resp.BillingAddress = &CartAddress{
-			CartAddress: s,
-			IsBilling:   true,
-		}
+		resp.BillingAddress.CartAddress = s
 	}
 
 	// calculate cart subtotal by line item
