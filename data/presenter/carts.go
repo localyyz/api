@@ -18,15 +18,19 @@ type Cart struct {
 	Currency        string `json:"currency,omitempty"`
 	StripeAccountID string `json:"stripeAccountId,omitempty"`
 
-	CartItems     CartItemList               `json:"items"`
-	ShippingRates []*data.CartShippingMethod `json:"shippingRates"`
+	CartItems       CartItemList               `json:"items"`
+	ShippingRates   []*data.CartShippingMethod `json:"shippingRates"`
+	ShippingAddress *CartAddress               `json:"shippingAddress"`
+	BillingAddress  *CartAddress               `json:"billingAddress"`
 
 	TotalShipping int64 `json:"totalShipping"`
 	TotalTax      int64 `json:"totalTax"`
 	TotalPrice    int64 `json:"totalPrice"`
 	TotalDiscount int64 `json:"totalDiscount"`
 
-	Error string `json:"error"`
+	HasError  bool   `json:"hasError"`
+	Error     string `json:"error"`
+	ErrorCode uint32 `json:"errorCode"`
 
 	ctx context.Context
 }
@@ -61,6 +65,15 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 
 	if rates, _ := ctx.Value("rates").([]*data.CartShippingMethod); rates != nil {
 		resp.ShippingRates = rates
+	}
+
+	resp.ShippingAddress = &CartAddress{IsShipping: true}
+	resp.BillingAddress = &CartAddress{IsBilling: true}
+	if s := cart.Etc.ShippingAddress; s != nil {
+		resp.ShippingAddress.CartAddress = s
+	}
+	if s := cart.Etc.BillingAddress; s != nil {
+		resp.BillingAddress.CartAddress = s
 	}
 
 	// calculate cart subtotal by line item

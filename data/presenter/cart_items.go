@@ -19,6 +19,7 @@ type CartItem struct {
 
 	Price    float64 `json:"price"`
 	HasError bool    `json:"hasError"`
+	Error    error   `json:"error"`
 
 	ctx context.Context
 }

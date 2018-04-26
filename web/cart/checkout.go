@@ -17,10 +17,34 @@ import (
 	db "upper.io/db.v3"
 )
 
+var (
+	ErrShippingRates   = errors.New("merchant does not ship to your address")
+	ErrEmptyCheckout   = errors.New("nothing in your cart")
+	ErrInvalidShipping = errors.New("empty or invalid shipping address")
+	ErrInvalidBilling  = errors.New("empty or invalid billing address")
+	ErrInvalidStatus   = errors.New("invalid cart status, already completed.")
+	ErrItemOutofStock  = errors.New("item is out of stock")
+)
+
 type checkoutError struct {
 	placeID int64
 	itemID  int64
+	errCode checkoutErrorCode
 	err     error
+}
+
+type checkoutErrorCode uint32
+
+const (
+	_ checkoutErrorCode = iota
+	CheckoutErrorCodeGeneric
+	CheckoutErrorCodeLineItem
+	CheckoutErrorCodeNoShipping
+	CheckoutErrorCodeShippingAddress
+)
+
+func (e *checkoutError) Error() string {
+	return e.err.Error()
 }
 
 func fetchCartItemVariant(cart *data.Cart) ([]*data.ProductVariant, error) {
@@ -29,7 +53,6 @@ func fetchCartItemVariant(cart *data.Cart) ([]*data.ProductVariant, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	variantIDs := make([]int64, len(cartItems))
 	for i, ci := range cartItems {
 		variantIDs[i] = ci.VariantID
@@ -39,26 +62,10 @@ func fetchCartItemVariant(cart *data.Cart) ([]*data.ProductVariant, error) {
 
 func validateCheckout(cart *data.Cart) error {
 	if cart.Etc.ShippingAddress == nil {
-		return errors.New("empty or invalid shipping address")
+		return ErrInvalidShipping
 	}
 	if cart.Etc.BillingAddress == nil {
-		return errors.New("empty or invalid billing address")
-	}
-	return nil
-}
-
-func validateVariants(variants []*data.ProductVariant) error {
-	var outOfStock []int64
-	for _, v := range variants {
-		if v.Limits == 0 {
-			// check if any variants are out of stock
-			// collect and continue
-			outOfStock = append(outOfStock, v.OfferID)
-			continue
-		}
-	}
-	if len(outOfStock) > 0 {
-		return api.ErrOutOfStockCart(outOfStock)
+		return ErrInvalidBilling
 	}
 	return nil
 }
@@ -80,12 +87,14 @@ func createCheckout(ctx context.Context, cl *shopify.Client, checkout *shopify.C
 
 	// TODO: make proper shipping. For now, pick the cheapest one.
 	rates, _, err := cl.Checkout.ListShippingRates(ctx, ch.Token)
-	if err != nil {
+	if err != nil || len(rates) == 0 {
+		if err == nil {
+			// does not ship to this address
+			err = ErrShippingRates
+		}
 		return err
 	}
-	if len(rates) == 0 {
-		return errors.New("invalid shipping address")
-	}
+
 	// for now, pick the first rate and apply to the checkout.. TODO make this proper
 	// sync the cart shipping method
 	ch, _, err = cl.Checkout.Update(
@@ -126,16 +135,96 @@ func int64Slice(s set.Interface) []int64 {
 	return slice
 }
 
-// Create checkout on shopify
-func CreateCheckout(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+type universalCheckout struct {
+	shippingAddress *shopify.CustomerAddress
+	billingAddress  *shopify.CustomerAddress
+
+	lineItemsMap map[int64][]*shopify.LineItem
+	cart         *data.Cart
+}
+
+func (u *universalCheckout) createMerchantCheckout(ctx context.Context, placeID int64, client *shopify.Client) error {
 	user := ctx.Value("session.user").(*data.User)
 	cart := ctx.Value("cart").(*data.Cart)
 
-	if cart.Status != data.CartStatusInProgress {
-		// can't create another checkout on an already checkout cart
-		err := errors.New("invalid cart status, already completed.")
-		render.Render(w, r, api.ErrInvalidRequest(err))
+	checkout := &shopify.Checkout{
+		Email:           user.Email,
+		LineItems:       u.lineItemsMap[placeID],
+		ShippingAddress: u.shippingAddress,
+		BillingAddress:  u.billingAddress,
+	}
+	// check if there is an existing checkout, if there is, set the checkout token
+	if sh, ok := cart.Etc.ShopifyData[placeID]; sh != nil && ok {
+		checkout.Token = sh.Token
+	}
+
+	// TODO: save checkout token even on error. rignt now
+	// we're creating multiple checkouts if remote fails
+
+	if err := createCheckout(ctx, client, checkout); err != nil {
+		if le, ok := err.(*shopify.LineItemError); ok && le != nil && le.Position != "" {
+			idx, _ := strconv.Atoi(le.Position)
+			return &checkoutError{
+				itemID:  u.lineItemsMap[placeID][idx].VariantID,
+				errCode: CheckoutErrorCodeLineItem,
+				err:     ErrItemOutofStock,
+			}
+		}
+		if le, ok := err.(*shopify.ShippingAddressError); ok && le != nil {
+			return &checkoutError{
+				placeID: placeID,
+				errCode: CheckoutErrorCodeShippingAddress,
+				err:     err,
+			}
+		}
+		if err == ErrShippingRates {
+			return &checkoutError{
+				placeID: placeID,
+				errCode: CheckoutErrorCodeNoShipping,
+				err:     err,
+			}
+		}
+		return &checkoutError{
+			placeID: placeID,
+			err:     err,
+			errCode: CheckoutErrorCodeGeneric,
+		}
+	}
+
+	cart.Etc.ShippingMethods[placeID] = &data.CartShippingMethod{
+		Handle:        checkout.ShippingLine.Handle,
+		Title:         checkout.ShippingLine.Title,
+		Price:         atoi(checkout.ShippingLine.Price),
+		DeliveryRange: checkout.ShippingLine.DeliveryRange,
+	}
+	cart.Etc.ShopifyData[placeID] = &data.CartShopifyData{
+		Token:      checkout.Token,
+		CustomerID: checkout.CustomerID,
+		Name:       checkout.Name,
+		ShopifyPaymentAccountID: checkout.ShopifyPaymentAccountID,
+		PaymentURL:              checkout.PaymentURL,
+		WebURL:                  checkout.WebURL,
+		WebProcessingURL:        checkout.WebProcessingURL,
+
+		TotalTax:   atoi(checkout.TotalTax),
+		TotalPrice: atoi(checkout.TotalPrice),
+		PaymentDue: checkout.PaymentDue,
+	}
+	if checkout.AppliedDiscount != nil && checkout.AppliedDiscount.Applicable {
+		cart.Etc.ShopifyData[placeID].Discount = checkout.AppliedDiscount
+	}
+
+	return nil
+}
+
+// Create checkout is the entry point to getting a full "checkout"
+// object back from the API
+func CreateCheckout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cart := ctx.Value("cart").(*data.Cart)
+
+	if cart.Status > data.CartStatusCheckout {
+		render.Render(w, r, api.ErrInvalidRequest(ErrInvalidStatus))
 		return
 	}
 
@@ -146,13 +235,12 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	variants, err := fetchCartItemVariant(cart)
-	if err != nil {
+	if err != nil || len(variants) == 0 {
+		// if nothing to checkout, return error
+		if err == nil {
+			err = ErrEmptyCheckout
+		}
 		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	if err := validateVariants(variants); err != nil {
-		render.Respond(w, r, err)
 		return
 	}
 
@@ -160,50 +248,46 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	for _, v := range variants {
 		merchantIDset.Add(v.PlaceID)
 	}
-	creds, err := data.DB.ShopifyCred.FindAll(
-		db.Cond{
-			"place_id": int64Slice(merchantIDset),
-		},
-	)
+	creds, err := data.DB.ShopifyCred.FindAll(db.Cond{"place_id": int64Slice(merchantIDset)})
 	if err != nil {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
+	u := &universalCheckout{
+		// transform address to shopify
+		shippingAddress: &shopify.CustomerAddress{
+			Address1:  cart.Etc.ShippingAddress.Address,
+			Address2:  cart.Etc.ShippingAddress.AddressOpt,
+			City:      cart.Etc.ShippingAddress.City,
+			Country:   cart.Etc.ShippingAddress.Country,
+			FirstName: cart.Etc.ShippingAddress.FirstName,
+			LastName:  cart.Etc.ShippingAddress.LastName,
+			Province:  cart.Etc.ShippingAddress.Province,
+			Zip:       cart.Etc.ShippingAddress.Zip,
+		},
+		billingAddress: &shopify.CustomerAddress{
+			Address1:  cart.Etc.BillingAddress.Address,
+			Address2:  cart.Etc.BillingAddress.AddressOpt,
+			City:      cart.Etc.BillingAddress.City,
+			Country:   cart.Etc.BillingAddress.Country,
+			FirstName: cart.Etc.BillingAddress.FirstName,
+			LastName:  cart.Etc.BillingAddress.LastName,
+			Province:  cart.Etc.BillingAddress.Province,
+			Zip:       cart.Etc.BillingAddress.Zip,
+		},
+	}
+
 	// group them by places, as line items
-	// + check variant stock on our side. if any is out-of-stock
-	// return with response
-	lineItemsMap := map[int64][]*shopify.LineItem{}
+	u.lineItemsMap = map[int64][]*shopify.LineItem{}
 	for _, v := range variants {
-		lineItemsMap[v.PlaceID] = append(
-			lineItemsMap[v.PlaceID],
+		u.lineItemsMap[v.PlaceID] = append(
+			u.lineItemsMap[v.PlaceID],
 			&shopify.LineItem{
 				VariantID: v.OfferID,
 				Quantity:  1, // TODO: for now, 1 item, hardcoded
 			},
 		)
-	}
-
-	// transform address to shopify
-	shippingAddress := &shopify.CustomerAddress{
-		Address1:  cart.Etc.ShippingAddress.Address,
-		Address2:  cart.Etc.ShippingAddress.AddressOpt,
-		City:      cart.Etc.ShippingAddress.City,
-		Country:   cart.Etc.ShippingAddress.Country,
-		FirstName: cart.Etc.ShippingAddress.FirstName,
-		LastName:  cart.Etc.ShippingAddress.LastName,
-		Province:  cart.Etc.ShippingAddress.Province,
-		Zip:       cart.Etc.ShippingAddress.Zip,
-	}
-	billingAddress := &shopify.CustomerAddress{
-		Address1:  cart.Etc.BillingAddress.Address,
-		Address2:  cart.Etc.BillingAddress.AddressOpt,
-		City:      cart.Etc.BillingAddress.City,
-		Country:   cart.Etc.BillingAddress.Country,
-		FirstName: cart.Etc.BillingAddress.FirstName,
-		LastName:  cart.Etc.BillingAddress.LastName,
-		Province:  cart.Etc.BillingAddress.Province,
-		Zip:       cart.Etc.BillingAddress.Zip,
 	}
 
 	// create shipify data holder on the cart
@@ -214,61 +298,14 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		cart.Etc.ShippingMethods = make(map[int64]*data.CartShippingMethod)
 	}
 
-	var lastError *checkoutError
+	var lastError error
 	for _, cred := range creds {
 		cl := shopify.NewClient(nil, cred.AccessToken)
 		cl.BaseURL, _ = url.Parse(cred.ApiURL)
 		cl.Debug = true
-
-		checkout := &shopify.Checkout{
-			Email:           user.Email,
-			LineItems:       lineItemsMap[cred.PlaceID],
-			ShippingAddress: shippingAddress,
-			BillingAddress:  billingAddress,
-		}
-		// check if there is an existing checkout, if there is, set the checkout token
-		if sh, ok := cart.Etc.ShopifyData[cred.PlaceID]; sh != nil && ok {
-			checkout.Token = sh.Token
-		}
-
-		if err := createCheckout(ctx, cl, checkout); err != nil {
-			lg.Alert(errors.Wrapf(err, "checkout: cart(%d) pl(%d) user(%d)", cart.ID, cred.PlaceID, user.ID))
-			if le, ok := err.(*shopify.LineItemError); ok && le != nil && le.Position != "" {
-				idx, _ := strconv.Atoi(le.Position)
-				lastError = &checkoutError{
-					itemID: lineItemsMap[cred.PlaceID][idx].VariantID,
-					err:    errors.New("item is out of stock"),
-				}
-				continue
-			}
-			lastError = &checkoutError{
-				placeID: cred.PlaceID,
-				err:     err,
-			}
-			continue
-		}
-
-		cart.Etc.ShippingMethods[cred.PlaceID] = &data.CartShippingMethod{
-			Handle:        checkout.ShippingLine.Handle,
-			Title:         checkout.ShippingLine.Title,
-			Price:         atoi(checkout.ShippingLine.Price),
-			DeliveryRange: checkout.ShippingLine.DeliveryRange,
-		}
-		cart.Etc.ShopifyData[cred.PlaceID] = &data.CartShopifyData{
-			Token:      checkout.Token,
-			CustomerID: checkout.CustomerID,
-			Name:       checkout.Name,
-			ShopifyPaymentAccountID: checkout.ShopifyPaymentAccountID,
-			PaymentURL:              checkout.PaymentURL,
-			WebURL:                  checkout.WebURL,
-			WebProcessingURL:        checkout.WebProcessingURL,
-
-			TotalTax:   atoi(checkout.TotalTax),
-			TotalPrice: atoi(checkout.TotalPrice),
-			PaymentDue: checkout.PaymentDue,
-		}
-		if checkout.AppliedDiscount != nil && checkout.AppliedDiscount.Applicable {
-			cart.Etc.ShopifyData[cred.PlaceID].Discount = checkout.AppliedDiscount
+		if err := u.createMerchantCheckout(ctx, cred.PlaceID, cl); err != nil {
+			lg.Alert(errors.Wrapf(err, "checkout: cart(%d) pl(%d)", cart.ID, cred.PlaceID))
+			lastError = err
 		}
 	}
 
@@ -279,10 +316,19 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	presented := presenter.NewCart(ctx, cart)
-	if lastError != nil {
-		presented.Error = lastError.err.Error()
+	if e, ok := lastError.(*checkoutError); e != nil && ok {
+		presented.HasError = true
+		presented.Error = e.err.Error()
+		presented.ErrorCode = uint32(e.errCode)
+
+		switch e.errCode {
+		case CheckoutErrorCodeNoShipping, CheckoutErrorCodeShippingAddress:
+			presented.ShippingAddress.HasError = true
+			presented.ShippingAddress.Error = e.err
+		}
 		for _, ci := range presented.CartItems {
-			ci.HasError = (ci.PlaceID == lastError.placeID) || (ci.Variant.OfferID == lastError.itemID)
+			ci.HasError = ci.Variant.OfferID == e.itemID
+			ci.Error = e.err
 		}
 	}
 
