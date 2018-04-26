@@ -13,20 +13,29 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Get("/", ListCategory)
+
 	return r
 }
 
 func ListCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	gender := ctx.Value("product.gender").(data.ProductGender)
+
+	genders := []data.ProductGender{data.ProductGenderUnisex}
+	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+		var g data.ProductGender
+		if gender == data.UserGenderMale {
+			g = data.ProductGenderMale
+		} else if gender == data.UserGenderFemale {
+			g = data.ProductGenderFemale
+		}
+		genders = append(genders, g)
+	}
 
 	var categories []*data.Category
 	err := data.DB.Category.
 		Find(db.Cond{
-			"gender": []data.ProductGender{
-				gender,
-				data.ProductGenderUnisex,
-			},
+			"gender": genders,
 		}).
 		Select(db.Raw("distinct type")).
 		OrderBy("type").

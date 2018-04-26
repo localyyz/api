@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pressly/lg"
 )
 
 // Shopify errors usually have the form:
@@ -96,6 +98,22 @@ func (r *ErrorResponse) Error() string {
 	return "unknown, unparsed error"
 }
 
+func toShippingAddressError(field string, listError []interface{}) *ShippingAddressError {
+	for _, ee := range listError {
+		// NOTE: parse the first error found
+		if ex, _ := ee.(map[string]interface{}); ex != nil {
+			code, _ := ex["code"].(string)
+			message, _ := ex["message"].(string)
+			return &ShippingAddressError{
+				Field:   field,
+				Code:    code,
+				Message: message,
+			}
+		}
+	}
+	return nil
+}
+
 // CheckResponse checks the API response for errors, and returns them if
 // present. A response is considered an error if it has a status code outside
 // the 200 range or equal to 202 Accepted.
@@ -132,6 +150,7 @@ func findFirstError(r *ErrorResponse) error {
 		if !ok {
 			continue
 		}
+		lg.Debugf("error field key %s", k)
 
 		switch k {
 		//shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
@@ -161,21 +180,9 @@ func findFirstError(r *ErrorResponse) error {
 			}
 		case "shipping_address":
 			for kk, vvv := range vv {
-				switch kk {
-				case "country":
-					if e, _ := vvv.([]interface{}); e != nil {
-						for _, ee := range e {
-							if ex, _ := ee.(map[string]interface{}); ex != nil {
-								code, _ := ex["code"].(string)
-								message, _ := ex["message"].(string)
-								return &ShippingAddressError{
-									Field:   "country",
-									Code:    code,
-									Message: message,
-								}
-							}
-						}
-					}
+				lg.Debugf("error %s field key: %s", k, kk)
+				if e, ok := vvv.([]interface{}); ok && e != nil {
+					return toShippingAddressError(kk, e)
 				}
 			}
 		}

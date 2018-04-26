@@ -158,7 +158,7 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	} else {
 		if vv, _ := data.DB.ProductVariant.FindByProductID(product.ID); vv != nil {
 			for _, v := range vv {
-				variants = append(p.Variants, &ProductVariant{ProductVariant: v})
+				variants = append(variants, &ProductVariant{ProductVariant: v})
 			}
 		}
 	}

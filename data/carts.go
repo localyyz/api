@@ -28,6 +28,7 @@ type Cart struct {
 type CartStatus uint
 
 type CartAddress struct {
+	// Core data
 	FirstName    string `json:"firstName"`
 	LastName     string `json:"lastName"`
 	Address      string `json:"address"`
@@ -39,8 +40,12 @@ type CartAddress struct {
 	ProvinceCode string `json:"provinceCode"`
 	Zip          string `json:"zip"`
 
+	// Extra data
 	Email string `json:"email,omitempty"`
 	Phone string `json:"phone,omitempty"`
+
+	// Internal ID
+	ID int64 `json:"id"`
 }
 
 type CartShippingMethod struct {
