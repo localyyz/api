@@ -14,9 +14,11 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/merchant/approval"
+	"bitbucket.org/moodie-app/moodie-api/merchant/plan"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
 	"github.com/go-chi/chi"
@@ -59,7 +61,8 @@ func New(h *Handler) chi.Router {
 	r.Use(middleware.NoCache)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.WithValue("shopify.client", h.SH))
+	r.Use(middleware.WithValue("shopify.appid", h.SH.ClientID()))
+	r.Use(middleware.WithValue("shopify.appname", h.SH.AppName()))
 	r.Use(middleware.WithValue("slack.client", h.SL))
 	r.Use(middleware.WithValue("api.url", h.ApiURL))
 
@@ -69,7 +72,6 @@ func New(h *Handler) chi.Router {
 			r.Use(VerifySignature)
 		}
 		r.Use(ShopifyShopCtx)
-		//r.Use(ShopifyChargeCtx)
 		r.Get("/", Index)
 	})
 
@@ -78,7 +80,7 @@ func New(h *Handler) chi.Router {
 		r.Use(token.Verify())
 		r.Use(SessionCtx)
 		r.Post("/tos", AcceptTOS)
-		r.Post("/img", UploadImageUrl)
+		r.Mount("/plan", plan.Routes())
 	})
 
 	r.Mount("/approval", approval.Routes())
@@ -89,30 +91,66 @@ func New(h *Handler) chi.Router {
 func Index(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
-	shopifyClient := ctx.Value("shopify.client").(*connect.Shopify)
+	clientID := ctx.Value("shopify.appid").(string)
 
 	pageContext := pongo2.Context{
-		"place": place,
-		//"billing":  place.Billing,
+		"place":    place,
 		"name":     strings.Replace(url.QueryEscape(place.Name), "+", "%20", -1),
 		"status":   place.Status.String(),
-		"clientID": shopifyClient.ClientID(),
+		"clientID": clientID,
 	}
 	if place.Status == data.PlaceStatusWaitApproval {
 		pageContext["approvalTs"] = place.TOSAgreedAt.Add(1 * 24 * time.Hour)
 	}
-	//if place.Billing.Status == shopify.BillingStatusPending {
-	//u, err := url.Parse(place.Billing.ConfirmationUrl)
-	//if err != nil {
-	//lg.Warnf("merchant (%d) malformed billing confirmatin url with: %+v", place.ID, err)
-	//return
-	//}
-	//u.Host = ""
-	//u.Scheme = ""
-	//u.Path = strings.TrimPrefix(u.Path, "/admin")
-	//pageContext["confirmationUrl"] = u.String()
-	//}
 	pageContext["productCount"], _ = data.DB.Product.Find(db.Cond{"place_id": place.ID}).Count()
+
+	if strings.HasPrefix(r.UserAgent(), "Shopify Mobile") {
+		pageContext["isMobile"] = true
+	}
+
+	if place.PlanEnabled {
+		// if we have a pending plan, fetch and redirect
+		pendingBilling, _ := data.DB.PlaceBilling.FindOne(
+			db.Cond{
+				"place_id": place.ID,
+				"status":   data.BillingStatusPending,
+			},
+		)
+		if pendingBilling != nil {
+			// fetch the remote updated billing status
+			client := ctx.Value("shopify.client").(*shopify.Client)
+			shopBilling, _, _ := client.Billing.Get(ctx, &shopify.Billing{ID: pendingBilling.ExternalID})
+			if shopBilling != nil {
+				if shopBilling.Status == shopify.BillingStatusPending {
+					pageContext["confirmationUrl"] = shopBilling.ConfirmationUrl
+					pageContext["shouldRedirect"] = 1
+				}
+			}
+		}
+
+		// find active billing
+		// if we have a pending plan, fetch and redirect
+		activeBilling, _ := data.DB.PlaceBilling.FindOne(
+			db.Cond{
+				"place_id": place.ID,
+				"status":   data.BillingStatusActive,
+			},
+		)
+		if activeBilling != nil {
+			type planWrapper struct {
+				Type      string
+				Status    string
+				StartedOn string
+				ExpiresOn string
+			}
+			plan, _ := data.DB.BillingPlan.FindByID(activeBilling.PlanID)
+			pageContext["plan"] = planWrapper{
+				Type:      plan.PlanType.String(),
+				Status:    activeBilling.Status.String(),
+				StartedOn: activeBilling.AcceptedAt.Format("January 2, 2006"),
+			}
+		}
+	}
 
 	// inject a token into the cookie.
 	token, _ := token.Encode(jwtauth.Claims{"place_id": place.ID})
@@ -158,31 +196,6 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 			Color:      "0195ff",
 		},
 	)
-
-	render.Respond(w, r, "success")
-	return
-}
-
-func UploadImageUrl(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	place := ctx.Value("place").(*data.Place)
-
-	var payload struct {
-		ImageURL string `json:"imageUrl"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		lg.Warnf("failed to decode image url for place(%d) with err: %+v", place.ID, err)
-		return
-	}
-
-	// proceed to next status
-	place.ImageURL = payload.ImageURL
-	if err := data.DB.Place.Save(place); err != nil {
-		// error has occured. respond
-		render.Status(r, http.StatusInternalServerError)
-		render.Respond(w, r, err)
-		return
-	}
 
 	render.Respond(w, r, "success")
 	return

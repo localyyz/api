@@ -1,6 +1,7 @@
 package connect
 
 type Config struct {
+	AppName       string `toml:"app_name"`
 	AppId         string `toml:"app_id"`
 	AppSecret     string `toml:"app_secret"`
 	OAuthCallback string `toml:"oauth_callback"`

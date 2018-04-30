@@ -16,7 +16,7 @@ type Billing struct {
 	Price           string `json:"price"`
 	ReturnUrl       string `json:"return_url"`
 	ConfirmationUrl string `json:"confirmation_url"`
-	CappedAmount    int64  `json:"capped_amount,omitempty"`
+	CappedAmount    string `json:"capped_amount,omitempty"`
 	Terms           string `json:"terms"`
 
 	Type   BillingType   `json:"type"`
@@ -41,6 +41,23 @@ type BillingStatus uint32
 
 type RecurringBillingRequest struct {
 	Billing *Billing `json:"recurring_application_charge"`
+}
+
+type UsageCharge struct {
+	ID                           int64      `json:"id,omitempty"`
+	Description                  string     `json:"description"`
+	Price                        string     `json:"price"`
+	RecurringApplicationChargeID int64      `json:"recurring_application_charge_id,omitempty"`
+	BalanceUsed                  float64    `json:"balance_used,omitempty"`
+	BalanceRemaining             float64    `json:"balance_remaining,omitempty"`
+	RiskLevel                    float64    `json:"risk_level,omitempty"`
+	BillingOn                    string     `json:"billing_on,omitempty"`
+	CreatedAt                    *time.Time `json:"created_at,omitempty"`
+	UpdatedAt                    *time.Time `json:"updated_at,omitempty"`
+}
+
+type UsageChargeRequest struct {
+	UsageCharge *UsageCharge `json:"usage_charge"`
 }
 
 const (
@@ -90,22 +107,13 @@ var (
 		"cancelled",
 	}
 
-	billingApiPath = map[BillingType]string{
-		BillingTypeRecurring: "recurring_application_charges",
-	}
-
 	ErrUnsupportedBillingType = errors.New("unsupported billing type")
 )
 
 func (c *BillingService) Create(ctx context.Context, billing *Billing) (*Billing, *http.Response, error) {
-	apiPath, found := billingApiPath[billing.Type]
-	if !found {
-		return nil, nil, ErrUnsupportedBillingType
-	}
-
 	req, err := c.client.NewRequest(
 		"POST",
-		fmt.Sprintf("/admin/%s.json", apiPath),
+		"/admin/recurring_application_charges.json",
 		&RecurringBillingRequest{billing},
 	)
 	if err != nil {
@@ -121,15 +129,28 @@ func (c *BillingService) Create(ctx context.Context, billing *Billing) (*Billing
 	return billingWrapper.Billing, resp, nil
 }
 
-func (c *BillingService) Get(ctx context.Context, billing *Billing) (*Billing, *http.Response, error) {
-	apiPath, found := billingApiPath[billing.Type]
-	if !found {
-		return nil, nil, ErrUnsupportedBillingType
+func (c *BillingService) CreateUsageCharge(ctx context.Context, charge *UsageCharge) (*UsageCharge, *http.Response, error) {
+	req, err := c.client.NewRequest(
+		"POST",
+		fmt.Sprintf("/admin/recurring_application_charges/%d/usage_charges.json", charge.RecurringApplicationChargeID),
+		&UsageChargeRequest{charge},
+	)
+	if err != nil {
+		return nil, nil, err
 	}
 
+	usageWrapper := &UsageChargeRequest{charge}
+	resp, err := c.client.Do(ctx, req, usageWrapper)
+	if err != nil {
+		return nil, resp, err
+	}
+	return usageWrapper.UsageCharge, resp, nil
+}
+
+func (c *BillingService) Get(ctx context.Context, billing *Billing) (*Billing, *http.Response, error) {
 	req, err := c.client.NewRequest(
 		"GET",
-		fmt.Sprintf("/admin/%s/%d.json", apiPath, billing.ID),
+		fmt.Sprintf("/admin/recurring_application_charges/%d.json", billing.ID),
 		nil,
 	)
 	if err != nil {
@@ -146,14 +167,9 @@ func (c *BillingService) Get(ctx context.Context, billing *Billing) (*Billing, *
 }
 
 func (c *BillingService) Activate(ctx context.Context, billing *Billing) (*Billing, *http.Response, error) {
-	apiPath, found := billingApiPath[billing.Type]
-	if !found {
-		return nil, nil, ErrUnsupportedBillingType
-	}
-
 	req, err := c.client.NewRequest(
 		"POST",
-		fmt.Sprintf("/admin/%s/%d/activate.json", apiPath, billing.ID),
+		fmt.Sprintf("/admin/recurring_application_charges/%d/activate.json", billing.ID),
 		&RecurringBillingRequest{billing},
 	)
 	if err != nil {
@@ -170,15 +186,10 @@ func (c *BillingService) Activate(ctx context.Context, billing *Billing) (*Billi
 }
 
 func (c *BillingService) Cancel(ctx context.Context, billing *Billing) (*Billing, *http.Response, error) {
-	apiPath, found := billingApiPath[billing.Type]
-	if !found {
-		return nil, nil, ErrUnsupportedBillingType
-	}
-
 	req, err := c.client.NewRequest(
 		"DELETE",
-		fmt.Sprintf("/admin/%s/%d/activate.json", apiPath, billing.ID),
-		&RecurringBillingRequest{billing},
+		fmt.Sprintf("/admin/recurring_application_charges/%d.json", billing.ID),
+		nil,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -193,14 +204,9 @@ func (c *BillingService) Cancel(ctx context.Context, billing *Billing) (*Billing
 }
 
 func (c *BillingService) Update(ctx context.Context, billing *Billing) (*Billing, *http.Response, error) {
-	apiPath, found := billingApiPath[billing.Type]
-	if !found {
-		return nil, nil, ErrUnsupportedBillingType
-	}
-
 	req, err := c.client.NewRequest(
 		"PUT",
-		fmt.Sprintf("/admin/%s/%d.json", apiPath, billing.ID),
+		fmt.Sprintf("/admin/recurring_application_charges/%d.json", billing.ID),
 		&RecurringBillingRequest{billing},
 	)
 	if err != nil {
