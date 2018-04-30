@@ -57,6 +57,16 @@ func PlaceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+func List(w http.ResponseWriter, r *http.Request) {
+	render.Respond(w, r, []struct{}{})
+}
+
+func ListFeatured(w http.ResponseWriter, r *http.Request) {
+	places, _ := data.DB.Place.FindFeaturedMerchants()
+	ctx := context.WithValue(r.Context(), "with.preview", true)
+	render.RenderList(w, r, presenter.NewPlaceList(ctx, places))
+}
+
 func GetPlace(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)

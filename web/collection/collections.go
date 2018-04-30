@@ -92,11 +92,20 @@ func CollectionCtx(next http.Handler) http.Handler {
 
 func ListCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	scope, _ := ctx.Value("scope").(db.Cond)
 
+	genderScope := []int{
+		int(data.ProductGenderFemale),
+		int(data.ProductGenderMale),
+		int(data.ProductGenderUnisex),
+	}
+	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+		genderScope = []int{int(gender)}
+	}
 	var collections []*data.Collection
 	err := data.DB.Collection.
-		Find(scope).
+		Find(db.Cond{
+			"gender": genderScope,
+		}).
 		OrderBy("ordering").
 		All(&collections)
 	if err != nil {

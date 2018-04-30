@@ -36,7 +36,6 @@ func NewProductVariant(ctx context.Context, variant *data.ProductVariant) *Produ
 	}
 
 	if p.Place == nil {
-
 		var place *data.Place
 		err := data.DB.Place.
 			Find(p.PlaceID).
