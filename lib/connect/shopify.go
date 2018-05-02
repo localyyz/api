@@ -213,18 +213,18 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	place.Gender = data.PlaceGender(data.ProductGenderUnisex)
 
 	// create the recurring billing, set at 120.00
-	shopifyBilling := &shopify.Billing{
-		Type:      shopify.BillingTypeRecurring,
-		Name:      "Localyyz Subscription",
-		Price:     "120.00",
-		ReturnUrl: fmt.Sprintf("https://%s.myshopify.com/admin/apps/localyyz", shopID),
-		TrialDays: int64(time.Until(TrialEndDate).Hours() / 24),
-	}
-	_, _, err = sh.Billing.Create(ctx, shopifyBilling)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create billing for %s", shopID)
-	}
-	place.Billing = data.PlaceBilling{Billing: shopifyBilling}
+	//shopifyBilling := &shopify.Billing{
+	//Type:      shopify.BillingTypeRecurring,
+	//Name:      "Localyyz Subscription",
+	//Price:     "120.00",
+	//ReturnUrl: fmt.Sprintf("https://%s.myshopify.com/admin/apps/localyyz", shopID),
+	//TrialDays: int64(time.Until(TrialEndDate).Hours() / 24),
+	//}
+	//_, _, err = sh.Billing.Create(ctx, shopifyBilling)
+	//if err != nil {
+	//return errors.Wrapf(err, "failed to create billing for %s", shopID)
+	//}
+	//place.Billing = data.PlaceBilling{Billing: shopifyBilling}
 
 	// create a place holder checkout for the account id
 	if checkout, _, _ := sh.Checkout.Create(ctx, nil); checkout != nil && len(checkout.ShopifyPaymentAccountID) != 0 {
