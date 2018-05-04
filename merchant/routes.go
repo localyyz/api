@@ -14,7 +14,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/merchant/approval"
@@ -93,8 +92,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	shopifyClient := ctx.Value("shopify.client").(*connect.Shopify)
 
 	pageContext := pongo2.Context{
-		"place":    place,
-		"billing":  place.Billing,
+		"place": place,
+		//"billing":  place.Billing,
 		"name":     strings.Replace(url.QueryEscape(place.Name), "+", "%20", -1),
 		"status":   place.Status.String(),
 		"clientID": shopifyClient.ClientID(),
@@ -102,17 +101,17 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	if place.Status == data.PlaceStatusWaitApproval {
 		pageContext["approvalTs"] = place.TOSAgreedAt.Add(1 * 24 * time.Hour)
 	}
-	if place.Billing.Status == shopify.BillingStatusPending {
-		u, err := url.Parse(place.Billing.ConfirmationUrl)
-		if err != nil {
-			lg.Warnf("merchant (%d) malformed billing confirmatin url with: %+v", place.ID, err)
-			return
-		}
-		u.Host = ""
-		u.Scheme = ""
-		u.Path = strings.TrimPrefix(u.Path, "/admin")
-		pageContext["confirmationUrl"] = u.String()
-	}
+	//if place.Billing.Status == shopify.BillingStatusPending {
+	//u, err := url.Parse(place.Billing.ConfirmationUrl)
+	//if err != nil {
+	//lg.Warnf("merchant (%d) malformed billing confirmatin url with: %+v", place.ID, err)
+	//return
+	//}
+	//u.Host = ""
+	//u.Scheme = ""
+	//u.Path = strings.TrimPrefix(u.Path, "/admin")
+	//pageContext["confirmationUrl"] = u.String()
+	//}
 	pageContext["productCount"], _ = data.DB.Product.Find(db.Cond{"place_id": place.ID}).Count()
 
 	// inject a token into the cookie.
