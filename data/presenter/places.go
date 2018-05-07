@@ -12,15 +12,17 @@ import (
 
 type Place struct {
 	*data.Place
-	Locale       *Locale `json:"locale"`
-	ProductCount uint64  `json:"productCount"`
-	Following    bool    `json:"following"`
+	Locale       *Locale           `json:"locale"`
+	ProductCount uint64            `json:"productCount"`
+	Products     []render.Renderer `json:"products"`
+	Following    bool              `json:"following"`
 
-	LatLng  *geotools.LatLng `json:"coords"`
-	Billing interface{}      `json:"billing,omitempty"`
+	IsFeatured bool `json:"isFeatured"`
 
-	TOSAgreedAt interface{} `json:"tosAgreedAt,omitempty"`
-	ApprovedAt  interface{} `json:"approvedAt,omitempty"`
+	LatLng      *geotools.LatLng `json:"coords"`
+	Billing     interface{}      `json:"billing,omitempty"`
+	TOSAgreedAt interface{}      `json:"tosAgreedAt,omitempty"`
+	ApprovedAt  interface{}      `json:"approvedAt,omitempty"`
 
 	ctx context.Context
 }
@@ -32,18 +34,14 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 	}
 	p.ProductCount, _ = data.DB.Product.Find(db.Cond{"place_id": p.ID}).Count()
 
-	if locale, _ := ctx.Value("locale").(*data.Locale); locale != nil {
-		p.Locale = NewLocale(ctx, locale)
-	} else {
-		locale, _ := data.DB.Locale.FindByID(p.LocaleID)
-		p.Locale = NewLocale(ctx, locale)
-	}
-
-	if user, ok := ctx.Value("session.user").(*data.User); ok {
-		count, _ := data.DB.Following.Find(
-			db.Cond{"place_id": p.ID, "user_id": user.ID},
-		).Count()
-		p.Following = (count > 0)
+	if withPreview, ok := ctx.Value("with.preview").(bool); withPreview && ok {
+		cond := db.Cond{"place_id": p.ID}
+		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+			cond["gender"] = gender
+		}
+		var products []*data.Product
+		data.DB.Product.Find(cond).Limit(4).All(&products)
+		p.Products = NewProductList(ctx, products)
 	}
 
 	return p
@@ -65,6 +63,9 @@ func NewPlaceList(ctx context.Context, places []*data.Place) []render.Renderer {
 func (pl *Place) Render(w http.ResponseWriter, r *http.Request) error {
 	if len(pl.Geo.Coordinates) > 1 {
 		pl.LatLng = geotools.LatLngFromPoint(pl.Geo)
+	}
+	if pl.Weight >= data.PlaceFeatureWeightCutoff {
+		pl.IsFeatured = true
 	}
 	return nil
 }

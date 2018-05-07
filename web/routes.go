@@ -15,7 +15,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/cart/express"
 	"bitbucket.org/moodie-app/moodie-api/web/category"
 	"bitbucket.org/moodie-app/moodie-api/web/collection"
-	"bitbucket.org/moodie-app/moodie-api/web/locale"
+	"bitbucket.org/moodie-app/moodie-api/web/designer"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/product"
 	"bitbucket.org/moodie-app/moodie-api/web/search"
@@ -118,10 +118,10 @@ func (h *Handler) Routes() chi.Router {
 		// public api routes
 		r.Mount("/search", search.Routes())
 		r.Mount("/collections", collection.Routes())
+		r.Mount("/categories", category.Routes())
+		r.Mount("/designers", designer.Routes())
 		r.Mount("/places", place.Routes())
 		r.Mount("/products", product.Routes())
-		r.Mount("/categories", category.Routes())
-		r.Mount("/locales", locale.Routes())
 	})
 
 	// Semi-authed route.

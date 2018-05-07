@@ -144,6 +144,8 @@ func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Pagin
 	if p.Page > 1 {
 		return paginator.Page(uint(p.Page))
 	}
+	total, _ := paginator.TotalEntries()
+	p.ItemTotal = int(total)
 	return paginator
 }
 

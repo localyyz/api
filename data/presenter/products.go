@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"sort"
-	"time"
 
 	"github.com/go-chi/render"
 	set "gopkg.in/fatih/set.v0"
@@ -18,6 +17,7 @@ import (
 
 type Product struct {
 	*data.Product
+
 	Variants []*ProductVariant    `json:"variants"`
 	Place    *Place               `json:"place"`
 	Images   []*data.ProductImage `json:"images"`
@@ -25,9 +25,10 @@ type Product struct {
 	Sizes  []string `json:"sizes"`
 	Colors []string `json:"colors"`
 
-	CreateAt  *time.Time `json:"createdAt,omitempty"`
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-	DeleteAt  *time.Time `json:"deletedAt,omitempty"`
+	CreateAt  interface{} `json:"createdAt,omitempty"`
+	UpdatedAt interface{} `json:"updatedAt,omitempty"`
+	DeleteAt  interface{} `json:"deletedAt,omitempty"`
+	Etc       interface{} `json:"etc,omitempty"`
 
 	HtmlDescription  string      `json:"htmlDescription"`
 	NoTagDescription string      `json:"noTagDescription"`
@@ -41,6 +42,7 @@ type VariantImageCache map[int64]int64
 type PlaceCache map[int64]*data.Place
 type ImageCache map[int64][]*data.ProductImage
 type SearchProductList []*Product
+type PreviewProductList []*Product
 
 func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error {
 	for _, v := range l {
@@ -194,13 +196,9 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 				p.ImageURL = img.ImageURL
 			}
 		}
-		// TODO: backwards compart + REMOVE
-		if p.Etc.Images == nil {
-			p.Etc.Images = append(p.Etc.Images, img.ImageURL)
-		}
 	}
 	if len(p.Images) == 0 {
-		for i, imgURL := range p.Etc.Images {
+		for i, imgURL := range p.Product.Etc.Images {
 			p.Images = append(
 				p.Images,
 				&data.ProductImage{ImageURL: imgURL, Ordering: int32(i)},

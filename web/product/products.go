@@ -42,7 +42,37 @@ func ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ListFeaturedProduct(w http.ResponseWriter, r *http.Request) {
+func ListCurated(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
+
+	condGenders := []int{1, 2, 3}
+	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+		condGenders = []int{int(gender)}
+	}
+
+	var products []*data.Product
+	query := data.DB.Select("p.*").
+		From("products p").
+		RightJoin("feature_products fp").
+		On("fp.product_id = p.id").
+		Where(db.Cond{"gender": condGenders}).
+		OrderBy("fp.ordering", "-fp.featured_at")
+
+	paginate := cursor.UpdateQueryBuilder(query)
+	if err := paginate.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	cursor.Update(products)
+
+	presented := presenter.NewProductList(ctx, products)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
+func ListFeatured(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := ctx.Value("cursor").(*api.Page)
 
@@ -58,25 +88,11 @@ func ListFeaturedProduct(w http.ResponseWriter, r *http.Request) {
 		condGenders = []int{int(gender)}
 	}
 
-	// if this is the first page. get the feature_product list
-	var featuredProducts []*data.Product
-	if cursor.Page <= 1 {
-		data.DB.Select("p.*").
-			From("products p").
-			RightJoin("feature_products fp").
-			On("fp.product_id = p.id").
-			Where(db.Cond{"gender": condGenders}).
-			OrderBy("fp.ordering").
-			All(&featuredProducts)
-		cursor.NextPage = true
-	}
-
 	// fetch auto generated products
 	var products []*data.Product
-	if len(featuredProducts) == 0 {
-		dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
-		query := data.DB.Select("*").
-			From(db.Raw(`(
+	dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
+	query := data.DB.Select("*").
+		From(db.Raw(`(
 					SELECT *, row_number() over (partition by place_id) as rank
 					FROM products
 					WHERE place_id IN ?
@@ -84,24 +100,22 @@ func ListFeaturedProduct(w http.ResponseWriter, r *http.Request) {
 					AND deleted_at IS NULL
 					ORDER BY external_id % ?
 				) x`,
-				placeIDs,
-				condGenders,
-				dayOfWeekPlusOne,
-			)).
-			Where(db.Cond{
-				"rank": db.Lt(3),
-			})
+			placeIDs,
+			condGenders,
+			dayOfWeekPlusOne,
+		)).
+		Where(db.Cond{
+			"rank": db.Lt(3),
+		})
 
-		paginate := cursor.UpdateQueryBuilder(query)
-		if err := paginate.All(&products); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-		cursor.Update(products)
+	paginate := cursor.UpdateQueryBuilder(query)
+	if err := paginate.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
 	}
+	cursor.Update(products)
 
-	featuredProducts = append(featuredProducts, products...)
-	presented := presenter.NewProductList(ctx, featuredProducts)
+	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}

@@ -145,8 +145,9 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 	place := ctx.Value("sync.place").(*data.Place)
 
 	var (
-		parsed     = data.Category{Gender: data.ProductGender(place.Gender)}
-		categories = set.New()
+		parsed        = data.Category{Gender: data.ProductGender(place.Gender)}
+		categories    = set.New()
+		categoryCount = map[string]int{}
 	)
 	for _, s := range inputs {
 		tokens := tokenize(s)
@@ -156,12 +157,15 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 		}
 		for _, c := range parseCategory(ctx, tokens) {
 			categories.Add(c)
+			categoryCount[c]++
 		}
 	}
 
 	aggregates := make(aggregateCategory, categories.Size())
 	for i, s := range set.StringSlice(categories) {
-		aggregates[i] = categoryCache[s]
+		c := *categoryCache[s]
+		aggregates[i] = &c
+		aggregates[i].Weight += int32(categoryCount[s])
 	}
 	// sort categories by weight
 	sort.Sort(aggregates)

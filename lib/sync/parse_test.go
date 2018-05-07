@@ -29,6 +29,20 @@ func TestProductCategory(t *testing.T) {
 			Value:   "dress",
 			Mapping: "dresses",
 		},
+		"sunglass": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryAccessory,
+			Value:   "sunglass",
+			Mapping: "sunglasses",
+			Weight:  1,
+		},
+		"coat": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryApparel,
+			Value:   "coat",
+			Mapping: "coats",
+			Weight:  1,
+		},
 	}
 	ctx := context.WithValue(context.Background(), cacheKey, cache)
 
@@ -38,6 +52,17 @@ func TestProductCategory(t *testing.T) {
 			inputs:   []string{"Basic Dress in Light Gray Stine Ladefoged Basic Dress - LGHTGREY"},
 			place:    placeUnisex,
 			expected: cache["dress"],
+		},
+		{
+			name:   "sunglasses",
+			place:  placeFemale,
+			inputs: []string{"Monroe Sunglasses", "Sunglasses", "10 layers, 100% UVA protection, 2017, anti scratch, anti scratch coating, bamboo, cf-vendor-panda, charitable brands, coated lens, coated lenses, coating, color clarity, custom, custom made, durable, eco, eco-conscious, eco-friendly, floa, float in water, floating, Floating Bamboo, impact resistance, interwoven bamboo, lens coating, lenses, light weight, lightweight, men, moso, moso bamboo, newaccessorie, newaccessories, panda, panda sunglasses, panda wear, pandawear, polarized, polarized l, polarized lens, scratch resistance, small business, sunglass, sunglasses, sustainable, uva, UVA Protection, uvb, UVB protection, water, water proof, water proof coat, waterproof, waterproof coating, wayfarers, woven bamboo"},
+			expected: &data.Category{
+				Gender:  data.ProductGenderFemale,
+				Type:    data.CategoryAccessory,
+				Value:   "sunglass",
+				Mapping: "sunglasses",
+			},
 		},
 	}
 

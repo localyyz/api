@@ -32,7 +32,8 @@ type Place struct {
 	TOSIP     string         `db:"tos_ip" json:"-"`
 
 	// metadata
-	IsUsed         bool        `db:"is_used" json:"isUsed"` // merchant sells used goods
+	IsUsed         bool        `db:"is_used" json:"isUsed"`               // merchant sells used goods
+	IsDropShipper  bool        `db:"is_dropshipper" json:"isDropShipper"` // merchant drop shipper
 	FacebookURL    string      `db:"fb_url" json:"facebookUrl"`
 	InstagramURL   string      `db:"instagram_url" json:"instagramUrl"`
 	ShippingPolicy PlacePolicy `db:"shipping_policy" json:"shippingPolicy"`
