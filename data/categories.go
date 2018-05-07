@@ -64,7 +64,7 @@ var (
 		//CategoryFragrance,
 		//CategoryHome,
 		CategoryBag,
-		CategoryLingerie,
+		//CategoryLingerie,
 		CategorySneaker,
 		CategorySwimwear,
 	}
