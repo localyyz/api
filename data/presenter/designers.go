@@ -8,7 +8,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/go-chi/render"
-	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
@@ -50,7 +49,8 @@ var (
 
 func NewDesigner(ctx context.Context, product *data.Product) *Designer {
 	d := &Designer{
-		ID: product.Brand,
+		ID:       product.Brand,
+		Products: []render.Renderer{},
 	}
 
 	{ // product count
@@ -72,33 +72,33 @@ func NewDesigner(ctx context.Context, product *data.Product) *Designer {
 	}
 
 	{
-		if productCache, ok := ctx.Value("product.cache").(map[string][]render.Renderer); ok {
-			d.Products = productCache[d.ID]
-		} else {
-			// product preview
-			cond := db.Cond{"p.deleted_at": nil}
-			if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-				cond["p.gender"] = gender
-			}
+		//if productCache, ok := ctx.Value("product.cache").(map[string][]render.Renderer); ok {
+		//d.Products = productCache[d.ID]
+		//} else {
+		//// product preview
+		//cond := db.Cond{"p.deleted_at": nil}
+		//if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+		//cond["p.gender"] = gender
+		//}
 
-			var products []*data.Product
-			data.DB.Select("p.*").
-				From("products p").
-				Where(
-					db.And(
-						db.Raw(`tsv @@ plainto_tsquery(?)`, d.ID),
-						cond,
-					),
-				).
-				Limit(10).
-				All(&products)
+		//var products []*data.Product
+		//data.DB.Select("p.*").
+		//From("products p").
+		//Where(
+		//db.And(
+		//db.Raw(`tsv @@ plainto_tsquery(?)`, d.ID),
+		//cond,
+		//),
+		//).
+		//Limit(10).
+		//All(&products)
 
-			if pp := NewProductList(ctx, products); len(pp) > 4 {
-				d.Products = pp[:4]
-			} else {
-				d.Products = pp
-			}
-		}
+		//if pp := NewProductList(ctx, products); len(pp) > 4 {
+		//d.Products = pp[:4]
+		//} else {
+		//d.Products = pp
+		//}
+		//}
 	}
 
 	return d
@@ -199,22 +199,20 @@ func NewDesignerList(ctx context.Context, products []*data.Product) []render.Ren
 		parsed = append(parsed, strings.Join(tt, "&"))
 	}
 
-	productCache := make(map[string][]render.Renderer)
-	for _, p := range fetchDesignerProducts(ctx, parsed) {
-		pp := p.(*Product)
-		b := strings.ToLower(pp.Brand)
-		if _, ok := productCache[b]; !ok {
-			productCache[b] = []render.Renderer{}
-		}
-		productCache[b] = append(productCache[b], p)
-	}
-	lg.Warnf("%+v", productCache)
-	ctx = context.WithValue(ctx, "product.cache", productCache)
+	//productCache := make(map[string][]render.Renderer)
+	//for _, p := range fetchDesignerProducts(ctx, parsed) {
+	//pp := p.(*Product)
+	//b := strings.ToLower(pp.Brand)
+	//if _, ok := productCache[b]; !ok {
+	//productCache[b] = []render.Renderer{}
+	//}
+	//productCache[b] = append(productCache[b], p)
+	//}
+	//ctx = context.WithValue(ctx, "product.cache", productCache)
 
 	if cache := fetchDesignerCount(ctx, parsed); cache != nil {
 		ctx = context.WithValue(ctx, "count.cache", cache)
 	}
-
 	for _, p := range products {
 		list = append(list, NewDesigner(ctx, p))
 	}
