@@ -24,11 +24,12 @@ type Product struct {
 
 	Sizes  []string `json:"sizes"`
 	Colors []string `json:"colors"`
+	// TODO: remove + backwards compat
+	Etc ProductEtc `json:"etc,omitempty"`
 
 	CreateAt  interface{} `json:"createdAt,omitempty"`
 	UpdatedAt interface{} `json:"updatedAt,omitempty"`
 	DeleteAt  interface{} `json:"deletedAt,omitempty"`
-	Etc       interface{} `json:"etc,omitempty"`
 
 	HtmlDescription  string      `json:"htmlDescription"`
 	NoTagDescription string      `json:"noTagDescription"`
@@ -37,6 +38,9 @@ type Product struct {
 	ctx context.Context
 }
 
+type ProductEtc struct {
+	Brand string `json:"brand"`
+}
 type VariantCache map[int64][]*ProductVariant
 type VariantImageCache map[int64]int64
 type PlaceCache map[int64]*data.Place
@@ -239,6 +243,7 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Product.Description, -1)
 	p.NoTagDescription = htmlx.StripTags(p.Product.Description)
+	p.Etc = ProductEtc{Brand: p.Brand}
 
 	return nil
 }
