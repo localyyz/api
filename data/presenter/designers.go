@@ -203,7 +203,7 @@ func NewDesignerList(ctx context.Context, products []*data.Product) []render.Ren
 	for _, p := range fetchDesignerProducts(ctx, parsed) {
 		pp := p.(*Product)
 		b := strings.ToLower(pp.Brand)
-		if _, ok := productCache[b]; ok {
+		if _, ok := productCache[b]; !ok {
 			productCache[b] = []render.Renderer{}
 		}
 		productCache[b] = append(productCache[b], p)
