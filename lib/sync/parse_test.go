@@ -54,6 +54,12 @@ func TestProductCategory(t *testing.T) {
 			Value:   "v-neck",
 			Mapping: "",
 		},
+		"face-mask": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryCosmetic,
+			Value:   "face-mask",
+			Mapping: "face mask",
+		},
 	}
 
 	ctx := context.WithValue(context.Background(), cacheKey, cache) //putting it in the context
@@ -88,6 +94,12 @@ func TestProductCategory(t *testing.T) {
 			inputs:   []string{"Fashion Maternity V-neck Short Sleeve Cotton Pregnancy Dress Elastic Waist Dresses"},
 			place:    placeFemale,
 			expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryApparel, Value: "v-neck", Mapping: ""},
+		},
+		{
+			name:     "Face mask",
+			inputs:   []string{"Apple, Aloe & Avocado Face Mask"},
+			place:    placeFemale,
+			expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryCosmetic, Value: "face-mask", Mapping: "face mask"},
 		},
 	}
 
