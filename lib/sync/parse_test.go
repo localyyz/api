@@ -2,16 +2,10 @@ package sync
 
 import (
 	"context"
-	"log"
-	"os"
 	"testing"
 
-	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"github.com/pkg/errors"
 )
-
-const CONFFILE = "../../config/api.conf" //path to configuration file
 
 type tagTest struct {
 	name     string
@@ -29,8 +23,45 @@ var (
 func TestProductCategory(t *testing.T) {
 	t.Parallel()
 
-	ConnectToDB()
-	cache := CreateCategoryCache()
+	cache := map[string]*data.Category{
+		"dress": &data.Category{
+			Gender:  data.ProductGenderFemale,
+			Type:    data.CategoryApparel,
+			Value:   "dress",
+			Mapping: "dresses",
+		},
+		"eau-de-parfum": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryFragrance,
+			Value:   "eau-de-parfum",
+			Mapping: "perfume",
+		},
+		"bag": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryBag,
+			Value:   "bag",
+			Mapping: "",
+		},
+		"sunglass": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryAccessory,
+			Value:   "sunglass",
+			Mapping: "sunglasses",
+		},
+		"v-neck": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryApparel,
+			Value:   "v-neck",
+			Mapping: "",
+		},
+		"flat": &data.Category{
+			Gender:  data.ProductGenderFemale,
+			Type:    data.CategoryShoe,
+			Value:   "flat",
+			Mapping: "flats",
+		},
+	}
+
 	ctx := context.WithValue(context.Background(), cacheKey, cache) //putting it in the context
 
 	tests := []tagTest{
@@ -67,14 +98,8 @@ func TestProductCategory(t *testing.T) {
 		{
 			name:     "Shoe",
 			inputs:   []string{"Merkmak Fashion Camouflage Military Men Unisex Canvas Shoes Men Casual Shoes Autumn Breathable Camo Men Flats Chaussure Femme"},
-			place:    placeUnisex,
+			place:    placeMale,
 			expected: cache["flat"],
-		},
-		{
-			name:     "Handbag",
-			inputs:   []string{"Xiniu Women's Messenger Bags Women Canvas Handbags Ladies Stripe Shoulder Bag bolsa feminina para mujer #GHYW"},
-			place:    placeFemale,
-			expected: cache["shoulder-bag"],
 		},
 	}
 
@@ -232,30 +257,4 @@ func (tt tagTest) compare(t *testing.T, actual data.Category) {
 	if tt.expected.Value != "" && actual.Value != tt.expected.Value {
 		t.Errorf("test '%s': expected category '%s', got '%s'", tt.name, tt.expected.Value, actual.Value)
 	}
-}
-
-/* connects to the DB by loading configuration file */
-func ConnectToDB() {
-	/* loading configuration */
-	confFile := CONFFILE
-	conf, err := config.NewFromFile(confFile, os.Getenv("CONFIG"))
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "Error: Could not load configuration"))
-	}
-
-	/* creating new db session */
-	if _, err = data.NewDBSession(&conf.DB); err != nil {
-		log.Fatal(errors.Wrap(err, "Error: Could not connect to the database"))
-	}
-}
-
-/* gets the categories from the database and puts them in a map */
-func CreateCategoryCache() map[string]*data.Category {
-	cache := make(map[string]*data.Category)
-	if categories, _ := data.DB.Category.FindAll(nil); categories != nil {
-		for _, category := range categories {
-			cache[category.Value] = category
-		}
-	}
-	return cache
 }
