@@ -9,7 +9,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/pkg/errors"
-	db "upper.io/db.v3"
 )
 
 const CONFFILE = "../../config/api.conf" //path to configuration file
@@ -30,8 +29,8 @@ var (
 func TestProductCategory(t *testing.T) {
 	t.Parallel()
 
-	connectToDB()
-	cache := createCategoryCache()
+	ConnectToDB()
+	cache := CreateCategoryCache()
 	ctx := context.WithValue(context.Background(), cacheKey, cache) //putting it in the context
 
 	tests := []tagTest{
@@ -84,51 +83,6 @@ func TestProductCategory(t *testing.T) {
 			ctx = context.WithValue(ctx, "sync.place", tt.place)
 			actual := ParseProduct(ctx, tt.inputs...)
 			tt.compare(t, actual)
-		})
-	}
-}
-
-/**
-NOT REALLY A TEST CASE(very hacky)
-used to update old products in db which were not categorized or categorized poorly
-can be used to update product categories if improvments to categorization is made but MUST change search condition
-run with flag -timeout 9999s
-*/
-func TestUpdateProductCategory(t *testing.T) {
-
-	searchCondition := db.Cond{"category": "{}"}
-
-	connectToDB()
-	ctx := context.WithValue(context.Background(), cacheKey, createCategoryCache())
-
-	/* loading all the products according to the search condition*/
-	var products []*data.Product
-	if err := data.DB.Product.Find(searchCondition).All(&products); err != nil {
-		log.Fatal(errors.Wrap(err, "Error: Could not load products from DB"))
-	}
-
-	/* Snippet below used when testing the function - number of results returned is limited to 5 */
-	/*
-		res := data.DB.Product.Find(db.Cond{"created_at <": "2018-02-01 00:00:00", "category": "{}"}).Limit(5)
-		if err := res.All(&products); err != nil {
-			log.Fatal(errors.Wrap(err, "Error: Could not load products from DB"))
-		}
-	*/
-
-	for _, product := range products {
-		t.Run(product.Title, func(t *testing.T) {
-			if product.Gender == 1 {
-				ctx = context.WithValue(ctx, "sync.place", placeMale)
-			} else if product.Gender == 2 {
-				ctx = context.WithValue(ctx, "sync.place", placeFemale)
-			} else {
-				ctx = context.WithValue(ctx, "sync.place", placeUnisex)
-			}
-			parsedProduct := ParseProduct(ctx, product.Title, product.Description)                        //the categoriztion happens here
-			product.Category = data.ProductCategory{Type: parsedProduct.Type, Value: parsedProduct.Value} //updating the product category in the object
-			if err := data.DB.Product.Update(product); err != nil {                                       //updating db
-				log.Print("Error: Could not update the database entries")
-			}
 		})
 	}
 }
@@ -281,7 +235,7 @@ func (tt tagTest) compare(t *testing.T, actual data.Category) {
 }
 
 /* connects to the DB by loading configuration file */
-func connectToDB() {
+func ConnectToDB() {
 	/* loading configuration */
 	confFile := CONFFILE
 	conf, err := config.NewFromFile(confFile, os.Getenv("CONFIG"))
@@ -296,7 +250,7 @@ func connectToDB() {
 }
 
 /* gets the categories from the database and puts them in a map */
-func createCategoryCache() map[string]*data.Category {
+func CreateCategoryCache() map[string]*data.Category {
 	cache := make(map[string]*data.Category)
 	if categories, _ := data.DB.Category.FindAll(nil); categories != nil {
 		for _, category := range categories {
