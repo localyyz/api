@@ -22,6 +22,7 @@ var (
 
 func TestProductCategory(t *testing.T) {
 	t.Parallel()
+
 	cache := map[string]*data.Category{
 		"dress": &data.Category{
 			Gender:  data.ProductGenderFemale,
@@ -29,40 +30,76 @@ func TestProductCategory(t *testing.T) {
 			Value:   "dress",
 			Mapping: "dresses",
 		},
+		"eau-de-parfum": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryFragrance,
+			Value:   "eau-de-parfum",
+			Mapping: "perfume",
+		},
+		"bag": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryBag,
+			Value:   "bag",
+			Mapping: "",
+		},
 		"sunglass": &data.Category{
 			Gender:  data.ProductGenderUnisex,
 			Type:    data.CategoryAccessory,
 			Value:   "sunglass",
 			Mapping: "sunglasses",
-			Weight:  1,
 		},
-		"coat": &data.Category{
+		"v-neck": &data.Category{
 			Gender:  data.ProductGenderUnisex,
 			Type:    data.CategoryApparel,
-			Value:   "coat",
-			Mapping: "coats",
-			Weight:  1,
+			Value:   "v-neck",
+			Mapping: "",
+		},
+		"face-mask": &data.Category{
+			Gender:  data.ProductGenderUnisex,
+			Type:    data.CategoryCosmetic,
+			Value:   "face-mask",
+			Mapping: "face mask",
 		},
 	}
-	ctx := context.WithValue(context.Background(), cacheKey, cache)
+
+	ctx := context.WithValue(context.Background(), cacheKey, cache) //putting it in the context
 
 	tests := []tagTest{
 		{
-			name:     "parse test",
+			name:     "Dress",
 			inputs:   []string{"Basic Dress in Light Gray Stine Ladefoged Basic Dress - LGHTGREY"},
 			place:    placeUnisex,
 			expected: cache["dress"],
 		},
 		{
-			name:   "sunglasses",
-			place:  placeFemale,
-			inputs: []string{"Monroe Sunglasses", "Sunglasses", "10 layers, 100% UVA protection, 2017, anti scratch, anti scratch coating, bamboo, cf-vendor-panda, charitable brands, coated lens, coated lenses, coating, color clarity, custom, custom made, durable, eco, eco-conscious, eco-friendly, floa, float in water, floating, Floating Bamboo, impact resistance, interwoven bamboo, lens coating, lenses, light weight, lightweight, men, moso, moso bamboo, newaccessorie, newaccessories, panda, panda sunglasses, panda wear, pandawear, polarized, polarized l, polarized lens, scratch resistance, small business, sunglass, sunglasses, sustainable, uva, UVA Protection, uvb, UVB protection, water, water proof, water proof coat, waterproof, waterproof coating, wayfarers, woven bamboo"},
-			expected: &data.Category{
-				Gender:  data.ProductGenderFemale,
-				Type:    data.CategoryAccessory,
-				Value:   "sunglass",
-				Mapping: "sunglasses",
-			},
+			name:     "Perfume",
+			inputs:   []string{"1 Million Prive Eau De Parfum Spray By Paco Rabanne"},
+			place:    placeUnisex,
+			expected: cache["eau-de-parfum"],
+		},
+		{
+			name:     "Bag",
+			inputs:   []string{"new 2017 hot sale fashion men bags, men famous brand design leather messenger bag, high quality man brand bag, wholesale price"},
+			place:    placeMale,
+			expected: &data.Category{Gender: data.ProductGenderMale, Type: data.CategoryBag, Value: "bag", Mapping: ""},
+		},
+		{
+			name:     "Sunglass",
+			inputs:   []string{"Lacoste L829S Brown  Sunglasses RRP £102"},
+			place:    placeUnisex,
+			expected: cache["sunglass"],
+		},
+		{
+			name:     "V-neck dress",
+			inputs:   []string{"Fashion Maternity V-neck Short Sleeve Cotton Pregnancy Dress Elastic Waist Dresses"},
+			place:    placeFemale,
+			expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryApparel, Value: "v-neck", Mapping: ""},
+		},
+		{
+			name:     "Face mask",
+			inputs:   []string{"Apple, Aloe & Avocado Face Mask"},
+			place:    placeFemale,
+			expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryCosmetic, Value: "face-mask", Mapping: "face mask"},
 		},
 	}
 
@@ -73,7 +110,6 @@ func TestProductCategory(t *testing.T) {
 			tt.compare(t, actual)
 		})
 	}
-
 }
 
 func TestProductGender(t *testing.T) {
