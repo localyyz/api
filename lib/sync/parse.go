@@ -24,6 +24,7 @@ var (
 		"boxer-trunk",
 		"eau-de-toilette",
 		"eau-de-parfum",
+		"eau-de-cologne",
 		"pocket-square",
 		"shoulder-bag",
 		"sleeping-bag",

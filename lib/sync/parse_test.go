@@ -2,10 +2,17 @@ package sync
 
 import (
 	"context"
+	"log"
+	"os"
 	"testing"
 
+	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/pkg/errors"
+	db "upper.io/db.v3"
 )
+
+const CONFFILE = "../../config/api.conf" //path to configuration file
 
 type tagTest struct {
 	name     string
@@ -22,47 +29,53 @@ var (
 
 func TestProductCategory(t *testing.T) {
 	t.Parallel()
-	cache := map[string]*data.Category{
-		"dress": &data.Category{
-			Gender:  data.ProductGenderFemale,
-			Type:    data.CategoryApparel,
-			Value:   "dress",
-			Mapping: "dresses",
-		},
-		"sunglass": &data.Category{
-			Gender:  data.ProductGenderUnisex,
-			Type:    data.CategoryAccessory,
-			Value:   "sunglass",
-			Mapping: "sunglasses",
-			Weight:  1,
-		},
-		"coat": &data.Category{
-			Gender:  data.ProductGenderUnisex,
-			Type:    data.CategoryApparel,
-			Value:   "coat",
-			Mapping: "coats",
-			Weight:  1,
-		},
-	}
-	ctx := context.WithValue(context.Background(), cacheKey, cache)
+
+	connectToDB()
+	cache := createCategoryCache()
+	ctx := context.WithValue(context.Background(), cacheKey, cache) //putting it in the context
 
 	tests := []tagTest{
 		{
-			name:     "parse test",
+			name:     "Dress",
 			inputs:   []string{"Basic Dress in Light Gray Stine Ladefoged Basic Dress - LGHTGREY"},
 			place:    placeUnisex,
 			expected: cache["dress"],
 		},
 		{
-			name:   "sunglasses",
-			place:  placeFemale,
-			inputs: []string{"Monroe Sunglasses", "Sunglasses", "10 layers, 100% UVA protection, 2017, anti scratch, anti scratch coating, bamboo, cf-vendor-panda, charitable brands, coated lens, coated lenses, coating, color clarity, custom, custom made, durable, eco, eco-conscious, eco-friendly, floa, float in water, floating, Floating Bamboo, impact resistance, interwoven bamboo, lens coating, lenses, light weight, lightweight, men, moso, moso bamboo, newaccessorie, newaccessories, panda, panda sunglasses, panda wear, pandawear, polarized, polarized l, polarized lens, scratch resistance, small business, sunglass, sunglasses, sustainable, uva, UVA Protection, uvb, UVB protection, water, water proof, water proof coat, waterproof, waterproof coating, wayfarers, woven bamboo"},
-			expected: &data.Category{
-				Gender:  data.ProductGenderFemale,
-				Type:    data.CategoryAccessory,
-				Value:   "sunglass",
-				Mapping: "sunglasses",
-			},
+			name:     "Perfume",
+			inputs:   []string{"1 Million Prive Eau De Parfum Spray By Paco Rabanne"},
+			place:    placeUnisex,
+			expected: cache["eau-de-parfum"],
+		},
+		{
+			name:     "Bag",
+			inputs:   []string{"new 2017 hot sale fashion men bags, men famous brand design leather messenger bag, high quality man brand bag, wholesale price"},
+			place:    placeMale,
+			expected: cache["bag"],
+		},
+		{
+			name:     "Sunglass",
+			inputs:   []string{"Lacoste L829S Brown  Sunglasses RRP £102"},
+			place:    placeUnisex,
+			expected: cache["sunglass"],
+		},
+		{
+			name:     "Vneck",
+			inputs:   []string{"Fashion Maternity V-neck Short Sleeve Cotton Pregnancy Dress Elastic Waist Dresses"},
+			place:    placeUnisex,
+			expected: cache["v-neck"],
+		},
+		{
+			name:     "Shoe",
+			inputs:   []string{"Merkmak Fashion Camouflage Military Men Unisex Canvas Shoes Men Casual Shoes Autumn Breathable Camo Men Flats Chaussure Femme"},
+			place:    placeUnisex,
+			expected: cache["flat"],
+		},
+		{
+			name:     "Handbag",
+			inputs:   []string{"Xiniu Women's Messenger Bags Women Canvas Handbags Ladies Stripe Shoulder Bag bolsa feminina para mujer #GHYW"},
+			place:    placeFemale,
+			expected: cache["shoulder-bag"],
 		},
 	}
 
@@ -73,7 +86,51 @@ func TestProductCategory(t *testing.T) {
 			tt.compare(t, actual)
 		})
 	}
+}
 
+/**
+NOT REALLY A TEST CASE(very hacky)
+used to update old products in db which were not categorized or categorized poorly
+can be used to update product categories if improvments to categorization is made but MUST change search condition
+run with flag -timeout 9999s
+*/
+func TestUpdateProductCategory(t *testing.T) {
+
+	searchCondition := db.Cond{"category": "{}"}
+
+	connectToDB()
+	ctx := context.WithValue(context.Background(), cacheKey, createCategoryCache())
+
+	/* loading all the products according to the search condition*/
+	var products []*data.Product
+	if err := data.DB.Product.Find(searchCondition).All(&products); err != nil {
+		log.Fatal(errors.Wrap(err, "Error: Could not load products from DB"))
+	}
+
+	/* Snippet below used when testing the function - number of results returned is limited to 5 */
+	/*
+		res := data.DB.Product.Find(db.Cond{"created_at <": "2018-02-01 00:00:00", "category": "{}"}).Limit(5)
+		if err := res.All(&products); err != nil {
+			log.Fatal(errors.Wrap(err, "Error: Could not load products from DB"))
+		}
+	*/
+
+	for _, product := range products {
+		t.Run(product.Title, func(t *testing.T) {
+			if product.Gender == 1 {
+				ctx = context.WithValue(ctx, "sync.place", placeMale)
+			} else if product.Gender == 2 {
+				ctx = context.WithValue(ctx, "sync.place", placeFemale)
+			} else {
+				ctx = context.WithValue(ctx, "sync.place", placeUnisex)
+			}
+			parsedProduct := ParseProduct(ctx, product.Title, product.Description)                        //the categoriztion happens here
+			product.Category = data.ProductCategory{Type: parsedProduct.Type, Value: parsedProduct.Value} //updating the product category in the object
+			if err := data.DB.Product.Update(product); err != nil {                                       //updating db
+				log.Print("Error: Could not update the database entries")
+			}
+		})
+	}
 }
 
 func TestProductGender(t *testing.T) {
@@ -221,4 +278,30 @@ func (tt tagTest) compare(t *testing.T, actual data.Category) {
 	if tt.expected.Value != "" && actual.Value != tt.expected.Value {
 		t.Errorf("test '%s': expected category '%s', got '%s'", tt.name, tt.expected.Value, actual.Value)
 	}
+}
+
+/* connects to the DB by loading configuration file */
+func connectToDB() {
+	/* loading configuration */
+	confFile := CONFFILE
+	conf, err := config.NewFromFile(confFile, os.Getenv("CONFIG"))
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "Error: Could not load configuration"))
+	}
+
+	/* creating new db session */
+	if _, err = data.NewDBSession(&conf.DB); err != nil {
+		log.Fatal(errors.Wrap(err, "Error: Could not connect to the database"))
+	}
+}
+
+/* gets the categories from the database and puts them in a map */
+func createCategoryCache() map[string]*data.Category {
+	cache := make(map[string]*data.Category)
+	if categories, _ := data.DB.Category.FindAll(nil); categories != nil {
+		for _, category := range categories {
+			cache[category.Value] = category
+		}
+	}
+	return cache
 }
