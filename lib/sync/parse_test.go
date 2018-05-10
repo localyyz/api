@@ -54,12 +54,6 @@ func TestProductCategory(t *testing.T) {
 			Value:   "v-neck",
 			Mapping: "",
 		},
-		"flat": &data.Category{
-			Gender:  data.ProductGenderFemale,
-			Type:    data.CategoryShoe,
-			Value:   "flat",
-			Mapping: "flats",
-		},
 	}
 
 	ctx := context.WithValue(context.Background(), cacheKey, cache) //putting it in the context
@@ -81,7 +75,7 @@ func TestProductCategory(t *testing.T) {
 			name:     "Bag",
 			inputs:   []string{"new 2017 hot sale fashion men bags, men famous brand design leather messenger bag, high quality man brand bag, wholesale price"},
 			place:    placeMale,
-			expected: cache["bag"],
+			expected: &data.Category{Gender: data.ProductGenderMale, Type: data.CategoryBag, Value: "bag", Mapping: ""},
 		},
 		{
 			name:     "Sunglass",
@@ -90,16 +84,10 @@ func TestProductCategory(t *testing.T) {
 			expected: cache["sunglass"],
 		},
 		{
-			name:     "Vneck",
+			name:     "V-neck dress",
 			inputs:   []string{"Fashion Maternity V-neck Short Sleeve Cotton Pregnancy Dress Elastic Waist Dresses"},
-			place:    placeUnisex,
-			expected: cache["v-neck"],
-		},
-		{
-			name:     "Shoe",
-			inputs:   []string{"Merkmak Fashion Camouflage Military Men Unisex Canvas Shoes Men Casual Shoes Autumn Breathable Camo Men Flats Chaussure Femme"},
-			place:    placeMale,
-			expected: cache["flat"],
+			place:    placeFemale,
+			expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryApparel, Value: "v-neck", Mapping: ""},
 		},
 	}
 
