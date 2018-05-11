@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -176,4 +177,38 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 		}
 	}
 	return parsed
+}
+
+/*
+	Searches the blacklist for the range of inputs given
+	Returns true if found
+	Returns false if not found
+*/
+func SearchBlackList(inputs ...string) bool {
+	// load up the blacklist from the DB
+	blacklist, err := data.DB.Blacklist.FindAll(nil)
+	if err != nil {
+		log.Print("Error: could not load blacklist from db")
+	}
+
+	//putting into a map gives faster searching rather than searching the entire array each time
+	word_map := make(map[string]string, len(blacklist))
+
+	// filling up the map like wifi => wifi (example)
+	for _, val := range blacklist {
+		word_map[val.Word] = val.Word
+	}
+
+	// iterating over each input
+	for _, s := range inputs {
+		tokens := tokenize(s)
+		// searching if any of the tokens is in the blacklist
+		for _, token := range tokens {
+			if _, found := word_map[token]; found {
+				return true
+				break
+			}
+		}
+	}
+	return false
 }

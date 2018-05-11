@@ -21,6 +21,7 @@ type Product struct {
 	Etc         ProductEtc    `db:"etc" json:"etc"`
 
 	Category ProductCategory `db:"category" json:"category"`
+	Status   ProductStatus   `db:"product_status" json:"product_status"`
 
 	// external id
 	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
@@ -36,6 +37,15 @@ type ProductCategory struct {
 	Value string       `json:"value,omitempty"`
 	*postgresql.JSONBConverter
 }
+
+type ProductStatus uint32
+
+const (
+	_                     ProductStatus = iota //0
+	ProductStatusPending                       //1
+	ProductStatusApproved                      //2
+	ProductStatusRejected                      //3
+)
 
 type ProductGender uint32
 

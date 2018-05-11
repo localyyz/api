@@ -2,10 +2,16 @@ package sync
 
 import (
 	"context"
+	"log"
+	"os"
 	"testing"
 
+	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/pkg/errors"
 )
+
+const CONFFILE = "../../config/api.conf" //path to configuration file
 
 type tagTest struct {
 	name     string
@@ -183,6 +189,53 @@ func TestProductGender(t *testing.T) {
 			actual := ParseProduct(ctx, tt.inputs...)
 			tt.compare(t, actual)
 		})
+	}
+}
+
+func TestProductBlacklist(t *testing.T) {
+
+	/* need to create a db session since SearchBlackList looks up the db for keywords */
+	/* loading configuration */
+	confFile := CONFFILE
+	conf, err := config.NewFromFile(confFile, os.Getenv("CONFIG"))
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "Error: Could not load configuration"))
+	}
+
+	/* creating new db session */
+	if _, err = data.NewDBSession(&conf.DB); err != nil {
+		log.Fatal(errors.Wrap(err, "Error: Could not connect to the database"))
+	}
+
+	/* all values from db */
+	var products = []string{
+		"Original Apple iPhone 7 2GB",
+		"Fashion  Phone Case For iPhone 6s Plu Luxurious Simple Love Heart Soft TPU Blue Pink  For iPhone 7 8 7 Plus X",
+		"High Speed 1m 2m HDMI 2.0 Cable HDMI Male To HDMI Male Cabo For HD TV LCD Laptop PC PS3 Projector Displayer Cable V2 4k 3D 1080p",
+		"Wall stickers big 3d decor large mirror pattern surface DIY wall sticker",
+		"5500W instantaneous water heater tap water heater instant water heater electric shower free shipping",
+		"2PCS Screen Protector Glass Huawei Honor 5C Tempered Glass For Huawei Honor 5C Glass Anti-scratch Phone Film Honor 5C WolfRule [",
+		"Car Air Ozonizer - Air Purifier",
+		"3M Bearing Skip Rope Cord Speed Fitness Aerobic Jumping Exercise Equipment Adjustable Boxing Skipping Sport Jump Ropes",
+		"18cm Molex to SATA HDD Hard Drive Power Cord",
+		"FALCONEYES Honeycomb Grip with 10 color flash gels set for Canon Nikon YONGNUO Metz Nissin Flash Gun Speedlites",
+		"Garlic Press  Very Sharp Stainless Steel Blades, Inbuilt Clear Plastic Tray, Green",
+		"[SHIJUEHEZI] Outer Space Planets 3D Wall Stickers Cosmic Galaxy Wall Decals for Kids Room Baby Bedroom Ceiling Floor Decoration",
+		"360 Degree Rotation Cycling Bike Bicycle Flashlight Torch Mount LED Head Front Light Holder Clip Bicycle Accessories",
+		"Cafe Is Life Mug",
+		"Kids DIY Garden Starter Growing Kit - Teach a child how to grow a home grown garden",
+		"Royal Blue Passport Cover",
+		"6 stick 3D colorful patterns makeup brush a set",
+		"I Really Fucked That Up Letterpress Card",
+		"Sperm Whale Brush",
+		"Cinderella Picture Book - Free Shipping",
+	}
+
+	for _, val := range products {
+		blacklisted := SearchBlackList(val)
+		if !blacklisted {
+			t.Error("Fail: ", val)
+		}
 	}
 }
 
