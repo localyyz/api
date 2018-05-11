@@ -57,12 +57,27 @@ func CategoryTypeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
+var (
+	displayCategories = []data.CategoryType{
+		data.CategoryApparel,
+		data.CategoryHandbag,
+		data.CategoryShoe,
+		data.CategoryJewelry,
+		data.CategoryAccessory,
+		data.CategoryCosmetic,
+		//data.CategoryFragrance,
+		data.CategorySneaker,
+		data.CategoryLingerie,
+		data.CategorySwimwear,
+	}
+)
+
 func List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 		ctx = context.WithValue(ctx, "product.gender", gender)
 	}
-	render.RenderList(w, r, presenter.NewCategoryList(ctx, data.Categories))
+	render.RenderList(w, r, presenter.NewCategoryList(ctx, displayCategories))
 }
 
 func GetCategory(w http.ResponseWriter, r *http.Request) {
