@@ -14,6 +14,7 @@ import (
 )
 
 const cacheKey = `category.cache`
+const cacheKeyBlacklist = `category.blacklist`
 
 var (
 	tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
@@ -200,4 +201,41 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 		}
 	}
 	return parsed
+}
+
+/*
+	Searches the blacklist for the range of inputs given
+	Returns true if found
+	Returns false if not found
+*/
+func SearchBlackList(ctx context.Context, inputs ...string) bool {
+
+	blackListCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
+	if blackListCache == nil {
+		//blacklist not in context generate it here
+		blacklist, _ := data.DB.Blacklist.FindAll(nil)
+		if blacklist != nil {
+			blackListWordMap := make(map[string]*data.Blacklist, len(blacklist))
+			for _, word := range blacklist {
+				blackListWordMap[word.Word] = word
+			}
+			blackListCache = blackListWordMap
+		} else {
+			return false
+		}
+		ctx = context.WithValue(ctx, cacheKeyBlacklist, blackListCache)
+	}
+
+	// iterating over each input
+	for _, s := range inputs {
+		tokens := tokenize(s)
+		// searching if any of the tokens is in the blacklist
+		for _, token := range tokens {
+			if _, found := blackListCache[token]; found {
+				return true
+				break
+			}
+		}
+	}
+	return false
 }

@@ -45,6 +45,9 @@ func New(DB *data.Database) *Handler {
 	if categories, _ := DB.Category.FindAll(nil); categories != nil {
 		shopify.SetupCategoryCache(categories...)
 	}
+	if blacklist, _ := DB.Blacklist.FindAll(nil); blacklist != nil {
+		shopify.SetupCategoryBlacklistCache(blacklist...)
+	}
 	return &Handler{DB: DB}
 }
 
@@ -55,6 +58,9 @@ func NewWebhookHandler(DB *data.Database) *Handler {
 	}
 	if categories, _ := DB.Category.FindAll(nil); categories != nil {
 		shopify.SetupCategoryCache(categories...)
+	}
+	if blacklist, _ := DB.Blacklist.FindAll(nil); blacklist != nil {
+		shopify.SetupCategoryBlacklistCache(blacklist...)
 	}
 	return &Handler{DB: DB}
 }

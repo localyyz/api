@@ -247,6 +247,95 @@ func TestProductGender(t *testing.T) {
 	}
 }
 
+func TestProductBlacklist(t *testing.T) {
+
+	cache := map[string]*data.Blacklist{
+		"iphone": &data.Blacklist{
+			Word: "iphone",
+		},
+		"phone": &data.Blacklist{
+			Word: "phone",
+		},
+		"lcd": &data.Blacklist{
+			Word: "lcd",
+		},
+		"diy": &data.Blacklist{
+			Word: "diy",
+		},
+		"electric": &data.Blacklist{
+			Word: "electric",
+		},
+		"car": &data.Blacklist{
+			Word: "car",
+		},
+		"equipment": &data.Blacklist{
+			Word: "equipment",
+		},
+		"hdd": &data.Blacklist{
+			Word: "hdd",
+		},
+		"canon": &data.Blacklist{
+			Word: "canon",
+		},
+		"tray": &data.Blacklist{
+			Word: "tray",
+		},
+		"3d": &data.Blacklist{
+			Word: "3d",
+		},
+		"bicycle": &data.Blacklist{
+			Word: "bicycle",
+		},
+		"mug": &data.Blacklist{
+			Word: "mug",
+		},
+		"passport": &data.Blacklist{
+			Word: "passport",
+		},
+		"card": &data.Blacklist{
+			Word: "card",
+		},
+		"brush": &data.Blacklist{
+			Word: "brush",
+		},
+		"book": &data.Blacklist{
+			Word: "book",
+		},
+	}
+	ctx := context.WithValue(context.Background(), cacheKeyBlacklist, cache)
+
+	/* all values from db */
+	var products = []string{
+		"Original Apple iPhone 7 2GB",
+		"Fashion  Phone Case For iPhone 6s Plu Luxurious Simple Love Heart Soft TPU Blue Pink  For iPhone 7 8 7 Plus X",
+		"High Speed 1m 2m HDMI 2.0 Cable HDMI Male To HDMI Male Cabo For HD TV LCD Laptop PC PS3 Projector Displayer Cable V2 4k 3D 1080p",
+		"Wall stickers big 3d decor large mirror pattern surface DIY wall sticker",
+		"5500W instantaneous water heater tap water heater instant water heater electric shower free shipping",
+		"2PCS Screen Protector Glass Huawei Honor 5C Tempered Glass For Huawei Honor 5C Glass Anti-scratch Phone Film Honor 5C WolfRule [",
+		"Car Air Ozonizer - Air Purifier",
+		"3M Bearing Skip Rope Cord Speed Fitness Aerobic Jumping Exercise Equipment Adjustable Boxing Skipping Sport Jump Ropes",
+		"18cm Molex to SATA HDD Hard Drive Power Cord",
+		"FALCONEYES Honeycomb Grip with 10 color flash gels set for Canon Nikon YONGNUO Metz Nissin Flash Gun Speedlites",
+		"Garlic Press  Very Sharp Stainless Steel Blades, Inbuilt Clear Plastic Tray, Green",
+		"[SHIJUEHEZI] Outer Space Planets 3D Wall Stickers Cosmic Galaxy Wall Decals for Kids Room Baby Bedroom Ceiling Floor Decoration",
+		"360 Degree Rotation Cycling Bike Bicycle Flashlight Torch Mount LED Head Front Light Holder Clip Bicycle Accessories",
+		"Cafe Is Life Mug",
+		"Kids DIY Garden Starter Growing Kit - Teach a child how to grow a home grown garden",
+		"Royal Blue Passport Cover",
+		"6 stick 3D colorful patterns makeup brush a set",
+		"I Really Fucked That Up Letterpress Card",
+		"Sperm Whale Brush",
+		"Cinderella Picture Book - Free Shipping",
+	}
+
+	for _, val := range products {
+		blacklisted := SearchBlackList(ctx, val)
+		if !blacklisted {
+			t.Error("Fail: ", val)
+		}
+	}
+}
+
 func (tt tagTest) compare(t *testing.T, actual data.Category) {
 	if actual.Gender != tt.expected.Gender {
 		t.Errorf("test '%s': expected gender '%v', got '%v'", tt.name, tt.expected.Gender, actual.Gender)

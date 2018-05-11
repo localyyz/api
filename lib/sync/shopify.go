@@ -168,11 +168,21 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		// find product category + gender
 		parsedData := ParseProduct(ctx, p.Title, p.Tags, p.ProductType)
 		product.Gender = parsedData.Gender
-		if len(parsedData.Value) > 0 {
+
+		if len(parsedData.Value) > 0 { //we were able to tag into a category
 			product.Category = data.ProductCategory{Type: parsedData.Type, Value: parsedData.Value}
+			product.Status = data.ProductStatusApproved
 		} else {
-			lg.Warnf("parseTags: pl(%s) pr(%s) gnd(%v) without category", place.Name, p.Handle, product.Gender)
+			//we were not able to pick up a category
+			//look in the blacklist
+			//if not in blacklist mark as pending
+			if blacklisted := SearchBlackList(ctx, p.Title, p.Tags, p.ProductType); blacklisted {
+				product.Status = data.ProductStatusRejected
+			} else {
+				product.Status = data.ProductStatusPending
+			}
 		}
+
 		// save product to database. Exit if fail
 		if err := data.DB.Product.Save(product); err != nil {
 			return errors.Wrap(err, "failed to save product")

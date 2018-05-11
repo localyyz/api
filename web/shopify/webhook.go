@@ -42,6 +42,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	case shopify.TopicProductListingsAdd:
 		ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
 		ctx = context.WithValue(ctx, "category.cache", categoryCache)
+		ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
 		if err := sync.ShopifyProductListingsCreate(ctx); err != nil {
 			lg.Warnf("webhook: productAdd for place(%s) failed with %v", place.Name, err)
 			return

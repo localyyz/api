@@ -35,6 +35,7 @@ type Database struct {
 
 	ShopifyCred    ShopifyCredStore
 	Category       CategoryStore
+	Blacklist      BlacklistStore
 	FeatureProduct FeatureProductStore
 	Share          ShareStore
 	Webhook        WebhookStore
@@ -104,6 +105,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 
 	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}
 	db.Category = CategoryStore{db.Store(&Category{})}
+	db.Blacklist = BlacklistStore{db.Store(&Blacklist{})}
 	db.FeatureProduct = FeatureProductStore{db.Store(&FeatureProduct{})}
 	db.Share = ShareStore{db.Store(&Share{})}
 	db.Webhook = WebhookStore{db.Store(&Webhook{})}

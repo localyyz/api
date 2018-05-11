@@ -21,6 +21,7 @@ type Product struct {
 	Etc         ProductEtc    `db:"etc" json:"etc"`
 
 	Category ProductCategory `db:"category" json:"category"`
+	Status   ProductStatus   `db:"status" json:"status"`
 
 	// external id
 	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
@@ -36,6 +37,18 @@ type ProductCategory struct {
 	Value string       `json:"value,omitempty"`
 	*postgresql.JSONBConverter
 }
+
+var productStatuses = []string{"-", "pending", "processing", "approved", "rejected"}
+
+type ProductStatus uint32
+
+const (
+	_                       ProductStatus = iota //0
+	ProductStatusPending                         //1
+	ProductStatusProcessing                      //2
+	ProductStatusApproved                        //3
+	ProductStatusRejected                        //4
+)
 
 type ProductGender uint32
 
@@ -155,4 +168,26 @@ func (s *ProductGender) UnmarshalText(text []byte) error {
 		}
 	}
 	return fmt.Errorf("unknown product gender %s", enum)
+}
+
+// String returns the string value of the status.
+func (s ProductStatus) String() string {
+	return productStatuses[s]
+}
+
+// MarshalText satisfies TextMarshaler
+func (s ProductStatus) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (s *ProductStatus) UnmarshalText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(productStatuses); i++ {
+		if enum == productStatuses[i] {
+			*s = ProductStatus(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown product status %s", enum)
 }
