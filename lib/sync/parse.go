@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -15,6 +14,7 @@ import (
 )
 
 const cacheKey = `category.cache`
+const cacheKeyBlacklist = `category.blacklist`
 
 var (
 	tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
@@ -184,19 +184,22 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 	Returns true if found
 	Returns false if not found
 */
-func SearchBlackList(inputs ...string) bool {
-	// load up the blacklist from the DB
-	blacklist, err := data.DB.Blacklist.FindAll(nil)
-	if err != nil {
-		log.Print("Error: could not load blacklist from db")
-	}
+func SearchBlackList(ctx context.Context, inputs ...string) bool {
 
-	//putting into a map gives faster searching rather than searching the entire array each time
-	word_map := make(map[string]string, len(blacklist))
-
-	// filling up the map like wifi => wifi (example)
-	for _, val := range blacklist {
-		word_map[val.Word] = val.Word
+	blackListCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
+	if blackListCache == nil {
+		//blacklist not in context generate it here
+		blacklist, _ := data.DB.Blacklist.FindAll(nil)
+		if blacklist != nil {
+			blackListWordMap := make(map[string]*data.Blacklist, len(blacklist))
+			for _, word := range blacklist {
+				blackListWordMap[word.Word] = word
+			}
+			blackListCache = blackListWordMap
+		} else {
+			return false
+		}
+		ctx = context.WithValue(ctx, cacheKeyBlacklist, blackListCache)
 	}
 
 	// iterating over each input
@@ -204,7 +207,7 @@ func SearchBlackList(inputs ...string) bool {
 		tokens := tokenize(s)
 		// searching if any of the tokens is in the blacklist
 		for _, token := range tokens {
-			if _, found := word_map[token]; found {
+			if _, found := blackListCache[token]; found {
 				return true
 				break
 			}

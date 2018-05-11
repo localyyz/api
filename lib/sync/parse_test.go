@@ -2,13 +2,9 @@ package sync
 
 import (
 	"context"
-	"log"
-	"os"
 	"testing"
 
-	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"github.com/pkg/errors"
 )
 
 const CONFFILE = "../../config/api.conf" //path to configuration file
@@ -194,18 +190,60 @@ func TestProductGender(t *testing.T) {
 
 func TestProductBlacklist(t *testing.T) {
 
-	/* need to create a db session since SearchBlackList looks up the db for keywords */
-	/* loading configuration */
-	confFile := CONFFILE
-	conf, err := config.NewFromFile(confFile, os.Getenv("CONFIG"))
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "Error: Could not load configuration"))
+	cache := map[string]*data.Blacklist{
+		"iphone": &data.Blacklist{
+			Word: "iphone",
+		},
+		"phone": &data.Blacklist{
+			Word: "phone",
+		},
+		"lcd": &data.Blacklist{
+			Word: "lcd",
+		},
+		"diy": &data.Blacklist{
+			Word: "diy",
+		},
+		"electric": &data.Blacklist{
+			Word: "electric",
+		},
+		"car": &data.Blacklist{
+			Word: "car",
+		},
+		"equipment": &data.Blacklist{
+			Word: "equipment",
+		},
+		"hdd": &data.Blacklist{
+			Word: "hdd",
+		},
+		"canon": &data.Blacklist{
+			Word: "canon",
+		},
+		"tray": &data.Blacklist{
+			Word: "tray",
+		},
+		"3d": &data.Blacklist{
+			Word: "3d",
+		},
+		"bicycle": &data.Blacklist{
+			Word: "bicycle",
+		},
+		"mug": &data.Blacklist{
+			Word: "mug",
+		},
+		"passport": &data.Blacklist{
+			Word: "passport",
+		},
+		"card": &data.Blacklist{
+			Word: "card",
+		},
+		"brush": &data.Blacklist{
+			Word: "brush",
+		},
+		"book": &data.Blacklist{
+			Word: "book",
+		},
 	}
-
-	/* creating new db session */
-	if _, err = data.NewDBSession(&conf.DB); err != nil {
-		log.Fatal(errors.Wrap(err, "Error: Could not connect to the database"))
-	}
+	ctx := context.WithValue(context.Background(), cacheKeyBlacklist, cache)
 
 	/* all values from db */
 	var products = []string{
@@ -232,7 +270,7 @@ func TestProductBlacklist(t *testing.T) {
 	}
 
 	for _, val := range products {
-		blacklisted := SearchBlackList(val)
+		blacklisted := SearchBlackList(ctx, val)
 		if !blacklisted {
 			t.Error("Fail: ", val)
 		}

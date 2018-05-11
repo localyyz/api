@@ -31,7 +31,6 @@ type Database struct {
 	Product        ProductStore
 	ProductVariant ProductVariantStore
 	ProductImage   ProductImageStore
-	ProductQueue   ProductQueueStore
 	VariantImage   VariantImageStore
 
 	ShopifyCred    ShopifyCredStore
@@ -102,7 +101,6 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Product = ProductStore{db.Store(&Product{})}
 	db.ProductVariant = ProductVariantStore{db.Store(&ProductVariant{})}
 	db.ProductImage = ProductImageStore{db.Store(&ProductImage{})}
-	db.ProductQueue = ProductQueueStore{db.Store(&ProductQueue{})}
 	db.VariantImage = VariantImageStore{db.Store(&VariantImage{})}
 
 	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}

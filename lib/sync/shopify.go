@@ -175,17 +175,11 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		} else {
 			//we were not able to pick up a category
 			//look in the blacklist
-			//if not in blacklist store in queue table
-			if blacklisted := SearchBlackList(p.Title, p.Tags, p.ProductType); blacklisted {
+			//if not in blacklist mark as pending
+			if blacklisted := SearchBlackList(ctx, p.Title, p.Tags, p.ProductType); blacklisted {
 				product.Status = data.ProductStatusRejected
 			} else {
 				product.Status = data.ProductStatusPending
-				/* save product to product_queue table */
-				productQueue := &data.ProductQueue{Id: product.ID, ImageURL: product.ImageURL}
-				err := data.DB.ProductQueue.Save(productQueue)
-				if err != nil {
-					lg.Warn("Could not Save Product in product queue", product.ID, product.Title)
-				}
 			}
 		}
 

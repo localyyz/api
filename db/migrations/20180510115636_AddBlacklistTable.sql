@@ -2,7 +2,7 @@
 -- +goose Up
 -- SQL in section 'Up' is executed when this migration is applied
 CREATE TABLE blacklist (
-    word varchar(30) NOT NULL
+    word varchar(256) NOT NULL
 );
 
 -- +goose Down

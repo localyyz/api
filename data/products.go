@@ -21,7 +21,7 @@ type Product struct {
 	Etc         ProductEtc    `db:"etc" json:"etc"`
 
 	Category ProductCategory `db:"category" json:"category"`
-	Status   ProductStatus   `db:"product_status" json:"product_status"`
+	Status   ProductStatus   `db:"status" json:"product_status"`
 
 	// external id
 	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
@@ -41,10 +41,11 @@ type ProductCategory struct {
 type ProductStatus uint32
 
 const (
-	_                     ProductStatus = iota //0
-	ProductStatusPending                       //1
-	ProductStatusApproved                      //2
-	ProductStatusRejected                      //3
+	_                       ProductStatus = iota //0
+	ProductStatusPending                         //1
+	ProductStatusProcessing                      //2
+	ProductStatusApproved                        //3
+	ProductStatusRejected                        //4
 )
 
 type ProductGender uint32
