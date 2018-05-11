@@ -7,8 +7,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 )
 
-const CONFFILE = "../../config/api.conf" //path to configuration file
-
 type tagTest struct {
 	name     string
 	inputs   []string
