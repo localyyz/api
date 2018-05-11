@@ -113,17 +113,13 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	designer := ctx.Value("designer").(string)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	cond := db.Cond{
-		"p.deleted_at": nil,
-		"pv.limits":    db.Gt(0),
-	}
+	cond := db.Cond{"p.deleted_at": nil}
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 		cond["p.gender"] = data.ProductGender(gender)
 	}
 
 	query := data.DB.Select("p.*").
 		From("products p").
-		LeftJoin("product_variants pv").On("pv.product_id = p.id").
 		LeftJoin("places pl").On("pl.id = p.place_id").
 		Where(db.And(
 			db.Raw(`p.tsv @@ plainto_tsquery(?)`, designer),

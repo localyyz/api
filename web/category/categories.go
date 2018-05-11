@@ -81,25 +81,23 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 
 	cond := db.Cond{
-		db.Raw("category->>'type'"):  categoryType.String(),
-		db.Raw("p.created_at::date"): db.Lt(db.Raw("NOW()::date - 1")),
-		"p.deleted_at":               nil,
+		db.Raw("category->>'type'"): categoryType.String(),
+		db.Raw("created_at::date"):  db.Lt(db.Raw("NOW()::date - 1")),
+		"deleted_at":                nil,
 	}
-
 	if categoryValue, ok := ctx.Value("category.value").([]string); ok {
 		cond[db.Raw("category->>'value'")] = categoryValue
 	}
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["p.gender"] = data.ProductGender(gender)
+		cond["gender"] = data.ProductGender(gender)
 	}
 
-	query := data.DB.Select("p.*").
-		From("products p").
-		Where(cond).
-		OrderBy("-p.created_at")
+	query := data.DB.Product.
+		Find(cond).
+		OrderBy("-created_at")
 
 	var products []*data.Product
-	paginate := cursor.UpdateQueryBuilder(query)
+	paginate := cursor.UpdateQueryUpper(query)
 	if err := paginate.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return

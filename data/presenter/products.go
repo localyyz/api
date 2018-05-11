@@ -93,6 +93,10 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 		placeIDset.Add(int(product.PlaceID))
 	}
 
+	if productIDSet.Size() == 0 {
+		return list
+	}
+
 	// fetch product variants
 	variants, _ := data.DB.ProductVariant.FindAll(db.Cond{
 		"product_id": set.IntSlice(productIDSet),
@@ -158,22 +162,13 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		ctx:     ctx,
 	}
 
-	var variants []*ProductVariant
 	if cache, _ := ctx.Value("variant.cache").(VariantCache); cache != nil {
-		variants = cache[p.ID]
+		p.Variants = cache[p.ID]
 	} else {
 		if vv, _ := data.DB.ProductVariant.FindByProductID(product.ID); vv != nil {
 			for _, v := range vv {
-				variants = append(variants, &ProductVariant{ProductVariant: v})
+				p.Variants = append(p.Variants, &ProductVariant{ProductVariant: v})
 			}
-		}
-	}
-
-	// filter variants for ones that are in stock
-	p.Variants = variants[:0]
-	for _, v := range variants {
-		if v.Limits > 0 {
-			p.Variants = append(p.Variants, v)
 		}
 	}
 

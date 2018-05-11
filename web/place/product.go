@@ -14,40 +14,24 @@ import (
 // List products at a given place
 func ListProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
 	place := ctx.Value("place").(*data.Place)
 
-	query := data.DB.
-		Select(db.Raw("distinct p.*")).
-		From("products p").
-		LeftJoin("product_variants pv").
-		On("pv.product_id = p.id").
-		Where(
+	query := data.DB.Product.
+		Find(
 			db.Cond{
-				"pv.limits >": 0,
-				"p.place_id":  place.ID,
+				"place_id":   place.ID,
+				"deleted_at": nil,
 			},
-		).
-		GroupBy("p.id").
-		OrderBy("-p.id")
-	cursor := ctx.Value("cursor").(*api.Page)
-	paginate := cursor.UpdateQueryBuilder(query)
+		)
+	query = cursor.UpdateQueryUpper(query)
 
 	var products []*data.Product
-	if err := paginate.All(&products); err != nil {
+	if err := query.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 	cursor.Update(products)
-
-	// count query
-	row, _ := data.DB.
-		Select(db.Raw("count(distinct pv.product_id)")).
-		From("product_variants pv").
-		Where(db.Cond{
-			"pv.limits >": 0,
-			"pv.place_id": place.ID,
-		}).QueryRow()
-	row.Scan(&cursor.ItemTotal)
 
 	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
