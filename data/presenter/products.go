@@ -109,6 +109,7 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 	}
 
 	// fetch variant image pivotes
+	// NOTE: IMG -> 1:M -> VAR
 	variantImageCache := make(VariantImageCache)
 	variantImages, _ := data.DB.VariantImage.FindAll(db.Cond{
 		"variant_id": set.IntSlice(variantIDSet),
@@ -189,21 +190,6 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	} else {
 		p.Images, _ = data.DB.ProductImage.FindByProductID(p.ID)
 	}
-	for i, img := range p.Images {
-		if i == 0 {
-			if len(p.ImageURL) == 0 {
-				p.ImageURL = img.ImageURL
-			}
-		}
-	}
-	if len(p.Images) == 0 {
-		for i, imgURL := range p.Product.Etc.Images {
-			p.Images = append(
-				p.Images,
-				&data.ProductImage{ImageURL: imgURL, Ordering: int32(i)},
-			)
-		}
-	}
 
 	// update product variants with the variant image pivot value
 	for _, v := range p.Variants {
@@ -214,6 +200,21 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 				v.ImageID = img.ImageID
 			}
 		}
+	}
+
+	// product image thumb
+	for _, v := range p.Variants {
+		for i, vi := range p.Images {
+			if i == 0 {
+				p.ImageURL = vi.ImageURL
+			} else if vi.ID == v.ImageID {
+				p.ImageURL = vi.ImageURL
+				break
+			}
+		}
+
+		// use the first variant as the preview image
+		break
 	}
 
 	sizesorter := apparelsorter.New(set.StringSlice(sizeSet)...)
