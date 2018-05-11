@@ -67,7 +67,7 @@ var (
 		data.CategoryCosmetic,
 		//data.CategoryFragrance,
 		data.CategorySneaker,
-		data.CategoryLingerie,
+		//data.CategoryLingerie,
 		data.CategorySwimwear,
 	}
 )
