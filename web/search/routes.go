@@ -118,7 +118,6 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		//      weights greater than 0
 		cond := db.Cond{
 			"p.deleted_at IS": nil,
-			"pv.limits >":     0,
 			"pl.status":       data.PlaceStatusActive,
 			"p.category":      db.NotEq("{}"),
 		}
@@ -130,7 +129,6 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 			db.Raw(data.ProductQueryWeight, qraw)).
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
-			LeftJoin("product_variants pv").On("p.id = pv.product_id").
 			Where(
 				db.And(db.Raw(`tsv @@ to_tsquery($$?$$)`, qraw), cond),
 			).
@@ -179,7 +177,6 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		cond := db.Cond{
 			"p.deleted_at IS": nil,
 			"p.category":      db.NotEq("{}"),
-			"pv.limits >":     0,
 			"pl.status":       data.PlaceStatusActive,
 		}
 		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
@@ -192,7 +189,6 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 			db.Raw(data.ProductFuzzyWeight, term)).
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
-			LeftJoin("product_variants pv").On("p.id = pv.product_id").
 			Where(
 				db.And(db.Raw(`tsv @@ to_tsquery(?)`, term), cond),
 			).
