@@ -93,7 +93,7 @@ func TestProductCategory(t *testing.T) {
 			name:     "V-neck dress",
 			inputs:   []string{"Fashion Maternity V-neck Short Sleeve Cotton Pregnancy Dress Elastic Waist Dresses"},
 			place:    placeFemale,
-			expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryApparel, Value: "v-neck", Mapping: ""},
+			expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryApparel, Value: "dress", Mapping: ""},
 		},
 		{
 			name:     "Face mask",
@@ -248,6 +248,7 @@ func TestProductGender(t *testing.T) {
 }
 
 func TestProductBlacklist(t *testing.T) {
+	t.Parallel()
 
 	cache := map[string]*data.Blacklist{
 		"iphone": &data.Blacklist{
@@ -334,6 +335,39 @@ func TestProductBlacklist(t *testing.T) {
 			t.Error("Fail: ", val)
 		}
 	}
+}
+
+func TestFinalizeProductStatus(t *testing.T) {
+	t.Parallel()
+
+	cache := map[string]*data.Blacklist{
+		"blacklist": &data.Blacklist{
+			Word: "blacklist",
+		},
+	}
+	ctx := context.WithValue(context.Background(), cacheKeyBlacklist, cache)
+
+	tests := []struct {
+		name        string
+		hasCategory bool
+		input       string
+		expected    data.ProductStatus
+	}{
+		{"approved", true, "ok product", data.ProductStatusApproved},
+		{"pending", true, "blacklist", data.ProductStatusPending},
+		{"rejected", false, "blacklist", data.ProductStatusRejected},
+		{"pending no category or blacklist", false, "product", data.ProductStatusPending},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := finalizeStatus(ctx, tt.hasCategory, tt.input)
+			if tt.expected != actual {
+				t.Errorf("test '%s': expected type '%s', got '%s'", tt.name, tt.expected, actual)
+			}
+		})
+	}
+
 }
 
 func (tt tagTest) compare(t *testing.T, actual data.Category) {

@@ -145,6 +145,24 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 	return nil
 }
 
+func finalizeStatus(ctx context.Context, hasCategory bool, inputs ...string) data.ProductStatus {
+	// if blacklisted, demote the product status
+	if SearchBlackList(ctx, inputs...) {
+		if hasCategory {
+			// mark as pending, blacklisted but found a category
+			return data.ProductStatusPending
+		} else {
+			// reject if we did not find a category
+			return data.ProductStatusRejected
+		}
+	}
+
+	if hasCategory {
+		return data.ProductStatusApproved
+	}
+	return data.ProductStatusPending
+}
+
 func ShopifyProductListingsCreate(ctx context.Context) error {
 	place := ctx.Value("sync.place").(*data.Place)
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
@@ -162,6 +180,7 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			Title:          p.Title,
 			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
 			Brand:          p.Vendor,
+			Status:         data.ProductStatusPending,
 			Etc:            data.ProductEtc{},
 		}
 
@@ -169,19 +188,15 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		parsedData := ParseProduct(ctx, p.Title, p.Tags, p.ProductType)
 		product.Gender = parsedData.Gender
 
-		if len(parsedData.Value) > 0 { //we were able to tag into a category
-			product.Category = data.ProductCategory{Type: parsedData.Type, Value: parsedData.Value}
-			product.Status = data.ProductStatusApproved
-		} else {
-			//we were not able to pick up a category
-			//look in the blacklist
-			//if not in blacklist mark as pending
-			if blacklisted := SearchBlackList(ctx, p.Title, p.Tags, p.ProductType); blacklisted {
-				product.Status = data.ProductStatusRejected
-			} else {
-				product.Status = data.ProductStatusPending
+		if len(parsedData.Value) > 0 {
+			product.Category = data.ProductCategory{
+				Type:  parsedData.Type,
+				Value: parsedData.Value,
 			}
 		}
+
+		// check product blacklist
+		product.Status = finalizeStatus(ctx, len(parsedData.Value) > 0, p.Title, p.Tags, p.ProductType)
 
 		// save product to database. Exit if fail
 		if err := data.DB.Product.Save(product); err != nil {
