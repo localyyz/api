@@ -161,6 +161,11 @@ func (u *universalCheckout) createMerchantCheckout(ctx context.Context, placeID 
 	// TODO: save checkout token even on error. rignt now
 	// we're creating multiple checkouts if remote fails
 
+	// find and apply discount code that's from this merchant
+	if discount, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discount != nil {
+		checkout.DiscountCode = discount.Code
+	}
+
 	if err := createCheckout(ctx, client, checkout); err != nil {
 		if le, ok := err.(*shopify.LineItemError); ok && le != nil && le.Position != "" {
 			idx, _ := strconv.Atoi(le.Position)

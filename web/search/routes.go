@@ -80,6 +80,15 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 
 	// join query parts back to one string
 	qraw := db.Raw(strings.Join(p.queryParts, ":* &"))
+	qrawNoSpace := strings.Join(p.queryParts, "")
+
+	tquery := db.Raw(`tsv @@ (
+		to_tsquery($$?$$) ||
+		to_tsquery('simple', $$?:*$$) ||
+		to_tsquery($$?:*$$) ||
+		to_tsquery('simple', $$?$$)
+	)`, qraw, qraw, qraw, db.Raw(qrawNoSpace))
+
 	cursor := ctx.Value("cursor").(*api.Page)
 	{
 		// TODO: filter products not in stock
@@ -94,13 +103,12 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 			cond["p.gender"] = gender
 		}
+
 		row, err := data.DB.Select(
 			db.Raw("count(1) AS _t")).
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
-			Where(
-				db.And(db.Raw(`tsv @@ to_tsquery($$?$$)`, qraw), cond),
-			).
+			Where(db.And(cond, tquery)).
 			QueryRow()
 		var count uint64
 		if err == nil {
@@ -129,9 +137,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 			db.Raw(data.ProductQueryWeight, qraw)).
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
-			Where(
-				db.And(db.Raw(`tsv @@ to_tsquery($$?$$)`, qraw), cond),
-			).
+			Where(db.And(cond, tquery)).
 			OrderBy("_rank DESC")
 	} else {
 		// find best matched spellings for each word in the query
