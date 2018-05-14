@@ -61,6 +61,7 @@ func New(h *Handler) chi.Router {
 	r.Use(middleware.NoCache)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.WithValue("shopify.client", h.SH))
 	r.Use(middleware.WithValue("shopify.appid", h.SH.ClientID()))
 	r.Use(middleware.WithValue("shopify.appname", h.SH.AppName()))
 	r.Use(middleware.WithValue("slack.client", h.SL))
