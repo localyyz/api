@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	db "upper.io/db.v3"
 
@@ -29,6 +28,7 @@ import (
 
 type Shopify struct {
 	//*oauth2.Config
+	appName      string
 	clientID     string
 	clientSecret string
 	redirectURL  string
@@ -54,19 +54,22 @@ var (
 		shopify.TopicCollectionListingsUpdate,
 		shopify.TopicCollectionListingsRemove,
 	}
-
-	TrialEndDate time.Time
 )
 
 func SetupShopify(conf Config) *Shopify {
 	SH = &Shopify{
+		appName:      conf.AppName,
 		clientID:     conf.AppId,
 		clientSecret: conf.AppSecret,
 		redirectURL:  conf.OAuthCallback,
 		webhookURL:   conf.WebhookURL,
 	}
-	TrialEndDate, _ = time.Parse("2006-01-02", "2018-05-01")
 	return SH
+}
+
+// read only access to pp name
+func (s *Shopify) AppName() string {
+	return s.appName
 }
 
 // read only access to client id
@@ -227,9 +230,10 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	//place.Billing = data.PlaceBilling{Billing: shopifyBilling}
 
 	// create a place holder checkout for the account id
+	place.PaymentMethods = []*data.PaymentMethod{}
 	if checkout, _, _ := sh.Checkout.Create(ctx, nil); checkout != nil && len(checkout.ShopifyPaymentAccountID) != 0 {
 		// NOTE: for now the id returned on checkout is stripe specific
-		place.PaymentMethods = []*data.PaymentMethod{{Type: "stripe", ID: checkout.ShopifyPaymentAccountID}}
+		place.PaymentMethods = append(place.PaymentMethods, &data.PaymentMethod{Type: "stripe", ID: checkout.ShopifyPaymentAccountID})
 	}
 
 	// save the place!

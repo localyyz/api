@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/goware/geotools"
 	"upper.io/bond"
 	"upper.io/db.v3/postgresql"
@@ -34,6 +33,7 @@ type Place struct {
 	// metadata
 	IsUsed         bool        `db:"is_used" json:"isUsed"`               // merchant sells used goods
 	IsDropShipper  bool        `db:"is_dropshipper" json:"isDropShipper"` // merchant drop shipper
+	PlanEnabled    bool        `db:"plan_enabled" json:"planEnabled"`     // if payment plans are enabled for merchant (payment Rollout flag)
 	FacebookURL    string      `db:"fb_url" json:"facebookUrl"`
 	InstagramURL   string      `db:"instagram_url" json:"instagramUrl"`
 	ShippingPolicy PlacePolicy `db:"shipping_policy" json:"shippingPolicy"`
@@ -41,7 +41,6 @@ type Place struct {
 	Ratings        PlaceRating `db:"ratings" json:"ratings"`
 
 	PaymentMethods []*PaymentMethod `db:"payment_methods" json:"paymentMethods"`
-	Billing        PlaceBilling     `db:"billing" json:"billing"`
 
 	CreatedAt   *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	TOSAgreedAt *time.Time `db:"tos_agreed_at,omitempty" json:"tosAgreedAt,omitempty"`
@@ -73,11 +72,6 @@ type PlaceRating struct {
 type PlacePolicy struct {
 	Description string `json:"desc"`
 	URL         string `json:"url"`
-	*postgresql.JSONBConverter
-}
-
-type PlaceBilling struct {
-	*shopify.Billing
 	*postgresql.JSONBConverter
 }
 

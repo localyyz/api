@@ -5,7 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>Localyyz Merchant</title>
-  <link rel="stylesheet" href="https://sdks.shopifycdn.com/polaris/latest/polaris.css" />
+  <link rel="stylesheet" href="https://sdks.shopifycdn.com/polaris/2.0.0-beta.18/polaris.min.css" />
+  <style>
+    /* Tooltip container */
+    .tooltip {
+        position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+    }
+
+    /* Tooltip text */
+    .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 150px;
+        background-color: black;
+        color: #fff;
+        text-align: center;
+        padding: 10px;
+        border-radius: 6px;
+        margin:0.5rem 1.6rem 1.6rem;
+    
+        /* Position the tooltip text - see examples below! */
+        position: absolute;
+        z-index: 1;
+    }
+
+    /* Show the tooltip text when you mouse over the tooltip container */
+    .tooltip:hover .tooltiptext {
+        visibility: visible;
+    }
+
+    thead th p {
+      text-align: center;
+    }
+  </style>
+
 </head>
 <body>
   <div class="Polaris-Page">
@@ -26,6 +60,7 @@
       {% endif %}
     </div>
     <div class="Polaris-Page__Content">
+
       <div class="Polaris-Layout">
         <div class="Polaris-Layout__AnnotatedSection">
           <div class="Polaris-Layout__AnnotationWrapper">
@@ -46,28 +81,28 @@
                             <div>
                               <span class="Polaris-TextStyle--variationSubdued">Status is currently:
                                 {% if (place.Status == 0) %}
-                                  <span class="Polaris-Badge">Unknown</span>
+                                <span class="Polaris-Badge">Unknown</span>
                                 {% elif (place.Status == 1) %}
-                                  <span class="Polaris-Badge Polaris-Badge--statusAttention">
-                                    Accept Agreement
-                                  </span>
+                                <span class="Polaris-Badge Polaris-Badge--statusAttention">
+                                  Accept Agreement
+                                </span>
                                 {% elif (place.Status == 2) %}
-                                  <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
-                                    <span class="Polaris-Badge__Pip"></span>
-                                    Waiting for Approval
-                                  </span>
+                                <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
+                                  <span class="Polaris-Badge__Pip"></span>
+                                  Waiting for Approval
+                                </span>
                                 {% elif (place.Status == 3) %}
-                                  <span class="Polaris-Badge Polaris-Badge--statusSuccess">
-                                    Approved
-                                  </span>
+                                <span class="Polaris-Badge Polaris-Badge--statusSuccess">
+                                  Approved
+                                </span>
                                 {% elif (place.Status == 4) %}
-                                  <span class="Polaris-Badge Polaris-Badge--statusWarning">
-                                    Not Approved
-                                  </span>
+                                <span class="Polaris-Badge Polaris-Badge--statusWarning">
+                                  Not Approved
+                                </span>
                                 {% elif (place.Status == 5) %}
-                                  <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
-                                    In Review
-                                  </span>
+                                <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
+                                  In Review
+                                </span>
                                 {% endif %}
                               </span>
                             </div>
@@ -87,15 +122,15 @@
                   </div>
                   <div class="Polaris-AccountConnection__TermsOfService">
                     <p>
-                      {% if (place.Status == 0 or place.Status == 4) %}
-                        Sorry! Looks like your store was "Not Approved".
-                        Please <a href="mailto:support@localyyz.com?subject={{name}}: {{status}} status help" target="_blank">contact Localyyz Support for help.</a>
-                      {% elif (place.Status == 1) %}
-                        By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/terms-and-conditions-businesses.html" data-polaris-unstyled="true">Terms and Conditions</a>,
-                          and <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/services-subscription-agreement.html" data-polaris-unstyled="true">Services Subscription</a>.
-                      {% elif (place.Status == 2) %}
-                        Estimated date of approval: <span class="Polaris-Badge Polaris-Badge--statusInfo"> {{ approvalTs|naturaltime }}</span>
-                      {% endif %}
+                    {% if (place.Status == 0 or place.Status == 4) %}
+                    Sorry! Looks like your store was "Not Approved".
+                    Please <a href="mailto:support@localyyz.com?subject={{name}}: {{status}} status help" target="_blank">contact Localyyz Support for help.</a>
+                    {% elif (place.Status == 1) %}
+                    By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/terms-and-conditions-businesses.html" data-polaris-unstyled="true">Terms and Conditions</a>,
+                    and <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/services-subscription-agreement.html" data-polaris-unstyled="true">Services Subscription</a>.
+                    {% elif (place.Status == 2) %}
+                    Estimated date of approval: <span class="Polaris-Badge Polaris-Badge--statusInfo"> {{ approvalTs|naturaltime }}</span>
+                    {% endif %}
                     </p>
                   </div>
                 </div>
@@ -103,138 +138,274 @@
             </div>
           </div>
         </div>
+
         <div class="Polaris-Layout__AnnotatedSection">
           <div class="Polaris-Layout__AnnotationWrapper">
-            <div class="Polaris-Layout__Annotation">
-              <div class="Polaris-TextContainer">
-                <h2 class="Polaris-Heading">Subscription Plan</h2>
-                <!--<p>Select a subscription plan</p>-->
+        {% if (place.PlanEnabled) %}
+          {% if (plan == nil) %}
+            {% if (!isMobile) %}
+            <div class="Polaris-Card" style="width: 100%;">
+              <div class="Polaris-Card__Header">
+                <h2 class="Polaris-Heading">Subscription Plans:</h2>
               </div>
-            </div>
-            <div class="Polaris-Layout__AnnotationContent">
-              <div class="Polaris-Card">
-                <div class="Polaris-Card__Section">
-                  <div class="Polaris-SettingAction">
-                    <!--
-                    <div class="Polaris-SettingAction__Setting">
-                      <div class="Polaris-Stack">
-                        <div class="Polaris-Stack__Item Polaris-Stack__Item--fill">
-                          <div class="Polaris-AccountConnection__Content">
-                            <div>
-                              <span class="Polaris-TextStyle--variationSubdued">Billing Status:
-                                {% if (billing.Status == 0) %}
-                                  <span class="Polaris-Badge">Unknown, Please contact us.</span>
-                                {% elif (billing.Status == 1) %}
-                                  <span class="Polaris-Badge Polaris-Badge--statusAttention">
-                                    Pending
-                                  </span>
-                                {% elif (billing.Status == 2) %}
-                                  <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
-                                    <span class="Polaris-Badge__Pip"></span>
-                                    Accepted
-                                  </span>
-                                {% elif (billing.Status == 3) %}
-                                  <span class="Polaris-Badge Polaris-Badge--statusSuccess">
-                                    Active
-                                  </span>
-                                {% elif (billing.Status == 4) %}
-                                  <span class="Polaris-Badge Polaris-Badge--statusWarning">
-                                    Decline
-                                  </span>
-                                {% elif (billing.Status == 5) %}
-                                  <span class="Polaris-Badge Polaris-Badge--statusWarning">
-                                    Frozen
-                                  </span>
-                                {% elif (billing.Status == 6) %}
-                                  <span class="Polaris-Badge Polaris-Badge--statusWarning">
-                                    Cancelled
-                                  </span>
-                                {% endif %}
-                              </span>
-                            </div>
+
+              <div class="Polaris-DataTable Polaris-DataTable--hasFooter">
+                <div class="Polaris-DataTable__ScrollContainer">
+                  <table class="Polaris-DataTable__TableWrapper">
+                    <thead>
+                      <tr>
+                        <th aria-disabled="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed Polaris-DataTable__Cell--header" scope="col" style="height: 129px;"></th>
+                        <th aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational Polaris-DataTable__Cell--header" role="presentation"></th>
+                        <th aria-disabled="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--header Polaris-DataTable__Cell--numeric" scope="col" style="height: 53px;"></th>
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--header Polaris-DataTable__Cell--text" scope="col" aria-disabled="true">
+                          <p class="Polaris-DisplayText Polaris-DisplayText--sizeMedium">Standard</p>
+                          <p class="Polaris-DisplayText Polaris-DisplayText--sizeExtraLarge">$0</p>
+                          <p>USD/month</p>
+                        </th>
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--header Polaris-DataTable__Cell--text" scope="col" aria-disabled="true">
+                          <p class="Polaris-DisplayText Polaris-DisplayText--sizeMedium">Essentials</p>
+                          <p class="Polaris-DisplayText Polaris-DisplayText--sizeExtraLarge">$40</p>
+                          <p>USD/month*</p>
+                        </th>
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--header Polaris-DataTable__Cell--text" scope="col" aria-disabled="true">
+                          <p class="Polaris-DisplayText Polaris-DisplayText--sizeMedium">Priority</p>
+                          <p class="Polaris-DisplayText Polaris-DisplayText--sizeExtraLarge">$90</p>
+                          <p>USD/month*</p>
+                        </th>
+                      </tr>
+                      <tr>
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell Polaris-DataTable__Cell" scope="row" style="height: 120px;"></th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">
+                          <button type="button" class="Polaris-Button Polaris-Button--primary" id="plan-standard">
+                            <span class="Polaris-Button__Content">
+                              <span>Select Standard</span>
+                            </span>
+                          </button>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">
+                          <button type="button" class="Polaris-Button Polaris-Button--primary" id="plan-essential">
+                            <span class="Polaris-Button__Content">
+                              <span>Select Essential</span>
+                            </span>
+                          </button>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">
+                          <button type="button" class="Polaris-Button Polaris-Button--primary" id="plan-priority">
+                            <span class="Polaris-Button__Content">
+                              <span>Select Priority</span>
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 72px; width: 20em;">
+                          <div class="tooltip">
+                            <p class="Polaris-TextStyle--variationStrong">SKU limit</p>
+                            <span class="tooltiptext">total skus published at one time</span>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                    -->
-                    <!--
-                    <div class="Polaris-SettingAction__Action">
-                      <button onClick="ShopifyApp.redirect('{{confirmationUrl}}')" class="Polaris-Button Polaris-Button--primary {%if (place.Status != 3) || (billing.Status != 1) %}Polaris-Button--disabled{% endif %}">
-                        <span class="Polaris-Button__Content">
-                          <span>Start Free Plan</span>
-                        </span>
-                      </button>
-                    </div>
-                    -->
-                  </div>
-                  <div class="Polaris-AccountConnection__TermsOfService">
-                    <ul class="Polaris-List Polaris-List--typeBullet">
-                      <li class="Polaris-List__Item"><b>Free.</b></li>
-                      <li class="Polaris-List__Item">Standard Unlimited sales transactions on the Localyyz Platform.</li>
-                      <li class="Polaris-List__Item">General access to the Localyyz Platform.</li>
-                      <li class="Polaris-List__Item">Ability to publish changes to merchandise onto the Localyyz Platform in real-time.</li>
-                    </ul>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 72px;">Unlimited</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 72px;">Unlimited</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 72px;">Unlimited</td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 72px; width: 20em;">
+                          <p class="Polaris-TextStyle--variationStrong">Transaction fee</p>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">1.5%</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">0%</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">0%</td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 82px; width: 20em;">
+                          <div class="tooltip">
+                            <p class="Polaris-TextStyle--variationStrong">Commission** on fulfilled orders</p>
+                            <span class="tooltiptext">commission taken from order subtotal</span>
+                          </div>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 82px;">9.5%</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 82px;">5.5%</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 82px;">1.5%</td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 72px; width: 20em;">
+                          <p class="Polaris-TextStyle--variationStrong">Technical support</p>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">
+                          <span class="Polaris-Badge Polaris-Badge--statusAttention Polaris-Badge--progressPartiallyComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Partially complete</span></span>Partial</span>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">
+                          <span class="Polaris-Badge Polaris-Badge--statusSuccess Polaris-Badge--progressComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Complete</span></span>Full</span>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">
+                          <span class="Polaris-Badge Polaris-Badge--statusSuccess Polaris-Badge--progressComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Complete</span></span>Full</span>
+                        </td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 72px; width: 20em;">
+                          <p class="Polaris-TextStyle--variationStrong">Priority listing of products</p>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">-</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">-</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">
+                          <span class="Polaris-Badge Polaris-Badge--statusSuccess Polaris-Badge--progressComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Complete</span></span>Full</span>
+                        </td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 72px; width: 20em;">
+                          <p class="Polaris-TextStyle--variationStrong">Insights and analytics</p>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">-</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">-</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">
+                          <span class="Polaris-Badge Polaris-Badge--statusSuccess Polaris-Badge--progressComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Complete</span></span>Full</span>
+                        </td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 120px; width: 20em;">
+                          <p class="Polaris-TextStyle--variationStrong">Marketing campaigns + use of design team</p>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">-</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">
+                          <span class="Polaris-Badge Polaris-Badge--statusAttention Polaris-Badge--progressPartiallyComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Partially complete</span></span>Partial</span>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">
+                          <span class="Polaris-Badge Polaris-Badge--statusSuccess Polaris-Badge--progressComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Complete</span></span>Full</span>
+                        </td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="width: 20em;">
+                          <p class="Polaris-TextStyle--variationStrong">Managed push notification campaigns</p>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">-</td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">
+                          <span class="Polaris-Badge Polaris-Badge--statusAttention Polaris-Badge--progressPartiallyComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Partially complete</span></span>Partial</span>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text">
+                          <span class="Polaris-Badge Polaris-Badge--statusSuccess Polaris-Badge--progressComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Complete</span></span>Full</span>
+                        </td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 140px; width: 20em;">
+                          <p class="Polaris-TextStyle--variationStrong">Performance marketing campaign management</p>
+                          <span class="Polaris-TextStyle--variationSubdued">($5k/month*** in value)</span>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 140px;">
+                          <div class="tooltip">$
+                            <span class="tooltiptext">Additional costs</span>
+                          </div>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 140px;">
+                          <span class="Polaris-Badge Polaris-Badge--statusSuccess Polaris-Badge--progressComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Complete</span></span>Full</span>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 140px;">
+                          <span class="Polaris-Badge Polaris-Badge--statusSuccess Polaris-Badge--progressComplete"><span class="Polaris-VisuallyHidden">Success</span><span class="Polaris-Badge__Pip"><span class="Polaris-VisuallyHidden">Complete</span></span>Full</span>
+                        </td>
+                      </tr>
+                      <tr class="Polaris-DataTable__TableRow">
+                        <th class="Polaris-DataTable__Cell Polaris-DataTable__Cell--fixed" scope="row" style="height: 120px; width: 20em;">
+                          <p class="Polaris-TextStyle--variationStrong">Performance marketing ad spend</p>
+                        </th>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td aria-hidden="true" class="Polaris-DataTable__Cell Polaris-DataTable__Cell--presentational" role="presentation"></td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">
+                          <div class="tooltip">$
+                            <span class="tooltiptext">Additional costs</span>
+                          </div>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">
+                          <div class="tooltip">$
+                            <span class="tooltiptext">Additional costs</span>
+                          </div>
+                        </td>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--text" style="height: 120px;">
+                          <div class="tooltip">$
+                            <span class="tooltiptext">Additional costs</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td class="Polaris-DataTable__Cell Polaris-DataTable__Cell--footer" style="text-align:justify;">
+                          <span class="Polaris-TextStyle--variationSubdued">*All subscriptions require an annual contract paid upfront</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                          <span class="Polaris-TextStyle--variationSubdued">**Introductory offer</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                          <span class="Polaris-TextStyle--variationSubdued">***Standard performance marketing agency fee</span>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+            {% else %}
+              <div class="Polaris-Layout__Annotation">
+                <div class="Polaris-TextContainer">
+                  <h2 class="Polaris-Heading">Subscription</h2>
+                </div>
+              </div>
+              <div class="Polaris-Layout__AnnotationContent">
+                <div class="Polaris-Card">
+                  <div class="Polaris-Card__Section">
+                    <p> Please Use the desktop dashboard to select a subscription plan.</p>
                   </div>
                 </div>
               </div>
-
+            {% endif %}
+          {% else %}
+          <div class="Polaris-Layout__Annotation">
+            <div class="Polaris-TextContainer">
+              <h2 class="Polaris-Heading">Subscription</h2>
+              <p>Subscription status and summary</p>
             </div>
           </div>
-        </div>
-        <div class="Polaris-Layout__AnnotatedSection">
-          <div class="Polaris-Layout__AnnotationWrapper">
-            <div class="Polaris-Layout__Annotation">
-              <div class="Polaris-TextContainer">
-                <h2 class="Polaris-Heading">Storefront Image</h2>
-                <p>Select an image</p>
+          <div class="Polaris-Layout__AnnotationContent">
+            <div class="Polaris-Card">
+              <div class="Polaris-Card__Header">
+                <div class="Polaris-Stack Polaris-Stack--alignmentBaseline">
+                  <div class="Polaris-Stack__Item Polaris-Stack__Item--fill">
+                    <h2 class="Polaris-Heading"></h2>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="Polaris-Layout__AnnotationContent">
-              <div class="Polaris-Card">
-                <div class="Polaris-Card__Header">
-                  <div class="Polaris-Stack Polaris-Stack--alignmentBaseline">
-                    <div class="Polaris-Stack__Item Polaris-Stack__Item--fill">
-                      <p>Select an image that's a good
-                      representation of your store, this will be the first thing
-                      the users will see.</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="Polaris-Card__Section">
-                  <span>1. Upload / Manage file
-                    <button type="button" onClick="ShopifyApp.redirect('/settings/files')" class="Polaris-Button Polaris-Button--plain" >
-                      <span class="Polaris-Button__Content">here</span>
-                    </button>
-                  </span>
-                </div>
-                <div class="Polaris-Card__Section">
-                  <span>2. Find the selected image's <b>URL</b> from previous screen</span>
-                  <img src="https://cdn.shopify.com/s/files/1/1976/6885/files/imagebox.png?2297683349886995721" alt="" width="100%" />
-                </div>
-                <div class="Polaris-Card__Section">
-                  <div class="Polaris-Labelled__LabelWrapper">
-                    <div class="Polaris-Label"><label id="placeImageUrlLabel" for="placeImageUrlInput" class="Polaris-Label__Text">3. Copy and paste the image URL:</label></div>
-                  </div>
-                  <div class="Polaris-TextField">
-                    <input id="placeImageUrlInput" value="{{ place.ImageURL }}" placeholder="https://cdn.shopify.com/..." class="Polaris-TextField__Input" aria-labelledby="TextField12Label" aria-invalid="false">
-                    <div class="Polaris-TextField__Backdrop"></div>
-                  </div>
-                </div>
-                <div class="Polaris-Card__Section">
-                  <span>4. Save!</span>
-                  <div class="Polaris-SettingAction__Action">
-                    <form id="imgUrl" method="POST" action="#">
-                      <button type="submit" class="Polaris-Button Polaris-Button--primary">
-                        <span class="Polaris-Button__Content">Save</span>
-                      </button>
-                    </form>
-                  </div>
-                </div>
-
+              <div class="Polaris-Card__Section">
+                <p> You are currently on the <b>{{ plan.Type }}</b> plan. </p>
+              </div>
+              <div class="Polaris-Card__Section">
+                The current subscription status is: {{ plan.Status }}.
+              </div>
+              <div class="Polaris-Card__Section">
+                The subscription was started on {{ plan.StartedOn }}.
               </div>
             </div>
           </div>
+          {% endif %}
+        {% endif %}
+          </div>
         </div>
+
         <div class="Polaris-Layout__AnnotatedSection">
           <div class="Polaris-Layout__AnnotationWrapper">
             <div class="Polaris-Layout__Annotation">
@@ -274,6 +445,7 @@
             </div>
           </div>
         </div>
+
         <div class="Polaris-Layout__AnnotatedSection">
           <div class="Polaris-Layout__AnnotationWrapper">
             <div class="Polaris-Layout__Annotation">
@@ -318,6 +490,7 @@
         </div>
       </div>
     </div>
+
   </div>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="//cdn.shopify.com/s/assets/external/app.js"></script>
@@ -331,10 +504,60 @@
     ShopifyApp.ready(function() {
       ShopifyApp.Bar.loadingOff();
     })
+
+    // check if need to be redirected?
+    if ("{{shouldRedirect}}" === "1") {
+      ShopifyApp.redirect("{{confirmationUrl}}")
+    }
   </script>
   <script type="text/javascript">
     "use strict"
     $(document).ready(function() {
+      {% if (place.PlanEnabled) %}
+      $("button#plan-standard").click(function() {
+        $.ajax({
+          type: "POST",
+          url: "/plan",
+          data: JSON.stringify({"planType": "standard"}),
+          beforeSend: function() {
+            ShopifyApp.flashNotice("subscribing to standard plan...");
+          },
+          success: function(result) {
+            location.reload();
+          }
+        });
+        return false;
+      });
+      $("button#plan-essential").click(function() {
+        $.ajax({
+          type: "POST",
+          url: "/plan",
+          data: JSON.stringify({"planType": "essential"}),
+          beforeSend: function() {
+            ShopifyApp.flashNotice("subscribing to standard plan...");
+          },
+          success: function(result) {
+            location.reload();
+          }
+        });
+        return false;
+      });
+      $("button#plan-priority").click(function() {
+        $.ajax({
+          type: "POST",
+          url: "/plan",
+          data: JSON.stringify({"planType": "priority"}),
+          beforeSend: function() {
+            ShopifyApp.flashNotice("subscribing to standard plan...");
+          },
+          success: function(result) {
+            location.reload();
+          }
+        });
+        return false;
+      });
+      {% endif %}
+
       $("#tos").submit(function(e) {
         $.ajax({
           type: "POST",
@@ -343,21 +566,6 @@
           url: "/tos",
           success: function(result) {
             location.reload();
-          }
-        });
-        return false;
-      });
-      $("#imgUrl").submit(function(e) {
-        $.ajax({
-          type: "POST",
-          contentType: "application/json",
-          dataType: "json",
-          data: JSON.stringify({
-            imageUrl: $("#placeImageUrlInput").val(),
-          }),
-          url: "/img",
-          success: function(result) {
-            ShopifyApp.flashNotice("Save success!");
           }
         });
         return false;
