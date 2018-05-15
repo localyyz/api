@@ -62,7 +62,7 @@ func UpdateProductCategory(ctx context.Context) {
 
 	go func() {
 		var (
-			limit = 10
+			limit = 1000
 			page  = 0
 		)
 		for {
@@ -89,7 +89,6 @@ func UpdateProductCategory(ctx context.Context) {
 			}
 
 			productsChann <- productParse(products)
-			break
 
 			lg.Printf("sent page %d", page)
 			page++

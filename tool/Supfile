@@ -82,10 +82,10 @@ commands:
 
 targets:
   deploy:
-    #- pull
-    #- config
+    - pull
+    - config
     - stop
     - rm
-    #- run
-    #- ps
-    #- logs
+    - run
+    - ps
+    - logs
