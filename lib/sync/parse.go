@@ -54,6 +54,7 @@ var (
 		"air-jordan",
 		"lace-up",
 		"slip-on",
+		"lexi-noel",
 	}
 )
 

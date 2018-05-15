@@ -96,6 +96,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 
 	cond := db.Cond{
+		"status":                    data.ProductStatusApproved,
 		db.Raw("category->>'type'"): categoryType.String(),
 		db.Raw("created_at::date"):  db.Lt(db.Raw("NOW()::date - 1")),
 		"deleted_at":                nil,

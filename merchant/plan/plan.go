@@ -217,7 +217,6 @@ func CreatePlan(w http.ResponseWriter, r *http.Request) {
 		ReturnUrl:    fmt.Sprintf("https://merchant.localyyz.com/plan/cb"),
 		Price:        "0",
 		CappedAmount: "10000",
-		Test:         true,
 	}
 
 	creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)

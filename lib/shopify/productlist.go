@@ -22,6 +22,8 @@ type ProductListParam struct {
 	UpdatedAtMin time.Time
 }
 
+const timeFormat = "2006-01-02T15:04:05-04:00"
+
 func (p *ProductListParam) EncodeQuery() string {
 	if p == nil {
 		return ""
