@@ -3,6 +3,7 @@
 TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf
 MERCHANT_CONFIG := $$PWD/config/merchant.conf
+TOOL_CONFIG := $$PWD/config/tool.conf
 PEM := ./config/push.pem
 TAG_CONTAINER := gcr.io/verdant-descent-153101/api
 
@@ -87,6 +88,9 @@ run:
 
 run-merchant:
 	@(export CONFIG=${MERCHANT_CONFIG}; fresh -c runner.conf -p ./cmd/merchant)
+
+run-tool:
+	@(export CONFIG=${TOOL_CONFIG}; fresh -c runner.conf -p ./cmd/tool)
 
 build-merchant:
 	@mkdir -p ./bin
