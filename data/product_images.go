@@ -11,6 +11,8 @@ type ProductImage struct {
 	ExternalID int64  `db:"external_id,omitempty" json:"-"`
 	ImageURL   string `db:"image_url" json:"imageUrl"`
 	Ordering   int32  `db:"ordering" json:"ordering"`
+	Width      int64  `db:"width" json:"width"`
+	Height     int64  `db:"height" json:"height"`
 
 	VariantIDs []int64 `db:"-" json:"-"`
 }

@@ -95,9 +95,11 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 
 		// Update the vendor
 		product.Brand = p.Vendor
+
 		// update product images if product image is empty
-		setImages(&shopifyImageSyncer{Product: product}, p.Images...)
-		// Save
+		err = setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
+
 		data.DB.Product.Save(product)
 
 		// iterate product variants and update quantity limit
@@ -145,7 +147,12 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 	return nil
 }
 
-func finalizeStatus(ctx context.Context, hasCategory bool, inputs ...string) data.ProductStatus {
+func finalizeStatus(ctx context.Context, hasCategory bool, hasValidImg bool, inputs ...string) data.ProductStatus {
+
+	if !hasValidImg {
+		return data.ProductStatusRejected
+	}
+
 	// if blacklisted, demote the product status
 	if SearchBlackList(ctx, inputs...) {
 		if hasCategory {
@@ -195,20 +202,15 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			}
 		}
 
-		// check product blacklist
-		product.Status = finalizeStatus(ctx, len(parsedData.Value) > 0, p.Title, p.Tags, p.ProductType)
-
-		// save product to database. Exit if fail
-		if err := data.DB.Product.Save(product); err != nil {
-			return errors.Wrap(err, "failed to save product")
-		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		// product variants
 		setVariants(product, p.Variants...)
 
-		// set image and save
-		setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		// set imgs and check if atleast one is valid
+		err := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
+
 		// save
 		data.DB.Product.Save(product)
 	}

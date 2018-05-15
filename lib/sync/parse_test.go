@@ -332,18 +332,20 @@ func TestFinalizeProductStatus(t *testing.T) {
 	tests := []struct {
 		name        string
 		hasCategory bool
+		hasValidImg bool
 		input       string
 		expected    data.ProductStatus
 	}{
-		{"approved", true, "ok product", data.ProductStatusApproved},
-		{"pending", true, "blacklist", data.ProductStatusPending},
-		{"rejected", false, "blacklist", data.ProductStatusRejected},
-		{"pending no category or blacklist", false, "product", data.ProductStatusPending},
+		{"approved", true, true, "ok product", data.ProductStatusApproved},
+		{"pending", true, true, "blacklist", data.ProductStatusPending},
+		{"rejected", false, true, "blacklist", data.ProductStatusRejected},
+		{"pending no category or blacklist", false, true, "product", data.ProductStatusPending},
+		{"invalid img", true, false, "product", data.ProductStatusRejected},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := finalizeStatus(ctx, tt.hasCategory, tt.input)
+			actual := finalizeStatus(ctx, tt.hasCategory, tt.hasValidImg, tt.input)
 			if tt.expected != actual {
 				t.Errorf("test '%s': expected type '%s', got '%s'", tt.name, tt.expected, actual)
 			}

@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"errors"
+	"net/http"
 	"net/url"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -28,6 +30,12 @@ func (s *shopifyImageSyncer) GetProduct() *data.Product {
 
 func (s *shopifyImageSyncer) Finalize(toSaves, toRemoves []*data.ProductImage) error {
 	for _, img := range toSaves {
+
+		res, _ := http.Head(img.ImageURL)
+		if res.StatusCode != 200 { //if image is not valid error out
+			return errors.New("url: invalid image url")
+		}
+
 		data.DB.ProductImage.Save(img)
 
 		// if img has variant ids associated, save to pivot table
@@ -57,10 +65,14 @@ func (s *shopifyImageSyncer) Finalize(toSaves, toRemoves []*data.ProductImage) e
 }
 
 func setImages(syncer productImageSyncer, imgs ...*shopify.ProductImage) error {
+
+	//getting the images from product_images for product
 	dbImages, err := syncer.FetchProductImages()
 	if err != nil {
 		return err
 	}
+
+	//fill out a map using external image IDS
 	dbImagesMap := map[int64]*data.ProductImage{}
 	for _, img := range dbImages {
 		dbImagesMap[img.ExternalID] = img
@@ -68,6 +80,7 @@ func setImages(syncer productImageSyncer, imgs ...*shopify.ProductImage) error {
 
 	syncImagesSet := set.New()
 	var toSaves []*data.ProductImage
+
 	for _, img := range imgs {
 		if syncImagesSet.Has(img.ID) {
 			// duplicate image, pass
@@ -92,6 +105,8 @@ func setImages(syncer productImageSyncer, imgs ...*shopify.ProductImage) error {
 			ImageURL:   imgUrl.String(),
 			Ordering:   int32(img.Position),
 			VariantIDs: img.VariantIds,
+			Width:      img.Width,
+			Height:     img.Height,
 		})
 	}
 
