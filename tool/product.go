@@ -276,6 +276,5 @@ W:
 
 func UpdateCategories(w http.ResponseWriter, r *http.Request) {
 	UpdateProductCategory(r.Context())
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`Finished Updating`))
+	render.Respond(w, r, "done")
 }

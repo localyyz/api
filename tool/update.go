@@ -39,13 +39,13 @@ func UpdateProductCategory(ctx context.Context) {
 	productsChann := make(chan productParse, 10)
 
 	var wg sync.WaitGroup
-	for i := 1; i <= 10; i++ {
-		lg.Printf("starting worker %d", i)
+	for i := 0; i < 10; i++ {
+		lg.Printf("starting worker %d", i+1)
 		wg.Add(1)
 		go worker(ctx, productsChann, wg)
 	}
 
-	go func(ch chan productParse) {
+	go func() {
 		var (
 			limit = 1000
 			page  = 0
@@ -54,7 +54,7 @@ func UpdateProductCategory(ctx context.Context) {
 			var products []*data.Product
 			err := data.DB.Product.Find(
 				db.Cond{
-					"status":     db.Eq(data.ProductStatusPending),
+					"status":     db.NotEq(data.ProductStatusRejected),
 					"created_at": db.Lt(time.Now().Add(-time.Hour)),
 				},
 			).
@@ -65,20 +65,21 @@ func UpdateProductCategory(ctx context.Context) {
 
 			if err != nil {
 				lg.Print("Error: could not load products")
-				return
+				break
 			}
 			if len(products) == 0 {
 				lg.Print("Finished")
-				return
+				break
 			}
 
-			ch <- productParse(products)
+			productsChann <- productParse(products)
 
 			lg.Printf("sent page %d", page)
 			page++
 		}
-		close(ch)
-	}(productsChann)
+
+		close(productsChann)
+	}()
 
 	// Wait for all HTTP fetches to complete.
 	wg.Wait()
