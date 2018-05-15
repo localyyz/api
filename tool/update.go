@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/url"
 	"sync"
-	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
@@ -12,7 +11,7 @@ import (
 	db "upper.io/db.v3"
 )
 
-type productParse []*data.Product
+type imageParse []*shopify.ProductImage
 
 func UpdateProductCategory(ctx context.Context) {
 	/* creating category cache */
@@ -31,7 +30,7 @@ func UpdateProductCategory(ctx context.Context) {
 		}
 	}
 
-	shopifyClientCache := make(map[int64]*shopify.Client)
+	var clients []*shopify.Client
 	var creds []*data.ShopifyCred
 	data.DB.Select(db.Raw("c.*")).
 		From("shopify_creds c").
@@ -41,60 +40,46 @@ func UpdateProductCategory(ctx context.Context) {
 	for _, cred := range creds {
 		client := shopify.NewClient(nil, cred.AccessToken)
 		client.BaseURL, _ = url.Parse(cred.ApiURL)
-		shopifyClientCache[cred.PlaceID] = client
+		clients = append(clients, client)
 	}
 
-	lg.Infof("category: %d", len(categoryCache))
-	lg.Infof("blacklist: %d", len(blacklistCache))
-	ctx = context.WithValue(ctx, "category.cache", categoryCache)
-	ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
-	ctx = context.WithValue(ctx, "sync.place", &data.Place{})
-	ctx = context.WithValue(ctx, "shopify.cache", shopifyClientCache)
+	//lg.Infof("category: %d", len(categoryCache))
+	//lg.Infof("blacklist: %d", len(blacklistCache))
+	//ctx = context.WithValue(ctx, "category.cache", categoryCache)
+	//ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
+	//ctx = context.WithValue(ctx, "sync.place", &data.Place{})
+	//ctx = context.WithValue(ctx, "shopify.cache", shopifyClientCache)
 
-	productsChann := make(chan productParse, 10)
+	imagesChann := make(chan imageParse, 10)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		lg.Printf("starting worker %d", i+1)
 		wg.Add(1)
-		go worker(ctx, productsChann, wg)
+		go worker(ctx, imagesChann, wg)
 	}
 
 	go func() {
-		var (
-			limit = 1000
-			page  = 0
-		)
-		for {
-			var products []*data.Product
-			err := data.DB.Product.Find(
-				db.Cond{
-					"external_id": db.IsNot(nil),
-					"status":      db.NotEq(data.ProductStatusRejected),
-					"created_at":  db.Lt(time.Now().Add(-time.Hour)),
-				},
-			).
-				Limit(limit).
-				Offset(page * limit).
-				OrderBy("id").
-				All(&products)
+		for i, cl := range clients {
+			var (
+				page   = 0
+				limits = 250
+			)
+			for {
+				products, _, _ := cl.ProductList.Get(ctx, &shopify.ProductListParam{Limit: limits, Page: page})
+				if len(products) == 0 {
+					break
+				}
 
-			if err != nil {
-				lg.Print("Error: could not load products")
-				break
+				for _, p := range products {
+					imagesChann <- imageParse(p.Images)
+				}
+
+				page++
 			}
-			if len(products) == 0 {
-				lg.Print("Finished")
-				break
-			}
-
-			productsChann <- productParse(products)
-
-			lg.Printf("sent page %d", page)
-			page++
+			lg.Printf("sent page client %d", i)
 		}
-
-		close(productsChann)
+		close(imagesChann)
 	}()
 
 	// Wait for all HTTP fetches to complete.
@@ -102,11 +87,10 @@ func UpdateProductCategory(ctx context.Context) {
 	lg.Info("done.")
 }
 
-func worker(ctx context.Context, ch chan productParse, wg sync.WaitGroup) {
+func worker(ctx context.Context, ch chan imageParse, wg sync.WaitGroup) {
 	//var updated []*data.Product
-	clientCache := ctx.Value("shopify.cache").(map[int64]*shopify.Client)
-	for products := range ch {
-		for _, product := range products {
+	for images := range ch {
+		for _, image := range images {
 
 			//if product.Category.Type == 0 {
 			//parsedData := s.ParseProduct(ctx, product.Title, product.Description) //getting the category
@@ -129,18 +113,14 @@ func worker(ctx context.Context, ch chan productParse, wg sync.WaitGroup) {
 			//}
 
 			// find the product images
-			client := clientCache[product.PlaceID]
-			images, _, _ := client.Product.GetImages(ctx, *product.ExternalID)
-			for _, img := range images {
-				dbImage, err := data.DB.ProductImage.FindByExternalID(img.ID)
-				if err != nil {
-					continue
-				}
-				if dbImage.Width != img.Width || dbImage.Height != img.Height {
-					dbImage.Width = img.Width
-					dbImage.Height = img.Height
-					data.DB.ProductImage.Save(dbImage)
-				}
+			dbImage, err := data.DB.ProductImage.FindByExternalID(image.ID)
+			if err != nil {
+				continue
+			}
+			if dbImage.Width != image.Width || dbImage.Height != image.Height {
+				dbImage.Width = image.Width
+				dbImage.Height = image.Height
+				data.DB.ProductImage.Save(dbImage)
 			}
 
 			//saving it to the db
