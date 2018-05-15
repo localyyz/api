@@ -90,6 +90,8 @@ type ProductImage struct {
 	Position   int     `json:"position"`
 	CreatedAt  string  `json:"created_at"`
 	UpdatedAt  string  `json:"updated_at"`
+	Width      int64   `json:"width"`
+	Height     int64   `json:"height"`
 	Src        string  `json:"src"`
 	VariantIds []int64 `json:"variant_ids"`
 }
