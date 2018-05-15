@@ -74,15 +74,6 @@ type ProductOption struct {
 	Position  int      `json:"position"`
 	Values    []string `json:"values"`
 }
-type ProductImages struct {
-	ID         int64         `json:"id"`
-	ProductID  int64         `json:"product_id"`
-	Position   int           `json:"position"`
-	CreatedAt  string        `json:"created_at"`
-	UpdatedAt  string        `json:"updated_at"`
-	Src        string        `json:"src"`
-	VariantIds []interface{} `json:"variant_ids"`
-}
 
 type ProductImage struct {
 	ID         int64   `json:"id"`
@@ -128,6 +119,23 @@ func (p *ProductService) GetVariant(ctx context.Context, variantID int64) (*Prod
 	}
 
 	return variantWrapper.Variant, resp, nil
+}
+
+func (p *ProductService) GetImages(ctx context.Context, productID int64) ([]*ProductImage, *http.Response, error) {
+	req, err := p.client.NewRequest("GET", fmt.Sprintf("/admin/products/%d/images.json", productID), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var imagesWrapper struct {
+		Images []*ProductImage `json:"images"`
+	}
+	resp, err := p.client.Do(ctx, req, &imagesWrapper)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return imagesWrapper.Images, resp, nil
 }
 
 func (p *ProductService) GetStock(ctx context.Context, variantID int64) (int, *http.Response, error) {

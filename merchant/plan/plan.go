@@ -165,6 +165,7 @@ func finalize(ctx context.Context) error {
 		return errors.Wrap(err, "save subscription charge")
 	}
 
+	lg.Alertf("merchant(%d) finalized billing type (%s): %s", billing.PlaceID, plan.PlanType, billing.Status)
 	return nil
 }
 

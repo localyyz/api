@@ -2,11 +2,12 @@ package tool
 
 import (
 	"context"
+	"net/url"
 	"sync"
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	s "bitbucket.org/moodie-app/moodie-api/lib/sync"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
@@ -30,11 +31,25 @@ func UpdateProductCategory(ctx context.Context) {
 		}
 	}
 
+	shopifyClientCache := make(map[int64]*shopify.Client)
+	var creds []*data.ShopifyCred
+	data.DB.Select(db.Raw("c.*")).
+		From("shopify_creds c").
+		LeftJoin("places p").On("p.id = c.place_id").
+		Where(db.Cond{"p.status": data.PlaceStatusActive}).
+		All(&creds)
+	for _, cred := range creds {
+		client := shopify.NewClient(nil, cred.AccessToken)
+		client.BaseURL, _ = url.Parse(cred.ApiURL)
+		shopifyClientCache[cred.PlaceID] = client
+	}
+
 	lg.Infof("category: %d", len(categoryCache))
 	lg.Infof("blacklist: %d", len(blacklistCache))
 	ctx = context.WithValue(ctx, "category.cache", categoryCache)
 	ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
 	ctx = context.WithValue(ctx, "sync.place", &data.Place{})
+	ctx = context.WithValue(ctx, "shopify.cache", shopifyClientCache)
 
 	productsChann := make(chan productParse, 10)
 
@@ -47,15 +62,16 @@ func UpdateProductCategory(ctx context.Context) {
 
 	go func() {
 		var (
-			limit = 1000
+			limit = 10
 			page  = 0
 		)
 		for {
 			var products []*data.Product
 			err := data.DB.Product.Find(
 				db.Cond{
-					"status":     db.NotEq(data.ProductStatusRejected),
-					"created_at": db.Lt(time.Now().Add(-time.Hour)),
+					"external_id": db.IsNot(nil),
+					"status":      db.NotEq(data.ProductStatusRejected),
+					"created_at":  db.Lt(time.Now().Add(-time.Hour)),
 				},
 			).
 				Limit(limit).
@@ -73,6 +89,7 @@ func UpdateProductCategory(ctx context.Context) {
 			}
 
 			productsChann <- productParse(products)
+			break
 
 			lg.Printf("sent page %d", page)
 			page++
@@ -87,39 +104,55 @@ func UpdateProductCategory(ctx context.Context) {
 }
 
 func worker(ctx context.Context, ch chan productParse, wg sync.WaitGroup) {
-	var updated []*data.Product
+	//var updated []*data.Product
+	clientCache := ctx.Value("shopify.cache").(map[int64]*shopify.Client)
 	for products := range ch {
 		for _, product := range products {
-			if product.Category.Type == 0 {
-				parsedData := s.ParseProduct(ctx, product.Title, product.Description) //getting the category
-				if len(parsedData.Value) > 0 {
-					product.Category = data.ProductCategory{ //setting the category
-						Type:  parsedData.Type,
-						Value: parsedData.Value,
-					}
+
+			//if product.Category.Type == 0 {
+			//parsedData := s.ParseProduct(ctx, product.Title, product.Description) //getting the category
+			//if len(parsedData.Value) > 0 {
+			//product.Category = data.ProductCategory{ //setting the category
+			//Type:  parsedData.Type,
+			//Value: parsedData.Value,
+			//}
+			//}
+			//}
+
+			//oldStatus := product.Status
+			//product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, product.Title)
+			//if product.Status == data.ProductStatusPending {
+			//product.Status = data.ProductStatusRejected
+			//}
+
+			//if oldStatus == product.Status {
+			//continue
+			//}
+
+			// find the product images
+			client := clientCache[product.PlaceID]
+			images, _, _ := client.Product.GetImages(ctx, *product.ExternalID)
+			for _, img := range images {
+				dbImage, err := data.DB.ProductImage.FindByExternalID(img.ID)
+				if err != nil {
+					continue
+				}
+				if dbImage.Width != img.Width || dbImage.Height != img.Height {
+					dbImage.Width = img.Width
+					dbImage.Height = img.Height
+					data.DB.ProductImage.Save(dbImage)
 				}
 			}
 
-			oldStatus := product.Status
-			product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, product.Title)
-			if product.Status == data.ProductStatusPending {
-				product.Status = data.ProductStatusRejected
-			}
-
-			if oldStatus == product.Status {
-				continue
-			}
-
 			//saving it to the db
-			if err := data.DB.Product.Save(product); err != nil { //updating db
-				lg.Print("Error: Could not update the database entries")
-			}
-			updated = append(updated, product)
+			//if err := data.DB.Product.Save(product); err != nil { //updating db
+			//lg.Print("Error: Could not update the database entries")
+			//}
+			//updated = append(updated, product)
 		}
-
-		for _, p := range updated {
-			lg.Printf("updated product (%d) %s from status to %s", p.ID, p.Title, p.Status)
-		}
+		//for _, p := range updated {
+		//lg.Printf("updated product (%d) to %s", p.ID, p.Status)
+		//}
 	}
 	wg.Done()
 }
