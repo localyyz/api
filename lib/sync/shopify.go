@@ -97,12 +97,8 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		product.Brand = p.Vendor
 
 		// update product images if product image is empty
-		imageErr := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
-		if imageErr != nil {
-			product.Status = data.ProductStatusRejected
-		} else {
-			product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, p.Title, p.Tags, p.ProductType)
-		}
+		err = setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
 
 		data.DB.Product.Save(product)
 
@@ -151,7 +147,12 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 	return nil
 }
 
-func finalizeStatus(ctx context.Context, hasCategory bool, inputs ...string) data.ProductStatus {
+func finalizeStatus(ctx context.Context, hasCategory bool, hasValidImg bool, inputs ...string) data.ProductStatus {
+
+	if !hasValidImg {
+		return data.ProductStatusRejected
+	}
+
 	// if blacklisted, demote the product status
 	if SearchBlackList(ctx, inputs...) {
 		if hasCategory {
@@ -207,12 +208,8 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		setVariants(product, p.Variants...)
 
 		// set imgs and check if atleast one is valid
-		imageErr := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
-		if imageErr != nil { //one of the images is invalid
-			product.Status = data.ProductStatusRejected
-		} else {
-			product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, p.Title, p.Tags, p.ProductType)
-		}
+		err := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
 
 		// save
 		data.DB.Product.Save(product)
