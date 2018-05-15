@@ -11,6 +11,6 @@ func ListPriceRule(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	client := ctx.Value("shopify.client").(*shopify.Client)
 
-	priceRules, _, _ := client.PriceRule.List(ctx)
+	priceRules, _, _ := client.PriceRule.List(ctx, nil)
 	render.Respond(w, r, priceRules)
 }

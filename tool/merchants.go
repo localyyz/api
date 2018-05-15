@@ -91,7 +91,7 @@ func ListPermissions(w http.ResponseWriter, r *http.Request) {
 	for _, cred := range creds {
 		client := shopify.NewClient(nil, cred.AccessToken)
 		client.BaseURL, _ = url.Parse(cred.ApiURL)
-		_, resp, err := client.PriceRule.List(r.Context())
+		_, resp, err := client.PriceRule.List(r.Context(), nil)
 		if resp.StatusCode != http.StatusOK || err != nil {
 			log.Printf("place %d: %+v", cred.PlaceID, err)
 			continue
@@ -142,8 +142,12 @@ func ListPriceRules(w http.ResponseWriter, r *http.Request) {
 
 				client := shopify.NewClient(nil, cred.AccessToken)
 				client.BaseURL, _ = url.Parse(cred.ApiURL)
-				priceRules, _, _ := client.PriceRule.List(r.Context())
-
+				priceRules, _, _ := client.PriceRule.List(
+					r.Context(),
+					&shopify.PriceRuleParam{
+						EndsAtMin: data.GetTimeUTCPointer(),
+					},
+				)
 				placeRulechann <- placeRules{
 					Place: place,
 					Rules: priceRules,
@@ -159,6 +163,7 @@ func ListPriceRules(w http.ResponseWriter, r *http.Request) {
 		From("shopify_creds c").
 		LeftJoin("places p").On("p.id = c.place_id").
 		Where(db.Cond{"p.status": data.PlaceStatusActive}).
+		OrderBy("id DESC").
 		All(&creds)
 
 	var newRules []priceRule
