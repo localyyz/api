@@ -141,11 +141,11 @@ func (p *Page) UpdateQueryUpper(res db.Result) db.Result {
 
 func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Paginator {
 	paginator := selector.Paginate(uint(p.Limit))
+	total, _ := paginator.TotalEntries()
+	p.ItemTotal = int(total)
 	if p.Page > 1 {
 		return paginator.Page(uint(p.Page))
 	}
-	total, _ := paginator.TotalEntries()
-	p.ItemTotal = int(total)
 	return paginator
 }
 
