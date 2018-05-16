@@ -1,6 +1,7 @@
 .DS_Store
 cmd/*/tmp/
 bin/
+config/tool.conf
 config/api.conf
 config/merchant.conf
 config/push.pem
