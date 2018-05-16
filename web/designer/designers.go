@@ -73,6 +73,7 @@ func List(w http.ResponseWriter, r *http.Request) {
 		"p.deleted_at": nil,
 		"p.brand":      db.NotEq(""),
 		"pl.status":    3,
+		"p.status":     data.ProductStatusApproved,
 	}
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 		cond["p.gender"] = data.ProductGender(gender)
@@ -113,7 +114,10 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	designer := ctx.Value("designer").(string)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	cond := db.Cond{"p.deleted_at": nil}
+	cond := db.Cond{
+		"p.deleted_at": nil,
+		"p.status":     data.ProductStatusApproved,
+	}
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 		cond["p.gender"] = data.ProductGender(gender)
 	}

@@ -97,8 +97,8 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		// worth it.
 		cond := db.Cond{
 			"p.deleted_at IS": nil,
+			"p.status":        data.ProductStatusApproved,
 			"pl.status":       data.PlaceStatusActive,
-			"p.category":      db.NotEq("{}"),
 		}
 		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 			cond["p.gender"] = gender
@@ -127,7 +127,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		cond := db.Cond{
 			"p.deleted_at IS": nil,
 			"pl.status":       data.PlaceStatusActive,
-			"p.category":      db.NotEq("{}"),
+			"p.status":        data.ProductStatusApproved,
 		}
 		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 			cond["p.gender"] = gender
@@ -182,7 +182,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 
 		cond := db.Cond{
 			"p.deleted_at IS": nil,
-			"p.category":      db.NotEq("{}"),
+			"p.status":        data.ProductStatusApproved,
 			"pl.status":       data.PlaceStatusActive,
 		}
 		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {

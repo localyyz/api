@@ -22,6 +22,7 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 			db.Cond{
 				"place_id":   place.ID,
 				"deleted_at": nil,
+				"status":     data.ProductStatusApproved,
 			},
 		)
 	query = cursor.UpdateQueryUpper(query)
