@@ -137,32 +137,33 @@ func finalize(ctx context.Context) error {
 		return nil
 	}
 
-	shopifyCharge := &shopify.UsageCharge{
-		RecurringApplicationChargeID: billing.ExternalID,
-		Description:                  plan.Name,
-		Price:                        fmt.Sprintf("%.2f", plan.RecurringPrice),
-	}
-	cl := ctx.Value("shopify.client").(*shopify.Client)
-	if _, _, err := cl.Billing.CreateUsageCharge(ctx, shopifyCharge); err != nil {
-		return errors.Wrap(err, "creating subscription charge")
-	}
+	if plan.RecurringPrice > 0.0 {
+		shopifyCharge := &shopify.UsageCharge{
+			RecurringApplicationChargeID: billing.ExternalID,
+			Description:                  plan.Name,
+			Price:                        fmt.Sprintf("%.2f", plan.RecurringPrice),
+		}
+		cl := ctx.Value("shopify.client").(*shopify.Client)
+		if _, _, err := cl.Billing.CreateUsageCharge(ctx, shopifyCharge); err != nil {
+			return errors.Wrap(err, "creating subscription charge")
+		}
+		dbCharge := &data.PlaceCharge{
+			PlaceID:    billing.PlaceID,
+			ExternalID: shopifyCharge.ID,
+			Amount:     plan.RecurringPrice,
+			ChargeType: data.ChargeTypeSubscription,
+		}
 
-	dbCharge := &data.PlaceCharge{
-		PlaceID:    billing.PlaceID,
-		ExternalID: shopifyCharge.ID,
-		Amount:     plan.RecurringPrice,
-		ChargeType: data.ChargeTypeSubscription,
-	}
+		// calculate the end date
+		expireAt := time.Now().Add(Year)
+		dbCharge.ExpireAt = &expireAt
 
-	// calculate the end date
-	expireAt := time.Now().Add(Year)
-	dbCharge.ExpireAt = &expireAt
-
-	// save charge to the database
-	// TODO: safe guards? should have retries etc
-	err = data.DB.PlaceCharge.Save(dbCharge)
-	if err != nil {
-		return errors.Wrap(err, "save subscription charge")
+		// save charge to the database
+		// TODO: safe guards? should have retries etc
+		err = data.DB.PlaceCharge.Save(dbCharge)
+		if err != nil {
+			return errors.Wrap(err, "save subscription charge")
+		}
 	}
 
 	lg.Alertf("merchant(%d) finalized billing type (%s): %s", billing.PlaceID, plan.PlanType, billing.Status)
