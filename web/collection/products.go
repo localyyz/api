@@ -38,16 +38,14 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 	cond := db.And(
 		productCond,
 		db.Cond{
-			"p.gender":      collection.Gender,
-			"p.category <>": "{}",
+			"p.gender": collection.Gender,
+			"p.status": data.ProductStatusApproved,
 		},
 	)
-
 	query := data.DB.Select(db.Raw("distinct p.*")).
 		From("products p").
 		Where(cond).
-		OrderBy("p.weight DESC, p.id DESC")
-
+		OrderBy("p.id DESC")
 	paginate := cursor.UpdateQueryBuilder(query)
 	var products []*data.Product
 	if err := paginate.All(&products); err != nil {

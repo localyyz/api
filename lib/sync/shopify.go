@@ -96,18 +96,11 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		// Update the vendor
 		product.Brand = p.Vendor
 
-		// update product images if product image is empty
-		err = setImages(&shopifyImageSyncer{Product: product}, p.Images...)
-		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
-
-		data.DB.Product.Save(product)
-
 		// iterate product variants and update quantity limit
 		for _, v := range p.Variants {
 			dbVariant, err := data.DB.ProductVariant.FindByOfferID(v.ID)
 			if err != nil {
 				if err != db.ErrNoMoreRows {
-					lg.Warnf("variant offerID %d for product(%d) err: %+v", v.ID, product.ID, err)
 					continue
 				}
 				// create new db variant previously unavailable
@@ -142,6 +135,13 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 				return errors.Wrap(err, "failed to update product variant")
 			}
 		}
+
+		// update product images if product image is empty
+		err = setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
+
+		data.DB.Product.Save(product)
+
 	}
 
 	return nil
