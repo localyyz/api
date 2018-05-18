@@ -28,18 +28,18 @@ type BillingPlanType uint32
 type BillingType uint32
 
 const (
-	_ BillingPlanType = iota
-	BillingPlanTypeStandard
-	BillingPlanTypeEssential
-	BillingPlanTypePriority
-	BillingPlanTypeCustom
+	_                        BillingPlanType = iota // 0
+	BillingPlanTypeStandard                         // 1
+	BillingPlanTypeEssential                        // 2
+	BillingPlanTypePriority                         // 3
+	BillingPlanTypeCustom                           // 4
 )
 
 const (
-	_ BillingType = iota
-	BillingTypeAnnual
-	BillingTypeQuaterly
-	BillingTypeMonthly
+	_                   BillingType = iota // 0
+	BillingTypeAnnual                      // 1
+	BillingTypeQuaterly                    // 2
+	BillingTypeMonthly                     // 3
 )
 
 var billingPlanTypes = []string{"-", "standard", "essential", "priority", "custom"}
