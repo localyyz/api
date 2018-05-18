@@ -191,23 +191,27 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 		placeIDs[i] = p.ID
 	}
 
-	dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
-	query := data.DB.Select("*").
-		From(db.Raw(`(
-			SELECT product_id, row_number() over (partition by place_id, product_id % ?) as rank
-			FROM product_variants
-			WHERE place_id IN ?
-			AND prev_price != 0
-			AND price != 0
-			AND prev_price > price
-			GROUP BY place_id, product_id
-		) x`, dayOfWeekPlusOne, placeIDs)).
+	/* selecting product ids from product variants*/
+	res := data.DB.Select("pv.product_id").
+		From("product_variants pv").
 		Where(db.Cond{
-			"rank": dayOfWeekPlusOne,
+			"pv.place_id":   placeIDs,
+			"pv.prev_price": db.NotEq(0),
+			"pv.price":      db.NotEq(0),
+			"pv.limits":     db.Gt(0),
 		}).
-		OrderBy(db.Raw("product_id % ?", dayOfWeekPlusOne))
-	paginator := cursor.UpdateQueryBuilder(query)
+		And(db.Cond{"pv.prev_price": db.Gte(db.Raw("2*pv.price"))}).
+		GroupBy("pv.product_id").
+		OrderBy("pv.product_id DESC")
 
+	/* paginating the product ids */
+	cursor.ItemTotal = 1000
+	paginator := res.Paginate(uint(cursor.Limit))
+	if cursor.Page > 1 {
+		paginator = paginator.Page(uint(cursor.Page))
+	}
+
+	/* getting the rows */
 	rows, err := paginator.QueryContext(ctx)
 	if err != nil {
 		render.Respond(w, r, err)
@@ -215,35 +219,33 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
+	/* appending to the productIDs array */
 	var productIDs []int64
 	for rows.Next() {
 		var pId int64
-		var rank interface{}
-		if err := rows.Scan(&pId, &rank); err != nil {
+		if err := rows.Scan(&pId); err != nil {
 			lg.Warnf("error scanning query: %+v", err)
 			break
 		}
 		productIDs = append(productIDs, pId)
 	}
-	if err := rows.Err(); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
 
-	cond := db.Cond{"id": productIDs}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["gender"] = gender
-	}
-	result := data.DB.Product.Find(cond).
-		OrderBy(
-			data.MaintainOrder("id", productIDs),
-		)
+	/* selecting the products by matching product_id and checking product status */
+	res = data.DB.Select("p.*").
+		From("products p").
+		Where(db.Cond{
+			"p.status": data.ProductStatusApproved,
+			"p.id":     productIDs,
+		}).
+		GroupBy("p.id").
+		OrderBy("p.id DESC").
+		Limit(len(productIDs))
+
 	var products []*data.Product
-	if err := result.All(&products); err != nil {
+	if err := res.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
-	cursor.Update(products)
 
 	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
