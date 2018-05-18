@@ -6,14 +6,14 @@ import (
 )
 
 type ProductImage struct {
-	ID         int64  `db:"id,pk,omitempty" json:"id,omitempty"`
-	ProductID  int64  `db:"product_id" json:"productId,omitempty"`
-	ExternalID int64  `db:"external_id,omitempty" json:"-"`
-	ImageURL   string `db:"image_url" json:"imageUrl"`
-	Ordering   int32  `db:"ordering" json:"ordering"`
-	Width      int64  `db:"width" json:"width"`
-	Height     int64  `db:"height" json:"height"`
-
+	ID         int64   `db:"id,pk,omitempty" json:"id,omitempty"`
+	ProductID  int64   `db:"product_id" json:"productId,omitempty"`
+	ExternalID int64   `db:"external_id,omitempty" json:"-"`
+	ImageURL   string  `db:"image_url" json:"imageUrl"`
+	Ordering   int32   `db:"ordering" json:"ordering"`
+	Width      int64   `db:"width" json:"width"`
+	Height     int64   `db:"height" json:"height"`
+	Score      int64   `db:"score" json:"score"`
 	VariantIDs []int64 `db:"-" json:"-"`
 }
 
