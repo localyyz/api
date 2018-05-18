@@ -534,7 +534,7 @@
           url: "/plan",
           data: JSON.stringify({"planType": "essential"}),
           beforeSend: function() {
-            ShopifyApp.flashNotice("subscribing to standard plan...");
+            ShopifyApp.flashNotice("subscribing to essential plan...");
           },
           success: function(result) {
             location.reload();
@@ -548,7 +548,7 @@
           url: "/plan",
           data: JSON.stringify({"planType": "priority"}),
           beforeSend: function() {
-            ShopifyApp.flashNotice("subscribing to standard plan...");
+            ShopifyApp.flashNotice("subscribing to priority plan...");
           },
           success: function(result) {
             location.reload();

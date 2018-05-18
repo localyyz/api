@@ -199,9 +199,9 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 func CreatePlan(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	planType := ctx.Value("billing.type").(data.BillingPlanType)
-	place := ctx.Value("place").(*data.Place)
+	place, ok := ctx.Value("place").(*data.Place)
 
-	if !place.PlanEnabled {
+	if !ok || !place.PlanEnabled {
 		return
 	}
 

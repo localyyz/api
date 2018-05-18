@@ -110,46 +110,38 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if place.PlanEnabled {
-		// if we have a pending plan, fetch and redirect
-		pendingBilling, _ := data.DB.PlaceBilling.FindOne(
+		billing, _ := data.DB.PlaceBilling.FindOne(
 			db.Cond{
 				"place_id": place.ID,
-				"status":   data.BillingStatusPending,
 			},
 		)
-		if pendingBilling != nil {
-			// fetch the remote updated billing status
-			client := ctx.Value("shopify.client").(*shopify.Client)
-			shopBilling, _, _ := client.Billing.Get(ctx, &shopify.Billing{ID: pendingBilling.ExternalID})
-			if shopBilling != nil {
-				if shopBilling.Status == shopify.BillingStatusPending {
-					pageContext["confirmationUrl"] = shopBilling.ConfirmationUrl
-					pageContext["shouldRedirect"] = 1
-				}
-			}
-		}
-
-		// find active billing
-		// if we have a pending plan, fetch and redirect
-		activeBilling, _ := data.DB.PlaceBilling.FindOne(
-			db.Cond{
-				"place_id": place.ID,
-				"status":   data.BillingStatusActive,
-			},
-		)
-		if activeBilling != nil {
+		if billing != nil {
 			type planWrapper struct {
 				Type      string
 				Status    string
 				StartedOn string
 				ExpiresOn string
 			}
-			plan, _ := data.DB.BillingPlan.FindByID(activeBilling.PlanID)
-			pageContext["plan"] = planWrapper{
-				Type:      plan.PlanType.String(),
-				Status:    activeBilling.Status.String(),
-				StartedOn: activeBilling.AcceptedAt.Format("January 2, 2006"),
+			if billing.Status == data.BillingStatusPending {
+				// fetch the remote updated billing status
+				client := ctx.Value("shopify.client").(*shopify.Client)
+				shopBilling, _, _ := client.Billing.Get(ctx, &shopify.Billing{ID: billing.ExternalID})
+				if shopBilling != nil {
+					if shopBilling.Status == shopify.BillingStatusPending {
+						pageContext["confirmationUrl"] = shopBilling.ConfirmationUrl
+						pageContext["shouldRedirect"] = 1
+					}
+				}
 			}
+			plan, _ := data.DB.BillingPlan.FindByID(billing.PlanID)
+			w := planWrapper{
+				Type:   plan.PlanType.String(),
+				Status: billing.Status.String(),
+			}
+			if billing.AcceptedAt != nil {
+				w.StartedOn = billing.AcceptedAt.Format("January 2, 2006")
+			}
+			pageContext["plan"] = w
 		}
 	}
 
