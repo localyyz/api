@@ -137,7 +137,7 @@ func finalize(ctx context.Context) error {
 		return nil
 	}
 
-	if plan.RecurringPrice > 0.0 {
+	if plan.RecurringPrice > 0.0 && plan.BillingType == data.BillingTypeAnnual {
 		shopifyCharge := &shopify.UsageCharge{
 			RecurringApplicationChargeID: billing.ExternalID,
 			Description:                  plan.Name,
