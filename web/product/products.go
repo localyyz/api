@@ -202,7 +202,7 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 		AND pv.prev_price != 0
 		AND pv.price != 0
 		AND pv.prev_price > 2 * pv.price
-		ORDER BY pv.product_id
+		GROUP BY pv.product_id
 	) x`, placeIDs))
 	paginator := cursor.UpdateQueryBuilder(query)
 
