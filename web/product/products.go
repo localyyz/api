@@ -191,21 +191,19 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 		placeIDs[i] = p.ID
 	}
 
-	dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
 	query := data.DB.Select("*").
 		From(db.Raw(`(
-			SELECT product_id, row_number() over (partition by place_id, product_id % ?) as rank
-			FROM product_variants
-			WHERE place_id IN ?
-			AND prev_price != 0
-			AND price != 0
-			AND prev_price > price
-			GROUP BY place_id, product_id
-		) x`, dayOfWeekPlusOne, placeIDs)).
-		Where(db.Cond{
-			"rank": dayOfWeekPlusOne,
-		}).
-		OrderBy(db.Raw("product_id % ?", dayOfWeekPlusOne))
+		SELECT pv.product_id
+		FROM product_variants AS pv
+		INNER JOIN products as pd
+		ON pv.product_id = pd.id
+		WHERE pd.status = 3
+		AND pv.place_id IN ?
+		AND pv.prev_price != 0
+		AND pv.price != 0
+		AND pv.prev_price > 2 * pv.price
+		ORDER BY pv.product_id
+	) x`, placeIDs))
 	paginator := cursor.UpdateQueryBuilder(query)
 
 	rows, err := paginator.QueryContext(ctx)
@@ -218,8 +216,7 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 	var productIDs []int64
 	for rows.Next() {
 		var pId int64
-		var rank interface{}
-		if err := rows.Scan(&pId, &rank); err != nil {
+		if err := rows.Scan(&pId); err != nil {
 			lg.Warnf("error scanning query: %+v", err)
 			break
 		}
