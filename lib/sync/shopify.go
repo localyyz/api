@@ -137,15 +137,10 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		}
 
 		// update product images if product image is empty
-		imageScore, err := setImages(&shopifyImageSyncer{Product: product}, &shopifyImageScorer{}, p.Images...)
+		err = setImages(product, &shopifyImageSyncer{Product: product}, &shopifyImageScorer{}, p.Images...)
 
 		// update product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
-
-		// update product score, a score of -1 means there were no new pictures to save so dont update score
-		if imageScore != -1 {
-			product.Score = imageScore
-		}
 
 		if err != nil {
 			lg.Warn("Warning: could not update product score for product id: %d", product.ID)
@@ -220,13 +215,10 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		setVariants(product, p.Variants...)
 
 		// set imgs, and score
-		imageScore, err := setImages(&shopifyImageSyncer{Product: product}, &shopifyImageScorer{}, p.Images...)
+		err := setImages(product, &shopifyImageSyncer{Product: product}, &shopifyImageScorer{}, p.Images...)
 
 		// product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
-
-		// score product
-		product.Score = imageScore
 
 		// save
 		data.DB.Product.Save(product)

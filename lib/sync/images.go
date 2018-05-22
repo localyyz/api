@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	TOTALIMAGEWEIGHT  = 5
-	MINIMUMIMAGEWIDTH = 750
+	TotalImageWeight  = 5
+	MinimumImageWidth = 750
 )
 
 type shopifyImageSyncer struct {
@@ -68,44 +68,52 @@ func (s *shopifyImageSyncer) Finalize(toSaves, toRemoves []*data.ProductImage) e
 	return nil
 }
 
-func (s *shopifyImageScorer) ScoreProduct(images []*data.ProductImage) (int64, error) {
-	if len(images) == 0 {
-		return -1, nil
-	}
+func (s *shopifyImageScorer) ScoreProductImages(images []*data.ProductImage) error {
 
 	for _, img := range images {
 		res, _ := http.Head(img.ImageURL)
 		if res.StatusCode != 200 { //if image is not valid error out
-			return 0, errors.New("Error: 404 image url")
+			return errors.New("Error: 404 image url")
 		}
+
+		if img.Width >= MinimumImageWidth {
+			img.Score = 1
+		} else {
+			img.Score = 0
+		}
+	}
+
+	return nil
+}
+
+func (s *shopifyImageScorer) Finalize(images []*data.ProductImage) int64 {
+
+	if len(images) == 0 {
+		return 0
 	}
 
 	var totalScore int64
-	var pictureWeight float64
+	totalScore = 0
+	var productScore int64
+	productScore = 0
 
-	pictureWeight = float64(TOTALIMAGEWEIGHT) / float64(len(images)) //the weight of each individual picture
-
-	/* scoring each picture */
-	for _, val := range images {
-		if val.Width >= MINIMUMIMAGEWIDTH {
+	pictureWeight := float64(TotalImageWeight) / float64(len(images)) //the weight of each individual picture
+	for _, img := range images {
+		if img.Score == 1 {
 			totalScore++
-			val.Score = 1
-		} else {
-			val.Score = 0
 		}
 	}
+	productScore = int64(math.Ceil(pictureWeight * float64(totalScore))) //the product score from each image
+	return productScore
 
-	productScore := int64(math.Ceil(pictureWeight * float64(totalScore))) //the product score from each image
-
-	return productScore, nil
 }
 
-func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*shopify.ProductImage) (int64, error) {
+func setImages(product *data.Product, syncer productImageSyncer, scorer productImageScorer, imgs ...*shopify.ProductImage) error {
 
 	//getting the images from product_images for product
 	dbImages, err := syncer.FetchProductImages()
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	//fill out a map using external image IDS
@@ -155,14 +163,20 @@ func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*sh
 	}
 
 	// score the images, return err if any image url is a 404
-	productScore, err := scorer.ScoreProduct(toSaves)
-
-	// if there is a 404 return the error from ScoreProduct, product is rejected anyways so no need to save
+	err = scorer.ScoreProductImages(toSaves)
 	if err != nil {
-		return productScore, err
-	} else {
-		//no 404 images so save product and return score
-		return productScore, syncer.Finalize(toSaves, toRemoves)
+		return err
 	}
+
+	//aggregate the score
+	product.Score = scorer.Finalize(toSaves)
+
+	//save the images
+	err = syncer.Finalize(toSaves, toRemoves)
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }

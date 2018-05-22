@@ -13,37 +13,45 @@ import (
 type testImageScorer struct {
 }
 
-func (m *testImageScorer) ScoreProduct(images []*data.ProductImage) (int64, error) {
-	if len(images) == 0 {
-		return -1, nil
-	}
+func (m *testImageScorer) ScoreProductImages(images []*data.ProductImage) error {
 
 	for _, img := range images {
 		res, _ := http.Head(img.ImageURL)
 		if res.StatusCode != 200 { //if image is not valid error out
-			return 0, errors.New("Error: 404 image url")
+			return errors.New("Error: 404 image url")
 		}
+
+		if img.Width >= MinimumImageWidth {
+			img.Score = 1
+		} else {
+			img.Score = 0
+		}
+	}
+
+	return nil
+}
+
+func (m *testImageScorer) Finalize(images []*data.ProductImage) int64 {
+
+	if len(images) == 0 {
+		return 0
 	}
 
 	var totalScore int64
-	var pictureWeight float64
+	totalScore = 0
+	var productScore int64
+	productScore = 0
 
-	pictureWeight = float64(TOTALIMAGEWEIGHT) / float64(len(images)) //the weight of each individual picture
-
-	/* scoring each picture */
-	for _, val := range images {
-		if val.Width >= MINIMUMIMAGEWIDTH {
+	pictureWeight := float64(TotalImageWeight) / float64(len(images)) //the weight of each individual picture
+	for _, img := range images {
+		if img.Score == 1 {
 			totalScore++
-			val.Score = 1
-		} else {
-			val.Score = 0
 		}
 	}
-
-	productScore := int64(math.Ceil(pictureWeight * float64(totalScore))) //the product score from each image
-
-	return productScore, nil
+	productScore = int64(math.Ceil(pictureWeight * float64(totalScore))) //the product score from each image
+	return productScore
 }
+
 func TestImageScore(t *testing.T) {
 	imageScorer := &testImageScorer{}
 	var images [][]*data.ProductImage
@@ -170,11 +178,12 @@ func TestImageScore(t *testing.T) {
 	images = append(images, img5)
 	images = append(images, img6)
 	images = append(images, img7)
-	var expected = []int{5, 0, 4, 2, 3, 0, -1}
+	var expected = []int{5, 0, 4, 2, 3, 0, 0}
 
 	for ind, tt := range expected {
 		t.Run("Testing Image Score", func(t *testing.T) {
-			imageScore, _ := imageScorer.ScoreProduct(images[ind])
+			imageScorer.ScoreProductImages(images[ind])
+			imageScore := imageScorer.Finalize(images[ind])
 			if int64(tt) != imageScore {
 				log.Fatalf("Error: Expected Image score %d got %d for test %d ", tt, imageScore, ind)
 			}
