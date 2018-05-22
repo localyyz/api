@@ -28,6 +28,19 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	place := ctx.Value("place").(*data.Place)
 	topic := ctx.Value("sync.topic").(string)
 
+	// always return OK
+	render.Status(r, http.StatusOK)
+
+	// NOTE: new places must have an active billing type.
+	// TODO: move webhook registration to after billing is accepted
+	billing, err := data.DB.PlaceBilling.FindByPlaceID(place.ID)
+	if err == db.ErrNoMoreRows {
+		return
+	}
+	if billing.Status != data.BillingStatusActive {
+		return
+	}
+
 	wrapper := new(shopifyWebhookRequest)
 	if err := render.Bind(r, wrapper); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))

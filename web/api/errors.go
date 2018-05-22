@@ -41,7 +41,9 @@ var (
 	ErrInvalidLogin = errors.New("invalid login credentials, check username and/or password")
 
 	/* Shopify */
-	ErrConflictStore = &ApiError{StatusCode: http.StatusConflict, ErrorText: "store already connected"}
+	ErrConflictStore      = &ApiError{StatusCode: http.StatusConflict, ErrorText: "store already connected"}
+	ErrInvalidChargeID    = &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "invalid id was given by shopify, please contact support"}
+	ErrInvalidBillingPlan = &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "invalid plan type was selected, please contact support"}
 
 	/* Permission */
 	ErrPermissionDenied = &ApiError{StatusCode: http.StatusUnauthorized}

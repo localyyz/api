@@ -1,12 +1,8 @@
 package merchant
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,17 +11,14 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
-	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/merchant/approval"
-	"bitbucket.org/moodie-app/moodie-api/merchant/plan"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
-	"github.com/pressly/lg"
 )
 
 type Handler struct {
@@ -55,6 +48,7 @@ func New(h *Handler) chi.Router {
 	}
 
 	// initialize approval
+	// TODO: move this to TOOL
 	approval.Init(h.Environment)
 
 	r.Use(middleware.RealIP)
@@ -66,6 +60,7 @@ func New(h *Handler) chi.Router {
 	r.Use(middleware.WithValue("shopify.appname", h.SH.AppName()))
 	r.Use(middleware.WithValue("slack.client", h.SL))
 	r.Use(middleware.WithValue("api.url", h.ApiURL))
+	r.Use(middleware.WithValue("debug", h.Debug))
 
 	// Shopify auth routes
 	r.Group(func(r chi.Router) {
@@ -80,10 +75,13 @@ func New(h *Handler) chi.Router {
 	r.Group(func(r chi.Router) {
 		r.Use(token.Verify())
 		r.Use(SessionCtx)
+		r.Use(MustValidateSessionCtx)
+
 		r.Post("/tos", AcceptTOS)
-		r.Mount("/plan", plan.Routes())
+		r.Mount("/plan", planRoutes())
 	})
 
+	// TODO: move this to the TOOL
 	r.Mount("/approval", approval.Routes())
 
 	return r
@@ -100,14 +98,14 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		"status":   place.Status.String(),
 		"clientID": clientID,
 	}
-	if place.Status == data.PlaceStatusWaitApproval {
-		pageContext["approvalTs"] = place.TOSAgreedAt.Add(1 * 24 * time.Hour)
-	}
 	pageContext["productCount"], _ = data.DB.Product.Find(db.Cond{"place_id": place.ID}).Count()
 
 	if strings.HasPrefix(r.UserAgent(), "Shopify Mobile") {
 		pageContext["isMobile"] = true
 	}
+
+	// fetch the number of places waiting for approval
+	pageContext["approvalWait"], _ = data.DB.Place.Find(db.Cond{"status": data.PlaceStatusWaitApproval}).Count()
 
 	if place.PlanEnabled {
 		billing, _ := data.DB.PlaceBilling.FindOne(
@@ -154,132 +152,4 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	})
 	t, _ := indexTmpl.Execute(pageContext)
 	render.HTML(w, r, t)
-}
-
-func AcceptTOS(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	place := ctx.Value("place").(*data.Place)
-
-	// must be in "Wait Agreement" status to accept
-	if place.Status != data.PlaceStatusWaitAgreement {
-		return
-	}
-
-	// proceed to next status
-	place.Status += 1
-	place.TOSAgreedAt = data.GetTimeUTCPointer()
-	place.TOSIP = r.RemoteAddr
-	if err := data.DB.Place.Save(place); err != nil {
-		// error has occured. respond
-		render.Status(r, http.StatusInternalServerError)
-		render.Respond(w, r, err)
-		return
-	}
-
-	// notify slack with button for approving the merchant
-	sl := ctx.Value("slack.client").(*connect.Slack)
-	sl.Notify(
-		"store",
-		fmt.Sprintf("<%s|%s> (id: %v) just accepted the TOS!", place.Website, place.Name, place.ID),
-		&slack.Attachment{
-			Title:      "start review process:",
-			TitleLink:  fmt.Sprintf("https://merchant.localyyz.com/approval/%d", place.ID),
-			Fallback:   "You are unable to approve / reject the store.",
-			CallbackID: fmt.Sprintf("placeid%d", place.ID),
-			Color:      "0195ff",
-		},
-	)
-
-	render.Respond(w, r, "success")
-	return
-}
-
-func SessionCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		token, claims, err := jwtauth.FromContext(ctx)
-		if token == nil || err != nil {
-			lg.Infof("invalid merchant ctx token is nil (%s): %+v", r.URL.Path, err)
-			next.ServeHTTP(w, r.WithContext(ctx))
-			return
-		}
-
-		rawPlaceID, ok := claims["place_id"].(json.Number)
-		if !ok {
-			lg.Error("invalid session merchant, no place_id found")
-			return
-		}
-
-		placeID, err := rawPlaceID.Int64()
-		if err != nil {
-			lg.Errorf("invalid session merchant: %+v", err)
-			return
-		}
-
-		// find a logged in user with the given id
-		place, err := data.DB.Place.FindOne(
-			db.Cond{"id": placeID},
-		)
-		if err != nil {
-			lg.Errorf("invalid session merchant: %+v", err)
-			return
-		}
-
-		ctx = context.WithValue(ctx, "place", place)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
-}
-
-func VerifySignature(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		// verify the signature
-		ctx := r.Context()
-		sh := ctx.Value("shopify.client").(*connect.Shopify)
-
-		q := r.URL.Query()
-		sig := []byte(q.Get("hmac"))
-		if len(sig) == 0 {
-			lg.Warn("verify: missing hmac")
-			w.WriteHeader(http.StatusUnauthorized)
-			render.Respond(w, r, "unauthorized")
-			return
-		}
-
-		// verify timestamp
-		ts, err := strconv.ParseInt(q.Get("timestamp"), 10, 64)
-		if err != nil {
-			lg.Warn("verify: missing timestamp")
-			w.WriteHeader(http.StatusUnauthorized)
-			render.Respond(w, r, "unauthorized")
-			return
-		}
-		tm := time.Unix(ts, 0)
-		if time.Now().Before(tm) {
-			// is tm in the future?
-			lg.Warn("verify: timestamp before current time")
-			w.WriteHeader(http.StatusUnauthorized)
-			render.Respond(w, r, "unauthorized")
-			return
-		}
-		//if time.Since(tm) > SignatureTimeout {
-		//// is tm outside of the timeout (30s)
-		//lg.Warn("verify: timestamp timed out (30s)")
-		//render.Respond(w, r, "unauthorized")
-		//return
-		//}
-
-		// remove the hmac key
-		q.Del("hmac")
-
-		if !sh.VerifySignature(sig, q.Encode()) {
-			lg.Warn("verify: hmac mismatch")
-			w.WriteHeader(http.StatusUnauthorized)
-			render.Respond(w, r, "unauthorized")
-			return
-		}
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
 }

@@ -200,34 +200,21 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		u, _ := url.Parse(shop.Domain)
 		u.Scheme = "https"
 		place = &data.Place{
-			ShopifyID: shopID,
-			Plan:      shop.PlanName,
-			LocaleID:  locale.ID,
-			Geo:       *geotools.NewPointFromLatLng(shop.Latitude, shop.Longitude),
-			Name:      shop.Name,
-			Address:   fmt.Sprintf("%s, %s", shop.Address1, shop.City),
-			Phone:     shop.Phone,
-			Website:   u.String(),
-			Currency:  shop.Currency,
+			ShopifyID:   shopID,
+			Plan:        shop.PlanName,
+			LocaleID:    locale.ID,
+			Geo:         *geotools.NewPointFromLatLng(shop.Latitude, shop.Longitude),
+			Name:        shop.Name,
+			Address:     fmt.Sprintf("%s, %s", shop.Address1, shop.City),
+			Phone:       shop.Phone,
+			Website:     u.String(),
+			Currency:    shop.Currency,
+			PlanEnabled: true,
 		}
 	}
 	// upgrade place status to "waiting for agreement"
 	place.Status = data.PlaceStatusWaitAgreement
 	place.Gender = data.PlaceGender(data.ProductGenderUnisex)
-
-	// create the recurring billing, set at 120.00
-	//shopifyBilling := &shopify.Billing{
-	//Type:      shopify.BillingTypeRecurring,
-	//Name:      "Localyyz Subscription",
-	//Price:     "120.00",
-	//ReturnUrl: fmt.Sprintf("https://%s.myshopify.com/admin/apps/localyyz", shopID),
-	//TrialDays: int64(time.Until(TrialEndDate).Hours() / 24),
-	//}
-	//_, _, err = sh.Billing.Create(ctx, shopifyBilling)
-	//if err != nil {
-	//return errors.Wrapf(err, "failed to create billing for %s", shopID)
-	//}
-	//place.Billing = data.PlaceBilling{Billing: shopifyBilling}
 
 	// create a place holder checkout for the account id
 	place.PaymentMethods = []*data.PaymentMethod{}

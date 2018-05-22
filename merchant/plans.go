@@ -1,4 +1,4 @@
-package plan
+package merchant
 
 import (
 	"context"
@@ -22,15 +22,6 @@ import (
 var (
 	Year = 365 * 24 * time.Hour
 )
-
-func Routes() chi.Router {
-	r := chi.NewRouter()
-
-	r.With(RecurringChargeCtx).Get("/cb", Callback)
-	r.With(BillingPlanTypeCtx).Post("/", CreatePlan)
-
-	return r
-}
 
 func BillingPlanTypeCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +52,6 @@ func RecurringChargeCtx(next http.Handler) http.Handler {
 		}
 
 		// fetch the place with the charge id (external_id)
-		// continue on normally if not found
 		billing, err := data.DB.PlaceBilling.FindOne(
 			db.Cond{
 				"place_id":    place.ID,
@@ -69,24 +59,38 @@ func RecurringChargeCtx(next http.Handler) http.Handler {
 			},
 		)
 		if err != nil {
-			next.ServeHTTP(w, r)
+			render.Render(w, r, api.ErrInvalidChargeID)
 			return
 		}
+
+		plan, err := data.DB.BillingPlan.FindByID(billing.PlanID)
+		if err != nil {
+			render.Render(w, r, api.ErrInvalidBillingPlan)
+			return
+		}
+
 		ctx = context.WithValue(ctx, "place.billing", billing)
+		ctx = context.WithValue(ctx, "place.plan", plan)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
 }
 
+func planRoutes() chi.Router {
+	r := chi.NewRouter()
+
+	r.With(RecurringChargeCtx).Get("/cb", Callback)
+	r.With(BillingPlanTypeCtx).Post("/", CreatePlan)
+
+	return r
+}
+
 // handle the accepted/declined billing callback
-func handleBillingCallback(ctx context.Context, place *data.Place) error {
-	billing, ok := ctx.Value("place.billing").(*data.PlaceBilling)
-	if !ok {
-		return api.ErrInvalidRequest(nil)
-	}
+func activateBilling(ctx context.Context) error {
+	billing := ctx.Value("place.billing").(*data.PlaceBilling)
 
 	cl := ctx.Value("shopify.client").(*shopify.Client)
-	// fetch shopify billing and check if the status is "accpted"
+	// fetch shopify billing and check if the status is "accepted"
 	shopifyBilling := &shopify.Billing{
 		ID:   billing.ExternalID,
 		Type: shopify.BillingTypeRecurring,
@@ -95,9 +99,8 @@ func handleBillingCallback(ctx context.Context, place *data.Place) error {
 		return errors.Wrap(err, "failed to fetch billing")
 	}
 
-	// billing was accepted
+	// billing was accepted. activate it (required by shopify)
 	if shopifyBilling.Status == shopify.BillingStatusAccepted {
-		// activate accepted billing
 		if _, _, err := cl.Billing.Activate(ctx, shopifyBilling); err != nil {
 			return errors.Wrap(err, "failed to activate billing")
 		}
@@ -106,30 +109,44 @@ func handleBillingCallback(ctx context.Context, place *data.Place) error {
 	// save billing status (could be active/declined)
 	billing.Status = data.BillingStatus(shopifyBilling.Status)
 
-	lg.Alertf("merchant(%d) billing status is %v", place.ID, billing.Status)
-	// save place and billing
-	ctx = context.WithValue(ctx, "place.billing", billing)
+	lg.Alertf("merchant(%d) billing status is %v", billing.PlaceID, billing.Status)
 	if err := data.DB.PlaceBilling.Save(billing); err != nil {
 		return errors.Wrap(err, "failed to save place billing")
 	}
 	return nil
 }
 
+// finalize finishes up the billing callback.
+// for example:
+//  - submit a "usage" charge for plans not billed monthly (TODO/NOTE: shopify
+//  will take care of this in the future)
+//  - TODO: install webhooks and start accepting products
 func finalize(ctx context.Context) error {
+	plan := ctx.Value("place.plan").(*data.BillingPlan)
 	billing := ctx.Value("place.billing").(*data.PlaceBilling)
 	if billing.Status != data.BillingStatusActive {
 		// nothing to do. return
 		return nil
 	}
 
-	plan, err := data.DB.BillingPlan.FindByID(billing.PlanID)
-	if err != nil {
-		return errors.Wrap(err, "fetch billing plan")
+	// if the billing type is Annual / (TODO: quaterly), submit
+	// an initial usage charge as the subscription fee.
+	// NOTE/TODO: shopify is planning to natively support other than monthly
+	// subscription types, so this can be handled on their end
+	if plan.RecurringPrice == 0.0 {
+		// return early because we did not match above requirement
+		return nil
+	}
+	if plan.BillingType != data.BillingTypeAnnual {
+		// return early because we did not match above requirement
+		return nil
 	}
 
-	// finalize initial subscription charge
+	// check if we have any active subscription charge already
+	// if we do, return
 	c, err := data.DB.PlaceCharge.FindActiveSubscriptionCharge(billing.PlaceID)
 	if err != nil && err != db.ErrNoMoreRows {
+		// something went wrong, return right away
 		return errors.Wrap(err, "fetch subscription charge")
 	}
 	// already charged, return
@@ -137,39 +154,47 @@ func finalize(ctx context.Context) error {
 		return nil
 	}
 
-	if plan.RecurringPrice > 0.0 && plan.BillingType == data.BillingTypeAnnual {
-		shopifyCharge := &shopify.UsageCharge{
-			RecurringApplicationChargeID: billing.ExternalID,
-			Description:                  plan.Name,
-			Price:                        fmt.Sprintf("%.2f", plan.RecurringPrice),
-		}
-		cl := ctx.Value("shopify.client").(*shopify.Client)
-		if _, _, err := cl.Billing.CreateUsageCharge(ctx, shopifyCharge); err != nil {
-			return errors.Wrap(err, "creating subscription charge")
-		}
-		dbCharge := &data.PlaceCharge{
-			PlaceID:    billing.PlaceID,
-			ExternalID: shopifyCharge.ID,
-			Amount:     plan.RecurringPrice,
-			ChargeType: data.ChargeTypeSubscription,
-		}
+	// create the shopify usage charge.
+	// TODO: support quaterly subscription types
+	shopifyCharge := &shopify.UsageCharge{
+		RecurringApplicationChargeID: billing.ExternalID,
+		Description:                  plan.Name,
+		Price:                        fmt.Sprintf("%.2f", plan.RecurringPrice),
+	}
+	cl := ctx.Value("shopify.client").(*shopify.Client)
+	if _, _, err := cl.Billing.CreateUsageCharge(ctx, shopifyCharge); err != nil {
+		return errors.Wrap(err, "creating subscription charge")
+	}
+	dbCharge := &data.PlaceCharge{
+		PlaceID:    billing.PlaceID,
+		ExternalID: shopifyCharge.ID,
+		Amount:     plan.RecurringPrice,
+		ChargeType: data.ChargeTypeSubscription,
+	}
 
-		// calculate the end date
-		expireAt := time.Now().Add(Year)
-		dbCharge.ExpireAt = &expireAt
+	// calculate the end date
+	// hard coded to "Year", because of annual
+	expireAt := time.Now().Add(Year)
+	dbCharge.ExpireAt = &expireAt
 
-		// save charge to the database
-		// TODO: safe guards? should have retries etc
-		err = data.DB.PlaceCharge.Save(dbCharge)
-		if err != nil {
-			return errors.Wrap(err, "save subscription charge")
-		}
+	// save charge to the database
+	// TODO: safe guards? should have retries etc
+	err = data.DB.PlaceCharge.Save(dbCharge)
+	if err != nil {
+		return errors.Wrap(err, "save subscription charge")
 	}
 
 	lg.Alertf("merchant(%d) finalized billing type (%s): %s", billing.PlaceID, plan.PlanType, billing.Status)
 	return nil
 }
 
+// Shopify routes to this endpoint after user accepts/rejects the presented
+// recurring charge.
+//
+// Handling is split into two parts:
+//
+// - handle billing callback
+// - finalize
 func Callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
@@ -184,18 +209,19 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 	cl.Debug = true
 	ctx = context.WithValue(ctx, "shopify.client", cl)
 
-	if err := handleBillingCallback(ctx, place); err != nil {
-		lg.Alertf("merchant(%d) billing callback failed: %v", place.ID, err)
+	if err := activateBilling(ctx); err != nil {
+		lg.Alertf("merchant(%d) billing activate failed: %v", place.ID, err)
 	}
 
 	if err := finalize(ctx); err != nil {
-		lg.Alertf("merchant(%d) billing callback failed: %v", place.ID, err)
+		lg.Alertf("merchant(%d) billing finalize failed: %v", place.ID, err)
 	}
 
 	appName := ctx.Value("shopify.appname").(string)
 	http.Redirect(w, r, fmt.Sprintf("https://%s.myshopify.com/admin/apps/%s", place.ShopifyID, appName), http.StatusTemporaryRedirect)
 }
 
+// Handles post request when user clicks on one of the billing types
 func CreatePlan(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	planType := ctx.Value("billing.type").(data.BillingPlanType)
@@ -216,9 +242,13 @@ func CreatePlan(w http.ResponseWriter, r *http.Request) {
 		Type:         shopify.BillingTypeRecurring,
 		Name:         defaultPlan.Name,
 		Terms:        defaultPlan.Terms,
-		ReturnUrl:    fmt.Sprintf("https://merchant.localyyz.com/plan/cb"),
+		ReturnUrl:    "https://merchant.localyyz.com/plan/cb",
 		Price:        "0",
 		CappedAmount: "10000",
+	}
+	if debug := ctx.Value("debug").(bool); debug {
+		billing.Test = true
+		billing.ReturnUrl = fmt.Sprintf("https://%s/plan/cb", r.Host)
 	}
 
 	creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
