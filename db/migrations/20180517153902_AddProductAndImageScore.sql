@@ -1,8 +1,8 @@
 
 -- +goose Up
 -- SQL in section 'Up' is executed when this migration is applied
-ALTER TABLE products ADD score SMALLINT DEFAULT 15;
-ALTER TABLE product_images ADD score SMALLINT DEFAULT 5;
+ALTER TABLE products ADD score SMALLINT DEFAULT -1;
+ALTER TABLE product_images ADD score SMALLINT DEFAULT -1;
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back

@@ -7,3 +7,7 @@ type productImageSyncer interface {
 	GetProduct() *data.Product
 	Finalize([]*data.ProductImage, []*data.ProductImage) error
 }
+
+type productImageScorer interface {
+	ScoreProduct([]*data.ProductImage) (int64, error)
+}

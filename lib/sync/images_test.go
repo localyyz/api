@@ -26,6 +26,13 @@ type mockImageSyncer struct {
 	*setImagesTest
 }
 
+type mockImageScorer struct {
+}
+
+func (m *mockImageScorer) ScoreProduct([]*data.ProductImage) (int64, error) {
+	return 0, nil
+}
+
 func (m *mockImageSyncer) FetchProductImages() ([]*data.ProductImage, error) {
 	if m.fetchProductImages == nil {
 		return nil, nil
@@ -182,7 +189,8 @@ func TestSetImages(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			syncer := &mockImageSyncer{&tt}
-			setImages(syncer, tt.syncImages...)
+			scorer := &mockImageScorer{}
+			setImages(syncer, scorer, tt.syncImages...)
 		})
 	}
 
