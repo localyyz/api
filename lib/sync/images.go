@@ -147,6 +147,8 @@ func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*sh
 
 		imgUrl, _ := url.Parse(img.Src)
 		imgUrl.Scheme = "https"
+		// remove any query params
+		imgUrl.RawQuery = ""
 		toSaves = append(toSaves, &data.ProductImage{
 			ProductID:  syncer.GetProduct().ID,
 			ExternalID: img.ID,

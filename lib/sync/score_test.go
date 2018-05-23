@@ -2,59 +2,36 @@ package sync
 
 import (
 	"log"
-	"math"
-	"net/http"
 	"testing"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"github.com/pkg/errors"
 )
 
-type testImageScorer struct {
-}
-
-func (m *testImageScorer) ScoreProductImages(images []*data.ProductImage) error {
-
-	for _, img := range images {
-		res, _ := http.Head(img.ImageURL)
-		if res.StatusCode != 200 { //if image is not valid error out
-			return errors.New("Error: 404 image url")
-		}
-
-		if img.Width >= MinimumImageWidth {
-			img.Score = 1
-		} else {
-			img.Score = 0
-		}
-	}
-
-	return nil
-}
-
-func (m *testImageScorer) Finalize(images []*data.ProductImage) int64 {
-
-	if len(images) == 0 {
-		return 0
-	}
-
-	var totalScore int64
-	totalScore = 0
-	var productScore int64
-	productScore = 0
-
-	pictureWeight := float64(TotalImageWeight) / float64(len(images)) //the weight of each individual picture
-	for _, img := range images {
-		if img.Score == 1 {
-			totalScore++
-		}
-	}
-	productScore = int64(math.Ceil(pictureWeight * float64(totalScore))) //the product score from each image
-	return productScore
-}
-
 func TestImageScore(t *testing.T) {
-	imageScorer := &testImageScorer{}
 	var images [][]*data.ProductImage
+	var products = []*data.Product{
+		{
+			ID: 1,
+		},
+		{
+			ID: 2,
+		},
+		{
+			ID: 3,
+		},
+		{
+			ID: 4,
+		},
+		{
+			ID: 5,
+		},
+		{
+			ID: 6,
+		},
+		{
+			ID: 7,
+		},
+	}
 	var img1 = []*data.ProductImage{
 		{
 			ID:       1,
@@ -163,9 +140,10 @@ func TestImageScore(t *testing.T) {
 	}
 	var img6 = []*data.ProductImage{
 		{
-			ID:       17,
-			Width:    900,
-			Height:   900,
+			ID:     17,
+			Width:  900,
+			Height: 900,
+			//a 404 url
 			ImageURL: "https://cdn.shopify.com/s/files/1/2380/1137/products/21ee6429441e966a7b6801af2f2b0af4.jpg",
 		},
 	}
@@ -182,10 +160,11 @@ func TestImageScore(t *testing.T) {
 
 	for ind, tt := range expected {
 		t.Run("Testing Image Score", func(t *testing.T) {
+			imageScorer := &shopifyImageScorer{Product: products[ind]}
 			imageScorer.ScoreProductImages(images[ind])
-			imageScore := imageScorer.Finalize(images[ind])
-			if int64(tt) != imageScore {
-				log.Fatalf("Error: Expected Image score %d got %d for test %d ", tt, imageScore, ind)
+			imageScorer.Finalize(images[ind])
+			if int64(tt) != imageScorer.GetProduct().Score {
+				log.Fatalf("Error: Expected Image score %d got %d for test %d ", tt, imageScorer.GetProduct().Score, ind)
 			}
 		})
 	}

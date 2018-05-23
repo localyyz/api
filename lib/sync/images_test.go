@@ -27,14 +27,28 @@ type mockImageSyncer struct {
 }
 
 type mockImageScorer struct {
+	ImageScorer *shopifyImageScorer
 }
 
-func (m *mockImageScorer) ScoreProductImages([]*data.ProductImage) error {
+func (m *mockImageScorer) ScoreProductImages(images []*data.ProductImage) error {
+	for _, img := range images {
+
+		if img.Width >= MinimumImageWidth {
+			img.Score = 1
+		} else {
+			img.Score = 0
+		}
+	}
+
 	return nil
 }
 
-func (m *mockImageScorer) Finalize([]*data.ProductImage) int64 {
-	return 0
+func (m *mockImageScorer) GetProduct() *data.Product {
+	return m.ImageScorer.GetProduct()
+}
+
+func (m *mockImageScorer) Finalize(images []*data.ProductImage) error {
+	return m.ImageScorer.Finalize(images)
 }
 
 func (m *mockImageSyncer) FetchProductImages() ([]*data.ProductImage, error) {
@@ -190,13 +204,11 @@ func TestSetImages(t *testing.T) {
 		},
 	}
 
-	tempProd := &data.Product{}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			syncer := &mockImageSyncer{&tt}
-			scorer := &mockImageScorer{}
-			setImages(tempProd, syncer, scorer, tt.syncImages...)
+			scorer := &mockImageScorer{ImageScorer: &shopifyImageScorer{Product: &data.Product{}}}
+			setImages(syncer, scorer, tt.syncImages...)
 		})
 	}
 
