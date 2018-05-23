@@ -129,7 +129,13 @@
                     By clicking Accept, you are accepting Localyyz’s <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/terms-and-conditions-businesses.html" data-polaris-unstyled="true">Terms and Conditions</a>,
                     and <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/services-subscription-agreement.html" data-polaris-unstyled="true">Services Subscription</a>.
                     {% elif (place.Status == 2) %}
-                    Estimated date of approval: <span class="Polaris-Badge Polaris-Badge--statusInfo"> {{ approvalTs|naturaltime }}</span>
+                    Estimated date of approval: <span class="Polaris-Badge Polaris-Badge--statusInfo">Next 2 business days.</span>
+                    {% if(approvalWait > 10) %}
+                    <div class="Polaris-Banner__Content" id="Banner5Content">
+                      <p>(We're experiencing an unusual high amount of applications, your approval process may take a bit longer! Please contact us if you have any questions. Thank you for your patience.)</p>
+                      <p> - Localyyz Team
+                    </div>
+                    {% endif %}
                     {% endif %}
                     </p>
                   </div>
@@ -141,7 +147,7 @@
 
         <div class="Polaris-Layout__AnnotatedSection">
           <div class="Polaris-Layout__AnnotationWrapper">
-        {% if (place.PlanEnabled) %}
+        {% if (place.PlanEnabled && place.Status == 3) %}
           {% if (plan == nil) %}
             {% if (!isMobile) %}
             <div class="Polaris-Card" style="width: 100%;">
@@ -460,7 +466,7 @@
                   <a href="https://itunes.apple.com/us/app/localyyz/id1185735010" target="_blank">iOS Store</a>
                 </div>
                 <div class="Polaris-Card__Section">
-                  Android coming Early 2018.
+                  <a href="https://play.google.com/store/apps/details?id=com.localyyz" target="_blank">Google Play</a>
                 </div>
               </div>
             </div>
@@ -513,7 +519,7 @@
   <script type="text/javascript">
     "use strict"
     $(document).ready(function() {
-      {% if (place.PlanEnabled) %}
+      {% if (place.PlanEnabled == place.Status == 3) %}
       $("button#plan-standard").click(function() {
         $.ajax({
           type: "POST",
