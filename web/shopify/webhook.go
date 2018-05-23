@@ -31,13 +31,10 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// always return OK
 	render.Status(r, http.StatusOK)
 
-	// NOTE: new places must have an active billing type.
+	// NOTE: new merchants must have an active billing type.
 	// TODO: move webhook registration to after billing is accepted
-	billing, err := data.DB.PlaceBilling.FindByPlaceID(place.ID)
-	if err == db.ErrNoMoreRows {
-		return
-	}
-	if billing.Status != data.BillingStatusActive {
+	billing, _ := data.DB.PlaceBilling.FindByPlaceID(place.ID)
+	if billing != nil && billing.Status != data.BillingStatusActive {
 		return
 	}
 
