@@ -18,6 +18,7 @@ type Product struct {
 	ImageURL    string        `db:"image_url" json:"imageUrl"`
 	Brand       string        `db:"brand" json:"brand"`
 	Gender      ProductGender `db:"gender" json:"genderHint"`
+	Score       int64         `db:"score" json:"score"`
 	Etc         ProductEtc    `db:"etc" json:"etc"`
 
 	Category ProductCategory `db:"category" json:"category"`

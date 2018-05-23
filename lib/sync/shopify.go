@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	db "upper.io/db.v3"
@@ -137,9 +138,20 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		}
 
 		// update product images if product image is empty
-		err = setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		err = setImages(
+			&shopifyImageSyncer{Product: product},
+			&shopifyImageScorer{Product: product},
+			p.Images...,
+		)
+
+		// update product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
 
+		if err != nil {
+			lg.Warn("Warning: could not update product score for product id: %d", product.ID)
+		}
+
+		//save
 		data.DB.Product.Save(product)
 
 	}
@@ -207,8 +219,14 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		// product variants
 		setVariants(product, p.Variants...)
 
-		// set imgs and check if atleast one is valid
-		err := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		// set imgs, and score
+		err := setImages(
+			&shopifyImageSyncer{Product: product},
+			&shopifyImageScorer{Client: &http.Client{}, Product: product},
+			p.Images...,
+		)
+
+		// product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
 
 		// save
