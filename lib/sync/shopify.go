@@ -137,7 +137,11 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		}
 
 		// update product images if product image is empty
-		err = setImages(product, &shopifyImageSyncer{Product: product}, &shopifyImageScorer{}, p.Images...)
+		err = setImages(
+			&shopifyImageSyncer{Product: product},
+			&shopifyImageScorer{Product: product},
+			p.Images...,
+		)
 
 		// update product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
@@ -215,7 +219,11 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		setVariants(product, p.Variants...)
 
 		// set imgs, and score
-		err := setImages(product, &shopifyImageSyncer{Product: product}, &shopifyImageScorer{}, p.Images...)
+		err := setImages(
+			&shopifyImageSyncer{Product: product},
+			&shopifyImageScorer{Product: product},
+			p.Images...,
+		)
 
 		// product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)

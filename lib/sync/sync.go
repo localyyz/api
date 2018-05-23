@@ -10,5 +10,6 @@ type productImageSyncer interface {
 
 type productImageScorer interface {
 	ScoreProductImages([]*data.ProductImage) error
-	Finalize([]*data.ProductImage) int64
+	GetProduct() *data.Product
+	Finalize([]*data.ProductImage) error
 }
