@@ -77,8 +77,7 @@ func (s *shopifyImageScorer) GetProduct() *data.Product {
 func (s *shopifyImageScorer) ScoreProductImages(images []*data.ProductImage) error {
 
 	for _, img := range images {
-		validURL := s.ValidateURL(img.ImageURL)
-		if !validURL {
+		if !s.ValidateURL(img.ImageURL) {
 			return errors.New("Error: 404 image url")
 		}
 
@@ -118,16 +117,17 @@ func (s *shopifyImageScorer) ValidateURL(imageurl string) bool {
 	if err != nil {
 		return false
 	}
+
+	if s.Client == nil {
+		s.Client = http.DefaultClient
+	}
+
 	res, err := s.Client.Do(req)
 	if err != nil {
 		return false
 	}
 
-	if res.StatusCode == 200 {
-		return true
-	} else {
-		return false
-	}
+	return res.StatusCode == 200
 }
 
 func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*shopify.ProductImage) error {
