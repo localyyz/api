@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	db "upper.io/db.v3"
@@ -221,7 +222,7 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		// set imgs, and score
 		err := setImages(
 			&shopifyImageSyncer{Product: product},
-			&shopifyImageScorer{Product: product},
+			&shopifyImageScorer{Client: &http.Client{}, Product: product},
 			p.Images...,
 		)
 

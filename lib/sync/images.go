@@ -25,6 +25,7 @@ type shopifyImageSyncer struct {
 }
 
 type shopifyImageScorer struct {
+	Client  HttpClient
 	Product *data.Product
 }
 
@@ -76,8 +77,8 @@ func (s *shopifyImageScorer) GetProduct() *data.Product {
 func (s *shopifyImageScorer) ScoreProductImages(images []*data.ProductImage) error {
 
 	for _, img := range images {
-		res, _ := http.Head(img.ImageURL)
-		if res.StatusCode != 200 { //if image is not valid error out
+		validURL := s.ValidateURL(img.ImageURL)
+		if !validURL {
 			return errors.New("Error: 404 image url")
 		}
 
@@ -110,6 +111,23 @@ func (s *shopifyImageScorer) Finalize(images []*data.ProductImage) error {
 	s.GetProduct().Score = int64(math.Ceil(pictureWeight * float64(totalScore)))
 	return nil
 
+}
+
+func (s *shopifyImageScorer) ValidateURL(imageurl string) bool {
+	req, err := http.NewRequest("HEAD", imageurl, nil)
+	if err != nil {
+		return false
+	}
+	res, err := s.Client.Do(req)
+	if err != nil {
+		return false
+	}
+
+	if res.StatusCode == 200 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*shopify.ProductImage) error {

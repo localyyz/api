@@ -1,11 +1,13 @@
 package sync
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"github.com/pkg/errors"
 )
 
 type setImagesTest struct {
@@ -26,29 +28,15 @@ type mockImageSyncer struct {
 	*setImagesTest
 }
 
-type mockImageScorer struct {
-	ImageScorer *shopifyImageScorer
+type MockClient struct {
 }
 
-func (m *mockImageScorer) ScoreProductImages(images []*data.ProductImage) error {
-	for _, img := range images {
-
-		if img.Width >= MinimumImageWidth {
-			img.Score = 1
-		} else {
-			img.Score = 0
-		}
+func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
+	if req.URL.String() == "https://404" {
+		return &http.Response{StatusCode: 404}, errors.New("404")
+	} else {
+		return &http.Response{StatusCode: 200}, nil
 	}
-
-	return nil
-}
-
-func (m *mockImageScorer) GetProduct() *data.Product {
-	return m.ImageScorer.GetProduct()
-}
-
-func (m *mockImageScorer) Finalize(images []*data.ProductImage) error {
-	return m.ImageScorer.Finalize(images)
 }
 
 func (m *mockImageSyncer) FetchProductImages() ([]*data.ProductImage, error) {
@@ -202,12 +190,29 @@ func TestSetImages(t *testing.T) {
 			},
 			t: t,
 		},
+		{
+			name: "invalid image url one image",
+			syncImages: []*shopify.ProductImage{
+				{ID: 1, Position: 1, Src: "https://404"},
+			},
+			expectedSaves: []*data.ProductImage{},
+			t:             t,
+		},
+		{
+			name: "invalid image url two images",
+			syncImages: []*shopify.ProductImage{
+				{ID: 1, Position: 1, Src: "https://404"},
+				{ID: 1, Position: 1, Src: "https://link2"},
+			},
+			expectedSaves: []*data.ProductImage{},
+			t:             t,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			syncer := &mockImageSyncer{&tt}
-			scorer := &mockImageScorer{ImageScorer: &shopifyImageScorer{Product: &data.Product{}}}
+			scorer := &shopifyImageScorer{Product: &data.Product{}, Client: &MockClient{}}
 			setImages(syncer, scorer, tt.syncImages...)
 		})
 	}

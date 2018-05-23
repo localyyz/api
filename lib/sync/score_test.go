@@ -140,11 +140,10 @@ func TestImageScore(t *testing.T) {
 	}
 	var img6 = []*data.ProductImage{
 		{
-			ID:     17,
-			Width:  900,
-			Height: 900,
-			//a 404 url
-			ImageURL: "https://cdn.shopify.com/s/files/1/2380/1137/products/21ee6429441e966a7b6801af2f2b0af4.jpg",
+			ID:       17,
+			Width:    900,
+			Height:   900,
+			ImageURL: "https://404",
 		},
 	}
 	var img7 []*data.ProductImage
@@ -160,7 +159,7 @@ func TestImageScore(t *testing.T) {
 
 	for ind, tt := range expected {
 		t.Run("Testing Image Score", func(t *testing.T) {
-			imageScorer := &shopifyImageScorer{Product: products[ind]}
+			imageScorer := &shopifyImageScorer{Product: products[ind], Client: &MockClient{}}
 			imageScorer.ScoreProductImages(images[ind])
 			imageScorer.Finalize(images[ind])
 			if int64(tt) != imageScorer.GetProduct().Score {
