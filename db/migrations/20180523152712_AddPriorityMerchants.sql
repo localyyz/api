@@ -2,9 +2,9 @@
 -- +goose Up
 -- SQL in section 'Up' is executed when this migration is applied
 CREATE TABLE priority_merchants (
-    id INT NOT NULL
+    place_id INT NOT NULL REFERENCES places(id)
 );
-CREATE INDEX priority_merchant_index ON priority_merchants (id);
+CREATE INDEX priority_merchant_index ON priority_merchants (place_id);
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
