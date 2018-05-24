@@ -182,6 +182,15 @@ func finalizeStatus(ctx context.Context, hasCategory bool, hasValidImg bool, inp
 	return data.ProductStatusPending
 }
 
+/* looks through the priority merchant db if entry of merchantID exists or not*/
+func isPriorityMerchant(merchantID int64) bool {
+	exists, err := data.DB.PriorityMerchant.Find(db.Cond{"ID": merchantID}).Exists()
+	if err != nil {
+		lg.Warn("Error: Could not load priority merchant list")
+	}
+	return exists
+}
+
 func ShopifyProductListingsCreate(ctx context.Context) error {
 	place := ctx.Value("sync.place").(*data.Place)
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
@@ -228,6 +237,10 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 
 		// product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
+
+		if isPriorityMerchant(place.ID) {
+			product.Score += 1
+		}
 
 		// save
 		data.DB.Product.Save(product)
