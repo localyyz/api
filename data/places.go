@@ -153,7 +153,7 @@ func (p *Place) BeforeUpdate(bond.Session) error {
 
 /* looks through the priority merchant db if entry of merchantID exists or not*/
 func (p *Place) IsPriority() bool {
-	exists, err := DB.PriorityMerchant.Find(db.Cond{"ID": p.ID}).Exists()
+	exists, err := DB.PriorityMerchant.Find(db.Cond{"place_id": p.ID}).Exists()
 	if err != nil {
 		lg.Warn("Error: Could not load priority merchant list")
 	}
