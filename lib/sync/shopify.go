@@ -14,10 +14,6 @@ import (
 	"github.com/pressly/lg"
 )
 
-const (
-	PriorityMerchantScore = 1
-)
-
 func ShopifyProductListingsRemove(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)
@@ -142,17 +138,14 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		}
 
 		// update product images if product image is empty
-		err = setImages(
-			&shopifyImageSyncer{Product: product},
-			&shopifyImageScorer{Product: product},
-			p.Images...,
-		)
+		err = setImages(&shopifyImageSyncer{Product: product, Client: &http.Client{}}, p.Images...)
 
 		// update product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
 
+		err = scoreProduct(&shopifyImageScorer{Product: product, Place: place})
 		if err != nil {
-			lg.Warn("Warning: could not update product score for product id: %d", product.ID)
+			lg.Warnf("Error: could not set score for product id: %d", product.ID)
 		}
 
 		//save
@@ -223,18 +216,15 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		// product variants
 		setVariants(product, p.Variants...)
 
-		// set imgs, and score
-		err := setImages(
-			&shopifyImageSyncer{Product: product},
-			&shopifyImageScorer{Client: &http.Client{}, Product: product},
-			p.Images...,
-		)
+		// set imgs
+		err := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
 
 		// product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
 
-		if place.IsPriority() {
-			product.Score += PriorityMerchantScore
+		err = scoreProduct(&shopifyImageScorer{Product: product, Place: place})
+		if err != nil {
+			lg.Warnf("Error: could not set score for product id: %d", product.ID)
 		}
 
 		// save

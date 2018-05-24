@@ -160,6 +160,10 @@ func (p *Place) IsPriority() bool {
 	return exists
 }
 
+func (p *Place) IsNotUSD() bool {
+	return p.Currency != "USD"
+}
+
 // String returns the string value of the status.
 func (s PlaceStatus) String() string {
 	return placeStatuses[s]
