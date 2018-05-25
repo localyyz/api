@@ -127,7 +127,6 @@ func syncProductImageScores(w http.ResponseWriter, r *http.Request) {
 			offset += 10
 			lg.Warnf("done %d", offset)
 
-			break
 		}
 
 		close(productschn)
