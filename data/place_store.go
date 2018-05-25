@@ -12,14 +12,9 @@ type PlaceStore struct {
 }
 
 func (store PlaceStore) FindFeaturedMerchants() ([]*Place, error) {
-	query := store.Find(
-		db.Cond{
-			"status":    PlaceStatusActive,
-			"weight >=": PlaceFeatureWeightCutoff,
-		},
-	).OrderBy("weight DESC")
 	var places []*Place
-	if err := query.All(&places); err != nil {
+	res := DB.Select("pl.*").From("places as pl").Join("priority_merchants as pm").On("pl.id=pm.place_id").OrderBy("pl.weight DESC")
+	if err := res.All(&places); err != nil {
 		return nil, err
 	}
 	return places, nil
