@@ -173,7 +173,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 				to_tsquery('simple', $$?$$)
 			)`, qraw, qraw, qraw, db.Raw(qrawNoSpace)),
 		)).
-		OrderBy("_rank DESC")
+		OrderBy("p.score DESC", "p.created_at DESC")
 	paginate := cursor.UpdateQueryBuilder(query)
 	var err error
 

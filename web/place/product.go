@@ -24,7 +24,7 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 				"deleted_at": nil,
 				"status":     data.ProductStatusApproved,
 			},
-		).OrderBy("id DESC")
+		).OrderBy("score DESC", "created_at DESC")
 	query = cursor.UpdateQueryUpper(query)
 
 	var products []*data.Product

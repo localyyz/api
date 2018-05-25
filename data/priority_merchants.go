@@ -5,7 +5,7 @@ import (
 )
 
 type PriorityMerchant struct {
-	ID int64 `db:"id" json:"id"`
+	ID int64 `db:"place_id" json:"place_id"`
 }
 
 type PriorityMerchantStore struct {
