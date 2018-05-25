@@ -45,7 +45,7 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 	query := data.DB.Select(db.Raw("distinct p.*")).
 		From("products p").
 		Where(cond).
-		OrderBy("p.id DESC")
+		OrderBy("p.score DESC", "p.created_at DESC")
 	paginate := cursor.UpdateQueryBuilder(query)
 	var products []*data.Product
 	if err := paginate.All(&products); err != nil {

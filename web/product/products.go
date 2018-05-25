@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -72,55 +71,6 @@ func ListCurated(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ListFeatured(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	cursor := ctx.Value("cursor").(*api.Page)
-
-	// Only show on sale products from place weight >= 5
-	featuredPlaces, _ := data.DB.Place.FindFeaturedMerchants()
-	placeIDs := make([]int64, len(featuredPlaces))
-	for i, p := range featuredPlaces {
-		placeIDs[i] = p.ID
-	}
-
-	condGenders := []int{1, 2, 3}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		condGenders = []int{int(gender)}
-	}
-
-	// fetch auto generated products
-	var products []*data.Product
-	dayOfWeekPlusOne := int(time.Now().Weekday()) + 1
-	query := data.DB.Select("*").
-		From(db.Raw(`(
-					SELECT *, row_number() over (partition by place_id) as rank
-					FROM products
-					WHERE place_id IN ?
-					AND gender IN ?
-					AND deleted_at IS NULL
-					ORDER BY external_id % ?
-				) x`,
-			placeIDs,
-			condGenders,
-			dayOfWeekPlusOne,
-		)).
-		Where(db.Cond{
-			"rank": db.Lt(3),
-		})
-
-	paginate := cursor.UpdateQueryBuilder(query)
-	if err := paginate.All(&products); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	cursor.Update(products)
-
-	presented := presenter.NewProductList(ctx, products)
-	if err := render.RenderList(w, r, presented); err != nil {
-		render.Respond(w, r, err)
-	}
-}
-
 func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
@@ -163,7 +113,7 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 			From("products p").
 			LeftJoin("places pl").On("pl.id = p.place_id").
 			Where(cond).
-			OrderBy("_rank desc")
+			OrderBy("p.score desc", "p.created_at desc")
 	}
 	cursor := ctx.Value("cursor").(*api.Page)
 	paginate := cursor.UpdateQueryBuilder(query)
@@ -238,7 +188,7 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 			"p.id":     productIDs,
 		}).
 		GroupBy("p.id").
-		OrderBy("p.id DESC").
+		OrderBy("p.score DESC", "p.created_at DESC").
 		Limit(len(productIDs))
 
 	var products []*data.Product

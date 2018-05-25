@@ -110,7 +110,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 
 	query := data.DB.Product.
 		Find(cond).
-		OrderBy("-created_at")
+		OrderBy("score DESC", "created_at DESC")
 
 	var products []*data.Product
 	paginate := cursor.UpdateQueryUpper(query)
