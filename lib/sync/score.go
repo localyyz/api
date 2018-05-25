@@ -78,14 +78,15 @@ func aggregateImageScore(imgs []*data.ProductImage) int64 {
 }
 
 func finalize(imgs []*data.ProductImage) error {
-	if err := data.DB.ProductImage.Save(imgs); err != nil {
-		return err
-	} else {
-		return nil
-	}
+	return data.DB.ProductImage.Save(imgs)
 }
 
 func scoreProduct(scorer productScorer) error {
+
+	if scorer.GetProduct().Status == data.ProductStatusRejected {
+		scorer.GetProduct().Score = 0
+		return nil
+	}
 
 	var imgScore int64
 	var priorityMerchantScore int64

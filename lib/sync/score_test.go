@@ -106,10 +106,12 @@ func TestProductScore(t *testing.T) {
 		expected int64
 	}{
 		{"all images width > 750", &testInput{Place: &data.Place{Currency: "USD"}, Product: &data.Product{ID: 1}}, 5},
+		{"all images width > 750 but rejected", &testInput{Place: &data.Place{Currency: "USD"}, Product: &data.Product{ID: 1, Status: data.ProductStatusRejected}}, 0},
 		{"all images width > 750 and priority merchant", &testInput{Place: &data.Place{Currency: "USD", ID: 1}, Product: &data.Product{ID: 1}}, 6},
 		{"all images width < 750", &testInput{Place: &data.Place{Currency: "USD"}, Product: &data.Product{ID: 2}}, 0},
 		{"2 out of 3 images width > 750", &testInput{Place: &data.Place{Currency: "USD"}, Product: &data.Product{ID: 3}}, 4},
 		{"2 out of 3 images width < 750", &testInput{Place: &data.Place{Currency: "USD"}, Product: &data.Product{ID: 4}}, 2},
+		{"2 out of 3 images width < 750 but rejected", &testInput{Place: &data.Place{Currency: "USD"}, Product: &data.Product{ID: 4, Status: data.ProductStatusRejected}}, 0},
 		{"empty list of images", &testInput{Place: &data.Place{Currency: "USD"}, Product: &data.Product{ID: 5}}, 0},
 		{"all images width > 750 but not USD", &testInput{Place: &data.Place{Currency: "CAD"}, Product: &data.Product{ID: 1}}, 4},
 		{"all images width > 750 but not USD and priority merchant", &testInput{Place: &data.Place{Currency: "CAD", ID: 1}, Product: &data.Product{ID: 1}}, 5},
