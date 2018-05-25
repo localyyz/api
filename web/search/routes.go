@@ -160,7 +160,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		cond["p.gender"] = gender
 	}
 	query := data.DB.Select(
-		db.Raw("distinct p.id"),
+		db.Raw("distinct p.id", "p.score"),
 		db.Raw(data.ProductQueryWeight, qraw)).
 		From("products p").
 		LeftJoin("places pl").On("pl.id = p.place_id").
@@ -173,7 +173,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 				to_tsquery('simple', $$?$$)
 			)`, qraw, qraw, qraw, db.Raw(qrawNoSpace)),
 		)).
-		OrderBy("p.score DESC", "p.created_at DESC")
+		OrderBy("_rank DESC", "p.score DESC")
 	paginate := cursor.UpdateQueryBuilder(query)
 	var err error
 
