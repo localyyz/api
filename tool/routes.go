@@ -21,6 +21,8 @@ type Handler struct {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Get("/products/score", syncProductImageScores)
+
 	r.Get("/products/update", UpdateCategories)
 	r.Get("/products/blacklist", BlacklistProducts)
 	r.Get("/products/count", GetMerchantProductCount)
