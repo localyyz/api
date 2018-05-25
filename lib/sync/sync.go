@@ -10,11 +10,14 @@ type productImageSyncer interface {
 	FetchProductImages() ([]*data.ProductImage, error)
 	GetProduct() *data.Product
 	Finalize([]*data.ProductImage, []*data.ProductImage) error
+	ValidateImages() bool
 }
 
-type productImageScorer interface {
-	ScoreProductImages([]*data.ProductImage) error
+type productScorer interface {
+	GetProductImages(int64) ([]*data.ProductImage, error)
 	GetProduct() *data.Product
+	GetPlace() *data.Place
+	CheckPriority() bool
 	Finalize([]*data.ProductImage) error
 }
 

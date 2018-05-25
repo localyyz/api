@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/goware/geotools"
+	"github.com/pressly/lg"
 	"upper.io/bond"
+	db "upper.io/db.v3"
 	"upper.io/db.v3/postgresql"
 )
 
@@ -147,6 +149,19 @@ func (p *Place) BeforeUpdate(bond.Session) error {
 		}
 	}
 	return nil
+}
+
+/* looks through the priority merchant db if entry of merchantID exists or not*/
+func (p *Place) IsPriority() bool {
+	exists, err := DB.PriorityMerchant.Find(db.Cond{"place_id": p.ID}).Exists()
+	if err != nil {
+		lg.Warn("Error: Could not load priority merchant list")
+	}
+	return exists
+}
+
+func (p *Place) IsNotUSD() bool {
+	return p.Currency != "USD"
 }
 
 // String returns the string value of the status.

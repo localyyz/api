@@ -8,6 +8,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/pkg/errors"
+	"github.com/pressly/lg"
 )
 
 type setImagesTest struct {
@@ -25,6 +26,7 @@ type setImagesTest struct {
 }
 
 type mockImageSyncer struct {
+	Client HttpClient
 	*setImagesTest
 }
 
@@ -37,6 +39,20 @@ func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
 	} else {
 		return &http.Response{StatusCode: 200}, nil
 	}
+}
+
+func (m *mockImageSyncer) ValidateImages() bool {
+	for _, val := range m.setImagesTest.syncImages {
+		req, err := http.NewRequest("HEAD", val.Src, nil)
+		if err != nil {
+			lg.Warnf("Error: Could not create http request for image id: %d", val.ID)
+		}
+		res, _ := m.Client.Do(req)
+		if res.StatusCode != 200 {
+			return false
+		}
+	}
+	return true
 }
 
 func (m *mockImageSyncer) FetchProductImages() ([]*data.ProductImage, error) {
@@ -211,9 +227,8 @@ func TestSetImages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			syncer := &mockImageSyncer{&tt}
-			scorer := &shopifyImageScorer{Product: &data.Product{}, Client: &MockClient{}}
-			setImages(syncer, scorer, tt.syncImages...)
+			syncer := &mockImageSyncer{&MockClient{}, &tt}
+			setImages(syncer, tt.syncImages...)
 		})
 	}
 

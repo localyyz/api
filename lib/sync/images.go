@@ -1,38 +1,45 @@
 package sync
 
 import (
-	"errors"
-	"math"
 	"net/http"
 	"net/url"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 	set "gopkg.in/fatih/set.v0"
 	db "upper.io/db.v3"
 )
 
-const (
-	TotalImageWeight  = 5
-	MinimumImageWidth = 750
-)
-
 type shopifyImageSyncer struct {
+	Client    HttpClient
 	Product   *data.Product
 	toSaves   []*data.ProductImage
 	toRemoves []*data.ProductImage
-}
-
-type shopifyImageScorer struct {
-	Client  HttpClient
-	Product *data.Product
 }
 
 // fetches existing product images from the database.
 // function is abstracted so the db call can be mocked/tested
 func (s *shopifyImageSyncer) FetchProductImages() ([]*data.ProductImage, error) {
 	return data.DB.ProductImage.FindByProductID(s.Product.ID)
+}
+
+func (s *shopifyImageSyncer) ValidateImages() bool {
+	for _, val := range s.toSaves {
+		req, err := http.NewRequest("HEAD", val.ImageURL, nil)
+		if err != nil {
+			lg.Warnf("Error: Could not create http request for image id: %d", val.ID)
+		}
+		res, err := s.Client.Do(req)
+		if err != nil {
+			lg.Warnf("Error: Could not load image url for image id: %d", val.ID)
+		}
+		if res.StatusCode != 200 {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *shopifyImageSyncer) GetProduct() *data.Product {
@@ -67,70 +74,11 @@ func (s *shopifyImageSyncer) Finalize(toSaves, toRemoves []*data.ProductImage) e
 	for _, img := range toRemoves {
 		data.DB.ProductImage.Delete(img)
 	}
-	return nil
-}
-
-func (s *shopifyImageScorer) GetProduct() *data.Product {
-	return s.Product
-}
-
-func (s *shopifyImageScorer) ScoreProductImages(images []*data.ProductImage) error {
-
-	for _, img := range images {
-		if !s.ValidateURL(img.ImageURL) {
-			return errors.New("Error: 404 image url")
-		}
-
-		if img.Width >= MinimumImageWidth {
-			img.Score = 1
-		} else {
-			img.Score = 0
-		}
-	}
 
 	return nil
 }
 
-func (s *shopifyImageScorer) Finalize(images []*data.ProductImage) error {
-
-	if len(images) == 0 {
-		s.GetProduct().Score = 0
-		return nil
-	}
-
-	var totalScore int64
-
-	//the weight of each individual picture
-	pictureWeight := float64(TotalImageWeight) / float64(len(images))
-	for _, img := range images {
-		totalScore += img.Score
-	}
-
-	//the product score from each image
-	s.GetProduct().Score = int64(math.Ceil(pictureWeight * float64(totalScore)))
-	return nil
-
-}
-
-func (s *shopifyImageScorer) ValidateURL(imageurl string) bool {
-	req, err := http.NewRequest("HEAD", imageurl, nil)
-	if err != nil {
-		return false
-	}
-
-	if s.Client == nil {
-		s.Client = http.DefaultClient
-	}
-
-	res, err := s.Client.Do(req)
-	if err != nil {
-		return false
-	}
-
-	return res.StatusCode == 200
-}
-
-func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*shopify.ProductImage) error {
+func setImages(syncer productImageSyncer, imgs ...*shopify.ProductImage) error {
 
 	//getting the images from product_images for product
 	dbImages, err := syncer.FetchProductImages()
@@ -146,7 +94,6 @@ func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*sh
 
 	syncImagesSet := set.New()
 	var toSaves []*data.ProductImage
-	var toKeeps []*data.ProductImage
 
 	for _, img := range imgs {
 		if syncImagesSet.Has(img.ID) {
@@ -157,9 +104,8 @@ func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*sh
 		// image external id set needs to be synced
 		syncImagesSet.Add(img.ID)
 
-		if ext, ok := dbImagesMap[img.ID]; ok {
+		if _, ok := dbImagesMap[img.ID]; ok {
 			// ignored. image already saved
-			toKeeps = append(toKeeps, ext)
 			continue
 		}
 
@@ -186,22 +132,10 @@ func setImages(syncer productImageSyncer, scorer productImageScorer, imgs ...*sh
 		}
 	}
 
-	// score the images, return err if any image url is a 404
-	keepAndSave := append(toKeeps, toSaves...)
-	err = scorer.ScoreProductImages(keepAndSave)
-	if err != nil {
-		return err
+	if !syncer.ValidateImages() {
+		return errors.New("Error: 404 image url")
 	}
-
-	//aggregate the score
-	scorer.Finalize(keepAndSave)
 
 	//save the images
-	err = syncer.Finalize(toSaves, toRemoves)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
+	return syncer.Finalize(toSaves, toRemoves)
 }
