@@ -37,11 +37,12 @@ func (s *shopifyImageScorer) GetPlace() *data.Place {
 }
 
 func (s *shopifyImageScorer) Finalize(imgs []*data.ProductImage) error {
-	if err := data.DB.ProductImage.Save(imgs); err != nil {
-		return err
-	} else {
-		return nil
+	for _, im := range imgs {
+		if err := data.DB.ProductImage.Save(im); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (s *shopifyImageScorer) CheckPriority() bool {
@@ -77,11 +78,7 @@ func aggregateImageScore(imgs []*data.ProductImage) int64 {
 
 }
 
-func finalize(imgs []*data.ProductImage) error {
-	return data.DB.ProductImage.Save(imgs)
-}
-
-func scoreProduct(scorer productScorer) error {
+func ScoreProduct(scorer productScorer) error {
 
 	if scorer.GetProduct().Status == data.ProductStatusRejected {
 		scorer.GetProduct().Score = 0

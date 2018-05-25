@@ -56,11 +56,12 @@ func (s *toolScorer) GetPlace() *data.Place {
 }
 
 func (s *toolScorer) Finalize(imgs []*data.ProductImage) error {
-	if err := data.DB.ProductImage.Save(imgs); err != nil {
-		return err
-	} else {
-		return nil
+	for _, im := range imgs {
+		if err := data.DB.ProductImage.Save(im); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (s *toolScorer) CheckPriority() bool {
@@ -74,8 +75,8 @@ func scoreWorker(ctx context.Context, chn chan scoreProductList, wg s.WaitGroup)
 
 	for pl := range chn {
 		for _, p := range pl {
-			lg.Warn(sync.ScoreProduct(&toolScorer{Product: p, Place: placeCache[p.PlaceID]}))
-			data.DB.Product.Save(p)
+			sync.ScoreProduct(&toolScorer{Product: p, Place: placeCache[p.PlaceID]})
+			lg.Warn(data.DB.Product.Save(p))
 		}
 	}
 }
