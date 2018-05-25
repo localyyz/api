@@ -143,7 +143,7 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		// update product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
 
-		err = scoreProduct(&shopifyImageScorer{Product: product, Place: place})
+		err = ScoreProduct(&shopifyImageScorer{Product: product, Place: place})
 		if err != nil {
 			lg.Warnf("Error: could not set score for product id: %d", product.ID)
 		}
@@ -222,7 +222,7 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		// product status
 		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
 
-		err = scoreProduct(&shopifyImageScorer{Product: product, Place: place})
+		err = ScoreProduct(&shopifyImageScorer{Product: product, Place: place})
 		if err != nil {
 			lg.Warnf("Error: could not set score for product id: %d", product.ID)
 		}
