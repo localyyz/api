@@ -76,7 +76,7 @@ func scoreWorker(ctx context.Context, chn chan scoreProductList, wg s.WaitGroup)
 	for pl := range chn {
 		for _, p := range pl {
 			sync.ScoreProduct(&toolScorer{Product: p, Place: placeCache[p.PlaceID]})
-			lg.Warn(data.DB.Product.Save(p))
+			data.DB.Product.Save(p)
 		}
 	}
 }

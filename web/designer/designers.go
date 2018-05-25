@@ -130,7 +130,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 			cond,
 		)).
 		GroupBy("p.id", "pl.id").
-		OrderBy("pl.weight", "p.score desc", "p.created_at desc")
+		OrderBy("p.score desc", "p.created_at desc")
 
 	var products []*data.Product
 	paginate := cursor.UpdateQueryBuilder(query)
