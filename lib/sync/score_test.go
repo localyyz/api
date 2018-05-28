@@ -121,7 +121,7 @@ func TestProductScore(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scoreProduct(&mockImageScorer{Place: tt.test.Place, Product: tt.test.Product})
+			ScoreProduct(&mockImageScorer{Place: tt.test.Place, Product: tt.test.Product})
 			if tt.expected != tt.test.Product.Score {
 				log.Fatalf("Error: Expected Product score %d got %d for test %s", tt.expected, tt.test.Product.Score, tt.name)
 			}
