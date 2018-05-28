@@ -160,7 +160,7 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		cond["p.gender"] = gender
 	}
 	query := data.DB.Select(
-		db.Raw("distinct p.id", "p.score"),
+		db.Raw("distinct p.id"),
 		db.Raw(data.ProductQueryWeight, qraw)).
 		From("products p").
 		LeftJoin("places pl").On("pl.id = p.place_id").

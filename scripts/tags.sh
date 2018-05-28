@@ -16,6 +16,7 @@ function list() {
 function clean() {
   echo "CLEAN OLD IMAGE TAGS";
   gcloud container images list-tags $IMAGE \
+    | grep $ENV_BRANCH \
     | tail -n +4 \
     | awk '{print $1}' \
     | xargs -I imagetag bash -c 'gcloud container images delete $IMAGE@sha256:imagetag --force-delete-tags';
