@@ -39,3 +39,7 @@ do `ssh-add` and enter the passphrase.
 ### Refresh search word materialized view
 
 `REFRESH MATERIALIZED VIEW search_words;`
+
+# configure gcloud docker auth
+
+`gcloud auth configure-docker`

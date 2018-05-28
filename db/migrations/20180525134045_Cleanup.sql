@@ -19,6 +19,6 @@ DROP TABLE IF EXISTS locales;
 
 ALTER TABLE users DROP column IF EXISTS geo;
 
-DROP EXTENSION postgis;
+-- DROP EXTENSION postgis;
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
