@@ -1,18 +1,19 @@
 package sync
 
 import (
-	"errors"
 	"net/http"
 	"net/url"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 	set "gopkg.in/fatih/set.v0"
 	db "upper.io/db.v3"
 )
 
 type shopifyImageSyncer struct {
+	Client    HttpClient
 	Product   *data.Product
 	toSaves   []*data.ProductImage
 	toRemoves []*data.ProductImage
@@ -24,17 +25,29 @@ func (s *shopifyImageSyncer) FetchProductImages() ([]*data.ProductImage, error) 
 	return data.DB.ProductImage.FindByProductID(s.Product.ID)
 }
 
+func (s *shopifyImageSyncer) ValidateImages() bool {
+	for _, val := range s.toSaves {
+		req, err := http.NewRequest("HEAD", val.ImageURL, nil)
+		if err != nil {
+			lg.Warnf("Error: Could not create http request for image id: %d", val.ID)
+		}
+		res, err := s.Client.Do(req)
+		if err != nil {
+			lg.Warnf("Error: Could not load image url for image id: %d", val.ID)
+		}
+		if res.StatusCode != 200 {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *shopifyImageSyncer) GetProduct() *data.Product {
 	return s.Product
 }
 
 func (s *shopifyImageSyncer) Finalize(toSaves, toRemoves []*data.ProductImage) error {
 	for _, img := range toSaves {
-
-		res, _ := http.Head(img.ImageURL)
-		if res.StatusCode != 200 { //if image is not valid error out
-			return errors.New("url: invalid image url")
-		}
 
 		data.DB.ProductImage.Save(img)
 
@@ -61,6 +74,7 @@ func (s *shopifyImageSyncer) Finalize(toSaves, toRemoves []*data.ProductImage) e
 	for _, img := range toRemoves {
 		data.DB.ProductImage.Delete(img)
 	}
+
 	return nil
 }
 
@@ -118,5 +132,10 @@ func setImages(syncer productImageSyncer, imgs ...*shopify.ProductImage) error {
 		}
 	}
 
+	if !syncer.ValidateImages() {
+		return errors.New("Error: 404 image url")
+	}
+
+	//save the images
 	return syncer.Finalize(toSaves, toRemoves)
 }

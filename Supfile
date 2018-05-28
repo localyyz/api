@@ -9,6 +9,7 @@ env:
   CONTAINER_PORT: 5331
   CONFIG: /data/etc/api.conf
   GITORIGIN: $(git rev-parse origin/master)
+  GITSTAGING: $(git rev-parse origin/staging)
 
 networks:
   local:
@@ -16,6 +17,12 @@ networks:
       ENV: localhost
     hosts:
       - localhost
+  staging:
+    env:
+      ENV: staging
+      IMAGENAME: ${IMAGE}:staging-${GITSTAGING}
+    hosts:
+      - root@138.197.154.71
   production:
     env:
       ENV: production
@@ -42,7 +49,7 @@ commands:
 
   pull:
     desc: Pull latest Docker image
-    run: gcloud docker -- pull $IMAGENAME
+    run: docker pull $IMAGENAME
 
   generate-docs:
     desc: Generate api docs with chi docgen

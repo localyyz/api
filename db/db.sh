@@ -15,6 +15,7 @@ function create() {
 EOF
 
   cat <<EOF | psql -h127.0.0.1 -U postgres $database
+    CREATE EXTENSION pg_trgm;
     CREATE EXTENSION postgis;
     GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO localyyz;
     GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO localyyz;
@@ -34,14 +35,14 @@ EOF
 
 function loadprod() {
   echo "LOADING DATABASE FROM PROD BACKUP";
-  if [ ! -f /tmp/backup-latest.gz ]; then
+  if [ ! -f tmp/backup-latest.dump ]; then
     echo "DOWNLOADING BACKUP";
-    scp root@localyyz:/data/backups/backup-latest.gz tmp/.
-  elif test `find "tmp/backup-latest.gz" -mmin +2000`; then
+    scp root@localyyz:/data/backups/backup-latest.dump tmp/.
+  elif test `find "tmp/backup-latest.dump" -mmin +2000`; then
     echo "DOWNLOADING LATEST BACKUP";
-    scp root@localyyz:/data/backups/backup-latest.gz tmp/.
+    scp root@localyyz:/data/backups/backup-latest.dump tmp/.
   fi
-  gunzip -c tmp/backup-latest.gz | psql $database
+  pg_restore -d localyyz tmp/backup-latest.dump
 }
 
 if [ $# -lt 2 ]; then

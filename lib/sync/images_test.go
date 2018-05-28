@@ -1,11 +1,14 @@
 package sync
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"github.com/pkg/errors"
+	"github.com/pressly/lg"
 )
 
 type setImagesTest struct {
@@ -23,7 +26,33 @@ type setImagesTest struct {
 }
 
 type mockImageSyncer struct {
+	Client HttpClient
 	*setImagesTest
+}
+
+type MockClient struct {
+}
+
+func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
+	if req.URL.String() == "https://404" {
+		return &http.Response{StatusCode: 404}, errors.New("404")
+	} else {
+		return &http.Response{StatusCode: 200}, nil
+	}
+}
+
+func (m *mockImageSyncer) ValidateImages() bool {
+	for _, val := range m.setImagesTest.syncImages {
+		req, err := http.NewRequest("HEAD", val.Src, nil)
+		if err != nil {
+			lg.Warnf("Error: Could not create http request for image id: %d", val.ID)
+		}
+		res, _ := m.Client.Do(req)
+		if res.StatusCode != 200 {
+			return false
+		}
+	}
+	return true
 }
 
 func (m *mockImageSyncer) FetchProductImages() ([]*data.ProductImage, error) {
@@ -177,11 +206,28 @@ func TestSetImages(t *testing.T) {
 			},
 			t: t,
 		},
+		{
+			name: "invalid image url one image",
+			syncImages: []*shopify.ProductImage{
+				{ID: 1, Position: 1, Src: "https://404"},
+			},
+			expectedSaves: []*data.ProductImage{},
+			t:             t,
+		},
+		{
+			name: "invalid image url two images",
+			syncImages: []*shopify.ProductImage{
+				{ID: 1, Position: 1, Src: "https://404"},
+				{ID: 1, Position: 1, Src: "https://link2"},
+			},
+			expectedSaves: []*data.ProductImage{},
+			t:             t,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			syncer := &mockImageSyncer{&tt}
+			syncer := &mockImageSyncer{&MockClient{}, &tt}
 			setImages(syncer, tt.syncImages...)
 		})
 	}
