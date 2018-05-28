@@ -6,7 +6,6 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Delete("/", Logout)
-	r.Post("/heartbeat", PostHeartbeat)
 
 	return r
 }

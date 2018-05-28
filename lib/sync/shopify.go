@@ -197,7 +197,6 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
 			Brand:          p.Vendor,
 			Status:         data.ProductStatusPending,
-			Etc:            data.ProductEtc{},
 		}
 
 		// find product category + gender

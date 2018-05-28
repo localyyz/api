@@ -18,7 +18,6 @@ type Database struct {
 
 	User        UserStore
 	UserAddress UserAddressStore
-	Following   FollowingStore
 
 	BillingPlan BillingPlanStore
 
@@ -28,8 +27,6 @@ type Database struct {
 	PlaceDiscount    PlaceDiscountStore
 	PriorityMerchant PriorityMerchantStore
 
-	Locale           LocaleStore
-	Cell             CellStore
 	MerchantApproval MerchantApprovalStore
 
 	Collection        CollectionStore
@@ -44,7 +41,6 @@ type Database struct {
 	Category       CategoryStore
 	Blacklist      BlacklistStore
 	FeatureProduct FeatureProductStore
-	Share          ShareStore
 	Webhook        WebhookStore
 
 	Cart     CartStore
@@ -95,7 +91,6 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	}
 	db.User = UserStore{db.Store(&User{})}
 	db.UserAddress = UserAddressStore{db.Store(&UserAddress{})}
-	db.Following = FollowingStore{db.Store(&Following{})}
 
 	db.BillingPlan = BillingPlanStore{db.Store(&BillingPlan{})}
 
@@ -105,8 +100,6 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.PlaceDiscount = PlaceDiscountStore{db.Store(&PlaceDiscount{})}
 	db.PriorityMerchant = PriorityMerchantStore{db.Store(&PriorityMerchant{})}
 
-	db.Locale = LocaleStore{db.Store(&Locale{})}
-	db.Cell = CellStore{db.Store(&Cell{})}
 	db.MerchantApproval = MerchantApprovalStore{db.Store(&MerchantApproval{})}
 
 	db.Collection = CollectionStore{db.Store(&Collection{})}
@@ -121,7 +114,6 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Category = CategoryStore{db.Store(&Category{})}
 	db.Blacklist = BlacklistStore{db.Store(&Blacklist{})}
 	db.FeatureProduct = FeatureProductStore{db.Store(&FeatureProduct{})}
-	db.Share = ShareStore{db.Store(&Share{})}
 	db.Webhook = WebhookStore{db.Store(&Webhook{})}
 
 	db.Cart = CartStore{db.Store(&Cart{})}

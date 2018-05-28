@@ -6,23 +6,20 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/go-chi/render"
-	"github.com/goware/geotools"
 	"upper.io/db.v3"
 )
 
 type Place struct {
 	*data.Place
-	Locale       *Locale           `json:"locale"`
 	ProductCount uint64            `json:"productCount"`
 	Products     []render.Renderer `json:"products"`
 	Following    bool              `json:"following"`
 
 	IsFeatured bool `json:"isFeatured"`
 
-	LatLng      *geotools.LatLng `json:"coords"`
-	Billing     interface{}      `json:"billing,omitempty"`
-	TOSAgreedAt interface{}      `json:"tosAgreedAt,omitempty"`
-	ApprovedAt  interface{}      `json:"approvedAt,omitempty"`
+	Billing     interface{} `json:"billing,omitempty"`
+	TOSAgreedAt interface{} `json:"tosAgreedAt,omitempty"`
+	ApprovedAt  interface{} `json:"approvedAt,omitempty"`
 
 	ctx context.Context
 }
@@ -61,9 +58,6 @@ func NewPlaceList(ctx context.Context, places []*data.Place) []render.Renderer {
 
 // Place implements render.Renderer interface
 func (pl *Place) Render(w http.ResponseWriter, r *http.Request) error {
-	if len(pl.Geo.Coordinates) > 1 {
-		pl.LatLng = geotools.LatLngFromPoint(pl.Geo)
-	}
 	if pl.Weight >= data.PlaceFeatureWeightCutoff {
 		pl.IsFeatured = true
 	}

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"github.com/goware/geotools"
 )
 
 type User struct {
@@ -13,9 +12,7 @@ type User struct {
 
 	Addresses []*data.UserAddress `json:"addresses"`
 
-	Geo       geotools.Point `json:"geo"`
-	Locale    *data.Locale   `json:"locale"`
-	InviteURL string         `json:"inviteUrl"`
+	InviteURL string `json:"inviteUrl"`
 }
 
 func NewUser(ctx context.Context, user *data.User) *User {
@@ -32,6 +29,5 @@ func NewUser(ctx context.Context, user *data.User) *User {
 }
 
 func (u *User) Render(w http.ResponseWriter, r *http.Request) error {
-	u.Geo = u.User.Geo
 	return nil
 }
