@@ -3,6 +3,7 @@ set -e
 
 docker run \
   --rm \
-  --link postgres:postgres \
+  --network $NETWORK \
+  --network-alias migration \
   --name migration $IMAGENAME \
   goose -path /db -env production up
