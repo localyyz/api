@@ -4,6 +4,7 @@ TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf
 MERCHANT_CONFIG := $$PWD/config/merchant.conf
 TOOL_CONFIG := $$PWD/config/tool.conf
+SYNCER_CONFIG := $$PWD/config/syncer.conf
 PEM := ./config/push.pem
 TAG_CONTAINER := gcr.io/verdant-descent-153101/api
 
@@ -16,6 +17,8 @@ all:
 	@echo "commands:"
 	@echo "  run                   - run API in dev mode"
 	@echo "  run-merchant          - run merchant app in dev mode"
+	@echo "  run-tool              - run tool app in dev mode"
+	@echo "  run-syncer            - run syncer app in dev mode"
 	@echo "  build                 - build api into bin/ directory"
 	@echo "  docs                  - generate api documentation"
 	@echo "  tools                 - go get's a bunch of tools for dev"
@@ -25,8 +28,9 @@ all:
 	@echo "  db-reset              - reset dev db (drop, create, migrate)"
 	@echo "  db-up                 - migrate dev DB to latest version"
 	@echo "  db-down               - roll back dev DB to a previous version"
-	@echo "  db-migrate            - create new db migration"
+	@echo "  db-migrate            - create new db migration (NAME specifies migration name)"
 	@echo "  db-status             - status of current dev DB version"
+	@echo "  db-loadprod           - downloads and loads production database locally"
 	@echo ""
 
 print-%: ; @echo $*=$($*)
@@ -91,6 +95,9 @@ run-merchant:
 
 run-tool:
 	@(export CONFIG=${TOOL_CONFIG}; fresh -c runner.conf -p ./cmd/tool)
+
+run-syncer:
+	@(export CONFIG=${SYNCER_CONFIG}; fresh -c runner.conf -p ./cmd/syncer)
 
 build-merchant:
 	@mkdir -p ./bin

@@ -1,11 +1,11 @@
-package webhooks
+package shopify
 
 import (
 	"net/http"
 	"net/url"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	lib "bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
@@ -13,7 +13,7 @@ import (
 )
 
 type shopWrapper struct {
-	*shopify.Shop
+	*lib.Shop
 }
 
 func (w *shopWrapper) Bind(r *http.Request) error {
@@ -30,15 +30,15 @@ func ShopHandler(r *http.Request) error {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
 
-	switch shopify.Topic(ctx.Value("sync.topic").(string)) {
-	case shopify.TopicAppUninstalled:
+	switch lib.Topic(ctx.Value("sync.topic").(string)) {
+	case lib.TopicAppUninstalled:
 		lg.Infof("app uninstalled for place(id=%d)", place.ID)
 		cred, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
 		if err != nil {
 			lg.Warnf("webhook: appUninstall for place(%s) cred failed with %v", place.Name, err)
 			return err
 		}
-		api := shopify.NewClient(nil, cred.AccessToken)
+		api := lib.NewClient(nil, cred.AccessToken)
 		api.BaseURL, _ = url.Parse(cred.ApiURL)
 
 		webhooks, err := data.DB.Webhook.FindByPlaceID(place.ID)
@@ -63,12 +63,17 @@ func ShopHandler(r *http.Request) error {
 		data.DB.Product.Find(db.Cond{"place_id": place.ID}).Delete()
 
 		lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
-	case shopify.TopicShopUpdate:
-		place.Plan = wrapper.PlanName
-		if place.Plan == "dormant" {
-			place.Status = data.PlaceStatusInActive
-			lg.Alertf("webhook: place(%s) went dormant", place.Name)
+	case lib.TopicShopUpdate:
+
+		if place.Plan != wrapper.PlanName {
+			lg.Alertf("webhook: place(%s) is now %s", place.Name, wrapper.PlanName)
+			place.Plan = wrapper.PlanName
+			if place.Plan == "dormant" {
+				place.Status = data.PlaceStatusInActive
+				// TODO: Should we clean up everything? probably
+			}
 		}
+
 		place.Name = wrapper.Name
 		place.Phone = wrapper.Phone
 		place.Currency = wrapper.Currency

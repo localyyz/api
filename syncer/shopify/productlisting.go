@@ -1,17 +1,17 @@
-package webhooks
+package shopify
 
 import (
 	"context"
 	"net/http"
 
-	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	lib "bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 )
 
 type productListingWrapper struct {
-	ProductListing *shopify.ProductList `json:"product_listing"`
+	ProductListing *lib.ProductList `json:"product_listing"`
 }
 
 func (w *productListingWrapper) Bind(r *http.Request) error {
@@ -26,14 +26,14 @@ func ProductListingHandler(r *http.Request) (err error) {
 	defer r.Body.Close()
 
 	ctx := r.Context()
-	ctx = context.WithValue(ctx, "sync.list", []*shopify.ProductList{wrapper.ProductListing})
+	ctx = context.WithValue(ctx, "sync.list", []*lib.ProductList{wrapper.ProductListing})
 
-	switch shopify.Topic(ctx.Value("sync.topic").(string)) {
-	case shopify.TopicProductListingsAdd:
+	switch lib.Topic(ctx.Value("sync.topic").(string)) {
+	case lib.TopicProductListingsAdd:
 		return sync.ShopifyProductListingsCreate(ctx)
-	case shopify.TopicProductListingsUpdate:
+	case lib.TopicProductListingsUpdate:
 		return sync.ShopifyProductListingsUpdate(ctx)
-	case shopify.TopicProductListingsRemove:
+	case lib.TopicProductListingsRemove:
 		return sync.ShopifyProductListingsRemove(ctx)
 	}
 

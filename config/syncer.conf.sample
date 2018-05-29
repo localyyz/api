@@ -1,0 +1,10 @@
+environment     = "development"
+bind            = "localhost:5337"
+
+[db]
+database          = "localyyz"
+hosts             = [ "localhost" ]
+username          = "localyyz"
+password          = ""
+debug_queries     = true
+application_name  = "api"

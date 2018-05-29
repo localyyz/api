@@ -1,17 +1,17 @@
-package webhooks
+package shopify
 
 import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	lib "bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
 )
 
 type checkoutWrapper struct {
-	*shopify.Checkout
+	*lib.Checkout
 }
 
 func (w *checkoutWrapper) Bind(r *http.Request) error {
