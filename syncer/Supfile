@@ -1,4 +1,4 @@
-# Api
+# Syncer
 ---
 version: 0.5
 
@@ -38,10 +38,10 @@ commands:
   config:
     desc: Upload/test config file.
     upload:
-     - src: ./config/api.$SUP_NETWORK.conf
+     - src: ./config/$NAME.$SUP_NETWORK.conf
        dst: /tmp/
     run:
-        test -f /tmp/config/api.$SUP_NETWORK.conf || exit 1 && mv /tmp/config/api.$SUP_NETWORK.conf $CONFIG
+        test -f /tmp/config/$NAME.$SUP_NETWORK.conf || exit 1 && mv /tmp/config/$NAME.$SUP_NETWORK.conf $CONFIG
 
   ping:
     desc: Print uname and current date/time.
@@ -56,7 +56,7 @@ commands:
     run: docker pull $IMAGENAME
 
   generate-docs:
-    desc: Generate api docs with chi docgen
+    desc: Generate syncer docs with chi docgen
     local: >
         make docs
     once: true
