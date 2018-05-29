@@ -22,6 +22,7 @@ networks:
       ENV: staging
       ENV_BRANCH: staging
       IMAGENAME: ${IMAGE}:staging-${GITSTAGING}
+      NETWORK: staging
     hosts:
       - root@138.197.154.71
   production:
@@ -29,6 +30,7 @@ networks:
       ENV: production
       ENV_BRANCH: master
       IMAGENAME: ${IMAGE}:master-${GITORIGIN}
+      NETWORK: localyyz
     hosts:
       - root@138.197.148.245
 

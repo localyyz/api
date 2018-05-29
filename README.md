@@ -39,3 +39,16 @@ do `ssh-add` and enter the passphrase.
 ### Refresh search word materialized view
 
 `REFRESH MATERIALIZED VIEW search_words;`
+
+# configure gcloud docker auth
+
+`gcloud auth configure-docker`
+
+
+# Merging and what nots:
+
+git reflog expire --expire=now --all
+git gc --prune=now
+git fsck --full
+
+don't merge hotfixes back right away from master

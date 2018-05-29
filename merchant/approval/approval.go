@@ -130,7 +130,7 @@ func Approve(w http.ResponseWriter, r *http.Request) {
 	approval.ApprovedAt = place.ApprovedAt
 
 	data.DB.Place.Save(place)
-	data.DB.Place.Save(approval)
+	data.DB.MerchantApproval.Save(approval)
 
 	go func() {
 		creds, err := data.DB.ShopifyCred.FindOne(

@@ -16,20 +16,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
-type shareWrapper struct {
-	data.Share
-
-	NetworkShareID string      `json:"networkShareId"`
-	ID             interface{} `json:"id,omitempty"`
-	UserID         interface{} `json:"userId,omitempty"`
-	PlaceID        interface{} `json:"userId,omitempty"`
-	CreatedAt      interface{} `json:"createdAt,omitempty"`
-}
-
-func (s *shareWrapper) Bind(r *http.Request) error {
-	return nil
-}
-
 func PlaceCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		placeID, err := strconv.ParseInt(chi.URLParam(r, "placeID"), 10, 64)
@@ -71,32 +57,4 @@ func GetPlace(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
 	render.Render(w, r, presenter.NewPlace(ctx, place))
-}
-
-// Share a place on social media
-func Share(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user, ok := ctx.Value("session.user").(*data.User)
-	if !ok {
-		return
-	}
-	place := ctx.Value("place").(*data.Place)
-
-	payload := &shareWrapper{}
-	if err := render.Bind(r, payload); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-	newShare := &payload.Share
-	newShare.UserID = user.ID
-	newShare.PlaceID = place.ID
-	newShare.NetworkShareID = payload.NetworkShareID
-
-	if err := data.DB.Share.Save(newShare); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	render.Status(r, http.StatusCreated)
-	render.Respond(w, r, newShare)
 }

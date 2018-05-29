@@ -20,6 +20,7 @@ networks:
     env:
       ENV: production
       IMAGENAME: ${IMAGE}:master-${GITORIGIN}
+      NETWORK: localyyz
     hosts:
       - root@138.197.148.245
 
@@ -42,7 +43,7 @@ commands:
 
   pull:
     desc: Pull latest Docker image
-    run: gcloud docker -- pull $IMAGENAME
+    run: docker pull $IMAGENAME
 
   image:
     desc: List Docker image

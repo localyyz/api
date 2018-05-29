@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/goware/geotools"
-	"github.com/pressly/lg"
-
 	"upper.io/bond"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -25,15 +22,14 @@ type User struct {
 	FirstName string `db:"-" json:"-" facebook:"first_name"`
 	Gender    string `db:"-" json:"-" facebook:"gender"`
 
-	AccessToken  string         `db:"access_token" json:"-"`
-	PasswordHash string         `db:"password_hash,omitempty" json:"-"`
-	DeviceToken  *string        `db:"device_token,omitempty" json:"-"`
-	InviteCode   string         `db:"invite_code" json:"inviteCode"` // Auto generated invite hash
-	Network      string         `db:"network" json:"network"`
-	LoggedIn     bool           `db:"logged_in" json:"-"`
-	LastLogInAt  *time.Time     `db:"last_login_at" json:"lastLoginAt"`
-	Geo          geotools.Point `db:"geo" json:"-"`
-	Etc          UserEtc        `db:"etc" json:"etc"`
+	AccessToken  string     `db:"access_token" json:"-"`
+	PasswordHash string     `db:"password_hash,omitempty" json:"-"`
+	DeviceToken  *string    `db:"device_token,omitempty" json:"-"`
+	InviteCode   string     `db:"invite_code" json:"inviteCode"` // Auto generated invite hash
+	Network      string     `db:"network" json:"network"`
+	LoggedIn     bool       `db:"logged_in" json:"-"`
+	LastLogInAt  *time.Time `db:"last_login_at" json:"lastLoginAt"`
+	Etc          UserEtc    `db:"etc" json:"etc"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -57,12 +53,9 @@ const (
 )
 
 type UserEtc struct {
-	// Store user's current neighbourhood whereabouts
-	LocaleID         int64      `json:"localeId"`
-	FirstName        string     `json:"firstName"`
-	Gender           UserGender `json:"gender"`
-	InvitedBy        int64      `json:"invitedBy"`
-	StripeCustomerID string     `json:"stripeCustomerId"`
+	FirstName string     `json:"firstName"`
+	Gender    UserGender `json:"gender"`
+	InvitedBy int64      `json:"invitedBy"`
 
 	*postgresql.JSONBConverter
 }
@@ -87,8 +80,7 @@ func (u *User) CollectionName() string {
 }
 
 func (u *User) BeforeCreate(bond.Session) error {
-	u.Geo = *geotools.NewPointFromLatLng(0, 0) // set to zero location
-	u.InviteCode = RandString(5)               // random user invite_code hash
+	u.InviteCode = RandString(5) // random user invite_code hash
 	//TODO: unlikely event of conflict, do something
 
 	return nil
@@ -98,22 +90,6 @@ func (u *User) BeforeUpdate(bond.Session) error {
 	u.UpdatedAt = GetTimeUTCPointer()
 
 	return nil
-}
-
-// SetLocation sets the user geo location
-func (u *User) SetLocation(lat, lon float64) error {
-	lg.Infof("user(%d) update loc (%f,%f)", u.ID, lat, lon)
-	u.Geo = *geotools.NewPointFromLatLng(lat, lon)
-
-	return DB.Save(u)
-}
-
-func (u *User) DistanceToPlaces(places ...*Place) {
-	userLoc := geotools.LatLngFromPoint(u.Geo)
-	for _, p := range places {
-		pLoc := geotools.LatLngFromPoint(p.Geo)
-		p.Distance = DistanceTo(userLoc, pLoc)
-	}
 }
 
 func (s UserStore) FindByUsername(username string) (*User, error) {

@@ -22,8 +22,9 @@ type Product struct {
 	Place    *Place               `json:"place"`
 	Images   []*data.ProductImage `json:"images"`
 
-	Sizes  []string `json:"sizes"`
-	Colors []string `json:"colors"`
+	ImageURL string   `json:"imageUrl"`
+	Sizes    []string `json:"sizes"`
+	Colors   []string `json:"colors"`
 	// TODO: remove + backwards compat
 	Etc ProductEtc `json:"etc,omitempty"`
 

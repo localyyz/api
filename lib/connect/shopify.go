@@ -15,7 +15,6 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
 	"github.com/go-chi/render"
-	"github.com/goware/geotools"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 
@@ -192,18 +191,11 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 
 	if place == nil {
-		locale, err := data.DB.Locale.FromLatLng(shop.Latitude, shop.Longitude)
-		if err != nil {
-			return err
-		}
-
 		u, _ := url.Parse(shop.Domain)
 		u.Scheme = "https"
 		place = &data.Place{
 			ShopifyID:   shopID,
 			Plan:        shop.PlanName,
-			LocaleID:    locale.ID,
-			Geo:         *geotools.NewPointFromLatLng(shop.Latitude, shop.Longitude),
 			Name:        shop.Name,
 			Address:     fmt.Sprintf("%s, %s", shop.Address1, shop.City),
 			Phone:       shop.Phone,
