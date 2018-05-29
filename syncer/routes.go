@@ -43,6 +43,11 @@ func (h *Handler) Routes() chi.Router {
 		r.Use(NewStructuredLogger())
 	}
 
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`😎`))
+	})
+	r.Mount("/shopify", shopify.Routes())
 	r.Mount("/webhooks/shopify", shopify.Routes())
 
 	return r

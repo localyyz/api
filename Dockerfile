@@ -3,10 +3,10 @@ FROM gcr.io/verdant-descent-153101/golang
 ADD . /go/src/bitbucket.org/moodie-app/moodie-api
 WORKDIR /go/src/bitbucket.org/moodie-app/moodie-api
 RUN mkdir -p ./bin
-RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -a -installsuffix cgo -i -o ./bin/api ./cmd/api/main.go
-RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -a -installsuffix cgo -i -o ./bin/merchant ./cmd/merchant
-RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -a -installsuffix cgo -i -o ./bin/tool ./cmd/tool
-RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -a -installsuffix cgo -i -o ./bin/syncer ./cmd/syncer
+RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -a -i -o ./bin/api ./cmd/api/main.go
+RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/merchant ./cmd/merchant
+RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/tool ./cmd/tool
+RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/syncer ./cmd/syncer
 
 # STAGE 2: SCRATCH BINARY
 FROM scratch

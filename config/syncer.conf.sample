@@ -7,4 +7,4 @@ hosts             = [ "localhost" ]
 username          = "localyyz"
 password          = ""
 debug_queries     = true
-application_name  = "api"
+application_name  = "syncer"
