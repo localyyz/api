@@ -83,12 +83,11 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		})
 		if err != nil {
 			if err == db.ErrNoMoreRows {
-				// skip entire update if product is not found
-
+				// redirect to shopify products create
+				return ShopifyProductListingsCreate(ctx)
 				// NOTE: this happens when shopify webhook calls
 				// comes through out-of-order. some time receives
 				// update before create. For now, ignore and silently fail
-				continue
 			}
 			return errors.Wrap(err, "failed to fetch product")
 		}
