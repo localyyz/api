@@ -43,6 +43,7 @@ type Checkout struct {
 
 	ShippingLine *ShippingLine `json:"shipping_line,omitempty"`
 	TaxLines     []*TaxLine    `json:"tax_lines,omitempty"`
+	Payments     []*Payment    `json:"payments,omitempty"`
 
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
