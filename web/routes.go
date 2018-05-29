@@ -3,8 +3,6 @@ package web
 import (
 	"net/http"
 
-	db "upper.io/db.v3"
-
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
@@ -37,30 +35,6 @@ type Handler struct {
 func New(DB *data.Database) *Handler {
 	if DB == nil {
 		return &Handler{}
-	}
-	// TODO legacy ->>> moved to webhook handler
-	if places, _ := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive}); places != nil {
-		shopify.SetupShopCache(places...)
-	}
-	if categories, _ := DB.Category.FindAll(nil); categories != nil {
-		shopify.SetupCategoryCache(categories...)
-	}
-	if blacklist, _ := DB.Blacklist.FindAll(nil); blacklist != nil {
-		shopify.SetupCategoryBlacklistCache(blacklist...)
-	}
-	return &Handler{DB: DB}
-}
-
-func NewWebhookHandler(DB *data.Database) *Handler {
-	// TODO: use a real caching library
-	if places, _ := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive}); places != nil {
-		shopify.SetupShopCache(places...)
-	}
-	if categories, _ := DB.Category.FindAll(nil); categories != nil {
-		shopify.SetupCategoryCache(categories...)
-	}
-	if blacklist, _ := DB.Blacklist.FindAll(nil); blacklist != nil {
-		shopify.SetupCategoryBlacklistCache(blacklist...)
 	}
 	return &Handler{DB: DB}
 }
@@ -112,11 +86,6 @@ func (h *Handler) Routes() chi.Router {
 		// shopify related endpoints
 		r.Get("/connect", shopify.Connect)
 		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)
-
-		// setup shop cache
-		// TODO: is this terrible? Probably
-		r.With(shopify.ShopifyStoreWhCtx).
-			Post("/webhooks/shopify", shopify.WebhookHandler)
 
 		// push notification
 		r.Post("/echo", echoPush)
