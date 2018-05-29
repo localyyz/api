@@ -82,16 +82,19 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	shopifyCheckout := &shopify.Checkout{
+		LineItems: []*shopify.LineItem{{VariantID: variant.OfferID, Quantity: 1}},
+	}
+	if discount, _ := data.DB.PlaceDiscount.FindByPlaceID(toSave.PlaceID); discount != nil {
+		shopifyCheckout.DiscountCode = discount.Code
+	}
+
 	client := shopify.NewClient(nil, cred.AccessToken)
 	client.BaseURL, _ = url.Parse(cred.ApiURL)
 	client.Debug = true
 	checkout, _, err := client.Checkout.Create(
 		ctx,
-		&shopify.CheckoutRequest{
-			Checkout: &shopify.Checkout{
-				LineItems: []*shopify.LineItem{{VariantID: variant.OfferID, Quantity: 1}},
-			},
-		},
+		&shopify.CheckoutRequest{shopifyCheckout},
 	)
 	if err != nil || checkout == nil {
 		lg.Alertf("failed to create express checkout(%d) with err: %+v", cart.ID, err)

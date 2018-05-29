@@ -142,6 +142,9 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// log the search query
+	lg.SetEntryField(ctx, "query", p.Query)
+
 	// join query parts back to one string
 	qraw := db.Raw(strings.Join(p.queryParts, ":* &"))
 	qrawNoSpace := strings.Join(p.queryParts, "")
