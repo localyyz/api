@@ -21,9 +21,9 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 	for _, p := range list {
 		// check if product already exists in our system
 		dbProduct, err := data.DB.Product.FindOne(db.Cond{
-			"place_id":      place.ID,
-			"external_id":   p.ProductID,
-			"deleted_at <>": nil,
+			"place_id":    place.ID,
+			"external_id": p.ProductID,
+			"deleted_at":  db.IsNotNull(),
 		})
 		if err != nil {
 			lg.Warnf("failed to delete product %s with %+v", p.Handle, err)
