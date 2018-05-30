@@ -36,10 +36,10 @@ function loadprod() {
   echo "LOADING DATABASE FROM PROD BACKUP";
   if [ ! -f tmp/backup-latest.dump ]; then
     echo "DOWNLOADING BACKUP";
-    scp root@localyyz:/data/backups/backup-latest.dump tmp/.
+    scp root@localyyz.db:/data/backups/backup-latest.dump tmp/.
   elif test `find "tmp/backup-latest.dump" -mmin +2000`; then
     echo "DOWNLOADING LATEST BACKUP";
-    scp root@localyyz:/data/backups/backup-latest.dump tmp/.
+    scp root@localyyz.db:/data/backups/backup-latest.dump tmp/.
   fi
   pg_restore -d localyyz tmp/backup-latest.dump
 }
