@@ -41,7 +41,12 @@ function loadprod() {
     echo "DOWNLOADING LATEST BACKUP";
     scp root@localyyz.db:/data/backups/backup-latest.dump tmp/.
   fi
-  pg_restore -d localyyz tmp/backup-latest.dump
+  pg_restore -l tmp/backup-latest.dump | sed '/MATERIALIZED VIEW DATA/d' > tmp/restore.lst
+  pg_restore -L tmp/restore.lst -d localyyz tmp/backup-latest.dump
+
+  # some reason refreshing materialized view doesn't work here
+  #pg_restore -l tmp/backup-latest.dump | grep 'MATERIALIZED VIEW DATA' > tmp/refresh.lst
+  #pg_restore -L tmp/refresh.lst -d localyyz tmp/backup-latest.dump
 }
 
 if [ $# -lt 2 ]; then
