@@ -18,15 +18,10 @@ type Cart struct {
 	Currency        string `json:"currency,omitempty"`
 	StripeAccountID string `json:"stripeAccountId,omitempty"`
 
-	CartItems       CartItemList               `json:"items"`
-	ShippingRates   []*data.CartShippingMethod `json:"shippingRates"`
-	ShippingAddress *CartAddress               `json:"shippingAddress"`
-	BillingAddress  *CartAddress               `json:"billingAddress"`
-
-	TotalShipping int64 `json:"totalShipping"`
-	TotalTax      int64 `json:"totalTax"`
-	TotalPrice    int64 `json:"totalPrice"`
-	TotalDiscount int64 `json:"totalDiscount"`
+	CartItems       CartItemList `json:"items"`
+	Checkouts       []*Checkout  `json:"checkouts"`
+	ShippingAddress *CartAddress `json:"shippingAddress"`
+	BillingAddress  *CartAddress `json:"billingAddress"`
 
 	HasError  bool   `json:"hasError"`
 	Error     string `json:"error"`
@@ -55,38 +50,35 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 	}
 
 	resp.CartItems = make(CartItemList, 0, 0)
-	if dbItems, _ := data.DB.CartItem.FindByCartID(cart.ID); dbItems != nil {
-		var cartItems CartItemList
-		for _, item := range dbItems {
-			cartItems = append(cartItems, NewCartItem(ctx, item))
-		}
-		resp.CartItems = cartItems
+	dbItems, err := data.DB.CartItem.FindByCartID(cart.ID)
+	if err != nil {
+		lg.Warn(err)
+		return resp
 	}
 
-	if rates, _ := ctx.Value("rates").([]*data.CartShippingMethod); rates != nil {
-		resp.ShippingRates = rates
+	var cartItems CartItemList
+	for _, item := range dbItems {
+		cartItems = append(cartItems, NewCartItem(ctx, item))
 	}
+	resp.CartItems = cartItems
 
 	resp.ShippingAddress = &CartAddress{IsShipping: true}
 	resp.BillingAddress = &CartAddress{IsBilling: true}
-	if s := cart.Etc.ShippingAddress; s != nil {
+	if s := cart.ShippingAddress; s != nil {
+		resp.ShippingAddress.CartAddress = s
+	} else if s := cart.Etc.ShippingAddress; s != nil {
 		resp.ShippingAddress.CartAddress = s
 	}
-	if s := cart.Etc.BillingAddress; s != nil {
-		resp.BillingAddress.CartAddress = s
+
+	if b := cart.BillingAddress; b != nil {
+		resp.BillingAddress.CartAddress = b
+	} else if b := cart.Etc.BillingAddress; b != nil {
+		resp.BillingAddress.CartAddress = b
 	}
 
-	// calculate cart subtotal by line item
-	if cart.Etc.ShopifyData != nil {
-		for k, d := range cart.Etc.ShopifyData {
-			resp.TotalTax += d.TotalTax
-			resp.TotalPrice += d.TotalPrice
-			if d.Discount != nil {
-				resp.TotalDiscount += atoi(d.Discount.Amount)
-			}
-			if s, ok := cart.Etc.ShippingMethods[k]; ok && s != nil {
-				resp.TotalShipping += s.Price
-			}
+	if checkouts, _ := data.DB.Checkout.FindAllByCartID(cart.ID); len(checkouts) > 0 {
+		for _, c := range checkouts {
+			resp.Checkouts = append(resp.Checkouts, NewCheckout(ctx, c))
 		}
 	}
 

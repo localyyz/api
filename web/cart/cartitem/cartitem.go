@@ -2,7 +2,6 @@ package cartitem
 
 import (
 	"net/http"
-	"strconv"
 
 	db "upper.io/db.v3"
 
@@ -44,6 +43,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// look up variant
+	// TODO: just send in the variant id
 	variant, err := data.DB.ProductVariant.FindOne(
 		db.Cond{
 			"product_id":                   payload.ProductID,
@@ -61,12 +61,37 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check if an checkout exists
+	checkout, err := data.DB.Checkout.FindOne(
+		db.Cond{
+			"cart_id":  cart.ID,
+			"place_id": variant.PlaceID,
+		},
+	)
+	if err != nil {
+		if err == db.ErrNoMoreRows {
+			checkout = &data.Checkout{
+				CartID:  &cart.ID,
+				PlaceID: variant.PlaceID,
+			}
+			if err := data.DB.Checkout.Save(checkout); err != nil {
+				lg.Alertf("checkout create: %s", err)
+				render.Respond(w, r, err)
+				return
+			}
+		} else {
+			render.Respond(w, r, err)
+			return
+		}
+	}
+
 	newItem := &data.CartItem{
-		CartID:    cart.ID,
-		ProductID: payload.ProductID,
-		VariantID: variant.ID,
-		PlaceID:   variant.PlaceID,
-		Quantity:  uint32(payload.Quantity),
+		CartID:     cart.ID,
+		ProductID:  payload.ProductID,
+		VariantID:  variant.ID,
+		CheckoutID: &checkout.ID,
+		PlaceID:    variant.PlaceID,
+		Quantity:   uint32(payload.Quantity),
 	}
 	if err := data.DB.CartItem.Save(newItem); err != nil {
 		render.Respond(w, r, err)
@@ -87,7 +112,7 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check if this is the last item in cart -> shopifyData [ merchant ]
+	// check if this is the last item in cart for a specific checkout
 	numItems, err := data.DB.CartItem.Find(
 		db.Cond{
 			"cart_id":  cart.ID,
@@ -99,10 +124,12 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if numItems == 0 {
-		// if this is the last item from this merchant. remove the checkout from shopify data
-		delete(cart.Etc.ShopifyData, cartItem.PlaceID)
-		delete(cart.Etc.ShippingMethods, cartItem.PlaceID)
+	if numItems == 0 && cartItem.CheckoutID != nil {
+		if err := data.DB.Checkout.Delete(&data.Checkout{
+			ID: *cartItem.CheckoutID,
+		}); err != nil {
+			lg.Alertf("checkout delete: %s", err)
+		}
 	}
 
 	// Reset cart status to inProgress
@@ -116,13 +143,4 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusNoContent)
 	render.Respond(w, r, "")
-}
-
-func atoi(s string) int64 {
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		lg.Errorf("failed to parse %s to float", s)
-		return 0
-	}
-	return int64(f * 100.0)
 }

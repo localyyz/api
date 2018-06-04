@@ -38,8 +38,8 @@ func cartRoutes() chi.Router {
 	r.Mount("/items", cartitem.Routes())
 	r.Get("/shipping", ListShippingRates)
 
-	r.Post("/checkout", CreateCheckout)
-	r.Post("/pay", CreatePayment)
+	r.Post("/checkout", CreateCheckouts)
+	r.Post("/pay", CreatePayments)
 
 	return r
 }

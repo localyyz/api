@@ -41,9 +41,10 @@ type Checkout struct {
 	ShippingAddress *CustomerAddress `json:"shipping_address,omitempty"`
 	BillingAddress  *CustomerAddress `json:"billing_address,omitempty"`
 
-	ShippingLine *ShippingLine `json:"shipping_line,omitempty"`
-	TaxLines     []*TaxLine    `json:"tax_lines,omitempty"`
-	Payments     []*Payment    `json:"payments,omitempty"`
+	TaxesIncluded bool          `json:"taxes_included"`
+	ShippingLine  *ShippingLine `json:"shipping_line,omitempty"`
+	TaxLines      []*TaxLine    `json:"tax_lines,omitempty"`
+	Payments      []*Payment    `json:"payments,omitempty"`
 
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
@@ -98,7 +99,7 @@ type ShippingRateRequest struct {
 type Payment struct {
 	ID        int64  `json:"id,omitempty"`
 	Amount    string `json:"amount"`
-	SessionID string `json:"session_id"`
+	SessionID string `json:"session_id,omitempty"`
 	// clientside idempotency token
 	UniqueToken string `json:"unique_token"`
 
@@ -144,13 +145,25 @@ func (c *CheckoutService) Get(ctx context.Context, token string) (*Checkout, *ht
 	return checkoutWrapper.Checkout, resp, nil
 }
 
-func (c *CheckoutService) Create(ctx context.Context, checkout *CheckoutRequest) (*Checkout, *http.Response, error) {
-	req, err := c.client.NewRequest("POST", "/admin/checkouts.json", checkout)
+// helper function get or create based on token
+func (c *CheckoutService) CreateOrUpdate(ctx context.Context, checkout *Checkout) (*Checkout, *http.Response, error) {
+	if len(checkout.Token) == 0 {
+		return c.Create(ctx, checkout)
+	}
+	return c.Update(ctx, checkout)
+}
+
+func (c *CheckoutService) Create(ctx context.Context, checkout *Checkout) (*Checkout, *http.Response, error) {
+	req, err := c.client.NewRequest(
+		"POST",
+		"/admin/checkouts.json",
+		&CheckoutRequest{checkout},
+	)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	checkoutWrapper := new(CheckoutRequest)
+	checkoutWrapper := &CheckoutRequest{Checkout: checkout}
 	resp, err := c.client.Do(ctx, req, checkoutWrapper)
 	if err != nil {
 		return nil, resp, err
@@ -159,13 +172,17 @@ func (c *CheckoutService) Create(ctx context.Context, checkout *CheckoutRequest)
 	return checkoutWrapper.Checkout, resp, nil
 }
 
-func (c *CheckoutService) Update(ctx context.Context, checkout *CheckoutRequest) (*Checkout, *http.Response, error) {
-	req, err := c.client.NewRequest("PUT", fmt.Sprintf("/admin/checkouts/%s.json", checkout.Checkout.Token), checkout)
+func (c *CheckoutService) Update(ctx context.Context, checkout *Checkout) (*Checkout, *http.Response, error) {
+	req, err := c.client.NewRequest(
+		"PUT",
+		fmt.Sprintf("/admin/checkouts/%s.json", checkout.Token),
+		&CheckoutRequest{checkout},
+	)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	checkoutWrapper := new(CheckoutRequest)
+	checkoutWrapper := &CheckoutRequest{Checkout: checkout}
 	resp, err := c.client.Do(ctx, req, checkoutWrapper)
 	if err != nil {
 		return nil, resp, err
@@ -211,16 +228,17 @@ func (c *CheckoutService) ListShippingRates(ctx context.Context, token string) (
 	return shippingRateWrapper.CheckoutShipping, resp, nil
 }
 
-func (c *CheckoutService) Payment(ctx context.Context, token string, payment *PaymentRequest) (*Payment, *http.Response, error) {
-	req, err := c.client.NewRequest("POST", fmt.Sprintf("/admin/checkouts/%s/payments.json", token), payment)
+func (c *CheckoutService) Payment(ctx context.Context, token string, payment *Payment) (*Payment, *http.Response, error) {
+	var (
+		resp           *http.Response
+		paymentWrapper = &PaymentRequest{payment}
+	)
+
+	req, err := c.client.NewRequest("POST", fmt.Sprintf("/admin/checkouts/%s/payments.json", token), paymentWrapper)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	var (
-		resp           *http.Response
-		paymentWrapper = new(PaymentRequest)
-	)
 	resp, err = c.client.Do(ctx, req, paymentWrapper)
 	if err != nil {
 		return nil, resp, err

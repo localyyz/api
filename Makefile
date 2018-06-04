@@ -19,6 +19,8 @@ all:
 	@echo "  run-merchant          - run merchant app in dev mode"
 	@echo "  run-tool              - run tool app in dev mode"
 	@echo "  run-syncer            - run syncer app in dev mode"
+	@echo ""
+	@echo "  tests                 - run all tests under project"
 	@echo "  build                 - build api into bin/ directory"
 	@echo "  docs                  - generate api documentation"
 	@echo "  tools                 - go get's a bunch of tools for dev"
@@ -98,6 +100,9 @@ run-tool:
 
 run-syncer:
 	@(export CONFIG=${SYNCER_CONFIG}; fresh -c runner.conf -p ./cmd/syncer)
+
+tests:
+	@go test -v ./...
 
 build-merchant:
 	@mkdir -p ./bin

@@ -94,7 +94,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	client.Debug = true
 	checkout, _, err := client.Checkout.Create(
 		ctx,
-		&shopify.CheckoutRequest{shopifyCheckout},
+		shopifyCheckout,
 	)
 	if err != nil || checkout == nil {
 		lg.Alertf("failed to create express checkout(%d) with err: %+v", cart.ID, err)
@@ -179,21 +179,19 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 	cc, _, err := client.Checkout.Update(
 		ctx,
-		&shopify.CheckoutRequest{
-			&shopify.Checkout{
-				Token: shopifyData.Token,
-				BillingAddress: &shopify.CustomerAddress{
-					Address1:  payload.BillingAddress.Address,
-					Address2:  payload.BillingAddress.AddressOpt,
-					City:      payload.BillingAddress.City,
-					Country:   payload.BillingAddress.Country,
-					FirstName: payload.BillingAddress.FirstName,
-					LastName:  payload.BillingAddress.LastName,
-					Province:  payload.BillingAddress.Province,
-					Zip:       payload.BillingAddress.Zip,
-				},
-				Email: payload.Email,
+		&shopify.Checkout{
+			Token: shopifyData.Token,
+			BillingAddress: &shopify.CustomerAddress{
+				Address1:  payload.BillingAddress.Address,
+				Address2:  payload.BillingAddress.AddressOpt,
+				City:      payload.BillingAddress.City,
+				Country:   payload.BillingAddress.Country,
+				FirstName: payload.BillingAddress.FirstName,
+				LastName:  payload.BillingAddress.LastName,
+				Province:  payload.BillingAddress.Province,
+				Zip:       payload.BillingAddress.Zip,
 			},
+			Email: payload.Email,
 		},
 	)
 	if err != nil {
@@ -202,17 +200,15 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u, _ := uuid.NewUUID()
-	payment := &shopify.PaymentRequest{
-		Payment: &shopify.Payment{
-			Amount:      cc.PaymentDue,
-			UniqueToken: u.String(),
-			PaymentToken: &shopify.PaymentToken{
-				PaymentData: payload.ExpressPaymentToken,
-				Type:        shopify.StripeVaultToken,
-			},
-			RequestDetails: &shopify.RequestDetail{
-				IPAddress: r.RemoteAddr,
-			},
+	payment := &shopify.Payment{
+		Amount:      cc.PaymentDue,
+		UniqueToken: u.String(),
+		PaymentToken: &shopify.PaymentToken{
+			PaymentData: payload.ExpressPaymentToken,
+			Type:        shopify.StripeVaultToken,
+		},
+		RequestDetails: &shopify.RequestDetail{
+			IPAddress: r.RemoteAddr,
 		},
 	}
 
