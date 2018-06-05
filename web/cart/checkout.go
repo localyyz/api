@@ -2,6 +2,7 @@ package cart
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -31,6 +32,10 @@ type checkoutError struct {
 	itemID  int64
 	errCode checkoutErrorCode
 	err     error
+}
+
+type checkoutEmail struct {
+	Email string
 }
 
 type checkoutErrorCode uint32
@@ -143,12 +148,12 @@ type universalCheckout struct {
 	cart         *data.Cart
 }
 
-func (u *universalCheckout) createMerchantCheckout(ctx context.Context, placeID int64, client *shopify.Client) error {
-	user := ctx.Value("session.user").(*data.User)
+func (u *universalCheckout) createMerchantCheckout(ctx context.Context, placeID int64, client *shopify.Client, userEmail string) error {
+
 	cart := ctx.Value("cart").(*data.Cart)
 
 	checkout := &shopify.Checkout{
-		Email:           user.Email,
+		Email:           userEmail,
 		LineItems:       u.lineItemsMap[placeID],
 		ShippingAddress: u.shippingAddress,
 		BillingAddress:  u.billingAddress,
@@ -225,6 +230,15 @@ func (u *universalCheckout) createMerchantCheckout(ctx context.Context, placeID 
 // Create checkout is the entry point to getting a full "checkout"
 // object back from the API
 func CreateCheckout(w http.ResponseWriter, r *http.Request) {
+
+	decoder := json.NewDecoder(r.Body)
+	var email checkoutEmail
+	err := decoder.Decode(&email)
+	if err != nil {
+		panic(err)
+	}
+	defer r.Body.Close()
+
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
 
@@ -308,7 +322,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 		cl := shopify.NewClient(nil, cred.AccessToken)
 		cl.BaseURL, _ = url.Parse(cred.ApiURL)
 		cl.Debug = true
-		if err := u.createMerchantCheckout(ctx, cred.PlaceID, cl); err != nil {
+		if err := u.createMerchantCheckout(ctx, cred.PlaceID, cl, email.Email); err != nil {
 			lg.Alert(errors.Wrapf(err, "checkout: cart(%d) pl(%d)", cart.ID, cred.PlaceID))
 			lastError = err
 		}
