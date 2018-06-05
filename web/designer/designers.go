@@ -43,6 +43,8 @@ var (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(api.FilterSortCtx)
+
 	r.Get("/", List)
 	r.Get("/featured", ListFeatured)
 	r.Route("/{designer}", func(r chi.Router) {
@@ -113,10 +115,12 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	designer := ctx.Value("designer").(string)
 	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
 	cond := db.Cond{
 		"p.deleted_at": nil,
 		"p.status":     data.ProductStatusApproved,
+		"pl.status":    data.PlaceStatusActive,
 	}
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 		cond["p.gender"] = data.ProductGender(gender)
@@ -129,8 +133,9 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 			db.Raw(`p.tsv @@ plainto_tsquery(?)`, designer),
 			cond,
 		)).
-		GroupBy("p.id", "pl.id").
+		GroupBy("p.id").
 		OrderBy("p.score desc", "p.created_at desc")
+	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
 	paginate := cursor.UpdateQueryBuilder(query)

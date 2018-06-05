@@ -12,10 +12,11 @@ import (
 	db "upper.io/db.v3"
 )
 
-func ListProduct(w http.ResponseWriter, r *http.Request) {
+func ListProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	collection := ctx.Value("collection").(*data.Collection)
 	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
 	productCond := db.Or(
 		db.Raw("p.id IN (SELECT product_id FROM collection_products WHERE collection_id = ?)", collection.ID),
@@ -46,6 +47,8 @@ func ListProduct(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		Where(cond).
 		OrderBy("p.score DESC", "p.created_at DESC")
+
+	query = filterSort.UpdateQueryBuilder(query)
 	paginate := cursor.UpdateQueryBuilder(query)
 	var products []*data.Product
 	if err := paginate.All(&products); err != nil {
