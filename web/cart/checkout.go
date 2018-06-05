@@ -235,9 +235,14 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	var email checkoutEmail
 	err := decoder.Decode(&email)
 	if err != nil {
-		panic(err)
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
 	}
 	defer r.Body.Close()
+	if len(email.Email) == 0 {
+		render.Respond(w, r, api.ErrInvalidRequest(errors.New("invalid email")))
+		return
+	}
 
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
