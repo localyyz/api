@@ -11,5 +11,5 @@ CREATE INDEX product_discount_pct_idx ON products USING btree (discount_pct);
 ALTER TABLE products DROP COLUMN price;
 ALTER TABLE products DROP COLUMN discount_pct;
 
-DROP INDEX product_price_idx;
-DROP INDEX product_discount_pct_idx;
+DROP INDEX IF EXISTS product_price_idx;
+DROP INDEX IF EXISTS product_discount_pct_idx;

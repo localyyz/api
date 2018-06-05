@@ -6,4 +6,4 @@ CREATE INDEX product_score_idx ON products USING btree (score);
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
-DROP INDEX product_score_idx;
+DROP INDEX IF EXISTS product_score_idx;
