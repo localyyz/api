@@ -44,11 +44,19 @@ func setVariants(p *data.Product, variants ...*shopify.ProductVariant) error {
 	b := q.Batch(len(variants))
 	go func() {
 		defer b.Done()
-		for _, v := range variants {
+		for i, v := range variants {
 			price, prevPrice := setPrices(
 				v.Price,
 				v.CompareAtPrice,
 			)
+
+			if i == 0 {
+				p.Price = price
+				if price > 0 && prevPrice > price {
+					p.DiscountPct = pctRound(price/prevPrice, 1)
+				}
+			}
+
 			etc := data.ProductVariantEtc{Sku: v.Sku}
 			// variant option values
 			for _, o := range v.OptionValues {
@@ -97,7 +105,7 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		product.Brand = p.Vendor
 
 		// iterate product variants and update quantity limit
-		for _, v := range p.Variants {
+		for i, v := range p.Variants {
 			dbVariant, err := data.DB.ProductVariant.FindByOfferID(v.ID)
 			if err != nil {
 				if err != db.ErrNoMoreRows {
@@ -117,6 +125,13 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 				v.Price,
 				v.CompareAtPrice,
 			)
+
+			if i == 0 {
+				product.Price = dbVariant.Price
+				if dbVariant.Price > 0 && dbVariant.PrevPrice > dbVariant.Price {
+					product.DiscountPct = pctRound(dbVariant.Price/dbVariant.PrevPrice, 1)
+				}
+			}
 
 			for _, o := range v.OptionValues {
 				vv := strings.ToLower(o.Value)

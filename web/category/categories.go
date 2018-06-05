@@ -17,6 +17,7 @@ func Routes() chi.Router {
 
 	r.Get("/", List)
 	r.Route("/{categoryType}", func(r chi.Router) {
+		r.Use(api.FilterSortCtx)
 		r.Use(CategoryTypeCtx)
 		r.Get("/", GetCategory)
 		r.Get("/products", ListProducts)
@@ -94,26 +95,28 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	categoryType := ctx.Value("category.type").(data.CategoryType)
 	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
 	cond := db.Cond{
-		"status":                    data.ProductStatusApproved,
-		db.Raw("category->>'type'"): categoryType.String(),
-		db.Raw("created_at::date"):  db.Lt(db.Raw("NOW()::date - 1")),
-		"deleted_at":                nil,
+		"p.status":                    data.ProductStatusApproved,
+		db.Raw("p.category->>'type'"): categoryType.String(),
+		"p.deleted_at":                nil,
 	}
 	if categoryValue, ok := ctx.Value("category.value").([]string); ok {
-		cond[db.Raw("category->>'value'")] = categoryValue
+		cond[db.Raw("p.category->>'value'")] = categoryValue
 	}
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["gender"] = data.ProductGender(gender)
+		cond["p.gender"] = data.ProductGender(gender)
 	}
 
-	query := data.DB.Product.
-		Find(cond).
-		OrderBy("score DESC", "created_at DESC")
+	query := data.DB.Select("p.*").
+		From("products p").
+		Where(cond).
+		OrderBy("p.score DESC")
+	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
-	paginate := cursor.UpdateQueryUpper(query)
+	paginate := cursor.UpdateQueryBuilder(query)
 	if err := paginate.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return

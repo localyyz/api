@@ -80,7 +80,7 @@ commands:
 
   tail-logs:
     desc: Tail Docker logs
-    run: docker logs --tail=20 -f $NAME 2>&1
+    run: docker logs --tail=200 -f $NAME 2>&1
 
   start:
     desc: Start Docker container

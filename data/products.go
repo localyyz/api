@@ -22,6 +22,10 @@ type Product struct {
 	Category ProductCategory `db:"category" json:"category"`
 	Status   ProductStatus   `db:"status" json:"status"`
 
+	// price from variants
+	Price       float64 `db:"price" json:"price"`
+	DiscountPct float64 `db:"discount_pct" json:"discount_pct"`
+
 	// external id
 	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
 	ExternalHandle string `db:"external_handle" json:"-"`
