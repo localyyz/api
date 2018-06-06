@@ -13,10 +13,9 @@ import (
 )
 
 func validateCart(ctx context.Context) error {
-	user := ctx.Value("session.user").(*data.User)
 	cart := ctx.Value("cart").(*data.Cart)
 
-	if user.Email == "" {
+	if cart.Email == "" {
 		return ErrInvalidEmail
 	}
 
