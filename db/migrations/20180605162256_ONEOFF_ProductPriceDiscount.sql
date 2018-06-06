@@ -14,7 +14,7 @@ where p.status = 3;
 
 update products p
     set discount_pct = coalesce((
-        select round(max(pv.price) / max(pv.prev_price), 1) as discount_pct
+        select 1-round(max(pv.price) / max(pv.prev_price), 1) as discount_pct
         from product_variants pv
         where pv.product_id = p.id and pv.price > 0.0 and pv.prev_price > pv.price
         group by pv.product_id
