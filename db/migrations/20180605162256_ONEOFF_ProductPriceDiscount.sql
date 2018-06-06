@@ -19,7 +19,7 @@ update products p
         where pv.product_id = p.id and pv.price > 0.0 and pv.prev_price > pv.price
         group by pv.product_id
     ), 0)
-where p.status = 3
+where p.status = 3;
 
 
 -- +goose Down
