@@ -108,7 +108,7 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 
 		switch f.Type {
 		case "discount":
-			fConds = append(fConds, db.Cond{"discount": db.Gte(f.MinValue)})
+			fConds = append(fConds, db.Cond{"discount_pct": db.Gte(f.MinValue)})
 		default:
 			if f.MinValue != nil {
 				fConds = append(fConds, db.Cond{f.Type: db.Gte(f.MinValue)})
