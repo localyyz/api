@@ -14,6 +14,10 @@ import (
 	"github.com/pressly/lg"
 )
 
+var (
+	ErrOutofStock = errors.New("out of stock")
+)
+
 func ShopifyProductListingsRemove(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)
@@ -105,6 +109,7 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		product.Brand = p.Vendor
 
 		// iterate product variants and update quantity limit
+		isOutofStock := true
 		for i, v := range p.Variants {
 			dbVariant, err := data.DB.ProductVariant.FindByOfferID(v.ID)
 			if err != nil {
@@ -149,13 +154,32 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			if err := data.DB.ProductVariant.Save(dbVariant); err != nil {
 				return errors.Wrap(err, "failed to update product variant")
 			}
+
+			// if any variant is in stock, set isOutofStock to false
+			if isOutofStock && dbVariant.Limits > 0 {
+				isOutofStock = false
+			}
 		}
 
 		// update product images if product image is empty
 		err = setImages(&shopifyImageSyncer{Product: product, Client: &http.Client{}}, p.Images...)
 
+		// should make this more testable
+		//
+		// TODO: handle error wrapper?
+		if isOutofStock && err == nil {
+			err = ErrOutofStock
+		}
+
 		// update product status
-		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
+		product.Status = finalizeStatus(
+			ctx,
+			len(product.Category.Value) > 0,
+			err,
+			p.Title,
+			p.Tags,
+			p.ProductType,
+		)
 
 		err = ScoreProduct(&shopifyImageScorer{Product: product, Place: place})
 		if err != nil {
@@ -170,9 +194,9 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 	return nil
 }
 
-func finalizeStatus(ctx context.Context, hasCategory bool, hasValidImg bool, inputs ...string) data.ProductStatus {
+func finalizeStatus(ctx context.Context, hasCategory bool, err error, inputs ...string) data.ProductStatus {
 
-	if !hasValidImg {
+	if err != nil {
 		return data.ProductStatusRejected
 	}
 
@@ -233,7 +257,14 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		err := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
 
 		// product status
-		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
+		product.Status = finalizeStatus(
+			ctx,
+			len(product.Category.Value) > 0,
+			err,
+			p.Title,
+			p.Tags,
+			p.ProductType,
+		)
 
 		err = ScoreProduct(&shopifyImageScorer{Product: product, Place: place})
 		if err != nil {
