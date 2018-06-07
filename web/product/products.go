@@ -106,12 +106,8 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 			db.Raw(fmt.Sprintf("category @> '%s'", string(rawCategory))),
 		)
 		// find the products
-		query = data.DB.Select(
-			db.Raw("distinct p.*"),
-			db.Raw(data.ProductWeightWithID),
-		).
+		query = data.DB.Select("p.*").
 			From("products p").
-			LeftJoin("places pl").On("pl.id = p.place_id").
 			Where(cond).
 			OrderBy("p.score desc", "p.created_at desc")
 	}
@@ -133,6 +129,7 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
 	// Only show on sale products from place weight >= 5
 	featuredPlaces, _ := data.DB.Place.FindFeaturedMerchants()
@@ -141,58 +138,24 @@ func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
 		placeIDs[i] = p.ID
 	}
 
+	cond := db.Cond{
+		"p.discount_pct": db.Gte(0.5),
+		"p.status":       data.ProductStatusApproved,
+	}
+	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
+		cond["p.gender"] = data.ProductGender(gender)
+	}
+
 	/* selecting product ids from product variants*/
-	res := data.DB.Select("pv.product_id").
-		From("product_variants pv").
-		Where(db.Cond{
-			"pv.place_id":   placeIDs,
-			"pv.prev_price": db.NotEq(0),
-			"pv.price":      db.NotEq(0),
-			"pv.limits":     db.Gt(0),
-		}).
-		And(db.Cond{"pv.prev_price": db.Gte(db.Raw("2*pv.price"))}).
-		GroupBy("pv.product_id").
-		OrderBy("pv.product_id DESC")
-
-	/* paginating the product ids */
-	cursor.ItemTotal = 1000
-	paginator := res.Paginate(uint(cursor.Limit))
-	if cursor.Page > 1 {
-		paginator = paginator.Page(uint(cursor.Page))
-	}
-
-	/* getting the rows */
-	rows, err := paginator.QueryContext(ctx)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	defer rows.Close()
-
-	/* appending to the productIDs array */
-	var productIDs []int64
-	for rows.Next() {
-		var pId int64
-		if err := rows.Scan(&pId); err != nil {
-			lg.Warnf("error scanning query: %+v", err)
-			break
-		}
-		productIDs = append(productIDs, pId)
-	}
-
-	/* selecting the products by matching product_id and checking product status */
-	res = data.DB.Select("p.*").
+	query := data.DB.Select("p.*").
 		From("products p").
-		Where(db.Cond{
-			"p.status": data.ProductStatusApproved,
-			"p.id":     productIDs,
-		}).
-		GroupBy("p.id").
-		OrderBy("p.score DESC", "p.created_at DESC").
-		Limit(len(productIDs))
+		Where(cond).
+		OrderBy("p.score DESC")
+	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
-	if err := res.All(&products); err != nil {
+	paginate := cursor.UpdateQueryBuilder(query)
+	if err := paginate.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}

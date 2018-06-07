@@ -36,12 +36,17 @@ function loadprod() {
   echo "LOADING DATABASE FROM PROD BACKUP";
   if [ ! -f tmp/backup-latest.dump ]; then
     echo "DOWNLOADING BACKUP";
-    scp root@localyyz:/data/backups/backup-latest.dump tmp/.
+    scp root@localyyz.db:/data/backups/backup-latest.dump tmp/.
   elif test `find "tmp/backup-latest.dump" -mmin +2000`; then
     echo "DOWNLOADING LATEST BACKUP";
-    scp root@localyyz:/data/backups/backup-latest.dump tmp/.
+    scp root@localyyz.db:/data/backups/backup-latest.dump tmp/.
   fi
-  pg_restore -d localyyz tmp/backup-latest.dump
+  pg_restore -l tmp/backup-latest.dump | sed '/MATERIALIZED VIEW DATA/d' > tmp/restore.lst
+  pg_restore -L tmp/restore.lst -d localyyz tmp/backup-latest.dump
+
+  # some reason refreshing materialized view doesn't work here
+  #pg_restore -l tmp/backup-latest.dump | grep 'MATERIALIZED VIEW DATA' > tmp/refresh.lst
+  #pg_restore -L tmp/refresh.lst -d localyyz tmp/backup-latest.dump
 }
 
 if [ $# -lt 2 ]; then

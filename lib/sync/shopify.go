@@ -14,6 +14,10 @@ import (
 	"github.com/pressly/lg"
 )
 
+var (
+	ErrOutofStock = errors.New("out of stock")
+)
+
 func ShopifyProductListingsRemove(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)
@@ -44,11 +48,19 @@ func setVariants(p *data.Product, variants ...*shopify.ProductVariant) error {
 	b := q.Batch(len(variants))
 	go func() {
 		defer b.Done()
-		for _, v := range variants {
+		for i, v := range variants {
 			price, prevPrice := setPrices(
 				v.Price,
 				v.CompareAtPrice,
 			)
+
+			if i == 0 {
+				p.Price = price
+				if price > 0 && prevPrice > price {
+					p.DiscountPct = pctRound(price/prevPrice, 1)
+				}
+			}
+
 			etc := data.ProductVariantEtc{Sku: v.Sku}
 			// variant option values
 			for _, o := range v.OptionValues {
@@ -97,7 +109,8 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		product.Brand = p.Vendor
 
 		// iterate product variants and update quantity limit
-		for _, v := range p.Variants {
+		isOutofStock := true
+		for i, v := range p.Variants {
 			dbVariant, err := data.DB.ProductVariant.FindByOfferID(v.ID)
 			if err != nil {
 				if err != db.ErrNoMoreRows {
@@ -118,6 +131,13 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 				v.CompareAtPrice,
 			)
 
+			if i == 0 {
+				product.Price = dbVariant.Price
+				if dbVariant.Price > 0 && dbVariant.PrevPrice > dbVariant.Price {
+					product.DiscountPct = pctRound(dbVariant.Price/dbVariant.PrevPrice, 1)
+				}
+			}
+
 			for _, o := range v.OptionValues {
 				vv := strings.ToLower(o.Value)
 				switch strings.ToLower(o.Name) {
@@ -134,13 +154,32 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			if err := data.DB.ProductVariant.Save(dbVariant); err != nil {
 				return errors.Wrap(err, "failed to update product variant")
 			}
+
+			// if any variant is in stock, set isOutofStock to false
+			if isOutofStock && dbVariant.Limits > 0 {
+				isOutofStock = false
+			}
 		}
 
 		// update product images if product image is empty
 		err = setImages(&shopifyImageSyncer{Product: product, Client: &http.Client{}}, p.Images...)
 
+		// should make this more testable
+		//
+		// TODO: handle error wrapper?
+		if isOutofStock && err == nil {
+			err = ErrOutofStock
+		}
+
 		// update product status
-		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
+		product.Status = finalizeStatus(
+			ctx,
+			len(product.Category.Value) > 0,
+			err,
+			p.Title,
+			p.Tags,
+			p.ProductType,
+		)
 
 		err = ScoreProduct(&shopifyImageScorer{Product: product, Place: place})
 		if err != nil {
@@ -155,9 +194,9 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 	return nil
 }
 
-func finalizeStatus(ctx context.Context, hasCategory bool, hasValidImg bool, inputs ...string) data.ProductStatus {
+func finalizeStatus(ctx context.Context, hasCategory bool, err error, inputs ...string) data.ProductStatus {
 
-	if !hasValidImg {
+	if err != nil {
 		return data.ProductStatusRejected
 	}
 
@@ -218,7 +257,14 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		err := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
 
 		// product status
-		product.Status = finalizeStatus(ctx, len(product.Category.Value) > 0, err == nil, p.Title, p.Tags, p.ProductType)
+		product.Status = finalizeStatus(
+			ctx,
+			len(product.Category.Value) > 0,
+			err,
+			p.Title,
+			p.Tags,
+			p.ProductType,
+		)
 
 		err = ScoreProduct(&shopifyImageScorer{Product: product, Place: place})
 		if err != nil {
