@@ -106,12 +106,8 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 			db.Raw(fmt.Sprintf("category @> '%s'", string(rawCategory))),
 		)
 		// find the products
-		query = data.DB.Select(
-			db.Raw("distinct p.*"),
-			db.Raw(data.ProductWeightWithID),
-		).
+		query = data.DB.Select("p.*").
 			From("products p").
-			LeftJoin("places pl").On("pl.id = p.place_id").
 			Where(cond).
 			OrderBy("p.score desc", "p.created_at desc")
 	}

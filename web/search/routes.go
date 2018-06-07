@@ -22,6 +22,7 @@ import (
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
+	r.Use(api.FilterSortCtx)
 	r.Post("/", OmniSearch)
 	r.Post("/related", RelatedTags)
 
@@ -135,6 +136,7 @@ func fuzzySearch(ctx context.Context, rawParts ...string) (sqlbuilder.Selector, 
 func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
 	var p omniSearchRequest
 	if err := render.Bind(r, &p); err != nil {
@@ -156,17 +158,15 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	//      weights greater than 0
 	cond := db.Cond{
 		"p.deleted_at IS": nil,
-		"pl.status":       data.PlaceStatusActive,
 		"p.status":        data.ProductStatusApproved,
 	}
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 		cond["p.gender"] = gender
 	}
 	query := data.DB.Select(
-		db.Raw("distinct p.id"),
+		db.Raw("p.id"),
 		db.Raw(data.ProductQueryWeight, qraw)).
 		From("products p").
-		LeftJoin("places pl").On("pl.id = p.place_id").
 		Where(db.And(
 			cond,
 			db.Raw(`tsv @@ (
@@ -177,6 +177,8 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 			)`, qraw, qraw, qraw, db.Raw(qrawNoSpace)),
 		)).
 		OrderBy("_rank DESC")
+
+	query = filterSort.UpdateQueryBuilder(query)
 	paginate := cursor.UpdateQueryBuilder(query)
 	var err error
 
