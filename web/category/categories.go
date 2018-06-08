@@ -105,10 +105,6 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	if categoryValue, ok := ctx.Value("category.value").([]string); ok {
 		cond[db.Raw("p.category->>'value'")] = categoryValue
 	}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["p.gender"] = data.ProductGender(gender)
-	}
-
 	query := data.DB.Select("p.*").
 		From("products p").
 		Where(cond).

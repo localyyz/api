@@ -41,36 +41,6 @@ func ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ListCurated(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	cursor := ctx.Value("cursor").(*api.Page)
-
-	condGenders := []int{1, 2, 3}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		condGenders = []int{int(gender)}
-	}
-
-	var products []*data.Product
-	query := data.DB.Select("p.*").
-		From("products p").
-		RightJoin("feature_products fp").
-		On("fp.product_id = p.id").
-		Where(db.Cond{"gender": condGenders}).
-		OrderBy("fp.ordering", "-fp.featured_at")
-
-	paginate := cursor.UpdateQueryBuilder(query)
-	if err := paginate.All(&products); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	cursor.Update(products)
-
-	presented := presenter.NewProductList(ctx, products)
-	if err := render.RenderList(w, r, presented); err != nil {
-		render.Respond(w, r, err)
-	}
-}
-
 func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
@@ -126,50 +96,34 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ListOnsaleProduct(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	cursor := ctx.Value("cursor").(*api.Page)
-	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
-
-	// Only show on sale products from place weight >= 5
-	featuredPlaces, _ := data.DB.Place.FindFeaturedMerchants()
-	placeIDs := make([]int64, len(featuredPlaces))
-	for i, p := range featuredPlaces {
-		placeIDs[i] = p.ID
-	}
-
-	cond := db.Cond{
-		"p.discount_pct": db.Gte(0.5),
-		"p.status":       data.ProductStatusApproved,
-	}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["p.gender"] = data.ProductGender(gender)
-	}
-
-	/* selecting product ids from product variants*/
-	query := data.DB.Select("p.*").
-		From("products p").
-		Where(cond).
-		OrderBy("p.score DESC")
-	query = filterSort.UpdateQueryBuilder(query)
-
-	var products []*data.Product
-	paginate := cursor.UpdateQueryBuilder(query)
-	if err := paginate.All(&products); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	presented := presenter.NewProductList(ctx, products)
-	if err := render.RenderList(w, r, presented); err != nil {
-		render.Respond(w, r, err)
-	}
-}
-
 func GetProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
 	render.Render(w, r, presenter.NewProduct(ctx, product))
+}
+
+func ListProducts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
+	cursor := ctx.Value("cursor").(*api.Page)
+
+	query := data.DB.Select("p.*").
+		From("products p").
+		Where(db.Cond{
+			"status": data.ProductStatusApproved,
+		}).
+		OrderBy("-score")
+	query = filterSort.UpdateQueryBuilder(query)
+	paginate := cursor.UpdateQueryBuilder(query)
+
+	var products []*data.Product
+	if err := paginate.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	cursor.Update(products)
+
+	render.RenderList(w, r, presenter.NewProductList(ctx, products))
 }
 
 func GetVariant(w http.ResponseWriter, r *http.Request) {
