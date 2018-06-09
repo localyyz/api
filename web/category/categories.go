@@ -20,10 +20,36 @@ func Routes() chi.Router {
 		r.Use(api.FilterSortCtx)
 		r.Use(CategoryTypeCtx)
 		r.Get("/", GetCategory)
+
+		r.Route("/{subcategory}", func(r chi.Router) {
+			r.Use(SubcategoryCtx)
+			r.Get("/products", ListProducts)
+		})
 		r.Get("/products", ListProducts)
 	})
 
 	return r
+}
+
+func SubcategoryCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		subcategory := chi.URLParam(r, "subcategory")
+		categories, err := data.DB.Category.FindByMapping(subcategory)
+		if err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+
+		var values []string
+		for _, c := range categories {
+			values = append(values, c.Value)
+		}
+		ctx = context.WithValue(ctx, "category.value", values)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
 }
 
 func CategoryTypeCtx(next http.Handler) http.Handler {
@@ -36,20 +62,6 @@ func CategoryTypeCtx(next http.Handler) http.Handler {
 		if err := categoryType.UnmarshalText([]byte(rawCategoryType)); err != nil {
 			render.Render(w, r, api.ErrInvalidRequest(err))
 			return
-		}
-
-		if v := r.URL.Query().Get("v"); v != "" {
-			categories, err := data.DB.Category.FindByMapping(v)
-			if err != nil {
-				render.Respond(w, r, err)
-				return
-			}
-
-			var values []string
-			for _, c := range categories {
-				values = append(values, c.Value)
-			}
-			ctx = context.WithValue(ctx, "category.value", values)
 		}
 
 		ctx = context.WithValue(ctx, "category.type", categoryType)
