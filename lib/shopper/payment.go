@@ -10,7 +10,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	db "upper.io/db.v3"
 )
 
@@ -99,7 +98,6 @@ func (p *Payment) HandleError(req *shopify.Payment, err error) {
 			)
 		}
 	}
-	p.Err = errors.New("payment failed, please try again")
 }
 
 func (p *Payment) Finalize(req *shopify.Payment) error {

@@ -75,7 +75,7 @@ func (c *Checkout) doCheckout(ctx context.Context, req *shopify.Checkout) (*shop
 	return req, nil
 }
 
-func New(ctx context.Context, checkout *data.Checkout) *Checkout {
+func NewCheckout(ctx context.Context, checkout *data.Checkout) *Checkout {
 	shippingAddress := ctx.Value(ShippingAddressCtxKey).(*data.CartAddress)
 	billingAddress := ctx.Value(ShippingAddressCtxKey).(*data.CartAddress)
 	email := ctx.Value(EmailCtxKey).(string)
@@ -100,10 +100,14 @@ func (c *Checkout) HandleError(req *shopify.Checkout, err error) {
 			Err:     ErrItemOutofStock,
 		}
 	}
-	if e, ok := err.(*shopify.ShippingAddressError); ok && e != nil {
+	if e, ok := err.(*shopify.AddressError); ok && e != nil {
+		code := CheckoutErrorCodeShippingAddress
+		if e.Type() == "billing_address" {
+			code = CheckoutErrorCodeBillingAddress
+		}
 		c.Err = &CheckoutError{
 			PlaceID: c.PlaceID,
-			ErrCode: CheckoutErrorCodeShippingAddress,
+			ErrCode: code,
 			Err:     err,
 		}
 	}
@@ -204,6 +208,5 @@ func (c *Checkout) Do(ctx context.Context) error {
 	}
 
 	c.HandleError(c.doCheckout(ctx, req))
-
 	return c.Finalize(req)
 }

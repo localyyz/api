@@ -12,7 +12,7 @@ import (
 type Checkout struct {
 	ID      int64  `db:"id,pk,omitempty" json:"id"`
 	CartID  *int64 `db:"cart_id,omitempty" json:"cartId,omitempty"`
-	UserID  int64  `json:"user_id,omitempty" json:"userId,omitempty"`
+	UserID  int64  `db:"user_id" json:"userId"`
 	PlaceID int64  `db:"place_id" json:"placeId"`
 
 	Status CheckoutStatus `db:"status" json:"status"`

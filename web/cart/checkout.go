@@ -61,10 +61,16 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 
 	var checkoutErrors []error
 	for _, c := range checkouts {
-		req := shopper.New(ctx, c)
-		if err := req.Do(nil); err != nil {
-			lg.Alertf("checkout(%d): %v", c.ID, err)
-			checkoutErrors = append(checkoutErrors, err)
+		req := shopper.NewCheckout(ctx, c)
+		if err := req.Do(nil); err != nil || req.Err != nil {
+			if err != nil {
+				lg.Alertf("checkout(%d): %v %v", c.ID, err)
+				// some internal server error, return right away
+				render.Respond(w, r, err)
+				return
+			} else {
+				checkoutErrors = append(checkoutErrors, req.Err)
+			}
 		}
 	}
 
@@ -80,14 +86,18 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 			case shopper.CheckoutErrorCodeNoShipping, shopper.CheckoutErrorCodeShippingAddress:
 				presented.ShippingAddress.HasError = true
 				presented.ShippingAddress.Error = e.Err
+			case shopper.CheckoutErrorCodeBillingAddress:
+				presented.BillingAddress.HasError = true
+				presented.BillingAddress.Error = e.Err
 			}
+
 			for _, ci := range presented.CartItems {
 				ci.HasError = ci.Variant.OfferID == e.ItemID
 				ci.Error = e.Err
 			}
+			render.Status(r, http.StatusBadRequest)
 		}
 		break
 	}
-
 	render.Render(w, r, presented)
 }

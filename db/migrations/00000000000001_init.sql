@@ -1,80 +1,5 @@
---
--- PostgreSQL database dump
---
-
--- Dumped from database version 10.4 (Debian 10.4-2.pgdg90+1)
--- Dumped by pg_dump version 10.4 (Debian 10.4-2.pgdg90+1)
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET client_min_messages = warning;
-SET row_security = off;
-
---
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
---
--- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
-
-
---
--- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
-
-
---
--- Name: product_tsv_trigger(); Type: FUNCTION; Schema: public; Owner: localyyz
---
-
-CREATE FUNCTION public.product_tsv_trigger() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-  name text;
-begin
-  select places.name into name from places where id = new.place_id;
-  new.tsv :=
-  setweight(to_tsvector(
-    COALESCE(
-      CASE WHEN new.gender = 1 THEN 'man'
-          WHEN new.gender = 2 THEN 'woman'
-      END, '')), 'A') ||
-  setweight(to_tsvector(COALESCE(new.title,'')), 'A') ||
-  setweight(to_tsvector(COALESCE(new.category->>'type','')), 'A') ||
-  setweight(to_tsvector(COALESCE(new.category->>'value','')), 'A') ||
-  setweight(to_tsvector(COALESCE(new.brand,'')), 'A') ||
-  setweight(to_tsvector('simple', name), 'A');
-  return new;
-end
-$$;
-
-
-ALTER FUNCTION public.product_tsv_trigger() OWNER TO localyyz;
-
-SET default_tablespace = '';
-
-SET default_with_oids = false;
+-- +goose Up
+-- SQL in section 'Up' is executed when this migration is applied
 
 --
 -- Name: billing_plans; Type: TABLE; Schema: public; Owner: localyyz
@@ -278,41 +203,6 @@ CREATE TABLE public.feature_products (
 
 
 ALTER TABLE public.feature_products OWNER TO localyyz;
-
---
--- Name: goose_db_version; Type: TABLE; Schema: public; Owner: localyyz
---
-
-CREATE TABLE public.goose_db_version (
-    id integer NOT NULL,
-    version_id bigint NOT NULL,
-    is_applied boolean NOT NULL,
-    tstamp timestamp without time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.goose_db_version OWNER TO localyyz;
-
---
--- Name: goose_db_version_id_seq; Type: SEQUENCE; Schema: public; Owner: localyyz
---
-
-CREATE SEQUENCE public.goose_db_version_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.goose_db_version_id_seq OWNER TO localyyz;
-
---
--- Name: goose_db_version_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: localyyz
---
-
-ALTER SEQUENCE public.goose_db_version_id_seq OWNED BY public.goose_db_version.id;
-
 
 --
 -- Name: merchant_approvals; Type: TABLE; Schema: public; Owner: localyyz
@@ -682,21 +572,6 @@ ALTER TABLE public.promos_id_seq OWNER TO localyyz;
 
 ALTER SEQUENCE public.promos_id_seq OWNED BY public.product_variants.id;
 
-
---
--- Name: search_words; Type: MATERIALIZED VIEW; Schema: public; Owner: localyyz
---
-
-CREATE MATERIALIZED VIEW public.search_words AS
- SELECT ts_stat.word,
-    ts_stat.ndoc
-   FROM ts_stat('SELECT to_tsvector(''simple'', title) FROM products'::text) ts_stat(word, ndoc, nentry)
-  WHERE ((ts_stat.ndoc > 1) AND (to_tsvector(ts_stat.word) <> ''::tsvector))
-  WITH NO DATA;
-
-
-ALTER TABLE public.search_words OWNER TO localyyz;
-
 --
 -- Name: shopify_creds; Type: TABLE; Schema: public; Owner: localyyz
 --
@@ -905,14 +780,6 @@ ALTER TABLE ONLY public.carts ALTER COLUMN id SET DEFAULT nextval('public.carts_
 
 ALTER TABLE ONLY public.collections ALTER COLUMN id SET DEFAULT nextval('public.collections_id_seq'::regclass);
 
-
---
--- Name: goose_db_version id; Type: DEFAULT; Schema: public; Owner: localyyz
---
-
-ALTER TABLE ONLY public.goose_db_version ALTER COLUMN id SET DEFAULT nextval('public.goose_db_version_id_seq'::regclass);
-
-
 --
 -- Name: merchant_approvals id; Type: DEFAULT; Schema: public; Owner: localyyz
 --
@@ -1027,15 +894,6 @@ ALTER TABLE ONLY public.carts
 
 ALTER TABLE ONLY public.collections
     ADD CONSTRAINT collections_pkey PRIMARY KEY (id);
-
-
---
--- Name: goose_db_version goose_db_version_pkey; Type: CONSTRAINT; Schema: public; Owner: localyyz
---
-
-ALTER TABLE ONLY public.goose_db_version
-    ADD CONSTRAINT goose_db_version_pkey PRIMARY KEY (id);
-
 
 --
 -- Name: merchant_approvals merchant_approvals_pkey; Type: CONSTRAINT; Schema: public; Owner: localyyz
@@ -1316,20 +1174,6 @@ CREATE INDEX variant_images_variant_id_idx ON public.variant_images_pivot USING 
 
 
 --
--- Name: words_idx; Type: INDEX; Schema: public; Owner: localyyz
---
-
-CREATE INDEX words_idx ON public.search_words USING gin (word public.gin_trgm_ops);
-
-
---
--- Name: products tsvectorupdate; Type: TRIGGER; Schema: public; Owner: localyyz
---
-
-CREATE TRIGGER tsvectorupdate BEFORE INSERT OR UPDATE ON public.products FOR EACH ROW EXECUTE PROCEDURE public.product_tsv_trigger();
-
-
---
 -- Name: cart_items cart_items_cart_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: localyyz
 --
 
@@ -1512,24 +1356,5 @@ ALTER TABLE ONLY public.variant_images_pivot
 ALTER TABLE ONLY public.webhooks
     ADD CONSTRAINT webhooks_place_id_fkey FOREIGN KEY (place_id) REFERENCES public.places(id) ON DELETE CASCADE;
 
-
---
--- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: postgres
---
-
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ALL ON SEQUENCES  FROM postgres;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES  TO localyyz;
-
-
---
--- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: postgres
---
-
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ALL ON TABLES  FROM postgres;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES  TO localyyz;
-
-
---
--- PostgreSQL database dump complete
---
-
+-- +goose Down
+-- SQL section 'Down' is executed when this migration is rolled back

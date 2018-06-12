@@ -21,7 +21,7 @@ type cartPaymentRequest struct {
 
 func (c *cartPaymentRequest) Bind(r *http.Request) error {
 	if c.Card == nil {
-		return errors.New("payment method not specified specified")
+		return errors.New("no payment card found")
 	}
 	c.Card.Name = strings.TrimSpace(c.Card.Name)
 	return nil
@@ -58,15 +58,29 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 	var paymentErrors []error
 	for _, c := range checkouts {
 		p := shopper.NewPayment(ctx, c)
-		if err := p.Do(nil); err != nil {
-			lg.Alertf("checkout(%d) payment: %v", c.ID, err)
-			paymentErrors = append(paymentErrors, err)
+		if err := p.Do(nil); err != nil || p.Err != nil {
+			if err != nil {
+				lg.Alertf("checkout (%d) payment: %v", c.ID, err)
+				// some internal server error, return right away
+				render.Respond(w, r, err)
+				return
+			} else {
+				paymentErrors = append(paymentErrors, err)
+			}
 		}
 	}
-	// TODO: something needs to happen here if there's error
-	if len(paymentErrors) == 0 {
-		cart.Status = data.CartStatusComplete
+
+	// TODO: return all errors
+	presented := presenter.NewCart(ctx, cart)
+	for _, lastError := range paymentErrors {
+		presented.HasError = true
+		presented.Error = lastError.Error()
+
+		render.Status(r, http.StatusBadRequest)
+		break
 	}
 
-	render.Respond(w, r, presenter.NewCart(ctx, cart))
+	// TODO: status
+
+	render.Respond(w, r, presented)
 }

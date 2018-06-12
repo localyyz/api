@@ -25,6 +25,7 @@ const (
 	CheckoutErrorCodeLineItem
 	CheckoutErrorCodeNoShipping
 	CheckoutErrorCodeShippingAddress
+	CheckoutErrorCodeBillingAddress
 )
 
 func (e *CheckoutError) Error() string {

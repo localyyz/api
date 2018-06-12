@@ -9,17 +9,26 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
+	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 )
 
 type cartItemRequest struct {
-	ProductID int64  `json:"productId"`
+	ProductID *int64 `json:"productId,omitempty"`
 	Color     string `json:"color"`
 	Size      string `json:"size"`
 	Quantity  uint32 `json:"quantity"`
+
+	VariantID *int64 `json:"variantId,omitempty"`
 }
 
-func (*cartItemRequest) Bind(r *http.Request) error {
+func (c *cartItemRequest) Bind(r *http.Request) error {
+	if c.ProductID == nil && c.VariantID == nil {
+		return errors.New("invalid add item")
+	}
+	if c.Quantity < 1 {
+		c.Quantity = 1
+	}
 	return nil
 }
 
@@ -33,31 +42,42 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Reset cart status to inProgress
-	if cart.Status != data.CartStatusInProgress {
+	switch cart.Status {
+	case data.CartStatusInProgress:
+	case data.CartStatusCheckout:
 		cart.Status = data.CartStatusInProgress
 		if err := data.DB.Cart.Save(cart); err != nil {
 			render.Render(w, r, api.ErrInvalidRequest(err))
 			return
 		}
+	default:
+		render.Render(w, r, api.ErrInvalidRequest(errors.New("invalid cart")))
+		return
 	}
 
-	// look up variant
-	// TODO: just send in the variant id
-	variant, err := data.DB.ProductVariant.FindOne(
-		db.Cond{
-			"product_id":                   payload.ProductID,
-			"limits >=":                    1,
-			db.Raw("lower(etc->>'color')"): payload.Color,
-			db.Raw("lower(etc->>'size')"):  payload.Size,
-		},
+	var (
+		variant *data.ProductVariant
+		err     error
 	)
+	if payload.VariantID != nil {
+		variant, err = data.DB.ProductVariant.FindByID(*payload.VariantID)
+	} else {
+		// TODO: remove, here for bkwards compat
+		variant, err = data.DB.ProductVariant.FindOne(
+			db.Cond{
+				"product_id":                   payload.ProductID,
+				db.Raw("lower(etc->>'color')"): payload.Color,
+				db.Raw("lower(etc->>'size')"):  payload.Size,
+			},
+		)
+	}
 	if err != nil {
-		if err == db.ErrNoMoreRows {
-			render.Render(w, r, api.ErrOutOfStockAdd(err))
-			return
-		}
 		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	if variant.Limits == 0 {
+		render.Render(w, r, api.ErrOutOfStockAdd(err))
 		return
 	}
 
@@ -72,6 +92,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		if err == db.ErrNoMoreRows {
 			checkout = &data.Checkout{
 				CartID:  &cart.ID,
+				UserID:  cart.UserID,
 				PlaceID: variant.PlaceID,
 			}
 			if err := data.DB.Checkout.Save(checkout); err != nil {
@@ -87,7 +108,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 
 	newItem := &data.CartItem{
 		CartID:     cart.ID,
-		ProductID:  payload.ProductID,
+		ProductID:  variant.ProductID,
 		VariantID:  variant.ID,
 		CheckoutID: &checkout.ID,
 		PlaceID:    variant.PlaceID,
@@ -98,6 +119,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	render.Status(r, http.StatusCreated)
 	render.Render(w, r, presenter.NewCartItem(ctx, newItem))
 }
 
