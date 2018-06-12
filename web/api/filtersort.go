@@ -117,6 +117,10 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		switch f.Type {
 		case "discount":
 			fConds = append(fConds, db.Cond{"discount_pct": db.Gte(f.MinValue)})
+		case "brand":
+			fConds = append(fConds, db.Cond{"brand": f.Value})
+		case "place_id":
+			fConds = append(fConds, db.Cond{"place_id": f.Value})
 		case "gender":
 			v := new(data.ProductGender)
 			v.UnmarshalText([]byte(f.Value.(string)))
