@@ -23,7 +23,6 @@ type cartRequest struct {
 	ShippingAddress *data.CartAddress `json:"shippingAddress,omitempty"`
 	BillingAddress  *data.CartAddress `json:"billingAddress,omitempty"`
 	Email           string            `json:"email,omitempty"`
-	DiscountCode    string            `json:"discountCode,omitempty"`
 }
 
 func (c *cartRequest) Bind(r *http.Request) error {
@@ -46,9 +45,15 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cart.ShippingAddress = payload.ShippingAddress
-	cart.BillingAddress = payload.BillingAddress
-	cart.Email = payload.Email
+	if payload.ShippingAddress != nil {
+		cart.ShippingAddress = payload.ShippingAddress
+	}
+	if payload.BillingAddress != nil {
+		cart.BillingAddress = payload.BillingAddress
+	}
+	if len(payload.Email) != 0 {
+		cart.Email = payload.Email
+	}
 
 	cart.Status = data.CartStatusInProgress
 	if err := data.DB.Cart.Save(cart); err != nil {

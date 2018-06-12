@@ -70,6 +70,13 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if len(paymentErrors) == 0 {
+		cart.Status = data.CartStatusComplete
+		if err := data.DB.Cart.Save(cart); err != nil {
+			lg.Alertf("failed to save cart status, cart id: %d", cart.ID)
+		}
+	}
+
 	// TODO: return all errors
 	presented := presenter.NewCart(ctx, cart)
 	for _, lastError := range paymentErrors {

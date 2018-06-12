@@ -72,6 +72,25 @@ func TestShopifyError(t *testing.T) {
 }`,
 			expected: "billing_address: zip can't be blank",
 		},
+		{
+
+			name: "shipping address not supported",
+			input: `
+{
+  "errors": {
+	"shipping_address": {
+      "country": [
+        {
+          "code": "not_supported",
+          "message": "is not supported",
+          "options": {}
+        }
+      ]
+	}
+  }
+}`,
+			expected: "shipping_address: country is not supported",
+		},
 	}
 
 	for _, tt := range inputs {

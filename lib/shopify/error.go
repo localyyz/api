@@ -206,7 +206,7 @@ func findFirstError(r *ErrorResponse) error {
 			}
 		case "shipping_address", "billing_address":
 			for kk, vvv := range vv {
-				log.Printf("error %s field key: %s", k, kk)
+				log.Printf("error %s field key: %s %+v", k, kk, vvv)
 				if e, ok := vvv.([]interface{}); ok && e != nil {
 					return toAddressError(k, kk, e)
 				}

@@ -39,6 +39,7 @@ func cartRoutes() chi.Router {
 	r.Get("/shipping", ListShippingRates)
 
 	r.Post("/checkout", CreateCheckouts)
+	r.With(CheckoutCtx).Put("/checkout/{checkoutID}", UpdateCheckout)
 	r.Post("/pay", CreatePayments)
 
 	return r
