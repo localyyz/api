@@ -35,6 +35,9 @@ func cartRoutes() chi.Router {
 	r.Put("/", UpdateCart)
 	r.Delete("/", ClearCart)
 
+	r.Delete("/shipping", DeleteCartShipping)
+	r.Delete("/billing", DeleteCartBilling)
+
 	r.Mount("/items", cartitem.Routes())
 	r.Get("/shipping", ListShippingRates)
 

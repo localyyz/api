@@ -88,3 +88,41 @@ func ClearCart(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusNoContent)
 	render.Respond(w, r, "")
 }
+
+func DeleteCartShipping(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cart := ctx.Value("cart").(*data.Cart)
+
+	if cart.Status > data.CartStatusCheckout {
+		err := errors.New("invalid cart status")
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	cart.ShippingAddress = nil
+	if err := data.DB.Save(cart); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	render.Respond(w, r, presenter.NewCart(ctx, cart))
+}
+
+func DeleteCartBilling(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cart := ctx.Value("cart").(*data.Cart)
+
+	if cart.Status > data.CartStatusCheckout {
+		err := errors.New("invalid cart status")
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	cart.BillingAddress = nil
+	if err := data.DB.Save(cart); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	render.Respond(w, r, presenter.NewCart(ctx, cart))
+}
