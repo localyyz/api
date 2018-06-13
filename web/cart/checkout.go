@@ -170,6 +170,10 @@ func (u *universalCheckout) createMerchantCheckout(ctx context.Context, placeID 
 	if discount, _ := data.DB.PlaceDiscount.FindByPlaceID(placeID); discount != nil {
 		checkout.DiscountCode = discount.Code
 	}
+	if len(checkout.DiscountCode) == 0 && len(cart.Etc.DiscountCode) != 0 {
+		// try to apply the cart discount code
+		checkout.DiscountCode = cart.Etc.DiscountCode
+	}
 
 	if err := createCheckout(ctx, client, checkout); err != nil {
 		if le, ok := err.(*shopify.LineItemError); ok && le != nil && le.Position != "" {
