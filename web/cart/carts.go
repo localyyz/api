@@ -48,6 +48,9 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 
 	cart.Etc.ShippingAddress = payload.ShippingAddress
 	cart.Etc.BillingAddress = payload.BillingAddress
+	if len(payload.DiscountCode) != 0 {
+		cart.Etc.DiscountCode = payload.DiscountCode
+	}
 
 	cart.Status = data.CartStatusInProgress
 	if err := data.DB.Cart.Save(cart); err != nil {
