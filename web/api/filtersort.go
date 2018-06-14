@@ -109,7 +109,7 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		default:
 			orderBy = "p.score DESC"
 		}
-		selector = selector.OrderBy(db.Raw(orderBy), "p.score desc")
+		selector = selector.OrderBy(db.Raw(orderBy), "p.score desc", "p.id desc")
 	}
 	for _, f := range o.Filters {
 		var fConds []db.Compound
