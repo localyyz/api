@@ -74,17 +74,11 @@ func List(w http.ResponseWriter, r *http.Request) {
 	cond := db.Cond{
 		"p.deleted_at": nil,
 		"p.brand":      db.NotEq(""),
-		"pl.status":    3,
 		"p.status":     data.ProductStatusApproved,
-	}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["p.gender"] = data.ProductGender(gender)
 	}
 	var products []*data.Product
 	query := data.DB.Select(db.Raw("distinct lower(p.brand) as brand")).
 		From("products p").
-		LeftJoin("places pl").
-		On("pl.id = p.place_id").
 		Where(cond).
 		GroupBy(db.Raw("lower(p.brand)")).
 		OrderBy(db.Raw("lower(p.brand)"))
@@ -117,24 +111,15 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
-	cond := db.Cond{
-		"p.deleted_at": nil,
-		"p.status":     data.ProductStatusApproved,
-		"pl.status":    data.PlaceStatusActive,
-	}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["p.gender"] = data.ProductGender(gender)
-	}
-
 	query := data.DB.Select("p.*").
 		From("products p").
-		LeftJoin("places pl").On("pl.id = p.place_id").
-		Where(db.And(
-			db.Raw(`p.tsv @@ plainto_tsquery(?)`, designer),
-			cond,
-		)).
-		GroupBy("p.id").
-		OrderBy("p.score desc", "p.created_at desc")
+		Where(db.Cond{
+			"p.deleted_at":           nil,
+			"p.status":               data.ProductStatusApproved,
+			db.Raw("lower(p.brand)"): strings.ToLower(designer),
+		}).
+		OrderBy("p.score DESC", "p.id DESC")
+
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
