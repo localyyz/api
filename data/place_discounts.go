@@ -27,6 +27,18 @@ func (store PlaceDiscountStore) FindByPlaceID(placeID int64) (*PlaceDiscount, er
 	return store.FindOne(db.Cond{"place_id": placeID})
 }
 
+func (store PlaceDiscountStore) FindAllByCode(code string) ([]*PlaceDiscount, error) {
+	return store.FindAll(db.Cond{"code": code})
+}
+
+func (store PlaceDiscountStore) FindAll(cond db.Cond) ([]*PlaceDiscount, error) {
+	var discounts []*PlaceDiscount
+	if err := store.Find(cond).All(&discounts); err != nil {
+		return nil, err
+	}
+	return discounts, nil
+}
+
 func (store PlaceDiscountStore) FindOne(cond db.Cond) (*PlaceDiscount, error) {
 	var discount *PlaceDiscount
 	if err := store.Find(cond).One(&discount); err != nil {

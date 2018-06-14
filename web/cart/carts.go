@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
+	set "gopkg.in/fatih/set.v0"
 
 	db "upper.io/db.v3"
 
@@ -23,6 +24,7 @@ type cartRequest struct {
 	ShippingAddress *data.CartAddress `json:"shippingAddress,omitempty"`
 	BillingAddress  *data.CartAddress `json:"billingAddress,omitempty"`
 	Email           string            `json:"email,omitempty"`
+	DiscountCode    string            `json:"discountCode,omitempty"`
 }
 
 func (c *cartRequest) Bind(r *http.Request) error {
@@ -45,6 +47,26 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(payload.DiscountCode) != 0 {
+		// find all the merchant that this discount code applies to
+		placeSet := set.New()
+		discounts, _ := data.DB.PlaceDiscount.FindAllByCode(payload.DiscountCode)
+		for _, d := range discounts {
+			placeSet.Add(d.PlaceID)
+		}
+
+		// find the checkout from these places
+		checkouts, _ := data.DB.Checkout.FindAll(
+			db.Cond{
+				"cart_id":  cart.ID,
+				"place_id": set.IntSlice(placeSet),
+			},
+		)
+		for _, c := range checkouts {
+			c.DiscountCode = payload.DiscountCode
+			data.DB.Checkout.Save(c)
+		}
+	}
 	if payload.ShippingAddress != nil {
 		cart.ShippingAddress = payload.ShippingAddress
 	}
