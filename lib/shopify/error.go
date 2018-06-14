@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 )
 
 // Shopify errors usually have the form:
@@ -158,59 +159,70 @@ func findFirstError(r *ErrorResponse) error {
 
 	// find the first error, and return
 	for k, v := range rr {
-		vv, ok := v.(map[string]interface{})
-		if !ok {
-			continue
-		}
 		log.Printf("error field key %s", k)
 
-		switch k {
-		//shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
-		case "line_items":
-			for pos, vvv := range vv {
-				b, _ := json.Marshal(vvv)
+		if vv, ok := v.(map[string]interface{}); ok {
+			switch k {
+			//shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
+			case "line_items":
+				for pos, vvv := range vv {
+					b, _ := json.Marshal(vvv)
 
-				var e lineItemErrorField
-				json.Unmarshal(b, &e)
+					var e lineItemErrorField
+					json.Unmarshal(b, &e)
 
-				ee := &LineItemError{
-					Position: pos,
-				}
-				if e != nil {
-					for ek, ev := range e {
-						ee.Field = ek
-						ee.Message = ev[0].Message
-						ee.Code = ev[0].Code
-						break
+					ee := &LineItemError{
+						Position: pos,
 					}
+					if e != nil {
+						for ek, ev := range e {
+							ee.Field = ek
+							ee.Message = ev[0].Message
+							ee.Code = ev[0].Code
+							break
+						}
+					}
+
+					return ee
 				}
 
-				return ee
-			}
-
-		case "checkout":
-			for kk, vvv := range vv {
-				switch kk {
-				case "discount_code":
-					// list of fields
-					if e, _ := vvv.([]interface{}); e != nil {
-						for _, ee := range e {
-							if ex, _ := ee.(map[string]interface{}); ex != nil {
-								for _, reason := range ex {
-									return &DiscountCodeError{Reason: reason}
+			case "checkout":
+				for kk, vvv := range vv {
+					switch kk {
+					case "discount_code":
+						// list of fields
+						if e, _ := vvv.([]interface{}); e != nil {
+							for _, ee := range e {
+								if ex, _ := ee.(map[string]interface{}); ex != nil {
+									for _, reason := range ex {
+										return &DiscountCodeError{Reason: reason}
+									}
 								}
 							}
 						}
 					}
 				}
-			}
-		case "shipping_address", "billing_address":
-			for kk, vvv := range vv {
-				log.Printf("error %s field key: %s %+v", k, kk, vvv)
-				if e, ok := vvv.([]interface{}); ok && e != nil {
-					return toAddressError(k, kk, e)
+			case "shipping_address", "billing_address":
+				for kk, vvv := range vv {
+					log.Printf("error %s field key: %s %+v", k, kk, vvv)
+					if e, ok := vvv.([]interface{}); ok && e != nil {
+						return toAddressError(k, kk, e)
+					}
 				}
 			}
+		} else if vv, ok := v.([]interface{}); ok {
+			switch k {
+			case "discount_code":
+				for _, vvv := range vv {
+					vvvv := vvv.(map[string]interface{})
+					return &DiscountCodeError{
+						Reason: vvvv["message"],
+					}
+				}
+
+			}
+		} else {
+			return fmt.Errorf("unknown shopify error key %s, %+v, %v", k, v, reflect.TypeOf(v))
 		}
 	}
 

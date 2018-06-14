@@ -91,6 +91,22 @@ func TestShopifyError(t *testing.T) {
 }`,
 			expected: "shipping_address: country is not supported",
 		},
+		{
+			name: "discount code not found",
+			input: `
+{
+  "errors": {
+    "discount_code": [
+      {
+        "code": "discount_not_found",
+        "message": "Unable to find a valid discount matching the code entered",
+        "options": {}
+      }
+    ]
+  }
+} `,
+			expected: "Unable to find a valid discount matching the code entered",
+		},
 	}
 
 	for _, tt := range inputs {

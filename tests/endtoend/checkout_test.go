@@ -378,7 +378,7 @@ func (suite *CheckoutTestSuite) TestCheckoutDoesNotShip() {
 		json.NewEncoder(b).Encode(map[string]interface{}{
 			"shippingAddress": fullAddress,
 			"billingAddress":  fullAddress,
-			"email":           suite.user4.Email,
+			"email":           suite.user5.Email,
 		})
 		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/carts/default", suite.env.URL), b)
 		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user5.JWT))
@@ -429,7 +429,7 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 		json.NewEncoder(b).Encode(map[string]interface{}{
 			"shippingAddress": fullAddress,
 			"billingAddress":  fullAddress,
-			"email":           suite.user1.Email,
+			"email":           suite.user6.Email,
 		})
 		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/carts/default", suite.env.URL), b)
 		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user6.JWT))
@@ -497,6 +497,96 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 		assert.EqualValues(suite.T(), 1000, cart.TotalShipping)
 		assert.EqualValues(suite.T(), 117, cart.TotalTax)
 		assert.EqualValues(suite.T(), 2017, cart.TotalPrice)
+	}
+}
+
+func (suite *CheckoutTestSuite) TestCheckoutWithDiscountFailure() {
+	fullAddress := &data.CartAddress{
+		Address:   "123 Toronto Street",
+		FirstName: "User",
+		LastName:  "Localyyz",
+		City:      "Toronto",
+		Country:   "Canada",
+		Province:  "Ontario",
+		Zip:       "M5J 1B7",
+	}
+	u := suite.user7
+
+	{ // verify add to cart as user
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{"variantId": suite.variantWithDiscount.ID})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/default/items", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", u.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusCreated, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	var checkoutToValidate *data.Checkout
+	{ // update cart addresses + email
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{
+			"shippingAddress": fullAddress,
+			"billingAddress":  fullAddress,
+			"email":           u.Email,
+		})
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/carts/default", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", u.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+
+		var cart *presenter.Cart
+		json.NewDecoder(rr.Body).Decode(&cart)
+		assert.NotNil(suite.T(), cart)
+		assert.NotEmpty(suite.T(), cart.Checkouts)
+		checkoutToValidate = cart.Checkouts[0].Checkout
+	}
+
+	{ // update checkout with discount code
+		discountCode := "INVALID_DISCOUNT_CODE"
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{
+			"discount": discountCode,
+		})
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/carts/default/checkout/%d", suite.env.URL, checkoutToValidate.ID), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", u.JWT))
+
+		// verify checkout is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+
+		var checkout *presenter.Checkout
+		json.NewDecoder(rr.Body).Decode(&checkout)
+		assert.NotNil(suite.T(), checkout)
+		assert.Equal(suite.T(), discountCode, checkout.DiscountCode)
+	}
+
+	{ // checkout
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/default/checkout", suite.env.URL), nil)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", u.JWT))
+
+		// verify
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusBadRequest, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+		var cart *presenter.Cart
+		json.NewDecoder(rr.Body).Decode(&cart)
+		assert.True(suite.T(), cart.HasError)
+		assert.Contains(suite.T(), cart.Error, "Unable to find a valid discount matching the code entered")
 	}
 }
 

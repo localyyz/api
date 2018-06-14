@@ -1,6 +1,7 @@
 package endtoend
 
 import (
+	"fmt"
 	"testing"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -11,88 +12,35 @@ import (
 )
 
 type fixture struct {
-	user1, user2, user3, user4, user5, user6               auth.AuthUser
+	user1, user2, user3, user4, user5, user6, user7        auth.AuthUser
 	testStore                                              *data.Place
 	productInStock, productNotInStock                      *data.Product
 	variantInStock, variantNotInStock, variantWithDiscount *data.ProductVariant
 }
 
 func (f *fixture) setupUser(t *testing.T) {
+	f.user1 = newTestUser(t, 1)
+	f.user2 = newTestUser(t, 2)
+	f.user3 = newTestUser(t, 3)
+	f.user4 = newTestUser(t, 4)
+	f.user5 = newTestUser(t, 5)
+	f.user6 = newTestUser(t, 6)
+	f.user7 = newTestUser(t, 7)
+}
+
+func newTestUser(t *testing.T, n int) auth.AuthUser {
 	// setup fixtures for test suite
-	user1 := &data.User{
-		Username:     "waseef@localyyz.com",
-		Email:        "waseef@localyyz.com",
-		Name:         "Waseef Shawkat",
-		Network:      "email",
-		PasswordHash: string(""),
-		LoggedIn:     true,
-	}
-	assert.NoError(t, data.DB.Save(user1))
-	token1, _ := token.Encode(jwtauth.Claims{"user_id": user1.ID})
-	f.user1 = auth.AuthUser{User: user1, JWT: token1.Raw}
-
-	user2 := &data.User{
-		Username:     "waseef2@localyyz.com",
-		Email:        "waseef@localyyz.com",
-		Name:         "Paul Xue",
-		Network:      "email",
-		PasswordHash: string(""),
-		LoggedIn:     true,
-	}
-	assert.NoError(t, data.DB.Save(user2))
-	token2, _ := token.Encode(jwtauth.Claims{"user_id": user2.ID})
-	f.user2 = auth.AuthUser{User: user2, JWT: token2.Raw}
-
-	user3 := &data.User{
-		Username:     "waseef3@localyyz.com",
-		Email:        "waseef2@localyyz.com",
-		Name:         "Paul Xue",
-		Network:      "email",
-		PasswordHash: string(""),
-		LoggedIn:     true,
-	}
-	assert.NoError(t, data.DB.Save(user3))
-	token3, _ := token.Encode(jwtauth.Claims{"user_id": user3.ID})
-	f.user3 = auth.AuthUser{User: user3, JWT: token3.Raw}
-
-	// setup fixtures for test suite
-	user4 := &data.User{
-		Username:     "waseef4@localyyz.com",
-		Email:        "waseef@localyyz.com",
-		Name:         "Waseef Shawkat",
-		Network:      "email",
-		PasswordHash: string(""),
-		LoggedIn:     true,
-	}
-	assert.NoError(t, data.DB.Save(user4))
-	token4, _ := token.Encode(jwtauth.Claims{"user_id": user4.ID})
-	f.user4 = auth.AuthUser{User: user4, JWT: token4.Raw}
-
-	// setup fixtures for test suite
-	user5 := &data.User{
-		Username:     "waseef5@localyyz.com",
-		Email:        "waseef@localyyz.com",
-		Name:         "Waseef Shawkat",
-		Network:      "email",
-		PasswordHash: string(""),
-		LoggedIn:     true,
-	}
-	assert.NoError(t, data.DB.Save(user5))
-	token5, _ := token.Encode(jwtauth.Claims{"user_id": user5.ID})
-	f.user5 = auth.AuthUser{User: user5, JWT: token5.Raw}
-
-	// setup fixtures for test suite
-	user6 := &data.User{
-		Username:     "paul6@localyyz.com",
+	user := &data.User{
+		Username:     fmt.Sprintf("user%d", n),
 		Email:        "paul@localyyz.com",
 		Name:         "Paul X",
 		Network:      "email",
 		PasswordHash: string(""),
 		LoggedIn:     true,
 	}
-	assert.NoError(t, data.DB.Save(user6))
-	token6, _ := token.Encode(jwtauth.Claims{"user_id": user6.ID})
-	f.user6 = auth.AuthUser{User: user6, JWT: token6.Raw}
+	assert.NoError(t, data.DB.Save(user))
+	token, _ := token.Encode(jwtauth.Claims{"user_id": user.ID})
+	return auth.AuthUser{User: user, JWT: token.Raw}
 }
 
 func (f *fixture) setupTestStores(t *testing.T) {
