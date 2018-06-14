@@ -46,6 +46,9 @@ func setVariants(p *data.Product, variants ...*shopify.ProductVariant) error {
 	q := data.DB.InsertInto("product_variants").
 		Columns("product_id", "place_id", "limits", "description", "offer_id", "price", "prev_price", "etc")
 	b := q.Batch(len(variants))
+
+	// TODO: need to set product as inactive if variant quantities are all 0
+
 	go func() {
 		defer b.Done()
 		for i, v := range variants {

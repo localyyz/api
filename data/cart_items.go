@@ -8,8 +8,9 @@ import (
 )
 
 type CartItem struct {
-	ID     int64 `db:"id,pk,omitempty" json:"id"`
-	CartID int64 `db:"cart_id" json:"cartId"`
+	ID         int64  `db:"id,pk,omitempty" json:"id"`
+	CartID     int64  `db:"cart_id" json:"cartId"`
+	CheckoutID *int64 `db:"checkout_id,omitempty" json:"checkoutId"`
 
 	ProductID int64 `db:"product_id" json:"productId"`
 	VariantID int64 `db:"variant_id" json:"variantId"`
@@ -41,6 +42,10 @@ func (store CartItemStore) FindByID(ID int64) (*CartItem, error) {
 
 func (store CartItemStore) FindByCartID(cartID int64) ([]*CartItem, error) {
 	return store.FindAll(db.Cond{"cart_id": cartID})
+}
+
+func (store CartItemStore) FindByCheckoutID(checkoutID int64) ([]*CartItem, error) {
+	return store.FindAll(db.Cond{"checkout_id": checkoutID})
 }
 
 func (store CartItemStore) FindOne(cond db.Cond) (*CartItem, error) {

@@ -364,6 +364,39 @@ func GetMerchantField() {
 	}
 }
 
+func GetShopifyPaymentMethods() {
+	cond := db.And(
+		db.Cond{"status": data.PlaceStatusActive},
+		db.Or(
+			db.Cond{"payment_methods": db.IsNull()},
+			db.Cond{"payment_methods": "null"},
+			db.Cond{"payment_methods": "[]"},
+		),
+	)
+
+	var places []*data.Place
+	data.DB.Place.Find(cond).All(&places)
+
+	for _, p := range places {
+		cred, err := data.DB.ShopifyCred.FindByPlaceID(p.ID)
+		if err != nil {
+			continue
+		}
+		client := shopify.NewClient(nil, cred.AccessToken)
+		client.BaseURL, _ = url.Parse(cred.ApiURL)
+
+		p.PaymentMethods = []*data.PaymentMethod{}
+		if checkout, _, _ := client.Checkout.Create(context.Background(), nil); checkout != nil && len(checkout.ShopifyPaymentAccountID) != 0 {
+			// NOTE: for now the id returned on checkout is stripe specific
+			p.PaymentMethods = append(p.PaymentMethods, &data.PaymentMethod{Type: "stripe", ID: checkout.ShopifyPaymentAccountID})
+
+			log.Printf("found payment method for place %d, %s", p.ID, p.Name)
+			data.DB.Place.Save(p)
+		}
+		fmt.Printf(".")
+	}
+}
+
 func GetCheckoutStatus() {
 	var creds []*data.ShopifyCred
 	data.DB.Select(db.Raw("c.*")).

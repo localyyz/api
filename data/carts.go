@@ -18,7 +18,10 @@ type Cart struct {
 
 	IsExpress bool `db:"is_express" json:"isExpress"`
 
-	Etc CartEtc `db:"etc" json:"etc"`
+	Etc             CartEtc      `db:"etc" json:"etc"`
+	ShippingAddress *CartAddress `db:"shipping_address,omitempty" json:"shippingAddress"`
+	BillingAddress  *CartAddress `db:"billing_address,omitempty" json:"billingAddress"`
+	Email           string       `db:"email,omitempty" json:"email"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
@@ -29,23 +32,24 @@ type CartStatus uint
 
 type CartAddress struct {
 	// Core data
-	FirstName    string `json:"firstName"`
-	LastName     string `json:"lastName"`
-	Address      string `json:"address"`
-	AddressOpt   string `json:"addressOpt"`
-	City         string `json:"city"`
-	Country      string `json:"country"`
-	CountryCode  string `json:"countryCode"`
-	Province     string `json:"province"`
-	ProvinceCode string `json:"provinceCode"`
-	Zip          string `json:"zip"`
+	FirstName    string `json:"firstName,omitempty"`
+	LastName     string `json:"lastName,omitempty"`
+	Address      string `json:"address,omitempty"`
+	AddressOpt   string `json:"addressOpt,omitempty"`
+	City         string `json:"city,omitempty"`
+	Country      string `json:"country,omitempty"`
+	CountryCode  string `json:"countryCode,omitempty"`
+	Province     string `json:"province,omitempty"`
+	ProvinceCode string `json:"provinceCode,omitempty"`
+	Zip          string `json:"zip,omitempty"`
 
 	// Extra data
 	Email string `json:"email,omitempty"`
 	Phone string `json:"phone,omitempty"`
 
 	// Internal ID
-	ID int64 `json:"id"`
+	ID int64 `json:"id,omitempty"`
+	*postgresql.JSONBConverter
 }
 
 type CartShippingMethod struct {
