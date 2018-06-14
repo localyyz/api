@@ -146,10 +146,7 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 	ctx = context.WithValue(ctx, "place.cache", placeCache)
 
 	for _, product := range products {
-		presented := NewProduct(ctx, product)
-		if len(presented.Variants) > 0 && len(presented.Images) > 0 {
-			list = append(list, presented)
-		}
+		list = append(list, NewProduct(ctx, product))
 	}
 	return list
 }

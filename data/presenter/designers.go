@@ -149,20 +149,14 @@ func fetchDesignerProducts(ctx context.Context, query []string) []render.Rendere
 
 func fetchDesignerCount(ctx context.Context, parsed []string) map[string]int {
 	// bulk fetch product counts
-	cond := db.Cond{"deleted_at": nil}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["gender"] = gender
-	}
 	rows, err := data.DB.Select(
 		db.Raw("lower(brand)"),
 		db.Raw("count(1)")).
 		From("products").
-		Where(
-			db.And(
-				db.Raw(`tsv @@ to_tsquery(?)`, strings.Join(parsed, "|")),
-				cond,
-			),
-		).
+		Where(db.Cond{
+			"deleted_at": db.IsNull(),
+			"status":     data.ProductStatusApproved,
+		}).
 		GroupBy(db.Raw("lower(brand)")).
 		Query()
 	if err != nil {

@@ -160,9 +160,6 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		"p.deleted_at IS": nil,
 		"p.status":        data.ProductStatusApproved,
 	}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		cond["p.gender"] = gender
-	}
 	query := data.DB.Select(
 		db.Raw("p.id"),
 		db.Raw(data.ProductQueryWeight, qraw)).

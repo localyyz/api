@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"bitbucket.org/moodie-app/moodie-api/data"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -39,6 +40,7 @@ type Filter struct {
 	Type     string      `json:"type"`
 	MinValue interface{} `json:"min"`
 	MaxValue interface{} `json:"max"`
+	Value    interface{} `json:"val"`
 }
 
 func FilterSortCtx(next http.Handler) http.Handler {
@@ -78,6 +80,8 @@ func NewFilterSort(r *http.Request) *FilterSort {
 				f.MinValue = p[4:]
 			} else if strings.HasPrefix(p, "max") {
 				f.MaxValue = p[4:]
+			} else if strings.HasPrefix(p, "val") {
+				f.Value = p[4:]
 			} else {
 				f.Type = p
 			}
@@ -105,7 +109,7 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		default:
 			orderBy = "p.score DESC"
 		}
-		selector = selector.OrderBy(db.Raw(orderBy), "p.score desc")
+		selector = selector.OrderBy(db.Raw(orderBy), "p.score desc", "p.id desc")
 	}
 	for _, f := range o.Filters {
 		var fConds []db.Compound
@@ -113,6 +117,14 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		switch f.Type {
 		case "discount":
 			fConds = append(fConds, db.Cond{"discount_pct": db.Gte(f.MinValue)})
+		case "brand":
+			fConds = append(fConds, db.Cond{"brand": f.Value})
+		case "place_id":
+			fConds = append(fConds, db.Cond{"place_id": f.Value})
+		case "gender":
+			v := new(data.ProductGender)
+			v.UnmarshalText([]byte(f.Value.(string)))
+			fConds = append(fConds, db.Cond{"gender": v})
 		default:
 			if f.MinValue != nil {
 				fConds = append(fConds, db.Cond{f.Type: db.Gte(f.MinValue)})

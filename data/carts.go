@@ -61,6 +61,7 @@ type CartEtc struct {
 	ShippingMethods map[int64]*CartShippingMethod `json:"shippingMethods,omitempty"`
 	ShippingAddress *CartAddress                  `json:"shippingAddress,omitempty"`
 	BillingAddress  *CartAddress                  `json:"billingAddress,omitempty"`
+	DiscountCode    string                        `json:"discountCode,omitempty"`
 	*postgresql.JSONBConverter
 }
 
