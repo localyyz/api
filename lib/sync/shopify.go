@@ -251,13 +251,19 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			}
 		}
 
+		// must save product before moving on to next
+		data.DB.Product.Save(p)
+
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		// product variants
-		setVariants(product, p.Variants...)
+		err := setVariants(product, p.Variants...)
+		if err != nil {
+			lg.Alert(err)
+		}
 
 		// set imgs
-		err := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		err = setImages(&shopifyImageSyncer{Product: product}, p.Images...)
 
 		// product status
 		product.Status = finalizeStatus(

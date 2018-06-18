@@ -9,6 +9,7 @@ env:
   CONTAINER_PORT: 5333
   CONFIG: /data/etc/merchant.conf
   GITORIGIN: $(git rev-parse origin/master)
+  GITSTAGING: $(git rev-parse origin/staging)
 
 networks:
   local:
@@ -16,6 +17,14 @@ networks:
       ENV: localhost
     hosts:
       - localhost
+  staging:
+    env:
+      ENV: staging
+      ENV_BRANCH: staging
+      IMAGENAME: ${IMAGE}:staging-${GITSTAGING}
+      NETWORK: staging
+    hosts:
+      - root@138.197.154.71
   production:
     env:
       ENV: production
