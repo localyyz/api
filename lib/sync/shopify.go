@@ -252,7 +252,7 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}
 
 		// must save product before moving on to next
-		data.DB.Product.Save(p)
+		data.DB.Product.Save(product)
 
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
