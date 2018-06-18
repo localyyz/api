@@ -27,7 +27,7 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 		dbProduct, err := data.DB.Product.FindOne(db.Cond{
 			"place_id":    place.ID,
 			"external_id": p.ProductID,
-			"deleted_at":  db.IsNotNull(),
+			"deleted_at":  db.IsNull(),
 		})
 		if err != nil {
 			lg.Warnf("failed to delete product %s with %+v", p.Handle, err)
