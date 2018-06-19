@@ -106,15 +106,11 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 	}
 	resp.CartItems = cartItems
 
-	if s := cart.ShippingAddress; s != nil {
-		resp.ShippingAddress = NewCartAddress(ctx, s)
-		resp.ShippingAddress.IsShipping = true
-	}
+	resp.ShippingAddress = NewCartAddress(ctx, cart.ShippingAddress)
+	resp.ShippingAddress.IsShipping = true
 
-	if b := cart.BillingAddress; b != nil {
-		resp.BillingAddress = NewCartAddress(ctx, b)
-		resp.BillingAddress.IsBilling = true
-	}
+	resp.BillingAddress = NewCartAddress(ctx, cart.BillingAddress)
+	resp.BillingAddress.IsBilling = true
 
 	if checkouts, _ := data.DB.Checkout.FindAllByCartID(cart.ID); len(checkouts) > 0 {
 		for _, c := range checkouts {

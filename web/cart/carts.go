@@ -31,6 +31,25 @@ func (c *cartRequest) Bind(r *http.Request) error {
 	return nil
 }
 
+func ListCart(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+
+	cartCond := db.Cond{}
+	if cartStatusScope, ok := ctx.Value("cart.status.scope").(db.Cond); ok {
+		cartCond = cartStatusScope
+	}
+	cartCond["user_id"] = user.ID
+
+	carts, err := data.DB.Cart.FindAll(cartCond)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	render.RenderList(w, r, presenter.NewUserCartList(ctx, carts))
+}
+
 func UpdateCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
