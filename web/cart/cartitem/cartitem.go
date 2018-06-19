@@ -118,6 +118,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
+	lg.SetEntryField(ctx, "variant_id", variant.ID)
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, presenter.NewCartItem(ctx, newItem))
@@ -162,6 +163,7 @@ func RemoveCartItem(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
+	lg.SetEntryField(ctx, "variant_id", cartItem.VariantID)
 
 	render.Status(r, http.StatusNoContent)
 	render.Respond(w, r, "")

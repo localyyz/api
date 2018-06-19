@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
@@ -47,6 +48,7 @@ func SubcategoryCtx(next http.Handler) http.Handler {
 			values = append(values, c.Value)
 		}
 		ctx = context.WithValue(ctx, "category.value", values)
+		lg.SetEntryField(ctx, "subcategory", subcategory)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
@@ -65,6 +67,7 @@ func CategoryTypeCtx(next http.Handler) http.Handler {
 		}
 
 		ctx = context.WithValue(ctx, "category.type", categoryType)
+		lg.SetEntryField(ctx, "category", rawCategoryType)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)

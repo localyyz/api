@@ -36,6 +36,7 @@ func RequestLogger(logger *logrus.Logger) func(next http.Handler) http.Handler {
 					}
 				}
 
+				lg.SetEntryField(r.Context(), "Referer", r.Header.Get("Referer"))
 				// Log the entry, the request is complete.
 				entry.Write(ww.Status(), ww.BytesWritten(), t2.Sub(t1))
 			}()

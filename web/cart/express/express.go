@@ -128,6 +128,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
+	lg.SetEntryField(ctx, "variant_id", variant.ID)
 
 	render.Render(w, r, presenter.NewCartItem(ctx, toSave))
 }
