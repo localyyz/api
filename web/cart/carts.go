@@ -35,10 +35,11 @@ func ListCart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	cartCond := db.Cond{"user_id": user.ID}
-	if cartStatus, ok := ctx.Value("cart.status").(data.CartStatus); ok {
-		cartCond["status"] = cartStatus
+	cartCond := db.Cond{}
+	if cartStatusScope, ok := ctx.Value("cart.status.scope").(db.Cond); ok {
+		cartCond = cartStatusScope
 	}
+	cartCond["user_id"] = user.ID
 
 	carts, err := data.DB.Cart.FindAll(cartCond)
 	if err != nil {
