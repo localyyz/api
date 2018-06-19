@@ -24,6 +24,7 @@ func Routes() chi.Router {
 		r.Use(CartCtx)
 		r.Mount("/", cartRoutes())
 	})
+	r.With(CartStatusScopeCtx).Get("/{cartStatus}", ListCart)
 
 	return r
 }
@@ -46,6 +47,23 @@ func cartRoutes() chi.Router {
 	r.Post("/pay", CreatePayments)
 
 	return r
+}
+
+func CartStatusScopeCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		rawCartStatus := chi.URLParam(r, "cartStatus")
+		cartStatus := new(data.CartStatus)
+		if err := cartStatus.UnmarshalText([]byte(rawCartStatus)); err != nil {
+			render.Respond(w, r, api.ErrInvalidRequest(err))
+			return
+		}
+		//putting a db.Cond in context instead of cartStatus since its the safest
+		cartCond := db.Cond{"status": cartStatus}
+		ctx = context.WithValue(ctx, "cart.status.scope", cartCond)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
 }
 
 func DefaultCartCtx(next http.Handler) http.Handler {
