@@ -20,8 +20,8 @@ all:
 	@echo "  run-merchant          - run merchant app in dev mode"
 	@echo "  run-tool              - run tool app in dev mode"
 	@echo "  run-syncer            - run syncer app in dev mode"
-	@echo "  run-eetest            - run end to end tests"
 	@echo ""
+	@echo "  eetest                - run end to end tests"
 	@echo "  tests                 - run all tests under project"
 	@echo "  build                 - build api into bin/ directory"
 	@echo "  docs                  - generate api documentation"
@@ -79,6 +79,9 @@ db-reset:
 db-loadprod:
 	@./db/db.sh loadprod localyyz
 
+## TESTS
+eetest:
+	@(export CONFIG=${TEST_CONFIG}; export DBSCRIPTS=$$PWD/db/db.sh; export MIGRATIONDIR=$$PWD/db; go test -v ./tests/...)
 ##
 # Deploy / GCP
 ##
@@ -102,9 +105,6 @@ run-tool:
 
 run-syncer:
 	@(export CONFIG=${SYNCER_CONFIG}; fresh -c runner.conf -p ./cmd/syncer)
-
-run-eetest:
-	@(export CONFIG=${TEST_CONFIG}; export DBSCRIPTS=$$PWD/db/db.sh; export MIGRATIONDIR=$$PWD/db; go test -v ./tests/...)
 
 build-merchant:
 	@mkdir -p ./bin

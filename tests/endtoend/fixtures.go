@@ -49,8 +49,8 @@ func (f *fixture) setupTestStores(t *testing.T) {
 	assert.NoError(t, data.DB.Save(f.testStore))
 	assert.NoError(t, data.DB.Save(&data.ShopifyCred{
 		PlaceID:     f.testStore.ID,
-		AccessToken: "79314e78d313b5c4d2cd9dcd1121d0dd",
-		ApiURL:      "https://localyyz-dev-shop.myshopify.com",
+		AccessToken: "ab4f6c5f522de90702e52f95e3e72d88",
+		ApiURL:      "https://best-test-store-toronto.myshopify.com",
 	}))
 }
 
@@ -69,26 +69,27 @@ func (f *fixture) setupProduct(t *testing.T) {
 	}
 	assert.NoError(t, data.DB.Save(f.productNotInStock))
 
+	// NOTE: https://best-test-store-toronto.myshopify.com/admin/products/10761547971.json
 	f.variantInStock = &data.ProductVariant{
 		ProductID: f.productInStock.ID,
 		PlaceID:   f.testStore.ID,
 		Price:     10,
 		Limits:    10,
-		OfferID:   32226754053,
+		OfferID:   43252300547,
 	}
 	f.variantNotInStock = &data.ProductVariant{
 		ProductID: f.productNotInStock.ID,
 		PlaceID:   f.testStore.ID,
 		Price:     10,
 		Limits:    10,
-		OfferID:   32294113669,
+		OfferID:   43252300483,
 	}
 	f.variantWithDiscount = &data.ProductVariant{
 		ProductID: f.productInStock.ID,
 		PlaceID:   f.testStore.ID,
 		Price:     10,
 		Limits:    10,
-		OfferID:   32226754501,
+		OfferID:   43252300611,
 	}
 	assert.NoError(t, data.DB.Save(f.variantInStock))
 	assert.NoError(t, data.DB.Save(f.variantNotInStock))
@@ -99,4 +100,8 @@ func (f *fixture) SetupData(t *testing.T) {
 	f.setupUser(t)
 	f.setupTestStores(t)
 	f.setupProduct(t)
+}
+
+func (f *fixture) TeardownData(t *testing.T) {
+	data.DB.Exec("TRUNCATE carts, products, users, places;")
 }
