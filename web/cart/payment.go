@@ -89,7 +89,7 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 
 	// give us a nice alert
 	if !presented.HasError && cart.Status == data.CartStatusComplete {
-		lg.Alertf("%s just completed a purchase of $%d! hoorah!", presented.ShippingAddress.FirstName, presented.TotalPrice/100.0)
+		lg.Alertf("%s just completed a purchase! hoorah!", presented.ShippingAddress.FirstName)
 	}
 
 	render.Respond(w, r, presented)
