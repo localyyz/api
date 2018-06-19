@@ -15,7 +15,8 @@ function create() {
 EOF
 
   cat <<EOF | psql -h127.0.0.1 -U postgres $database
-    CREATE EXTENSION pg_trgm;
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE EXTENSION IF NOT EXISTS plpgsql;
     GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO localyyz;
     GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO localyyz;
     ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO localyyz;
@@ -28,7 +29,7 @@ function drop() {
     SELECT pg_terminate_backend(pg_stat_activity.pid)
     FROM pg_stat_activity
     WHERE pg_stat_activity.datname = '$database' AND pid <> pg_backend_pid();
-    DROP DATABASE $database;
+    DROP DATABASE IF EXISTS $database;
 EOF
 }
 

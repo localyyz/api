@@ -5,6 +5,7 @@ API_CONFIG := $$PWD/config/api.conf
 MERCHANT_CONFIG := $$PWD/config/merchant.conf
 TOOL_CONFIG := $$PWD/config/tool.conf
 SYNCER_CONFIG := $$PWD/config/syncer.conf
+TEST_CONFIG := $$PWD/config/test.conf
 PEM := ./config/push.pem
 TAG_CONTAINER := gcr.io/verdant-descent-153101/api
 
@@ -19,6 +20,9 @@ all:
 	@echo "  run-merchant          - run merchant app in dev mode"
 	@echo "  run-tool              - run tool app in dev mode"
 	@echo "  run-syncer            - run syncer app in dev mode"
+	@echo "  run-eetest            - run end to end tests"
+	@echo ""
+	@echo "  tests                 - run all tests under project"
 	@echo "  build                 - build api into bin/ directory"
 	@echo "  docs                  - generate api documentation"
 	@echo "  tools                 - go get's a bunch of tools for dev"
@@ -98,6 +102,9 @@ run-tool:
 
 run-syncer:
 	@(export CONFIG=${SYNCER_CONFIG}; fresh -c runner.conf -p ./cmd/syncer)
+
+run-eetest:
+	@(export CONFIG=${TEST_CONFIG}; export DBSCRIPTS=$$PWD/db/db.sh; export MIGRATIONDIR=$$PWD/db; go test -v ./tests/...)
 
 build-merchant:
 	@mkdir -p ./bin

@@ -27,7 +27,7 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 		dbProduct, err := data.DB.Product.FindOne(db.Cond{
 			"place_id":    place.ID,
 			"external_id": p.ProductID,
-			"deleted_at":  db.IsNotNull(),
+			"deleted_at":  db.IsNull(),
 		})
 		if err != nil {
 			lg.Warnf("failed to delete product %s with %+v", p.Handle, err)
@@ -46,6 +46,9 @@ func setVariants(p *data.Product, variants ...*shopify.ProductVariant) error {
 	q := data.DB.InsertInto("product_variants").
 		Columns("product_id", "place_id", "limits", "description", "offer_id", "price", "prev_price", "etc")
 	b := q.Batch(len(variants))
+
+	// TODO: need to set product as inactive if variant quantities are all 0
+
 	go func() {
 		defer b.Done()
 		for i, v := range variants {
@@ -248,13 +251,19 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			}
 		}
 
+		// must save product before moving on to next
+		data.DB.Product.Save(product)
+
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		// product variants
-		setVariants(product, p.Variants...)
+		err := setVariants(product, p.Variants...)
+		if err != nil {
+			lg.Alert(err)
+		}
 
 		// set imgs
-		err := setImages(&shopifyImageSyncer{Product: product}, p.Images...)
+		err = setImages(&shopifyImageSyncer{Product: product}, p.Images...)
 
 		// product status
 		product.Status = finalizeStatus(

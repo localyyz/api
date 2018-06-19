@@ -110,21 +110,19 @@ func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 
 	ch, _, err := client.Checkout.Update(
 		ctx,
-		&shopify.CheckoutRequest{
-			Checkout: &shopify.Checkout{
-				// Partial customer address from apple pay. enough to get shipping rates
-				Token: checkout.Token,
-				ShippingAddress: &shopify.CustomerAddress{
-					FirstName:    payload.FirstName,
-					LastName:     payload.LastName,
-					Country:      payload.Country,
-					CountryCode:  payload.CountryCode,
-					Province:     payload.Province,
-					ProvinceCode: payload.ProvinceCode,
-					City:         payload.City,
-					Address1:     payload.Address,
-					Zip:          payload.Zip,
-				},
+		&shopify.Checkout{
+			// Partial customer address from apple pay. enough to get shipping rates
+			Token: checkout.Token,
+			ShippingAddress: &shopify.CustomerAddress{
+				FirstName:    payload.FirstName,
+				LastName:     payload.LastName,
+				Country:      payload.Country,
+				CountryCode:  payload.CountryCode,
+				Province:     payload.Province,
+				ProvinceCode: payload.ProvinceCode,
+				City:         payload.City,
+				Address1:     payload.Address,
+				Zip:          payload.Zip,
 			},
 		},
 	)
@@ -166,12 +164,10 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 
 	ch, _, err := client.Checkout.Update(
 		ctx,
-		&shopify.CheckoutRequest{
-			Checkout: &shopify.Checkout{
-				Token: checkout.Token,
-				ShippingLine: &shopify.ShippingLine{
-					Handle: payload.Handle,
-				},
+		&shopify.Checkout{
+			Token: checkout.Token,
+			ShippingLine: &shopify.ShippingLine{
+				Handle: payload.Handle,
 			},
 		},
 	)

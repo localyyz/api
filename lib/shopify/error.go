@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
-
-	"github.com/pressly/lg"
+	"reflect"
 )
 
 // Shopify errors usually have the form:
@@ -24,17 +24,30 @@ type ShopifyErrorer interface {
 	Type() string
 }
 
-type LineItemError struct {
-	Position string `json:"postition"`
-	Quantity []struct {
-		Message string `json:"message"`
-		Options struct {
-			Remaining int `json:"remaining"`
-		} `json:"options"`
-		Code string `json:"code"`
-	} `json:"quantity"`
+type lineItemErrorValue struct {
+	Message string `json:"message"`
+	Options struct {
+		Remaining int `json:"remaining"`
+	} `json:"options"`
+	Code string `json:"code"`
+}
+type lineItemErrorField map[string][]lineItemErrorValue
 
+type LineItemError struct {
 	ShopifyErrorer
+
+	Field    string
+	Message  string
+	Code     string
+	Position string
+
+	//Quantity []struct {
+	//Message string `json:"message"`
+	//Options struct {
+	//Remaining int `json:"remaining"`
+	//} `json:"options"`
+	//Code string `json:"code"`
+	//} `json:"quantity"`
 }
 
 type DiscountCodeError struct {
@@ -42,11 +55,13 @@ type DiscountCodeError struct {
 	ShopifyErrorer
 }
 
-type ShippingAddressError struct {
+type AddressError struct {
+	ShopifyErrorer
+
+	Key     string `json:"key"`
 	Field   string `json:"field"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
-	ShopifyErrorer
 }
 
 type ErrorResponse struct {
@@ -59,10 +74,7 @@ var (
 )
 
 func (e *LineItemError) Error() string {
-	for _, q := range e.Quantity {
-		return fmt.Sprintf("line_item at pos(%s) %s", e.Position, q.Message)
-	}
-	return fmt.Sprintf("line_item at pos(%s) has errors", e.Position)
+	return fmt.Sprintf("%s at pos(%s): %s %s", e.Type(), e.Position, e.Field, e.Message)
 }
 
 func (e *LineItemError) Type() string {
@@ -77,12 +89,12 @@ func (e *DiscountCodeError) Type() string {
 	return `discount_code`
 }
 
-func (e *ShippingAddressError) Error() string {
+func (e *AddressError) Error() string {
 	return fmt.Sprintf("%s: %s %s", e.Type(), e.Field, e.Message)
 }
 
-func (e *ShippingAddressError) Type() string {
-	return `shipping_address`
+func (e *AddressError) Type() string {
+	return e.Key
 }
 
 func (r *ErrorResponse) Error() string {
@@ -98,13 +110,14 @@ func (r *ErrorResponse) Error() string {
 	return "unknown, unparsed error"
 }
 
-func toShippingAddressError(field string, listError []interface{}) *ShippingAddressError {
+func toAddressError(key, field string, listError []interface{}) *AddressError {
 	for _, ee := range listError {
 		// NOTE: parse the first error found
 		if ex, _ := ee.(map[string]interface{}); ex != nil {
 			code, _ := ex["code"].(string)
 			message, _ := ex["message"].(string)
-			return &ShippingAddressError{
+			return &AddressError{
+				Key:     key,
 				Field:   field,
 				Code:    code,
 				Message: message,
@@ -146,45 +159,70 @@ func findFirstError(r *ErrorResponse) error {
 
 	// find the first error, and return
 	for k, v := range rr {
-		vv, ok := v.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		lg.Debugf("error field key %s", k)
+		log.Printf("error field key %s", k)
 
-		switch k {
-		//shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
-		case "line_items":
-			for pos, vvv := range vv {
-				b, _ := json.Marshal(vvv)
-				var e *LineItemError
-				json.Unmarshal(b, &e)
-				e.Position = pos
-				return e
-			}
-		case "checkout":
-			for kk, vvv := range vv {
-				switch kk {
-				case "discount_code":
-					// list of fields
-					if e, _ := vvv.([]interface{}); e != nil {
-						for _, ee := range e {
-							if ex, _ := ee.(map[string]interface{}); ex != nil {
-								for _, reason := range ex {
-									return &DiscountCodeError{Reason: reason}
+		if vv, ok := v.(map[string]interface{}); ok {
+			switch k {
+			//shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
+			case "line_items":
+				for pos, vvv := range vv {
+					b, _ := json.Marshal(vvv)
+
+					var e lineItemErrorField
+					json.Unmarshal(b, &e)
+
+					ee := &LineItemError{
+						Position: pos,
+					}
+					if e != nil {
+						for ek, ev := range e {
+							ee.Field = ek
+							ee.Message = ev[0].Message
+							ee.Code = ev[0].Code
+							break
+						}
+					}
+
+					return ee
+				}
+
+			case "checkout":
+				for kk, vvv := range vv {
+					switch kk {
+					case "discount_code":
+						// list of fields
+						if e, _ := vvv.([]interface{}); e != nil {
+							for _, ee := range e {
+								if ex, _ := ee.(map[string]interface{}); ex != nil {
+									for _, reason := range ex {
+										return &DiscountCodeError{Reason: reason}
+									}
 								}
 							}
 						}
 					}
 				}
-			}
-		case "shipping_address":
-			for kk, vvv := range vv {
-				lg.Debugf("error %s field key: %s", k, kk)
-				if e, ok := vvv.([]interface{}); ok && e != nil {
-					return toShippingAddressError(kk, e)
+			case "shipping_address", "billing_address":
+				for kk, vvv := range vv {
+					log.Printf("error %s field key: %s %+v", k, kk, vvv)
+					if e, ok := vvv.([]interface{}); ok && e != nil {
+						return toAddressError(k, kk, e)
+					}
 				}
 			}
+		} else if vv, ok := v.([]interface{}); ok {
+			switch k {
+			case "discount_code":
+				for _, vvv := range vv {
+					vvvv := vvv.(map[string]interface{})
+					return &DiscountCodeError{
+						Reason: vvvv["message"],
+					}
+				}
+
+			}
+		} else {
+			return fmt.Errorf("unknown shopify error key %s, %+v, %v", k, v, reflect.TypeOf(v))
 		}
 	}
 

@@ -45,6 +45,7 @@ type Database struct {
 
 	Cart     CartStore
 	CartItem CartItemStore
+	Checkout CheckoutStore
 
 	SearchWord SearchWordStore
 }
@@ -118,6 +119,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 
 	db.Cart = CartStore{db.Store(&Cart{})}
 	db.CartItem = CartItemStore{db.Store(&CartItem{})}
+	db.Checkout = CheckoutStore{db.Store(&Checkout{})}
 
 	db.SearchWord = SearchWordStore{db.Store(&SearchWord{})}
 
