@@ -41,8 +41,8 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	me := ctx.Value("session.user").(*data.User)
 
-	var payload *userRequest
-	if err := render.Bind(r, payload); err != nil {
+	var payload userRequest
+	if err := render.Bind(r, &payload); err != nil {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
 	}
@@ -53,6 +53,11 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if payload.Name != "" {
 		me.Name = payload.Name
+	}
+
+	if err := data.DB.User.Save(me); err != nil {
+		render.Respond(w, r, err)
+		return
 	}
 
 	render.Respond(w, r, presenter.NewUser(ctx, me))
