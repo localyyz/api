@@ -16,11 +16,12 @@ func Routes() chi.Router {
 }
 
 type DeviceData struct {
-	InstallReferer string `json:"installreferer"`
-	BuildNumber    string `json:"buildnumber"`
+	InstallReferer string `json:"installReferer"`
+	BuildNumber    string `json:"buildNumber"`
 	Brand          string `json:"brand"`
-	SystemName     string `json:"systemname"`
-	DeviceID       string `json:"deviceid"`
+	SystemName     string `json:"systemName"`
+	DeviceID       string `json:"deviceID"`
+	CodePushVersion	string `json:"codePushVersion"`
 }
 
 func (d *DeviceData) Bind(r *http.Request) error {
@@ -41,5 +42,5 @@ func LogDeviceData(w http.ResponseWriter, r *http.Request) {
 	lg.SetEntryField(ctx, "brand", logData.Brand)
 	lg.SetEntryField(ctx, "install_referer", logData.InstallReferer)
 	lg.SetEntryField(ctx, "build_number", logData.BuildNumber)
-
+	lg.SetEntryField(ctx, "code_push_version", logData.CodePushVersion)
 }
