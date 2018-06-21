@@ -58,12 +58,6 @@ func SessionCtx(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, "session.user", user)
 		lg.SetEntryField(ctx, "user_id", user.ID)
 
-		// parse the session user gender
-		if user.Etc.Gender == data.UserGenderMale ||
-			user.Etc.Gender == data.UserGenderFemale {
-			ctx = context.WithValue(ctx, "session.gender", user.Etc.Gender)
-		}
-
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
@@ -106,6 +100,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 				return
 			}
 		}
+		lg.SetEntryField(ctx, "user_id", user.ID)
 		ctx = context.WithValue(ctx, "session.user", user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}

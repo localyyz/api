@@ -164,7 +164,7 @@ func (c *Checkout) Finalize(req *shopify.Checkout) error {
 	}
 
 	// price
-	c.SubtotalPrice, _ = strconv.ParseFloat(req.TotalPrice, 64)
+	c.SubtotalPrice, _ = strconv.ParseFloat(req.SubtotalPrice, 64)
 	c.TotalPrice, _ = strconv.ParseFloat(req.TotalPrice, 64)
 	c.PaymentDue = req.PaymentDue
 

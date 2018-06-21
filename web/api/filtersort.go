@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -87,6 +88,13 @@ func NewFilterSort(r *http.Request) *FilterSort {
 			}
 		}
 		o.Filters = append(o.Filters, f)
+	}
+
+	if len(o.Filters) > 0 {
+		lg.SetEntryField(r.Context(), "filter", o.Filters)
+	}
+	if o.Sort != nil {
+		lg.SetEntryField(r.Context(), "sort", *o.Sort)
 	}
 
 	return o

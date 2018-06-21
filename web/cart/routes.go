@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/cart/cartitem"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
@@ -119,6 +120,7 @@ func CartCtx(next http.Handler) http.Handler {
 			return
 		}
 		ctx = context.WithValue(ctx, "cart", cart)
+		lg.SetEntryField(ctx, "cart_id", cart.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)

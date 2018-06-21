@@ -32,6 +32,10 @@ func (suite *CheckoutTestSuite) SetupSuite() {
 	suite.SetupData(suite.T())
 }
 
+func (suite *CheckoutTestSuite) TearDownSuite() {
+	suite.TeardownData(suite.T())
+}
+
 // E2E checkout tests
 func (suite *CheckoutTestSuite) TestCheckoutSuccess() {
 	fullAddress := &data.CartAddress{
@@ -128,17 +132,18 @@ func (suite *CheckoutTestSuite) TestCheckoutSuccess() {
 
 		if assert.NotNil(suite.T(), cart.Checkouts) {
 			// pricing
-			assert.NotEmpty(suite.T(), cart.Checkouts[0].SubtotalPrice)
-			assert.NotEmpty(suite.T(), cart.Checkouts[0].TotalPrice)
-			assert.NotEmpty(suite.T(), cart.Checkouts[0].PaymentDue)
+			assert.Equal(suite.T(), 313.60, cart.Checkouts[0].SubtotalPrice)
+			assert.Equal(suite.T(), 364.84, cart.Checkouts[0].TotalPrice)
+			assert.Equal(suite.T(), "364.84", cart.Checkouts[0].PaymentDue)
 
 			// shipping line
 			assert.NotNil(suite.T(), cart.Checkouts[0].ShippingLine)
-			assert.Equal(suite.T(), 10.00, cart.Checkouts[0].TotalShipping)
+			assert.Equal(suite.T(), 10.47, cart.Checkouts[0].TotalShipping)
 
 			// tax lines
 			assert.NotNil(suite.T(), cart.Checkouts[0].TaxLines)
 			assert.Equal(suite.T(), 0.13, cart.Checkouts[0].TaxLines[0].Rate)
+			assert.Equal(suite.T(), "40.77", cart.Checkouts[0].TaxLines[0].Price)
 			assert.Equal(suite.T(), "HST", cart.Checkouts[0].TaxLines[0].Title)
 
 			// ids
@@ -401,7 +406,7 @@ func (suite *CheckoutTestSuite) TestCheckoutDoesNotShip() {
 func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 	fullAddress := &data.CartAddress{
 		Address:   "123 Toronto Street",
-		FirstName: "User",
+		FirstName: "Someone",
 		LastName:  "Localyyz",
 		City:      "Toronto",
 		Country:   "Canada",
@@ -449,7 +454,7 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 	}
 
 	{ // update checkout with discount code
-		discountCode := "TEST_PRODUCT_DISCOUNT"
+		discountCode := "TEST_SALE_CODE"
 		b := &bytes.Buffer{}
 		json.NewEncoder(b).Encode(map[string]interface{}{
 			"discount": discountCode,
@@ -489,14 +494,14 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 			// verify discount is applied
 			if assert.NotNil(suite.T(), cart.Checkouts[0].AppliedDiscount.AppliedDiscount) {
 				assert.NotEmpty(suite.T(), cart.Checkouts[0].AppliedDiscount.Amount)
-				assert.Equal(suite.T(), "1.00", cart.Checkouts[0].AppliedDiscount.Amount)
+				assert.Equal(suite.T(), "31.36", cart.Checkouts[0].AppliedDiscount.Amount)
 				assert.NotEmpty(suite.T(), cart.Checkouts[0].AppliedDiscount.Title)
 			}
 		}
-		assert.EqualValues(suite.T(), 100, cart.TotalDiscount)
-		assert.EqualValues(suite.T(), 1000, cart.TotalShipping)
-		assert.EqualValues(suite.T(), 117, cart.TotalTax)
-		assert.EqualValues(suite.T(), 2017, cart.TotalPrice)
+		assert.EqualValues(suite.T(), 3136, cart.TotalDiscount)
+		assert.EqualValues(suite.T(), 1047, cart.TotalShipping)
+		assert.EqualValues(suite.T(), 3669, cart.TotalTax)
+		assert.EqualValues(suite.T(), 32940, cart.TotalPrice)
 	}
 }
 

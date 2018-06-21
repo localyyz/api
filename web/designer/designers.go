@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
@@ -62,6 +63,7 @@ func DesignerCtx(next http.Handler) http.Handler {
 		designer := chi.URLParam(r, "designer")
 
 		ctx = context.WithValue(ctx, "designer", strings.ToLower(designer))
+		lg.SetEntryField(ctx, "designer", strings.ToLower(designer))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
