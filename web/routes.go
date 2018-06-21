@@ -20,6 +20,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
+	"bitbucket.org/moodie-app/moodie-api/web/ping"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -97,6 +98,7 @@ func (h *Handler) Routes() chi.Router {
 		r.Mount("/designers", designer.Routes())
 		r.Mount("/places", place.Routes())
 		r.Mount("/products", product.Routes())
+		r.Mount("/ping", ping.Routes())
 	})
 
 	// Semi-authed route.
