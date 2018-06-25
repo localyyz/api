@@ -101,6 +101,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 			}
 		}
 		lg.SetEntryField(ctx, "user_id", user.ID)
+		lg.SetEntryField(ctx, "device_id", user.Username)
 		ctx = context.WithValue(ctx, "session.user", user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
