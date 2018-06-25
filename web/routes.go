@@ -14,13 +14,13 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/category"
 	"bitbucket.org/moodie-app/moodie-api/web/collection"
 	"bitbucket.org/moodie-app/moodie-api/web/designer"
+	"bitbucket.org/moodie-app/moodie-api/web/ping"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/product"
 	"bitbucket.org/moodie-app/moodie-api/web/search"
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
-	"bitbucket.org/moodie-app/moodie-api/web/ping"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -64,6 +64,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Use(token.Verify())
 	r.Use(session.SessionCtx)
 	r.Use(session.UserRefresh)
+	r.Use(session.DeviceCtx)
 	r.Use(api.PaginateCtx)
 
 	if h.Debug {
@@ -80,9 +81,7 @@ func (h *Handler) Routes() chi.Router {
 		// sign-up and login related
 		r.Post("/login", auth.EmailLogin)
 		r.Post("/login/facebook", auth.FacebookLogin)
-		r.Get("/signup", auth.GetSignupPage)
 		r.Post("/signup", auth.EmailSignup)
-		r.Post("/register", auth.RegisterSignup)
 
 		// shopify related endpoints
 		r.Get("/connect", shopify.Connect)
@@ -101,9 +100,9 @@ func (h *Handler) Routes() chi.Router {
 		r.Mount("/ping", ping.Routes())
 	})
 
-	// Semi-authed route.
+	// Semi-authed route. User can be "shadow"
 	r.Group(func(r chi.Router) {
-		r.Use(session.DeviceCtx)
+		r.Use(auth.DeviceCtx)
 		r.Mount("/carts/express", express.Routes())
 	})
 

@@ -76,7 +76,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 
 		deviceId := r.Header.Get("X-DEVICE-ID")
 		if deviceId == "" {
-			render.Respond(w, r, api.ErrInvalidSession)
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
