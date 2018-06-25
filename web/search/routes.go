@@ -173,7 +173,8 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 				to_tsquery('simple', $$?$$)
 			)`, qraw, qraw, qraw, db.Raw(qrawNoSpace)),
 		)).
-		OrderBy("_rank DESC")
+		OrderBy("_rank DESC", "id DESC")
+		// NOTE need to anchor on an unique (id) field or same result would be returned
 
 	query = filterSort.UpdateQueryBuilder(query)
 	paginate := cursor.UpdateQueryBuilder(query)
