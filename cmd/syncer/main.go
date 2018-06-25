@@ -10,6 +10,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/syncer"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
@@ -37,6 +38,9 @@ func main() {
 	if err != nil {
 		lg.Fatal(errors.Wrap(err, "database connection failed"))
 	}
+
+	//[connect]
+	connect.SetupSlack(conf.Connect.Slack)
 
 	// new web handler
 	h := syncer.New(db, (conf.Environment == "development"))
