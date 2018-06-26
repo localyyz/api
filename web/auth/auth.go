@@ -39,7 +39,21 @@ var (
 	timingHash []byte = []byte("$2a$10$4Kys.PIxpCIoUmlcY6D7QOTuMPgk27lpmV74OWCWfqjwnG/JN4kcu")
 )
 
+// Must be a logged in and signed up user
 func SessionCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		u, ok := r.Context().Value("session.user").(*data.User)
+		if !ok || u.Network == "shadow" {
+			// no session. return forbidden
+			render.Respond(w, r, api.ErrInvalidSession)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(handler)
+}
+
+func DeviceCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		_, ok := r.Context().Value("session.user").(*data.User)
 		if !ok {
@@ -142,31 +156,15 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	authUser := NewAuthUser(ctx, user)
-	if err := render.Render(w, r, authUser); err != nil {
-		render.Respond(w, r, err)
-	}
-}
-
-// Shadow login is called when an user lands in the app via deep linking
-// backend creates a "shadow" user account for the user
-func ShadowLogin(w http.ResponseWriter, r *http.Request) {
-	payload := &fbLogin{}
-	if err := render.Bind(r, payload); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
+	// 1. check if session device user is set
+	// 2. check if this is a new user event
+	// 3. merge two users
+	if u, ok := r.Context().Value("session.user").(*data.User); ok && u.Network == "shadow" && user.ID == 0 {
+		user.ID = u.ID
+		user.DeviceToken = &u.Username
 	}
 
-	// inspect the token for userId and expiry
-	user, err := connect.FB.Login(payload.Token, payload.InviteCode)
-	if err != nil {
-		if err == connect.ErrTokenExpired {
-			render.Status(r, http.StatusUnauthorized)
-			render.Respond(w, r, connect.ErrTokenExpired)
-			return
-		}
-		render.Status(r, http.StatusServiceUnavailable)
+	if err := data.DB.User.Save(user); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
