@@ -23,8 +23,9 @@ type Product struct {
 	Status   ProductStatus   `db:"status" json:"status"`
 
 	// price from variants
-	Price       float64 `db:"price" json:"price"`
-	DiscountPct float64 `db:"discount_pct" json:"discount_pct"`
+	Price        float64    `db:"price" json:"price"`
+	DiscountPct  float64    `db:"discount_pct" json:"discount_pct"`
+	DiscountedAt *time.Time `db:"discounted_at,omitempty" json:"discountedAt"`
 
 	// external id
 	ExternalID     *int64 `db:"external_id,omitempty" json:"-"`
