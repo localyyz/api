@@ -1,4 +1,4 @@
-package collection
+package designer
 
 import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
@@ -8,10 +8,10 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/", ListCollection)
-	r.Route("/{collectionID}", func(r chi.Router) {
-		r.Use(CollectionCtx)
-		r.Get("/", GetCollection)
+	r.Get("/", List)
+	r.Get("/featured", ListFeatured)
+	r.Route("/{designer}", func(r chi.Router) {
+		r.Use(DesignerCtx)
 		r.Route("/products", api.FilterRoutes(ListProducts))
 	})
 

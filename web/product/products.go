@@ -2,8 +2,6 @@ package product
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -12,7 +10,6 @@ import (
 	"github.com/pressly/lg"
 
 	db "upper.io/db.v3"
-	"upper.io/db.v3/lib/sqlbuilder"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -44,53 +41,34 @@ func ProductCtx(next http.Handler) http.Handler {
 func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
+	cursor := ctx.Value("cursor").(*api.Page)
 
-	// if the product is featured, return "related" featured products
-	exists, _ := data.DB.FeatureProduct.Find(db.Cond{"product_id": product.ID}).Exists()
-	var query sqlbuilder.Selector
-	if exists {
-		cond := db.Cond{
-			"product_id": db.NotEq(product.ID),
-		}
-		if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-			cond["gender"] = gender
-		}
-		query = data.DB.Select(db.Raw("p.*")).
-			From("feature_products fp").
-			LeftJoin("products p").
-			On("p.id = fp.product_id").
-			Where(cond).
-			OrderBy("fp.ordering")
-	} else {
-		if product.Category.Value == "" {
-			render.Respond(w, r, []struct{}{})
-			return
-		}
-		rawCategory, _ := json.Marshal(product.Category)
-		cond := db.And(
+	if product.Category.Value == "" {
+		render.Respond(w, r, []struct{}{})
+		return
+	}
+
+	// find the products
+	query := data.DB.Select("p.*").
+		From("products p").
+		Where(
 			db.Cond{
 				"p.place_id": product.PlaceID,
 				"p.gender":   product.Gender,
-				"p.id <>":    product.ID,
-			},
-			db.Raw(fmt.Sprintf("category @> '%s'", string(rawCategory))),
-		)
-		// find the products
-		query = data.DB.Select("p.*").
-			From("products p").
-			Where(cond).
-			OrderBy("p.score desc", "p.created_at desc")
-	}
-	cursor := ctx.Value("cursor").(*api.Page)
+				"p.id":       db.NotEq(product.ID),
+				db.Raw("p.category->>'value'"): product.Category.Value,
+			}).
+		OrderBy("p.score desc")
 	paginate := cursor.UpdateQueryBuilder(query)
-	var relatedProducts []*data.Product
-	if err := paginate.All(&relatedProducts); err != nil {
+
+	var products []*data.Product
+	if err := paginate.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
-	cursor.Update(relatedProducts)
-	presented := presenter.NewProductList(ctx, relatedProducts)
+	cursor.Update(products)
+	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}
@@ -109,19 +87,19 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 
 	query := data.DB.Select("p.*").
 		From("products p").
-		Where(db.Cond{
-			"status": data.ProductStatusApproved,
-		}).
-		OrderBy("-score")
+		Where(db.Cond{"p.status": data.ProductStatusApproved}).
+		OrderBy("p.score DESC")
 	query = filterSort.UpdateQueryBuilder(query)
-	paginate := cursor.UpdateQueryBuilder(query)
 
 	var products []*data.Product
-	if err := paginate.All(&products); err != nil {
-		render.Respond(w, r, err)
-		return
+	if !filterSort.HasFilter() {
+		paginate := cursor.UpdateQueryBuilder(query)
+		if err := paginate.All(&products); err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+		cursor.Update(products)
 	}
-	cursor.Update(products)
 
 	render.RenderList(w, r, presenter.NewProductList(ctx, products))
 }

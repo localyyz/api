@@ -76,8 +76,8 @@ db-reset:
 	@./db/db.sh reset localyyz
 	goose up
 
-db-loadprod:
-	@./db/db.sh loadprod localyyz
+db-loadstaging:
+	@./db/db.sh loadstaging localyyz
 
 ## TESTS
 eetest:

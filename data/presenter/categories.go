@@ -25,9 +25,6 @@ func NewCategory(ctx context.Context, categoryType data.CategoryType) *Category 
 		"type":       categoryType,
 		"mapping !=": "",
 	}
-	if gender, ok := ctx.Value("product.gender").(data.ProductGender); ok {
-		cond["gender"] = []data.ProductGender{gender, data.ProductGenderUnisex}
-	}
 	var categories []*data.Category
 	data.DB.
 		Select(db.Raw("distinct mapping")).
