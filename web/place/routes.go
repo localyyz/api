@@ -12,10 +12,8 @@ func Routes() chi.Router {
 	r.Get("/featured", ListFeatured)
 	r.Route("/{placeID}", func(r chi.Router) {
 		r.Use(PlaceCtx)
-		r.Use(api.FilterSortCtx)
-
 		r.Get("/", GetPlace)
-		r.Get("/products", ListProducts)
+		r.Route("/products", api.FilterRoutes(ListProducts))
 	})
 
 	return r

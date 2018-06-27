@@ -41,21 +41,6 @@ var (
 	}
 )
 
-func Routes() chi.Router {
-	r := chi.NewRouter()
-
-	r.Use(api.FilterSortCtx)
-
-	r.Get("/", List)
-	r.Get("/featured", ListFeatured)
-	r.Route("/{designer}", func(r chi.Router) {
-		r.Use(DesignerCtx)
-		r.Get("/products", ListProducts)
-	})
-
-	return r
-}
-
 func DesignerCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

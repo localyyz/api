@@ -2,12 +2,15 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/render"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -16,14 +19,21 @@ import (
 type FilterSort struct {
 	Sort    *Sort
 	Filters []*Filter
+
+	// internals
+	filterBy db.RawValue
+	selector sqlbuilder.Selector
+	r        *http.Request
+	w        http.ResponseWriter
 }
 
 var (
 	SortParam   = `sort`
 	FilterParam = `filter`
 
-	defaultSortField = ""
+	FilterSortCtxKey = `filter.sort`
 
+	defaultSortField        = ""
 	ErrInvalidFilterSortKey = errors.New("invalid filter or sort key")
 )
 
@@ -44,22 +54,84 @@ type Filter struct {
 	Value    interface{} `json:"val"`
 }
 
+func (o *FilterSort) Write(b []byte) (int, error) {
+	// am i doing something here?
+	if o.filterBy != nil && !o.filterBy.Empty() {
+		val, err := o.GetValues(o.r.Context())
+		if err != nil {
+			render.Respond(o.w, o.r, err)
+			return 0, nil
+		}
+		render.Respond(o.w, o.r, val)
+		return 0, nil
+	}
+	return o.w.Write(b)
+}
+
+func (o *FilterSort) WriteHeader(statusCode int) {
+	o.w.WriteHeader(statusCode)
+}
+
+func (o *FilterSort) Header() http.Header {
+	return o.w.Header()
+}
+
 func FilterSortCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		filterSort := NewFilterSort(r)
-		ctx := context.WithValue(r.Context(), "filter.sort", filterSort)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		filterSort := NewFilterSort(w, r)
+		// filterSort hijacks the response writer
+		ctx := context.WithValue(r.Context(), FilterSortCtxKey, filterSort)
+		next.ServeHTTP(filterSort, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
 }
 
-func NewFilterSort(r *http.Request) *FilterSort {
+func WithFilterBy(val interface{}) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			filterSort, ok := ctx.Value(FilterSortCtxKey).(*FilterSort)
+			if !ok {
+				filterSort = NewFilterSort(w, r)
+			}
+			filterSort.filterBy = db.Raw(fmt.Sprintf("lower(%s)", val.(string)))
+			ctx = context.WithValue(ctx, FilterSortCtxKey, filterSort)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
+func wrapFilterRoutes(r chi.Router, handlerFn http.HandlerFunc) {
+	r.Use(FilterSortCtx)
+	r.Get("/", handlerFn)
+	r.With(WithFilterBy("p.brand")).Get("/brands", handlerFn)
+	r.With(WithFilterBy("pv.etc->>'size'")).Get("/sizes", handlerFn)
+	r.With(WithFilterBy("pv.etc->>'color'")).Get("/colors", handlerFn)
+	r.With(WithFilterBy("p.category->>'value'")).Get("/subcategories", handlerFn)
+	r.With(WithFilterBy("p.category->>'type'")).Get("/categories", handlerFn)
+}
+
+// TODO: turn these into middlewares?
+func FilterRoutes(handlerFn http.HandlerFunc) func(r chi.Router) {
+	return func(r chi.Router) {
+		wrapFilterRoutes(r, handlerFn)
+	}
+}
+
+func WithFilterRoutes(handlerFn http.HandlerFunc) chi.Router {
+	r := chi.NewRouter()
+	wrapFilterRoutes(r, handlerFn)
+	return r
+}
+
+func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 	if r == nil {
-		return &FilterSort{}
+		return &FilterSort{w: w, r: r}
 	}
 
 	q := r.URL.Query()
-	o := &FilterSort{}
+	o := &FilterSort{w: w, r: r}
 	if value := q.Get(SortParam); len(value) > 0 && value != defaultSortField {
 		if strings.HasPrefix(value, "-") || strings.HasSuffix(value, "desc") {
 			o.Sort = &Sort{
@@ -100,11 +172,64 @@ func NewFilterSort(r *http.Request) *FilterSort {
 	return o
 }
 
-func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Selector {
-	if o.Sort == nil && len(o.Filters) == 0 {
-		return selector
+func (o *FilterSort) HasFilter() bool {
+	return o.filterBy != nil && !o.filterBy.Empty()
+}
+
+func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
+	var rows *sql.Rows
+	var err error
+	if strings.Contains(o.filterBy.Raw(), "pv.") {
+		// TODO: really? best way? cache options on product_sizes / product_colors child table?
+		// some kind of quick look up that makes it easier to do this???
+		// get top 100 products from the selector
+		rows, err = data.DB.Select(o.filterBy).
+			From("product_variants pv").
+			Where(
+				db.Raw(
+					"product_id IN (?)",
+					o.selector.
+						SetColumns("p.id").
+						OrderBy("score DESC").
+						Limit(100),
+				),
+				db.Cond{o.filterBy: db.NotEq("")},
+			).
+			GroupBy(o.filterBy).
+			OrderBy(db.Raw("count(1) DESC")).
+			Limit(30).
+			Query()
+	} else {
+		rows, err = o.selector.
+			SetColumns(o.filterBy).
+			Where(db.Cond{
+				o.filterBy: db.NotEq(""),
+			}).
+			GroupBy(o.filterBy).
+			OrderBy(db.Raw("count(1) DESC")).
+			Limit(50).
+			Query()
 	}
 
+	if err != nil {
+		return []string{}, err
+	}
+
+	values := []string{}
+	for rows.Next() {
+		var v string
+		err = rows.Scan(&v)
+		if err != nil {
+			break
+		}
+		values = append(values, v)
+	}
+	rows.Close()
+
+	return values, nil
+}
+
+func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	if s := o.Sort; s != nil {
 		var orderBy string
 		switch s.Type {
@@ -121,27 +246,59 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 	}
 	for _, f := range o.Filters {
 		var fConds []db.Compound
-
 		switch f.Type {
 		case "discount":
-			fConds = append(fConds, db.Cond{"discount_pct": db.Gte(f.MinValue)})
+			fConds = append(fConds, db.Cond{"p.discount_pct": db.Gte(f.MinValue)})
 		case "brand":
-			fConds = append(fConds, db.Cond{"brand": f.Value})
+			fConds = append(fConds, db.Cond{
+				db.Raw("lower(p.brand)"): strings.ToLower(f.Value.(string)),
+			})
 		case "place_id":
-			fConds = append(fConds, db.Cond{"place_id": f.Value})
+			fConds = append(fConds, db.Cond{"p.place_id": f.Value})
 		case "gender":
 			v := new(data.ProductGender)
-			v.UnmarshalText([]byte(f.Value.(string)))
-			fConds = append(fConds, db.Cond{"gender": v})
-		default:
+			if err := v.UnmarshalText([]byte(f.Value.(string))); err != nil {
+				lg.Warn(err)
+				continue
+			}
+			fConds = append(fConds, db.Cond{"p.gender": *v})
+		case "categoryType":
+			fConds = append(fConds, db.Cond{
+				db.Raw("lower(p.category->>'type')"): strings.ToLower(f.Value.(string)),
+			})
+		case "categoryValue":
+			fConds = append(fConds, db.Cond{
+				db.Raw("lower(p.category->>'value')"): strings.ToLower(f.Value.(string)),
+			})
+		case "size":
+			// TODO: clean this up? is there a better way?
+			sizeSelector := data.DB.
+				Select("product_id").
+				From("product_variants").
+				Where(db.Cond{
+					db.Raw("lower(etc->>'size')"): strings.ToLower(f.Value.(string)),
+				})
+			selector = selector.Where(db.Cond{"id IN": sizeSelector})
+		case "color":
+			// TODO: clean this up? is there a better way?
+			colorSelector := data.DB.
+				Select("product_id").
+				From("product_variants").
+				Where(db.Cond{
+					db.Raw("lower(etc->>'color')"): strings.ToLower(f.Value.(string)),
+				})
+			selector = selector.Where(db.Cond{"id IN": colorSelector})
+		case "price":
 			if f.MinValue != nil {
-				fConds = append(fConds, db.Cond{f.Type: db.Gte(f.MinValue)})
+				fConds = append(fConds, db.Cond{"p.price": db.Gte(f.MinValue)})
 			}
 			if f.MaxValue != nil {
-				fConds = append(fConds, db.Cond{f.Type: db.Lte(f.MaxValue)})
+				fConds = append(fConds, db.Cond{"p.price": db.Lte(f.MaxValue)})
 			}
 		}
 		selector = selector.Where(db.And(fConds...))
 	}
+
+	o.selector = selector
 	return selector
 }

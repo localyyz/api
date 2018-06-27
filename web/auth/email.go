@@ -103,6 +103,12 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	if u, ok := r.Context().Value("session.user").(*data.User); ok && u.Network == "shadow" {
+		// session user already exists. most likely device
+		newUser.ID = u.ID
+		newUser.DeviceToken = &u.Username
+	}
+
 	// check if invite code exists
 	if newSignup.InviteCode != "" {
 		invitor, err := data.DB.User.FindByInviteCode(newSignup.InviteCode)
@@ -125,7 +131,6 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	// TODO: email verification
 	ctx := r.Context()
 	authUser := NewAuthUser(ctx, newUser)
-	if err := render.Render(w, r, authUser); err != nil {
-		render.Respond(w, r, err)
-	}
+	render.Status(r, http.StatusCreated)
+	render.Render(w, r, authUser)
 }

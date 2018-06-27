@@ -61,6 +61,13 @@ func setVariants(p *data.Product, variants ...*shopify.ProductVariant) error {
 				p.Price = price
 				if price > 0 && prevPrice > price {
 					p.DiscountPct = pctRound(price/prevPrice, 1)
+					// if discounted_at is not set. set it.
+					if p.DiscountedAt == nil {
+						p.DiscountedAt = data.GetTimeUTCPointer()
+					}
+				} else {
+					p.DiscountPct = 0
+					p.DiscountedAt = nil
 				}
 			}
 
@@ -138,6 +145,9 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 				product.Price = dbVariant.Price
 				if dbVariant.Price > 0 && dbVariant.PrevPrice > dbVariant.Price {
 					product.DiscountPct = pctRound(dbVariant.Price/dbVariant.PrevPrice, 1)
+				} else {
+					product.DiscountPct = 0
+					product.DiscountedAt = nil
 				}
 			}
 

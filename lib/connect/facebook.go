@@ -88,10 +88,6 @@ func (f *Facebook) Login(token, inviteCode string) (*data.User, error) {
 		// TODO return invalid code error?
 	}
 
-	if err := data.DB.User.Save(user); err != nil {
-		return nil, err
-	}
-
 	return user, nil
 }
 

@@ -33,16 +33,16 @@ function drop() {
 EOF
 }
 
-function loadprod() {
-  echo "LOADING DATABASE FROM PROD BACKUP";
+function loadstaging() {
+  echo "LOADING DATABASE FROM STAGING BACKUP";
   if [ ! -f tmp/backup-latest.dump ]; then
     echo "DOWNLOADING BACKUP";
-    scp root@localyyz.db:/data/backups/backup-latest.dump tmp/.
+    scp root@localyyz.staging:/data/backups/backup-latest.dump tmp/.
   elif test `find "tmp/backup-latest.dump" -mmin +2000`; then
     echo "DOWNLOADING LATEST BACKUP";
-    scp root@localyyz.db:/data/backups/backup-latest.dump tmp/.
+    scp root@localyyz.staging:/data/backups/backup-latest.dump tmp/.
   fi
-  pg_restore -l tmp/backup-latest.dump | sed '/MATERIALIZED VIEW DATA/d' > tmp/restore.lst
+  pg_restore -j 4 -l tmp/backup-latest.dump | sed '/MATERIALIZED VIEW DATA/d' > tmp/restore.lst
   pg_restore -L tmp/restore.lst -d localyyz tmp/backup-latest.dump
 
   # some reason refreshing materialized view doesn't work here
@@ -68,10 +68,10 @@ case "$operation" in
     drop
     create
     ;;
-  "loadprod")
+  "loadstaging")
     drop
     create
-    loadprod
+    loadstaging
     ;;
   *)
     echo "no such operation"

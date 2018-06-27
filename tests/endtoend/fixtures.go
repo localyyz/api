@@ -103,5 +103,6 @@ func (f *fixture) SetupData(t *testing.T) {
 }
 
 func (f *fixture) TeardownData(t *testing.T) {
-	data.DB.Exec("TRUNCATE carts, products, users, places;")
+	data.DB.Exec("TRUNCATE users cascade;")
+	data.DB.Exec("TRUNCATE places cascade;")
 }

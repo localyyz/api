@@ -13,25 +13,6 @@ import (
 	db "upper.io/db.v3"
 )
 
-func Routes() chi.Router {
-	r := chi.NewRouter()
-
-	r.Get("/", List)
-	r.Route("/{categoryType}", func(r chi.Router) {
-		r.Use(api.FilterSortCtx)
-		r.Use(CategoryTypeCtx)
-		r.Get("/", GetCategory)
-
-		r.Route("/{subcategory}", func(r chi.Router) {
-			r.Use(SubcategoryCtx)
-			r.Get("/products", ListProducts)
-		})
-		r.Get("/products", ListProducts)
-	})
-
-	return r
-}
-
 func SubcategoryCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -99,10 +80,6 @@ func List(w http.ResponseWriter, r *http.Request) {
 func GetCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	categoryType := ctx.Value("category.type").(data.CategoryType)
-
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		ctx = context.WithValue(ctx, "product.gender", gender)
-	}
 	render.Render(w, r, presenter.NewCategory(ctx, categoryType))
 }
 
