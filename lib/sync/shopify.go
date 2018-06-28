@@ -2,8 +2,6 @@ package sync
 
 import (
 	"context"
-	"net/http"
-	"strings"
 
 	db "upper.io/db.v3"
 
@@ -15,13 +13,17 @@ import (
 )
 
 var (
-	ErrOutofStock = errors.New("out of stock")
+	ErrOutofStock      = errors.New("out of stock")
+	ErrProductExist    = errors.New("exists")
+	ErrProductRejected = errors.New("rejected")
+	SyncListenerCtxKey = "sync.listener"
 )
+
+type Listener chan int
 
 func ShopifyProductListingsRemove(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.ProductList)
 	place := ctx.Value("sync.place").(*data.Place)
-
 	for _, p := range list {
 		// check if product already exists in our system
 		dbProduct, err := data.DB.Product.FindOne(db.Cond{
@@ -35,60 +37,8 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 		}
 		// Mark as deleted at and save
 		dbProduct.DeletedAt = data.GetTimeUTCPointer()
+		dbProduct.Status = data.ProductStatusDeleted
 		data.DB.Product.Save(dbProduct)
-	}
-
-	return nil
-}
-
-func setVariants(p *data.Product, variants ...*shopify.ProductVariant) error {
-	// bulk insert variants
-	q := data.DB.InsertInto("product_variants").
-		Columns("product_id", "place_id", "limits", "description", "offer_id", "price", "prev_price", "etc")
-	b := q.Batch(len(variants))
-
-	// TODO: need to set product as inactive if variant quantities are all 0
-
-	go func() {
-		defer b.Done()
-		for i, v := range variants {
-			price, prevPrice := setPrices(
-				v.Price,
-				v.CompareAtPrice,
-			)
-
-			if i == 0 {
-				p.Price = price
-				if price > 0 && prevPrice > price {
-					p.DiscountPct = pctRound(price/prevPrice, 1)
-					// if discounted_at is not set. set it.
-					if p.DiscountedAt == nil {
-						p.DiscountedAt = data.GetTimeUTCPointer()
-					}
-				} else {
-					p.DiscountPct = 0
-					p.DiscountedAt = nil
-				}
-			}
-
-			etc := data.ProductVariantEtc{Sku: v.Sku}
-			// variant option values
-			for _, o := range v.OptionValues {
-				vv := strings.ToLower(o.Value)
-				switch strings.ToLower(o.Name) {
-				case "size":
-					etc.Size = vv
-				case "color":
-					etc.Color = vv
-				default:
-					// pass
-				}
-			}
-			b.Values(p.ID, p.PlaceID, v.InventoryQuantity, v.Title, v.ID, price, prevPrice, etc)
-		}
-	}()
-	if err := b.Wait(); err != nil {
-		return errors.Wrap(err, "failed to create product variants")
 	}
 	return nil
 }
@@ -113,121 +63,40 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			}
 			return errors.Wrap(err, "failed to fetch product")
 		}
+		if product.Status == data.ProductStatusRejected {
+			return ErrProductRejected
+		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
-		// Update the vendor
-		product.Brand = p.Vendor
-
-		// iterate product variants and update quantity limit
-		isOutofStock := true
-		for i, v := range p.Variants {
-			dbVariant, err := data.DB.ProductVariant.FindByOfferID(v.ID)
-			if err != nil {
-				if err != db.ErrNoMoreRows {
-					continue
-				}
-				// create new db variant previously unavailable
-				dbVariant = &data.ProductVariant{
-					PlaceID:   place.ID,
-					ProductID: product.ID,
-					OfferID:   v.ID,
-					Etc:       data.ProductVariantEtc{},
-				}
-			}
-
-			// set price/compare price
-			dbVariant.Price, dbVariant.PrevPrice = setPrices(
-				v.Price,
-				v.CompareAtPrice,
-			)
-
-			if i == 0 {
-				product.Price = dbVariant.Price
-				if dbVariant.Price > 0 && dbVariant.PrevPrice > dbVariant.Price {
-					product.DiscountPct = pctRound(dbVariant.Price/dbVariant.PrevPrice, 1)
-				} else {
-					product.DiscountPct = 0
-					product.DiscountedAt = nil
-				}
-			}
-
-			for _, o := range v.OptionValues {
-				vv := strings.ToLower(o.Value)
-				switch strings.ToLower(o.Name) {
-				case "size":
-					dbVariant.Etc.Size = vv
-				case "color":
-					dbVariant.Etc.Color = vv
-				default:
-					// pass
-				}
-			}
-			dbVariant.Limits = int64(v.InventoryQuantity)
-			dbVariant.Description = strings.ToLower(v.Title)
-			if err := data.DB.ProductVariant.Save(dbVariant); err != nil {
-				return errors.Wrap(err, "failed to update product variant")
-			}
-
-			// if any variant is in stock, set isOutofStock to false
-			if isOutofStock && dbVariant.Limits > 0 {
-				isOutofStock = false
-			}
+		product.Status = data.ProductStatusProcessing
+		syncer := &productSyncer{
+			place:   place,
+			product: product,
 		}
 
-		// update product images if product image is empty
-		err = setImages(&shopifyImageSyncer{Product: product, Client: &http.Client{}}, p.Images...)
-
-		// should make this more testable
-		//
-		// TODO: handle error wrapper?
-		if isOutofStock && err == nil {
-			err = ErrOutofStock
-		}
-
-		// update product status
-		product.Status = finalizeStatus(
-			ctx,
-			len(product.Category.Value) > 0,
-			err,
-			p.Title,
-			p.Tags,
-			p.ProductType,
-		)
-
-		err = ScoreProduct(&shopifyImageScorer{Product: product, Place: place})
-		if err != nil {
-			lg.Warnf("Error: could not set score for product id: %d", product.ID)
-		}
-
-		//save
-		data.DB.Product.Save(product)
-
+		// async syncing of variants / product images
+		go func(ctx context.Context) {
+			if listener, ok := ctx.Value(SyncListenerCtxKey).(Listener); ok {
+				// inform caller that we're done
+				defer func() { listener <- 1 }()
+			}
+			if err := syncer.SyncVariants(p.Variants); err != nil {
+				lg.Warnf("shopify add variant: %v", err)
+				return
+			}
+			if err := syncer.SyncImages(p.Images); err != nil {
+				lg.Warnf("shopify add images: %v", err)
+				return
+			}
+			if err := syncer.SyncScore(); err != nil {
+				lg.Warnf("shopify score%v", err)
+				return
+			}
+			syncer.Finalize()
+		}(ctx)
 	}
 
 	return nil
-}
-
-func finalizeStatus(ctx context.Context, hasCategory bool, err error, inputs ...string) data.ProductStatus {
-
-	if err != nil {
-		return data.ProductStatusRejected
-	}
-
-	// if blacklisted, demote the product status
-	if SearchBlackList(ctx, inputs...) {
-		if hasCategory {
-			// mark as pending, blacklisted but found a category
-			return data.ProductStatusPending
-		} else {
-			// reject if we did not find a category
-			return data.ProductStatusRejected
-		}
-	}
-
-	if hasCategory {
-		return data.ProductStatusApproved
-	}
-	return data.ProductStatusPending
 }
 
 func ShopifyProductListingsCreate(ctx context.Context) error {
@@ -239,59 +108,82 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			// Skip any product _not_ available
 			continue
 		}
+		syncer := &productSyncer{
+			place: place,
+			product: &data.Product{
+				PlaceID:        place.ID,
+				ExternalID:     &p.ProductID,
+				ExternalHandle: p.Handle,
+				Title:          p.Title,
+				Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
+				Brand:          p.Vendor,
+				Status:         data.ProductStatusProcessing,
+			},
+		}
 
-		product := &data.Product{
-			PlaceID:        place.ID,
-			ExternalID:     &p.ProductID,
-			ExternalHandle: p.Handle,
-			Title:          p.Title,
-			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
-			Brand:          p.Vendor,
-			Status:         data.ProductStatusPending,
+		// validate product does not exist
+		if exist, _ := data.DB.Product.Find(db.Cond{"external_id": p.ProductID}).Exists(); exist {
+			return ErrProductExist
 		}
 
 		// find product category + gender
-		parsedData := ParseProduct(ctx, p.Title, p.Tags, p.ProductType)
-		product.Gender = parsedData.Gender
+		parsedData, err := ParseProduct(ctx, p.Title, p.Tags, p.ProductType)
+		if err != nil {
+			// see parse product comment for logic on blacklisting product
+			// throw away the product. and continue on
+			// TODO: keep track of how many products are rejected
 
-		if len(parsedData.Value) > 0 {
-			product.Category = data.ProductCategory{
-				Type:  parsedData.Type,
-				Value: parsedData.Value,
+			//  create a logic map
+			//   - x blacklist + o category -> reject
+			//   - x blacklist + x category -> pending?
+			//   - o blacklist + o category -> pending?
+			//   - o blacklist + x category -> good
+			if err == ErrBlacklisted {
+				if len(parsedData.Value) == 0 {
+					syncer.FinalizeStatus(data.ProductStatusRejected)
+					// no category and blacklisted -> return
+					return err
+				}
+				// blacklisted but has category
+				syncer.product.Status = data.ProductStatusPending
 			}
 		}
-
-		// must save product before moving on to next
-		data.DB.Product.Save(product)
-
-		lg.SetEntryField(ctx, "product_id", product.ID)
-
-		// product variants
-		err := setVariants(product, p.Variants...)
-		if err != nil {
-			lg.Alert(err)
+		if len(parsedData.Value) == 0 {
+			// not blacklisted but no category
+			syncer.product.Status = data.ProductStatusPending
+		}
+		syncer.product.Gender = parsedData.Gender
+		syncer.product.Category = data.ProductCategory{
+			Type:  parsedData.Type,
+			Value: parsedData.Value,
 		}
 
-		// set imgs
-		err = setImages(&shopifyImageSyncer{Product: product}, p.Images...)
-
-		// product status
-		product.Status = finalizeStatus(
-			ctx,
-			len(product.Category.Value) > 0,
-			err,
-			p.Title,
-			p.Tags,
-			p.ProductType,
-		)
-
-		err = ScoreProduct(&shopifyImageScorer{Product: product, Place: place})
-		if err != nil {
-			lg.Warnf("Error: could not set score for product id: %d", product.ID)
+		// must save product before moving on to other contexts
+		if err := data.DB.Product.Save(syncer.product); err != nil {
+			return errors.Wrap(err, "shopify product create")
 		}
+		lg.SetEntryField(ctx, "product_id", syncer.product.ID)
 
-		// save
-		data.DB.Product.Save(product)
+		// async syncing of variants / product images
+		go func(ctx context.Context) {
+			if listener, ok := ctx.Value(SyncListenerCtxKey).(Listener); ok {
+				// inform caller that we're done
+				defer func() { listener <- 1 }()
+			}
+			if err := syncer.SyncVariants(p.Variants); err != nil {
+				lg.Warnf("shopify add variant: %v", err)
+				return
+			}
+			if err := syncer.SyncImages(p.Images); err != nil {
+				lg.Warnf("shopify add images: %v", err)
+				return
+			}
+			if err := syncer.SyncScore(); err != nil {
+				lg.Warnf("shopify score%v", err)
+				return
+			}
+			syncer.Finalize()
+		}(ctx)
 	}
 	return nil
 }

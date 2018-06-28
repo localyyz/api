@@ -12,17 +12,80 @@ import (
 	db "upper.io/db.v3"
 )
 
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type shopifyImageSyncer struct {
-	Client    HttpClient
 	Product   *data.Product
+	toSaves   []*data.ProductImage
+	toRemoves []*data.ProductImage
+	dbImages  []*data.ProductImage
+
+	// interface for fetching http
+	HTTPClient
+	// interface for finalizing
+	Finalizer
+	// interface for fetching
+	Fetcher
+}
+
+type shopifyImageFinalizer struct {
 	toSaves   []*data.ProductImage
 	toRemoves []*data.ProductImage
 }
 
+type shopifyImageFetcher struct{}
+
+func (s *shopifyImageFinalizer) Finalize() error {
+	for _, img := range s.toSaves {
+		data.DB.ProductImage.Save(img)
+
+		// if img has variant ids associated, save to pivot table
+		for _, vID := range img.VariantIDs {
+			var variant *data.ProductVariant
+			err := data.DB.ProductVariant.Find(
+				db.Cond{"offer_id": vID},
+			).Select("id").One(&variant)
+			if err != nil {
+				return err
+			}
+			err = data.DB.VariantImage.Create(data.VariantImage{
+				VariantID: variant.ID,
+				ImageID:   img.ID,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for _, img := range s.toRemoves {
+		if err := data.DB.ProductImage.Delete(img); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *shopifyImageSyncer) Finalize() error {
+	if s.Finalizer == nil {
+		s.Finalizer = &shopifyImageFinalizer{
+			toSaves:   s.toSaves,
+			toRemoves: s.toRemoves,
+		}
+	}
+	return s.Finalizer.Finalize()
+}
+
+var (
+	ErrInvalidImage = errors.New("invalid image")
+)
+
 // fetches existing product images from the database.
 // function is abstracted so the db call can be mocked/tested
-func (s *shopifyImageSyncer) FetchProductImages() ([]*data.ProductImage, error) {
-	return data.DB.ProductImage.FindByProductID(s.Product.ID)
+func (s *shopifyImageFetcher) Fetch(cond db.Cond, sliceOfStructs interface{}) error {
+	err := data.DB.ProductImage.Find(cond).All(sliceOfStructs)
+	return err
 }
 
 func (s *shopifyImageSyncer) ValidateImages() bool {
@@ -31,11 +94,16 @@ func (s *shopifyImageSyncer) ValidateImages() bool {
 		if err != nil {
 			lg.Warnf("Error: Could not create http request for image id: %d", val.ID)
 		}
-		res, err := s.Client.Do(req)
+
+		if s.HTTPClient == nil {
+			s.HTTPClient = http.DefaultClient
+		}
+
+		res, err := s.Do(req)
 		if err != nil {
 			lg.Warnf("Error: Could not load image url for image id: %d", val.ID)
 		}
-		if res.StatusCode != 200 {
+		if res.StatusCode != http.StatusOK {
 			return false
 		}
 	}
@@ -46,43 +114,24 @@ func (s *shopifyImageSyncer) GetProduct() *data.Product {
 	return s.Product
 }
 
-func (s *shopifyImageSyncer) Finalize(toSaves, toRemoves []*data.ProductImage) error {
-	for _, img := range toSaves {
-
-		data.DB.ProductImage.Save(img)
-
-		// if img has variant ids associated, save to pivot table
-		for _, vID := range img.VariantIDs {
-			var variant *data.ProductVariant
-			err := data.DB.ProductVariant.Find(db.Cond{
-				"offer_id": vID,
-			}).Select("id").One(&variant)
-			if err != nil {
-				lg.Warnf("failed to fetch variant(%d) with %+v", vID, err)
-				continue
-			}
-			err = data.DB.VariantImage.Create(data.VariantImage{
-				VariantID: variant.ID,
-				ImageID:   img.ID,
-			})
-			if err != nil {
-				lg.Warnf("failed to save variant image with %+v", err)
-			}
-		}
+func getScore(img *shopify.ProductImage) int64 {
+	if img.Width >= MinimumImageWidth {
+		return 1
 	}
-
-	for _, img := range toRemoves {
-		data.DB.ProductImage.Delete(img)
-	}
-
-	return nil
+	return 0
 }
 
-func setImages(syncer productImageSyncer, imgs ...*shopify.ProductImage) error {
+func (s *shopifyImageSyncer) Sync(imgs []*shopify.ProductImage) error {
+	if len(imgs) == 0 {
+		return ErrInvalidImage
+	}
 
+	if s.Fetcher == nil {
+		s.Fetcher = &shopifyImageFetcher{}
+	}
 	//getting the images from product_images for product
-	dbImages, err := syncer.FetchProductImages()
-	if err != nil {
+	var dbImages []*data.ProductImage
+	if err := s.Fetch(db.Cond{"product_id": s.Product.ID}, &dbImages); err != nil {
 		return err
 	}
 
@@ -92,20 +141,14 @@ func setImages(syncer productImageSyncer, imgs ...*shopify.ProductImage) error {
 		dbImagesMap[img.ExternalID] = img
 	}
 
+	// set of images that should be kept
 	syncImagesSet := set.New()
-	var toSaves []*data.ProductImage
-
 	for _, img := range imgs {
-		if syncImagesSet.Has(img.ID) {
-			// duplicate image, pass
-			continue
-		}
-
-		// image external id set needs to be synced
+		// add to image sets.
 		syncImagesSet.Add(img.ID)
 
+		// ignored. image already in database
 		if _, ok := dbImagesMap[img.ID]; ok {
-			// ignored. image already saved
 			continue
 		}
 
@@ -113,29 +156,31 @@ func setImages(syncer productImageSyncer, imgs ...*shopify.ProductImage) error {
 		imgUrl.Scheme = "https"
 		// remove any query params
 		imgUrl.RawQuery = ""
-		toSaves = append(toSaves, &data.ProductImage{
-			ProductID:  syncer.GetProduct().ID,
+
+		s.toSaves = append(s.toSaves, &data.ProductImage{
+			ProductID:  s.GetProduct().ID,
 			ExternalID: img.ID,
 			ImageURL:   imgUrl.String(),
 			Ordering:   int32(img.Position),
 			VariantIDs: img.VariantIds,
 			Width:      img.Width,
 			Height:     img.Height,
+			Score:      getScore(img),
 		})
 	}
 
-	// for images not in update, remove them
-	var toRemoves []*data.ProductImage
-	for _, toRemove := range dbImagesMap {
-		if !syncImagesSet.Has(toRemove.ExternalID) {
-			toRemoves = append(toRemoves, toRemove)
+	// for the images in database but not in the
+	// shopify images list. remove them
+	for _, img := range dbImagesMap {
+		if !syncImagesSet.Has(img.ExternalID) {
+			s.toRemoves = append(s.toRemoves, img)
 		}
 	}
 
-	if !syncer.ValidateImages() {
-		return errors.New("Error: 404 image url")
+	if !s.ValidateImages() {
+		return ErrInvalidImage
 	}
 
-	//save the images
-	return syncer.Finalize(toSaves, toRemoves)
+	//save or remove the images
+	return s.Finalize()
 }

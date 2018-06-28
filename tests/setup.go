@@ -12,6 +12,8 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web"
+	"github.com/pressly/lg"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,6 +34,9 @@ func (env *Env) Close() {
 func SetupEnv(t *testing.T) *Env {
 	config, err := config.NewFromFile("", os.Getenv("CONFIG"))
 	require.NoError(t, err, "CONFIG env must be set")
+
+	debugLv, _ := logrus.ParseLevel("debug")
+	lg.DefaultLogger.SetLevel(debugLv)
 
 	// initiate database
 	cmd := exec.Command("/bin/sh", os.Getenv("DBSCRIPTS"), "reset", config.DB.Database)

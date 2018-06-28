@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/gedex/inflector"
 	"github.com/gosimple/slug"
+	"github.com/pkg/errors"
 	set "gopkg.in/fatih/set.v0"
 )
 
@@ -56,6 +57,11 @@ var (
 		"slip-on",
 		"lexi-noel",
 	}
+)
+
+var (
+	ErrBlacklisted = errors.New("blacklisted")
+	ErrNoCategory  = errors.New("no category")
 )
 
 type aggregateCategory []*data.Category
@@ -157,7 +163,27 @@ func parseGender(ctx context.Context, tokens []string) data.ProductGender {
 	return data.ProductGenderUnisex
 }
 
-func ParseProduct(ctx context.Context, inputs ...string) data.Category {
+func ParseProduct(ctx context.Context, inputs ...string) (data.Category, error) {
+	// search blacklist first.  if blacklisted, just return
+	// NOTE:
+	//  of course. this is pretty aggressive. ie. if we catch anything inside of
+	//  the blacklist we basically throw the product out.
+	//
+	//  cases ilike... `iPhone print tshirt` wouldn't get a chance here
+	//
+	//  create a logic map
+	//   - x blacklist + o category -> reject
+	//   - x blacklist + x category -> pending?
+	//   - o blacklist + o category -> pending?
+	//   - o blacklist + x category -> good
+	var err error
+	if SearchBlackList(ctx, inputs...) {
+		err = ErrBlacklisted
+	}
+	return searchCategoryList(ctx, inputs...), err
+}
+
+func searchCategoryList(ctx context.Context, inputs ...string) data.Category {
 	categoryCache, _ := ctx.Value(cacheKey).(map[string]*data.Category)
 	if categoryCache == nil {
 		// if by chance category cache is not given, generate it here
@@ -172,7 +198,11 @@ func ParseProduct(ctx context.Context, inputs ...string) data.Category {
 	place := ctx.Value("sync.place").(*data.Place)
 
 	var (
-		parsed        = data.Category{Gender: data.ProductGender(place.Gender)}
+		parsed = data.Category{
+			// NOTE assuming place Gender is (at least) Unisex
+			// which may not be true. it can be "unknown"
+			Gender: data.ProductGender(place.Gender),
+		}
 		categories    = set.New()
 		categoryCount = map[string]int{}
 	)
