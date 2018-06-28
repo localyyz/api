@@ -23,7 +23,6 @@ func ProductListingHandler(r *http.Request) (err error) {
 	if err := render.Bind(r, wrapper); err != nil {
 		return api.ErrInvalidRequest(err)
 	}
-	defer r.Body.Close()
 
 	ctx := r.Context()
 	ctx = context.WithValue(ctx, "sync.list", []*lib.ProductList{wrapper.ProductListing})

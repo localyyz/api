@@ -42,7 +42,14 @@ type ProductCategory struct {
 	*postgresql.JSONBConverter
 }
 
-var productStatuses = []string{"-", "pending", "processing", "approved", "rejected"}
+var productStatuses = []string{
+	"-",
+	"pending",
+	"processing",
+	"approved",
+	"rejected",
+	"deleted",
+}
 
 type ProductStatus uint32
 
@@ -52,6 +59,7 @@ const (
 	ProductStatusProcessing                      //2
 	ProductStatusApproved                        //3
 	ProductStatusRejected                        //4
+	ProductStatusDeleted                         //5
 )
 
 type ProductGender uint32
