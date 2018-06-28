@@ -44,7 +44,7 @@ func (s *productSyncer) SyncVariants(variants []*shopify.ProductVariant) error {
 func (s *productSyncer) SyncImages(images []*shopify.ProductImage) error {
 	if err := (&shopifyImageSyncer{Product: s.product}).Sync(images); err != nil {
 		if err == ErrInvalidImage {
-			// rejected. no inventory quantity
+			// rejected. one or more images are invalid
 			s.FinalizeStatus(data.ProductStatusRejected)
 		}
 		// TODO: if error is detected. retry?

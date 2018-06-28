@@ -79,6 +79,7 @@ func (s *shopifyImageSyncer) Finalize() error {
 
 var (
 	ErrInvalidImage = errors.New("invalid image")
+	ErrEmptyImage   = errors.New("empty image")
 )
 
 // fetches existing product images from the database.
@@ -123,7 +124,7 @@ func getScore(img *shopify.ProductImage) int64 {
 
 func (s *shopifyImageSyncer) Sync(imgs []*shopify.ProductImage) error {
 	if len(imgs) == 0 {
-		return ErrInvalidImage
+		return ErrEmptyImage
 	}
 
 	if s.Fetcher == nil {
