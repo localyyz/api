@@ -7,7 +7,6 @@ import (
 	s "sync"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
@@ -71,14 +70,14 @@ func (s *toolScorer) CheckPriority() bool {
 func scoreWorker(ctx context.Context, chn chan scoreProductList, wg s.WaitGroup) {
 	defer wg.Done()
 
-	placeCache := ctx.Value("place.cache").(map[int64]*data.Place)
+	//placeCache := ctx.Value("place.cache").(map[int64]*data.Place)
 
-	for pl := range chn {
-		for _, p := range pl {
-			sync.ScoreProduct(&toolScorer{Product: p, Place: placeCache[p.PlaceID]})
-			data.DB.Product.Save(p)
-		}
-	}
+	//for pl := range chn {
+	//for _, p := range pl {
+	//sync.ScoreProduct(&toolScorer{Product: p, Place: placeCache[p.PlaceID]})
+	//data.DB.Product.Save(p)
+	//}
+	//}
 }
 
 type scoreProductList []*data.Product
