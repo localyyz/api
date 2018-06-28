@@ -70,6 +70,7 @@ const (
 	MerchantApprovalRejectionReputation                                // 3
 	MerchantApprovalRejectionReturns                                   // 4
 	MerchantApprovalRejectionWebsite                                   // 5
+	MerchantApprovalRejectionInternational                             // 6
 )
 
 const (
