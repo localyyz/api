@@ -19,57 +19,43 @@ type fixture struct {
 	// remove one image and add a new one
 	swapImageUpdate []*shopify.ProductList
 
+	// out of stock listing
+	outOfStock []*shopify.ProductList
+
 	testStore *data.Place
 }
 
 func (f *fixture) SetupData(t *testing.T) {
-	wrapper := struct {
+	type wrapper struct {
 		ProductListings []*shopify.ProductList `json:"product_listings"`
-	}{}
-	assert.NoError(t, json.Unmarshal(fixtures.ProductListingsCreate, &wrapper))
-
-	f.createListing = wrapper.ProductListings
-	assert.NotEmpty(t, f.createListing)
-
-	for _, p := range f.createListing {
-		pp := *p
-		// update a few things
-		for _, pv := range pp.Variants {
-			pv.InventoryQuantity += 10
-		}
-		f.updateListing = append(f.updateListing, &pp)
 	}
 
-	for _, p := range f.createListing {
-		pp := *p
-		// splice the first indexed image
-		swap := []*shopify.ProductImage{
-			{
-				ID:       123123123,
-				Position: 1,
-				Width:    1500,
-				Height:   1500,
-				Src:      "https://cdn.shopify.com/s/files/1/1976/6885/files/01-Lit-SpringSummer-Sale-App-Banner.jpg?6158053899319648995",
-			},
-		}
-		pp.Images = append(swap, pp.Images[1:]...)
-		f.swapImageUpdate = append(f.swapImageUpdate, &pp)
+	{ // initial create
+		w := &wrapper{}
+		assert.NoError(t, json.Unmarshal(fixtures.ProductListingsCreate, &w))
+		f.createListing = w.ProductListings
+		assert.NotEmpty(t, f.createListing)
 	}
 
-	for _, p := range f.createListing {
-		pp := *p
-		// splice the first indexed image
-		swap := []*shopify.ProductImage{
-			{
-				ID:       123123123,
-				Position: 1,
-				Width:    1500,
-				Height:   1500,
-				Src:      "https://cdn.shopify.com/s/files/1/1976/6885/files/01-Lit-SpringSummer-Sale-App-Banner.jpg?6158053899319648995",
-			},
-		}
-		pp.Images = append(swap, pp.Images[1:]...)
-		f.swapImageUpdate = append(f.swapImageUpdate, &pp)
+	{ // bump inventory by 10
+		w := &wrapper{}
+		assert.NoError(t, json.Unmarshal(fixtures.ProductListingsAddInventory, &w))
+		f.updateListing = w.ProductListings
+		assert.NotEmpty(t, f.updateListing)
+	}
+
+	{ // swap first image
+		w := &wrapper{}
+		assert.NoError(t, json.Unmarshal(fixtures.ProductListingsSwapImage, &w))
+		f.swapImageUpdate = w.ProductListings
+		assert.NotEmpty(t, f.swapImageUpdate)
+	}
+
+	{ // out of stock
+		w := &wrapper{}
+		assert.NoError(t, json.Unmarshal(fixtures.ProductListingsOutOfStock, &w))
+		f.outOfStock = w.ProductListings
+		assert.NotEmpty(t, f.outOfStock)
 	}
 
 	// setup shop

@@ -33,7 +33,7 @@ func (s *productSyncer) SyncVariants(variants []*shopify.ProductVariant) error {
 	if err := (&shopifyVariantSyncer{product: s.product}).Sync(variants); err != nil {
 		if err == ErrProductUnavailable {
 			// rejected. no inventory quantity
-			s.FinalizeStatus(data.ProductStatusRejected)
+			s.FinalizeStatus(data.ProductStatusOutofStock)
 		}
 		// TODO: if error is detected. retry?
 		return err

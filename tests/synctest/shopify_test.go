@@ -216,6 +216,60 @@ func (suite *SyncTestSuite) TestSyncProductListingSwapImage() {
 	}
 }
 
+func (suite *SyncTestSuite) TestSyncProductListingOutofStock() {
+	ctx := context.WithValue(context.Background(), "sync.place", suite.testStore)
+	ctx = context.WithValue(ctx, "sync.list", suite.outOfStock)
+	listener := make(sync.Listener)
+	ctx = context.WithValue(ctx, sync.SyncListenerCtxKey, listener)
+	suite.NoError(sync.ShopifyProductListingsUpdate(ctx))
+	<-listener
+
+	// now check for what's inserted.
+	product, err := data.DB.Product.FindOne(
+		db.Cond{
+			"place_id":    suite.testStore.ID,
+			"external_id": suite.updateListing[0].ProductID,
+		},
+	)
+	suite.NoError(err)
+	suite.NotNil(product)
+
+	// check product syncs
+	suite.Equal(data.ProductStatusOutofStock, product.Status)
+}
+
+func (suite *SyncTestSuite) TestSyncProductListingRestock() {
+	ctx := context.WithValue(context.Background(), "sync.place", suite.testStore)
+	{
+		ctx = context.WithValue(ctx, "sync.list", suite.outOfStock)
+		listener := make(sync.Listener)
+		ctx = context.WithValue(ctx, sync.SyncListenerCtxKey, listener)
+		suite.NoError(sync.ShopifyProductListingsUpdate(ctx))
+		<-listener
+	}
+
+	{
+		ctx = context.WithValue(ctx, "sync.list", suite.updateListing)
+		listener := make(sync.Listener)
+		ctx = context.WithValue(ctx, sync.SyncListenerCtxKey, listener)
+		suite.NoError(sync.ShopifyProductListingsUpdate(ctx))
+		<-listener
+	}
+
+	// now check for what's inserted.
+	product, err := data.DB.Product.FindOne(
+		db.Cond{
+			"place_id":    suite.testStore.ID,
+			"external_id": suite.updateListing[0].ProductID,
+		},
+	)
+	suite.NoError(err)
+	suite.NotNil(product)
+
+	// check product syncs
+	suite.Equal(data.ProductStatusApproved, product.Status)
+}
+
 func atof(a string) float64 {
 	f, _ := strconv.ParseFloat(a, 64)
 	return f
