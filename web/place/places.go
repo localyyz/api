@@ -44,13 +44,13 @@ func PlaceCtx(next http.Handler) http.Handler {
 }
 
 func List(w http.ResponseWriter, r *http.Request) {
+	// DEPRECATED
 	render.Respond(w, r, []struct{}{})
 }
 
 func ListFeatured(w http.ResponseWriter, r *http.Request) {
-	places, _ := data.DB.Place.FindFeaturedMerchants()
-	ctx := context.WithValue(r.Context(), "with.preview", true)
-	render.RenderList(w, r, presenter.NewPlaceList(ctx, places))
+	// DEPRECATED
+	render.Respond(w, r, []struct{}{})
 }
 
 func GetPlace(w http.ResponseWriter, r *http.Request) {
