@@ -270,6 +270,48 @@ func (suite *SyncTestSuite) TestSyncProductListingRestock() {
 	suite.Equal(data.ProductStatusApproved, product.Status)
 }
 
+func (suite *SyncTestSuite) TestSyncProductListingDiscount() {
+	ctx := context.WithValue(context.Background(), "sync.place", suite.testStore)
+	{
+		ctx = context.WithValue(ctx, "sync.list", suite.discount)
+		listener := make(sync.Listener)
+		ctx = context.WithValue(ctx, sync.SyncListenerCtxKey, listener)
+		suite.NoError(sync.ShopifyProductListingsUpdate(ctx))
+		<-listener
+	}
+
+	// now check for what's inserted.
+	product, err := data.DB.Product.FindOne(
+		db.Cond{
+			"place_id":    suite.testStore.ID,
+			"external_id": suite.discount[0].ProductID,
+		},
+	)
+	suite.NoError(err)
+	suite.NotNil(product)
+
+	suite.EqualValues(0.1, product.DiscountPct)
+	suite.EqualValues(100.0, product.Price)
+
+	{ // check variant syncs
+		variants, err := data.DB.ProductVariant.FindByProductID(product.ID)
+		suite.NoError(err)
+		suite.NotEmpty(variants)
+
+		suite.Equal(len(suite.discount[0].Variants), len(variants))
+		variantMap := make(map[int64]*shopify.ProductVariant)
+		for _, v := range suite.discount[0].Variants {
+			variantMap[v.ID] = v
+		}
+
+		for _, v := range variants {
+			suite.EqualValues(atof(variantMap[v.OfferID].Price), v.Price)
+			suite.EqualValues(atof(variantMap[v.OfferID].CompareAtPrice), v.PrevPrice)
+		}
+	}
+
+}
+
 func atof(a string) float64 {
 	f, _ := strconv.ParseFloat(a, 64)
 	return f

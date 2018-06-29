@@ -29,5 +29,5 @@ func setPrices(a, b string) (price, comparePrice float64) {
 
 func pctRound(value float64, precision float64) float64 {
 	multiplier := math.Pow(10.0, precision)
-	return math.Round(value*multiplier) / multiplier
+	return math.Round((1.0-value)*multiplier) / multiplier
 }

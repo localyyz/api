@@ -22,6 +22,9 @@ type fixture struct {
 	// out of stock listing
 	outOfStock []*shopify.ProductList
 
+	// discount
+	discount []*shopify.ProductList
+
 	testStore *data.Place
 }
 
@@ -56,6 +59,13 @@ func (f *fixture) SetupData(t *testing.T) {
 		assert.NoError(t, json.Unmarshal(fixtures.ProductListingsOutOfStock, &w))
 		f.outOfStock = w.ProductListings
 		assert.NotEmpty(t, f.outOfStock)
+	}
+
+	{ // discount
+		w := &wrapper{}
+		assert.NoError(t, json.Unmarshal(fixtures.ProductListingsDiscount, &w))
+		f.discount = w.ProductListings
+		assert.NotEmpty(t, f.discount)
 	}
 
 	// setup shop
