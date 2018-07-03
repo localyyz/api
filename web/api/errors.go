@@ -56,6 +56,9 @@ var (
 	errOutOfStockCart = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "one or more items in your cart are out of stock"}
 	errOutOfStockAdd  = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "this variant is out of stock."}
 
+	/* Lightning Section */
+	ErrExpired = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "expired interval", ErrorText: "the products from this lightning interval have expired"}
+
 	// generic api error
 	errGeneric  = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Something went wrong"}
 	errDatabase = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Failed. Please try again."}

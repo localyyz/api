@@ -50,6 +50,33 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/*checking if the user is attempting to add an item from an expired deal*/
+	var collectionProduct []*data.CollectionProduct
+	res := data.DB.CollectionProduct.Find(db.Cond{"product_id":payload.ProductID}).Limit(1)
+	res.All(&collectionProduct)
+
+	//product is part of a collection
+	if len(collectionProduct) == 1 {
+		//getting the collection
+		collection, _ := data.DB.Collection.FindByID(collectionProduct[0].CollectionID)
+		//we only care if its a lightning collection
+		if collection.Lightning{
+			if collection.Status == data.CollectionStatusInactive || collection.Status == data.CollectionStatusQueued {
+				render.Render(w, r, api.ErrExpired)
+				return
+			} else {
+				//the cron might not be in sync therefore we need to check percentage completion as well
+				percentComplete := data.DB.Collection.GetCompletionPercent(collection)
+				if percentComplete == 1 {
+					render.Render(w, r, api.ErrExpired)
+					return
+				}
+			}
+		}
+
+	}
+
+
 	// fetch the variant from given payload (product id, color and size)
 	variant, err := data.DB.ProductVariant.FindOne(
 		db.Cond{

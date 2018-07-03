@@ -3,9 +3,11 @@ package data
 import (
 	"time"
 
+	"fmt"
 	"upper.io/bond"
 	"upper.io/db.v3"
 	"upper.io/db.v3/postgresql"
+	"math"
 )
 
 type Collection struct {
@@ -20,6 +22,12 @@ type Collection struct {
 
 	Ordering  int32      `db:"ordering" json:"ordering"`
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
+
+	Lightning bool             `db:"lightning" json:"lightning"`
+	StartTime *time.Time       `db:"time_start" json:"startTime"`
+	EndTime   *time.Time       `db:"time_end" json:"endTime"`
+	Status    CollectionStatus `db:"status" json:"status"`
+	Cap       int64            `db:"cap" json:"cap"`
 }
 
 type CollectionStore struct {
@@ -35,11 +43,23 @@ type CollectionProduct struct {
 	CollectionID int64      `db:"collection_id" json:"collection_id"`
 	ProductID    int64      `db:"product_id" json:"product_id"`
 	CreatedAt    *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
+	Inventory    int64      `db:"inventory" json:"inventory"`
 }
 
 type CollectionProductStore struct {
 	bond.Store
 }
+
+type CollectionStatus int32
+
+const (
+	_                        CollectionStatus = iota //0
+	CollectionStatusActive                           //1
+	CollectionStatusInactive                         //2
+	CollectionStatusQueued                           //3
+)
+
+var collectionStatuses = []string{"active", "inactive", "queued"}
 
 func (*CollectionProduct) CollectionName() string {
 	return `collection_products`
@@ -67,6 +87,34 @@ func (store CollectionStore) FindAll(cond db.Cond) ([]*Collection, error) {
 	return collections, nil
 }
 
+/*
+	Returns the completion percent(0.0-1) of a collection
+*/
+func (store CollectionStore) GetCompletionPercent(collection *Collection) float64 {
+	var checkouts []*Checkout
+	DB.Select("ck.*").
+		From("collection_products as cp").
+		Join("cart_items as ci").On("cp.product_id = ci.product_id").
+		Join("checkouts as ck").On("ci.checkout_id = ck.id").
+		Where(
+		db.And(
+			db.Cond{
+				"cp.collection_id": collection.ID,
+				"ck.status":        CheckoutStatusPaymentSuccess,
+			},
+			db.Raw("ci.checkout_id IS NOT NULL"),
+		),
+	).All(&checkouts)
+	itemsSold := len(checkouts)
+
+	// better to be safe dividing by 0
+	if collection.Cap != 0 {
+		return (math.Round(float64(itemsSold)/float64(collection.Cap)*100) / 100)
+	} else {
+		return 0
+	}
+}
+
 func (store CollectionProductStore) FindByCollectionID(collectionID int64) ([]*CollectionProduct, error) {
 	return DB.CollectionProduct.FindAll(db.Cond{"collection_id": collectionID})
 }
@@ -78,4 +126,23 @@ func (store CollectionProductStore) FindAll(cond db.Cond) ([]*CollectionProduct,
 		return nil, err
 	}
 	return collections, nil
+}
+
+func (c CollectionStatus) String() string {
+	return collectionStatuses[c]
+}
+
+func (c CollectionStatus) MarshallText() ([]byte, error) {
+	return []byte(c.String()), nil
+}
+
+func (c *CollectionStatus) UnmarshallText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(collectionStatuses); i++ {
+		if enum == collectionStatuses[i] {
+			*c = CollectionStatus(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown collection status %s", enum)
 }

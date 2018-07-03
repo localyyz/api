@@ -595,6 +595,72 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountFailure() {
 	}
 }
 
+
+func (suite *CheckoutTestSuite) TestHappyExpressCheckout() {
+
+	{ // verify default cart exists
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/carts/express", suite.env.URL), nil)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user3.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		assert.Equal(suite.T(), http.StatusOK, rr.StatusCode)
+	}
+
+	{ // verify add to cart as user
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{"variantId": suite.variantInStock.ID})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/express/items", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user3.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusCreated, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	/*
+	{ // pay.
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]*shopper.PaymentCard{
+			"payment": {
+				Number: "4242424242424242",
+				Expiry: "12/22",
+				Name:   "User Localyyz",
+				CVC:    "123",
+			},
+		})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/express/pay", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user1.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+
+		var cart *presenter.Cart
+		json.NewDecoder(rr.Body).Decode(&cart)
+
+		// validate cart
+		assert.NotNil(suite.T(), cart)
+		assert.Equal(suite.T(), data.CartStatusComplete, cart.Status)
+		if assert.NotNil(suite.T(), cart.Checkouts) {
+			assert.Equal(suite.T(), data.CheckoutStatusPaymentSuccess, cart.Checkouts[0].Status)
+
+			dbCheckout, err := data.DB.Checkout.FindOne(db.Cond{"id": cart.Checkouts[0].ID})
+			require.NoError(suite.T(), err)
+			assert.NotEmpty(suite.T(), dbCheckout.SuccessPaymentID)
+		}
+	}
+	*/
+}
+
+
+
 func TestCheckoutTestSuite(t *testing.T) {
 	suite.Run(t, new(CheckoutTestSuite))
 }
