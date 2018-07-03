@@ -110,6 +110,15 @@ var (
 	}
 
 	merchantApprovalPriceRanges = []string{"-", "low", "medium", "high"}
+
+	merchantApprovalRejectionReasons = []string{
+		"unknown",
+		"product_quality",
+		"reputation",
+		"returns",
+		"website",
+		"international",
+	}
 )
 
 func (m *MerchantApproval) CollectionName() string {
@@ -186,4 +195,26 @@ func (s *MerchantApprovalPriceRange) UnmarshalText(text []byte) error {
 		}
 	}
 	return fmt.Errorf("unknown merchant price range %s", enum)
+}
+
+// String returns the string value of the status.
+func (s MerchantApprovalRejection) String() string {
+	return merchantApprovalRejectionReasons[s]
+}
+
+// MarshalText satisfies TextMarshaler
+func (s MerchantApprovalRejection) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (s *MerchantApprovalRejection) UnmarshalText(text []byte) error {
+	enum := string(text)
+	for i := 0; i < len(merchantApprovalRejectionReasons); i++ {
+		if enum == merchantApprovalRejectionReasons[i] {
+			*s = MerchantApprovalRejection(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown merchant rejection reason %s", enum)
 }
