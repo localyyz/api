@@ -110,9 +110,10 @@ func fuzzySearch(ctx context.Context, rawParts ...string) (sqlbuilder.Selector, 
 	}
 
 	cond := db.Cond{
-		"p.deleted_at IS": nil,
-		"p.status":        data.ProductStatusApproved,
-		"pl.status":       data.PlaceStatusActive,
+		"p.deleted_at": db.IsNull(),
+		"p.status":     data.ProductStatusApproved,
+		"p.score":      db.Gt(0),
+		"pl.status":    data.PlaceStatusActive,
 	}
 	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
 		cond["p.gender"] = gender
@@ -157,8 +158,9 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	// modifier 4 => is the top 70th (another magical number) of our merchant
 	//      weights greater than 0
 	cond := db.Cond{
-		"p.deleted_at IS": nil,
-		"p.status":        data.ProductStatusApproved,
+		"p.deleted_at": db.IsNull(),
+		"p.status":     data.ProductStatusApproved,
+		"p.score":      db.Gt(0),
 	}
 	query := data.DB.Select(
 		db.Raw("p.id"),
