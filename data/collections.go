@@ -4,10 +4,10 @@ import (
 	"time"
 
 	"fmt"
+	"github.com/pressly/lg"
 	"upper.io/bond"
 	"upper.io/db.v3"
 	"upper.io/db.v3/postgresql"
-	"math"
 )
 
 type Collection struct {
@@ -43,7 +43,6 @@ type CollectionProduct struct {
 	CollectionID int64      `db:"collection_id" json:"collection_id"`
 	ProductID    int64      `db:"product_id" json:"product_id"`
 	CreatedAt    *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
-	Inventory    int64      `db:"inventory" json:"inventory"`
 }
 
 type CollectionProductStore struct {
@@ -90,29 +89,24 @@ func (store CollectionStore) FindAll(cond db.Cond) ([]*Collection, error) {
 /*
 	Returns the completion percent(0.0-1) of a collection
 */
-func (store CollectionStore) GetCompletionPercent(collection *Collection) float64 {
+func (store CollectionStore) GetCollectionCheckouts(collection *Collection) int {
 	var checkouts []*Checkout
 	DB.Select("ck.*").
 		From("collection_products as cp").
 		Join("cart_items as ci").On("cp.product_id = ci.product_id").
 		Join("checkouts as ck").On("ci.checkout_id = ck.id").
 		Where(
-		db.And(
-			db.Cond{
-				"cp.collection_id": collection.ID,
-				"ck.status":        CheckoutStatusPaymentSuccess,
-			},
-			db.Raw("ci.checkout_id IS NOT NULL"),
-		),
-	).All(&checkouts)
-	itemsSold := len(checkouts)
+			db.And(
+				db.Cond{
+					"cp.collection_id": collection.ID,
+					"ck.status":        CheckoutStatusPaymentSuccess,
+				},
+				db.Raw("ci.checkout_id IS NOT NULL"),
+			),
+		).All(&checkouts)
 
-	// better to be safe dividing by 0
-	if collection.Cap != 0 {
-		return (math.Round(float64(itemsSold)/float64(collection.Cap)*100) / 100)
-	} else {
-		return 0
-	}
+	return len(checkouts)
+
 }
 
 func (store CollectionProductStore) FindByCollectionID(collectionID int64) ([]*CollectionProduct, error) {
@@ -145,4 +139,39 @@ func (c *CollectionStatus) UnmarshallText(text []byte) error {
 		}
 	}
 	return fmt.Errorf("unknown collection status %s", enum)
+}
+
+func CheckCollectionExpireTime() {
+	collections, err := DB.Collection.FindAll(db.Cond{"lightning": true, "status": CollectionStatusActive})
+	if err != nil {
+		return
+	}
+	for _, collection := range collections {
+		time := time.Now()
+		if collection.EndTime != nil {
+			if collection.EndTime.Before(time) {
+				collection.Status = CollectionStatusInactive
+				if err := DB.Save(collection); err != nil {
+					lg.Warn("Error: failed to set the collection status to inactive")
+				}
+			}
+		}
+	}
+}
+
+func CheckCapLimit() {
+	collections, err := DB.Collection.FindAll(db.Cond{"lightning": true, "status": CollectionStatusActive})
+	if err != nil {
+		lg.Warn("Error: could not retrieve collections for cron job")
+	}
+	for _, collection := range collections {
+		totalCheckouts := DB.Collection.GetCollectionCheckouts(collection)
+		if int64(totalCheckouts) >= collection.Cap {
+			collection.Status = CollectionStatusInactive
+			if err := DB.Save(collection); err != nil {
+				lg.Warn("Error: failed to set the collection status to inactive")
+			}
+		}
+	}
+
 }

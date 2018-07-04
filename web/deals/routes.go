@@ -33,7 +33,7 @@ func getActiveLightningCollections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collectionsWithFeaturedProducts, err := presenter.PresentLightningCollection(collections)
+	collectionsWithFeaturedProducts, err := presenter.PresentActiveLightningCollection(collections)
 	if err != nil {
 		render.Respond(w, r, err)
 	}
@@ -59,7 +59,7 @@ func getUpcomingLightningCollections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collectionsWithFeaturedProducts, err := presenter.PresentLightningCollection(collections)
+	collectionsWithFeaturedProducts, err := presenter.PresentUpcomingLightningCollection(collections)
 	if err != nil {
 		render.Respond(w, r, err)
 	}

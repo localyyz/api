@@ -58,7 +58,7 @@ var (
 
 	/* Lightning Section */
 	ErrExpired = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "expired interval", ErrorText: "the products from this lightning interval have expired"}
-
+	ErrLightningOutOfStock = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out of stock", ErrorText: "the products from this lightning collection have been sold out"}
 	// generic api error
 	errGeneric  = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Something went wrong"}
 	errDatabase = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Failed. Please try again."}

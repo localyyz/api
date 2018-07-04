@@ -3,6 +3,7 @@ package presenter
 import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/go-chi/render"
+	"math"
 	"net/http"
 	"upper.io/db.v3"
 )
@@ -21,7 +22,7 @@ func (c *LightningCollection) Render(w http.ResponseWriter, r *http.Request) err
 	Calculates the percentage complete -> counts the number of checkouts for the products in the collection
 	Selects one product -> retrieves the first product from the collection which is in stock
 */
-func PresentLightningCollection(collections []*data.Collection) ([]render.Renderer, error) {
+func PresentActiveLightningCollection(collections []*data.Collection) ([]render.Renderer, error) {
 	list := []render.Renderer{}
 	for _, collection := range collections {
 		lightningCollection := &LightningCollection{}
@@ -29,8 +30,12 @@ func PresentLightningCollection(collections []*data.Collection) ([]render.Render
 		//setting the collection
 		lightningCollection.Collection = collection
 
-		percentComplete := data.DB.Collection.GetCompletionPercent(collection)
-		lightningCollection.PercentageComplete = percentComplete
+		totalCheckouts := data.DB.Collection.GetCollectionCheckouts(collection)
+		// better to be safe dividing by 0
+		if collection.Cap != 0 {
+			completionPercent := math.Round(float64(totalCheckouts)/float64(collection.Cap)*100) / 100
+			lightningCollection.PercentageComplete = completionPercent
+		}
 
 		// getting the product
 		var lightningProduct *data.Product
@@ -54,6 +59,28 @@ func PresentLightningCollection(collections []*data.Collection) ([]render.Render
 		}
 		//append the product
 		lightningCollection.Product = lightningProduct
+
+		//append to the final list to return
+		list = append(list, lightningCollection)
+	}
+
+	return list, nil
+}
+
+func PresentUpcomingLightningCollection(collections []*data.Collection) ([]render.Renderer, error){
+	list := []render.Renderer{}
+	for _, collection := range collections {
+		lightningCollection := &LightningCollection{}
+
+		//setting the collection
+		lightningCollection.Collection = collection
+
+		totalCheckouts := data.DB.Collection.GetCollectionCheckouts(collection)
+		// better to be safe dividing by 0
+		if collection.Cap != 0 {
+			completionPercent := math.Round(float64(totalCheckouts)/float64(collection.Cap)*100) / 100
+			lightningCollection.PercentageComplete = completionPercent
+		}
 
 		//append to the final list to return
 		list = append(list, lightningCollection)

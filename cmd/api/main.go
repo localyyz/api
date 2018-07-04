@@ -16,6 +16,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
+	"github.com/robfig/cron"
 	"github.com/zenazn/goji/graceful"
 )
 
@@ -59,11 +60,10 @@ func main() {
 		}
 	}
 
-	// cron puller
-	//c := cron.New()
-	// run every 2 days at 1am
-	//c.AddFunc("0 0 1 * * */2", scraper.ShopifyScraper)
-	//c.Start()
+	c := cron.New()
+	c.AddFunc("@every 5s", func() { data.CheckCollectionExpireTime() })
+	c.AddFunc("every 5s", func() { data.CheckCapLimit() })
+	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
