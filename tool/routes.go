@@ -24,7 +24,6 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/products/score", syncProductImageScores)
 
 	r.Get("/products/update", UpdateCategories)
-	r.Get("/products/blacklist", BlacklistProducts)
 	r.Get("/products/count", GetMerchantProductCount)
 	r.Get("/places/active", ListActive)
 	r.Get("/places/permissions", ListPermissions)

@@ -90,7 +90,7 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 				return
 			}
 			if err := syncer.SyncScore(); err != nil {
-				lg.Warnf("shopify score%v", err)
+				lg.Warnf("shopify score: %v", err)
 				return
 			}
 			syncer.Finalize()
@@ -109,22 +109,24 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			// Skip any product _not_ available
 			continue
 		}
-		syncer := &productSyncer{
-			place: place,
-			product: &data.Product{
-				PlaceID:        place.ID,
-				ExternalID:     &p.ProductID,
-				ExternalHandle: p.Handle,
-				Title:          p.Title,
-				Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
-				Brand:          p.Vendor,
-				Status:         data.ProductStatusProcessing,
-			},
-		}
 
 		// validate product does not exist
 		if exist, _ := data.DB.Product.Find(db.Cond{"external_id": p.ProductID}).Exists(); exist {
 			return ErrProductExist
+		}
+
+		product := &data.Product{
+			PlaceID:        place.ID,
+			ExternalID:     &p.ProductID,
+			ExternalHandle: p.Handle,
+			Title:          p.Title,
+			Description:    htmlx.CaptionizeHtmlBody(p.BodyHTML, -1),
+			Brand:          p.Vendor,
+			Status:         data.ProductStatusProcessing,
+		}
+		syncer := &productSyncer{
+			place:   place,
+			product: product,
 		}
 
 		// find product category + gender
@@ -166,25 +168,26 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		lg.SetEntryField(ctx, "product_id", syncer.product.ID)
 
 		// async syncing of variants / product images
-		go func(ctx context.Context) {
+		go func(s *productSyncer) {
 			if listener, ok := ctx.Value(SyncListenerCtxKey).(Listener); ok {
 				// inform caller that we're done
 				defer func() { listener <- 1 }()
 			}
-			if err := syncer.SyncVariants(p.Variants); err != nil {
+			if err := s.SyncVariants(p.Variants); err != nil {
 				lg.Warnf("shopify add variant: %v", err)
 				return
 			}
-			if err := syncer.SyncImages(p.Images); err != nil {
+			if err := s.SyncImages(p.Images); err != nil {
 				lg.Warnf("shopify add images: %v", err)
 				return
 			}
-			if err := syncer.SyncScore(); err != nil {
+			if err := s.SyncScore(); err != nil {
 				lg.Warnf("shopify score%v", err)
 				return
 			}
-			syncer.Finalize()
-		}(ctx)
+
+			s.Finalize()
+		}(syncer)
 	}
 	return nil
 }

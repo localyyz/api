@@ -133,7 +133,7 @@ func (s *shopifyImageSyncer) Sync(imgs []*shopify.ProductImage) error {
 	//getting the images from product_images for product
 	var dbImages []*data.ProductImage
 	if err := s.Fetch(db.Cond{"product_id": s.Product.ID}, &dbImages); err != nil {
-		return err
+		return errors.Wrap(err, "fetch")
 	}
 
 	//fill out a map using external image IDS
@@ -159,7 +159,7 @@ func (s *shopifyImageSyncer) Sync(imgs []*shopify.ProductImage) error {
 		imgUrl.RawQuery = ""
 
 		s.toSaves = append(s.toSaves, &data.ProductImage{
-			ProductID:  s.GetProduct().ID,
+			ProductID:  s.Product.ID,
 			ExternalID: img.ID,
 			ImageURL:   imgUrl.String(),
 			Ordering:   int32(img.Position),
