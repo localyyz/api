@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
-	db "upper.io/db.v3"
+	"upper.io/db.v3"
 )
 
 type cartItemRequest struct {
@@ -52,7 +52,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 
 	/*checking if the user is attempting to add an item from an expired deal*/
 	var collectionProduct []*data.CollectionProduct
-	res := data.DB.CollectionProduct.Find(db.Cond{"product_id":payload.ProductID}).Limit(1)
+	res := data.DB.CollectionProduct.Find(db.Cond{"product_id": payload.ProductID}).Limit(1)
 	res.All(&collectionProduct)
 
 	//product is part of a collection
@@ -60,22 +60,20 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		//getting the collection
 		collection, _ := data.DB.Collection.FindByID(collectionProduct[0].CollectionID)
 		//we only care if its a lightning collection
-		if collection.Lightning{
+		if collection.Lightning {
 			if collection.Status == data.CollectionStatusInactive || collection.Status == data.CollectionStatusQueued {
 				render.Render(w, r, api.ErrExpired)
 				return
 			} else {
 				//the cron might not be in sync therefore we need to check percentage completion as well
-				percentComplete := data.DB.Collection.GetCompletionPercent(collection)
-				if percentComplete == 1 {
-					render.Render(w, r, api.ErrExpired)
+				totalCheckouts := data.DB.Collection.GetCollectionCheckouts(collection)
+				if int64(totalCheckouts) == collection.Cap {
+					render.Render(w, r, api.ErrLightningOutOfStock)
 					return
 				}
 			}
 		}
-
 	}
-
 
 	// fetch the variant from given payload (product id, color and size)
 	variant, err := data.DB.ProductVariant.FindOne(
@@ -160,13 +158,13 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, presenter.NewCartItem(ctx, toSave))
 }
 
-type cartPaymentRequest struct {
+type CartPaymentRequest struct {
 	BillingAddress      *data.CartAddress `json:"billingAddress"`
 	ExpressPaymentToken string            `json:"expressPaymentToken"`
 	Email               string            `json:"email,omitempty"`
 }
 
-func (p *cartPaymentRequest) Bind(r *http.Request) error {
+func (p *CartPaymentRequest) Bind(r *http.Request) error {
 	if p.BillingAddress == nil {
 		return errors.New("invalid billing address")
 	}
@@ -189,12 +187,12 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	client := ctx.Value("shopify.client").(*shopify.Client)
 
 	lg.Infof("express cart(%d) start payment", cart.ID)
-	var payload cartPaymentRequest
+	var payload CartPaymentRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
-
+	
 	var (
 		placeID     int64
 		shopifyData *data.CartShopifyData
@@ -240,6 +238,8 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+
+
 	// 4. send payment to shopify
 	p, _, err := client.Checkout.Payment(ctx, shopifyData.Token, payment)
 	if err != nil {
@@ -248,6 +248,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		// TODO: do we return here?
 		return
 	}
+
 
 	// check payment transaction
 	if p.Transaction == nil {
