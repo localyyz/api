@@ -53,9 +53,9 @@ type CollectionStatus int32
 
 const (
 	_                        CollectionStatus = iota //0
-	CollectionStatusActive                           //1
-	CollectionStatusInactive                         //2
-	CollectionStatusQueued                           //3
+	CollectionStatusQueued                           //1
+	CollectionStatusActive                           //2
+	CollectionStatusInactive                         //3
 )
 
 var collectionStatuses = []string{"active", "inactive", "queued"}
