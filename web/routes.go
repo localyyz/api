@@ -21,6 +21,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
+	"bitbucket.org/moodie-app/moodie-api/web/deals"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -97,6 +98,7 @@ func (h *Handler) Routes() chi.Router {
 		r.Mount("/designers", designer.Routes())
 		r.Mount("/places", place.Routes())
 		r.Mount("/products", product.Routes())
+		r.Mount("/deals", deals.Routes())
 		r.Mount("/ping", ping.Routes())
 	})
 
@@ -109,7 +111,6 @@ func (h *Handler) Routes() chi.Router {
 	// Authed Routes
 	r.Group(func(r chi.Router) {
 		r.Use(auth.SessionCtx)
-
 		r.Mount("/session", session.Routes())
 		r.Mount("/users", user.Routes())
 		r.Mount("/carts", cart.Routes())

@@ -9,13 +9,19 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"github.com/go-chi/jwtauth"
 	"github.com/stretchr/testify/assert"
+	"time"
 )
 
 type fixture struct {
-	user1, user2, user3, user4, user5, user6, user7        auth.AuthUser
-	testStore                                              *data.Place
-	productInStock, productNotInStock                      *data.Product
-	variantInStock, variantNotInStock, variantWithDiscount *data.ProductVariant
+	user1, user2, user3, user4, user5, user6, user7, user8, user9, user10                                                          auth.AuthUser
+	testStore                                                                                                                      *data.Place
+	productInStock, productNotInStock, lightningProductValid, lightningProductExpired, lightningProductCapHit                      *data.Product
+	variantInStock, variantNotInStock, variantWithDiscount, variantLightningValid, variantLightningExpired, variantLightningCapHit *data.ProductVariant
+	lightningValid, lightningCapHit, lightningExpired                                                                              *data.Collection
+	collectionProductValid, collectionProductExpired, collectionProductCapHit                                                      data.CollectionProduct
+	cart                                                                                                                           *data.Cart
+	cartItem                                                                                                                       *data.CartItem
+	checkout                                                                                                                       *data.Checkout
 }
 
 func (f *fixture) setupUser(t *testing.T) {
@@ -26,6 +32,9 @@ func (f *fixture) setupUser(t *testing.T) {
 	f.user5 = newTestUser(t, 5)
 	f.user6 = newTestUser(t, 6)
 	f.user7 = newTestUser(t, 7)
+	f.user8 = newTestUser(t, 8)
+	f.user9 = newTestUser(t, 9)
+	f.user10 = newTestUser(t, 10)
 }
 
 func newTestUser(t *testing.T, n int) auth.AuthUser {
@@ -69,13 +78,38 @@ func (f *fixture) setupProduct(t *testing.T) {
 	}
 	assert.NoError(t, data.DB.Save(f.productNotInStock))
 
+	f.lightningProductValid = &data.Product{
+		Title:   "sample product in lightning collection",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.lightningProductValid))
+
+	f.lightningProductCapHit = &data.Product{
+		Title:   "sample product in lightning collection - collection cap hit",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.lightningProductCapHit))
+
+	f.lightningProductExpired = &data.Product{
+		Title:   "sample product in lightning collection - collection expired",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.lightningProductExpired))
+
 	// NOTE: https://best-test-store-toronto.myshopify.com/admin/products/10761547971.json
 	f.variantInStock = &data.ProductVariant{
 		ProductID: f.productInStock.ID,
 		PlaceID:   f.testStore.ID,
 		Price:     10,
-		Limits:    10,
+		Limits:    15,
 		OfferID:   43252300547,
+		Etc: data.ProductVariantEtc{
+			Size:  "small",
+			Color: "deep",
+		},
 	}
 	f.variantNotInStock = &data.ProductVariant{
 		ProductID: f.productNotInStock.ID,
@@ -88,18 +122,144 @@ func (f *fixture) setupProduct(t *testing.T) {
 		ProductID: f.productInStock.ID,
 		PlaceID:   f.testStore.ID,
 		Price:     10,
-		Limits:    10,
+		Limits:    15,
 		OfferID:   43252300611,
 	}
+	f.variantLightningValid = &data.ProductVariant{
+		ProductID: f.lightningProductValid.ID,
+		PlaceID:   f.testStore.ID,
+		Price:     10,
+		Limits:    10,
+		OfferID:   43252300547,
+		Etc: data.ProductVariantEtc{
+			Size:  "small",
+			Color: "deep",
+		},
+	}
+	f.variantLightningExpired = &data.ProductVariant{
+		ProductID: f.lightningProductExpired.ID,
+		PlaceID:   f.testStore.ID,
+		Price:     10,
+		Limits:    10,
+		OfferID:   43252300547,
+		Etc: data.ProductVariantEtc{
+			Size:  "small",
+			Color: "deep",
+		},
+	}
+	f.variantLightningCapHit = &data.ProductVariant{
+		ProductID: f.lightningProductCapHit.ID,
+		PlaceID:   f.testStore.ID,
+		Price:     10,
+		Limits:    10,
+		OfferID:   43252300547,
+		Etc: data.ProductVariantEtc{
+			Size:  "small",
+			Color: "deep",
+		},
+	}
+
 	assert.NoError(t, data.DB.Save(f.variantInStock))
 	assert.NoError(t, data.DB.Save(f.variantNotInStock))
 	assert.NoError(t, data.DB.Save(f.variantWithDiscount))
+	assert.NoError(t, data.DB.Save(f.variantLightningValid))
+	assert.NoError(t, data.DB.Save(f.variantLightningExpired))
+	assert.NoError(t, data.DB.Save(f.variantLightningCapHit))
+}
+
+func (f *fixture) SetupLightningCollection(t *testing.T) {
+	yesterday := time.Now().AddDate(0, 0, -1)
+	tomorrow := time.Now().AddDate(0, 0, 1)
+	f.lightningValid = &data.Collection{
+		Name:        "Valid Collection",
+		Description: "Test",
+		Lightning:   true,
+		StartAt:     &yesterday,
+		EndAt:       &tomorrow,
+		Cap:         1,
+		Status:      data.CollectionStatusActive,
+	}
+	f.lightningCapHit = &data.Collection{
+		Name:        "Cap Hit Collection",
+		Description: "Test",
+		Lightning:   true,
+		StartAt:     &yesterday,
+		EndAt:       &tomorrow,
+		Cap:         1,
+		Status:      data.CollectionStatusActive,
+	}
+	f.lightningExpired = &data.Collection{
+		Name:        "Expired Collection",
+		Description: "Test",
+		Lightning:   true,
+		StartAt:     &yesterday,
+		EndAt:       &yesterday,
+		Cap:         1,
+		Status:      data.CollectionStatusInactive,
+	}
+	assert.NoError(t, data.DB.Save(f.lightningValid))
+	assert.NoError(t, data.DB.Save(f.lightningCapHit))
+	assert.NoError(t, data.DB.Save(f.lightningExpired))
+}
+
+func (f *fixture) LinkProductsWithCollection(t *testing.T) {
+
+	f.collectionProductValid = data.CollectionProduct{
+		CollectionID: f.lightningValid.ID,
+		ProductID:    f.lightningProductValid.ID,
+	}
+
+	f.collectionProductExpired = data.CollectionProduct{
+		CollectionID: f.lightningExpired.ID,
+		ProductID:    f.lightningProductExpired.ID,
+	}
+
+	f.collectionProductCapHit = data.CollectionProduct{
+		CollectionID: f.lightningCapHit.ID,
+		ProductID:    f.lightningProductCapHit.ID,
+	}
+
+	assert.NoError(t, data.DB.CollectionProduct.Create(f.collectionProductValid))
+	assert.NoError(t, data.DB.CollectionProduct.Create(f.collectionProductExpired))
+	assert.NoError(t, data.DB.CollectionProduct.Create(f.collectionProductCapHit))
+}
+
+func (f *fixture) CreateCart(t *testing.T) {
+	f.cart = &data.Cart{
+		UserID: f.user9.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.cart))
+}
+
+func (f *fixture) CreateCartItems(t *testing.T) {
+	f.cartItem = &data.CartItem{
+		CartID:     f.cart.ID,
+		ProductID:  f.lightningProductCapHit.ID,
+		CheckoutID: &f.checkout.ID,
+		PlaceID:    f.testStore.ID,
+		VariantID:  f.variantLightningCapHit.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.cartItem))
+}
+
+func (f *fixture) CreateCheckout(t *testing.T) {
+	f.checkout = &data.Checkout{
+		Status:  data.CheckoutStatusPaymentSuccess,
+		PlaceID: f.testStore.ID,
+		UserID:  f.user9.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.checkout))
 }
 
 func (f *fixture) SetupData(t *testing.T) {
 	f.setupUser(t)
 	f.setupTestStores(t)
 	f.setupProduct(t)
+	f.SetupLightningCollection(t)
+	f.LinkProductsWithCollection(t)
+	f.CreateCart(t)
+	f.CreateCheckout(t)
+	f.CreateCartItems(t)
 }
 
 func (f *fixture) TeardownData(t *testing.T) {

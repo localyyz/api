@@ -1,22 +1,21 @@
 package endtoend
 
 import (
+	"bitbucket.org/moodie-app/moodie-api/tests"
+	"github.com/stretchr/testify/suite"
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"net/http"
+	"fmt"
+	"github.com/stretchr/testify/assert"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
-	"net/http"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"upper.io/db.v3"
+	"github.com/stretchr/testify/require"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopper"
 	"regexp"
 	"testing"
-
-	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/shopper"
-	"bitbucket.org/moodie-app/moodie-api/tests"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	db "upper.io/db.v3"
 )
 
 type CheckoutTestSuite struct {
@@ -37,6 +36,8 @@ func (suite *CheckoutTestSuite) TearDownSuite() {
 }
 
 // E2E checkout tests
+
+
 func (suite *CheckoutTestSuite) TestCheckoutSuccess() {
 	fullAddress := &data.CartAddress{
 		Address:   "123 Toronto Street",
@@ -132,9 +133,9 @@ func (suite *CheckoutTestSuite) TestCheckoutSuccess() {
 
 		if assert.NotNil(suite.T(), cart.Checkouts) {
 			// pricing
-			assert.Equal(suite.T(), 313.60, cart.Checkouts[0].SubtotalPrice)
-			assert.Equal(suite.T(), 364.84, cart.Checkouts[0].TotalPrice)
-			assert.Equal(suite.T(), "364.84", cart.Checkouts[0].PaymentDue)
+			assert.Equal(suite.T(), 213.60, cart.Checkouts[0].SubtotalPrice)
+			assert.Equal(suite.T(), 251.84, cart.Checkouts[0].TotalPrice)
+			assert.Equal(suite.T(), "251.84", cart.Checkouts[0].PaymentDue)
 
 			// shipping line
 			assert.NotNil(suite.T(), cart.Checkouts[0].ShippingLine)
@@ -143,7 +144,7 @@ func (suite *CheckoutTestSuite) TestCheckoutSuccess() {
 			// tax lines
 			assert.NotNil(suite.T(), cart.Checkouts[0].TaxLines)
 			assert.Equal(suite.T(), 0.13, cart.Checkouts[0].TaxLines[0].Rate)
-			assert.Equal(suite.T(), "40.77", cart.Checkouts[0].TaxLines[0].Price)
+			assert.Equal(suite.T(), "27.77", cart.Checkouts[0].TaxLines[0].Price)
 			assert.Equal(suite.T(), "HST", cart.Checkouts[0].TaxLines[0].Title)
 
 			// ids
@@ -403,6 +404,7 @@ func (suite *CheckoutTestSuite) TestCheckoutDoesNotShip() {
 	}
 }
 
+
 func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 	fullAddress := &data.CartAddress{
 		Address:   "123 Toronto Street",
@@ -505,6 +507,7 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 	}
 }
 
+
 func (suite *CheckoutTestSuite) TestCheckoutWithDiscountFailure() {
 	fullAddress := &data.CartAddress{
 		Address:   "123 Toronto Street",
@@ -594,6 +597,284 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountFailure() {
 		assert.Contains(suite.T(), cart.Error, "Unable to find a valid discount matching the code entered")
 	}
 }
+
+
+func (suite *CheckoutTestSuite) TestHappyExpressCheckout() {
+
+	{ // verify default cart exists
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/carts/express", suite.env.URL), nil)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user8.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		assert.Equal(suite.T(), http.StatusOK, rr.StatusCode)
+	}
+
+	{ // verify add to cart as user
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{"productId": suite.variantInStock.ProductID, "color": "deep", "size": "small", "quantity": 1})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/express/items", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user8.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	{
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{
+			"FirstName":    "Test",
+			"LastName":     "Test",
+			"Address":      "12 Deerford Road",
+			"AddressOpt":   "",
+			"City":         "Toronto",
+			"Country":      "Canada",
+			"CountryCode":  "CA",
+			"Province":     "Ontario",
+			"ProvinceCode": "ON",
+			"Zip":          "M2J3J3",
+			"isPartial": false,
+		})
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/carts/express/shipping/address", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user8.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	{
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{
+			"Handle": "canada_post-DOM.EP-10.47",
+		})
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/carts/express/shipping/method", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user8.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	{
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/carts/express/shipping/estimate", suite.env.URL), nil)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user8.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	{ // pay.
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{
+			"BillingAddress": &data.CartAddress{
+				FirstName:    "Test",
+				LastName:     "Test",
+				Address:      "12 Deerford Road",
+				AddressOpt:   "",
+				City:         "Toronto",
+				Country:      "Canada",
+				CountryCode:  "CA",
+				Province:     "Ontario",
+				ProvinceCode: "ON",
+				Zip:          "M2J3J3",
+			},
+			"Email":               "waseef@localyyz.com",
+			"ExpressPaymentToken": "tok_ca",
+		})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/express/pay", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user8.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+
+		var cart *presenter.Cart
+		json.NewDecoder(rr.Body).Decode(&cart)
+
+		// validate cart
+		assert.NotNil(suite.T(), cart)
+		assert.Equal(suite.T(), data.CartStatusPaymentSuccess, cart.Status)
+
+	}
+
+}
+
+
+func (suite *CheckoutTestSuite) TestExpiredLightningCollectionCheckout(){
+	{ // verify default cart exists
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/carts/express", suite.env.URL), nil)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user9.JWT))
+	}
+	{ // verify add to cart as user
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{"productId": suite.variantLightningExpired.ProductID, "color": "deep", "size": "small", "quantity": 1})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/express/items", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user9.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusBadRequest, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+}
+
+
+func (suite *CheckoutTestSuite) TestCapHitLightningCollectionCheckout(){
+	{ // verify default cart exists
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/carts/express", suite.env.URL), nil)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user9.JWT))
+	}
+	{ // verify add to cart as user
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{"productId": suite.variantLightningCapHit.ProductID, "color": "deep", "size": "small", "quantity": 1})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/express/items", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user9.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusBadRequest, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+}
+
+
+func (suite *CheckoutTestSuite) TestValidLightningCollectionCheckout(){
+	{ // verify default cart exists
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/carts/express", suite.env.URL), nil)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user10.JWT))
+	}
+	{ // verify add to cart as user
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{"productId": suite.variantLightningValid.ProductID, "color": "deep", "size": "small", "quantity": 1})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/express/items", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user10.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	{
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{
+			"FirstName":    "Test",
+			"LastName":     "Test",
+			"Address":      "12 Deerford Road",
+			"AddressOpt":   "",
+			"City":         "Toronto",
+			"Country":      "Canada",
+			"CountryCode":  "CA",
+			"Province":     "Ontario",
+			"ProvinceCode": "ON",
+			"Zip":          "M2J3J3",
+			"isPartial": true,
+		})
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/carts/express/shipping/address", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user10.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	{
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{
+			"Handle": "canada_post-DOM.EP-10.47",
+		})
+
+		req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/carts/express/shipping/method", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user10.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	{
+		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/carts/express/shipping/estimate", suite.env.URL), nil)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user10.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+	}
+
+	{ // pay.
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(map[string]interface{}{
+			"BillingAddress": &data.CartAddress{
+				FirstName:    "Test",
+				LastName:     "Test",
+				Address:      "12 Deerford Road",
+				AddressOpt:   "",
+				City:         "Toronto",
+				Country:      "Canada",
+				CountryCode:  "CA",
+				Province:     "Ontario",
+				ProvinceCode: "ON",
+				Zip:          "M2J3J3",
+			},
+			"Email":               "waseef@localyyz.com",
+			"ExpressPaymentToken": "tok_ca",
+		})
+		req, _ := http.NewRequest("POST", fmt.Sprintf("%s/carts/express/pay", suite.env.URL), b)
+		req.Header.Add("Authorization", fmt.Sprintf("BEARER %s", suite.user10.JWT))
+
+		// verify default cart is okay
+		rr, _ := http.DefaultClient.Do(req)
+		if !assert.Equal(suite.T(), http.StatusOK, rr.StatusCode) {
+			b, _ := ioutil.ReadAll(rr.Body)
+			assert.FailNow(suite.T(), string(b))
+		}
+
+		var cart *presenter.Cart
+		json.NewDecoder(rr.Body).Decode(&cart)
+
+		// validate cart
+		assert.NotNil(suite.T(), cart)
+		assert.Equal(suite.T(), data.CartStatusPaymentSuccess, cart.Status)
+	}
+
+}
+
 
 func TestCheckoutTestSuite(t *testing.T) {
 	suite.Run(t, new(CheckoutTestSuite))

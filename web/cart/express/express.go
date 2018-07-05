@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
-	db "upper.io/db.v3"
+	"upper.io/db.v3"
 )
 
 type cartItemRequest struct {
@@ -48,6 +48,37 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		lg.Warn(err)
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
+	}
+
+	/*checking if the user is attempting to add an item from an expired deal*/
+	var collection *data.Collection
+
+	// TODO: make this better
+	err := data.DB.Select("c.*").
+		From("collections as c").
+		LeftJoin("collection_products as cp").On("c.id = cp.collection_id").
+		Where(db.Cond{
+			"c.lightning":   true,
+			"cp.product_id": payload.ProductID,
+		}).
+		One(&collection)
+	if err != nil && err != db.ErrNoMoreRows {
+		render.Respond(w, r, err)
+		return
+	}
+
+	//product is part of a collection
+	if collection != nil {
+		if collection.Status != data.CollectionStatusActive {
+			render.Render(w, r, api.ErrExpiredDeal)
+			return
+		}
+		//the cron might not be in sync therefore we need to check percentage completion as well
+		totalCheckouts, _ := collection.GetCheckoutCount()
+		if int64(totalCheckouts) == collection.Cap {
+			render.Render(w, r, api.ErrLightningOutOfStock)
+			return
+		}
 	}
 
 	// fetch the variant from given payload (product id, color and size)
@@ -133,13 +164,13 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, presenter.NewCartItem(ctx, toSave))
 }
 
-type cartPaymentRequest struct {
+type CartPaymentRequest struct {
 	BillingAddress      *data.CartAddress `json:"billingAddress"`
 	ExpressPaymentToken string            `json:"expressPaymentToken"`
 	Email               string            `json:"email,omitempty"`
 }
 
-func (p *cartPaymentRequest) Bind(r *http.Request) error {
+func (p *CartPaymentRequest) Bind(r *http.Request) error {
 	if p.BillingAddress == nil {
 		return errors.New("invalid billing address")
 	}
@@ -162,7 +193,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	client := ctx.Value("shopify.client").(*shopify.Client)
 
 	lg.Infof("express cart(%d) start payment", cart.ID)
-	var payload cartPaymentRequest
+	var payload CartPaymentRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
