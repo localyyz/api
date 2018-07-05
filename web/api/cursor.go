@@ -149,6 +149,8 @@ func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Pagin
 		ctx, cancel := context.WithTimeout(context.Background(), t)
 		defer cancel()
 
+		done := make(chan int, 1)
+
 		func() {
 			//go func() {
 			row, _ := selector.
@@ -161,10 +163,13 @@ func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Pagin
 				lg.Println(err)
 			}
 			p.ItemTotal = int(count)
+			done <- 1
 		}()
 		select {
+		case <-done:
+			// done!
 		case <-time.After(t):
-			fmt.Println("some how, done")
+			fmt.Println("hard timeout")
 		case <-ctx.Done():
 			fmt.Println(ctx.Err()) // prints "context deadline exceeded"
 		}
