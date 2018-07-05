@@ -54,14 +54,18 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	var collection *data.Collection
 
 	// TODO: make this better
-	data.DB.Select("c.*").
+	err := data.DB.Select("c.*").
 		From("collections as c").
 		LeftJoin("collection_products as cp").On("c.id = cp.collection_id").
 		Where(db.Cond{
 			"c.lightning":   true,
 			"cp.product_id": payload.ProductID,
 		}).
-		One(collection)
+		One(&collection)
+	if err != nil && err != db.ErrNoMoreRows {
+		render.Respond(w, r, err)
+		return
+	}
 
 	//product is part of a collection
 	if collection != nil {
@@ -69,7 +73,6 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 			render.Render(w, r, api.ErrExpiredDeal)
 			return
 		}
-
 		//the cron might not be in sync therefore we need to check percentage completion as well
 		totalCheckouts, _ := collection.GetCheckoutCount()
 		if int64(totalCheckouts) == collection.Cap {

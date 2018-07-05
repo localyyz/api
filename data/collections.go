@@ -122,7 +122,7 @@ func (c *CollectionStatus) UnmarshallText(text []byte) error {
 	Returns the completion percent(0.0-1) of a collection
 */
 func (c *Collection) GetCheckoutCount() (int, error) {
-	row, err := DB.Select("count(1) as _t").
+	row, err := DB.Select(db.Raw("count(1) as _t")).
 		From("collection_products as cp").
 		Join("cart_items as ci").On("cp.product_id = ci.product_id").
 		Join("checkouts as ck").On("ci.checkout_id = ck.id").
