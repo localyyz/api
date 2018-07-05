@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"testing"
 
+	"time"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"github.com/go-chi/jwtauth"
 	"github.com/stretchr/testify/assert"
-	"time"
 )
 
 type fixture struct {
@@ -227,28 +228,19 @@ func (f *fixture) LinkProductsWithCollection(t *testing.T) {
 func (f *fixture) CreateCart(t *testing.T) {
 	f.cart = &data.Cart{
 		UserID: f.user9.ID,
+		Status: data.CartStatusPaymentSuccess,
 	}
 	assert.NoError(t, data.DB.Save(f.cart))
 }
 
 func (f *fixture) CreateCartItems(t *testing.T) {
 	f.cartItem = &data.CartItem{
-		CartID:     f.cart.ID,
-		ProductID:  f.lightningProductCapHit.ID,
-		CheckoutID: &f.checkout.ID,
-		PlaceID:    f.testStore.ID,
-		VariantID:  f.variantLightningCapHit.ID,
+		CartID:    f.cart.ID,
+		ProductID: f.lightningProductCapHit.ID,
+		PlaceID:   f.testStore.ID,
+		VariantID: f.variantLightningCapHit.ID,
 	}
 	assert.NoError(t, data.DB.Save(f.cartItem))
-}
-
-func (f *fixture) CreateCheckout(t *testing.T) {
-	f.checkout = &data.Checkout{
-		Status:  data.CheckoutStatusPaymentSuccess,
-		PlaceID: f.testStore.ID,
-		UserID:  f.user9.ID,
-	}
-	assert.NoError(t, data.DB.Save(f.checkout))
 }
 
 func (f *fixture) SetupData(t *testing.T) {
@@ -258,7 +250,6 @@ func (f *fixture) SetupData(t *testing.T) {
 	f.SetupLightningCollection(t)
 	f.LinkProductsWithCollection(t)
 	f.CreateCart(t)
-	f.CreateCheckout(t)
 	f.CreateCartItems(t)
 }
 

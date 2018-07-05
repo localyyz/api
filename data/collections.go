@@ -124,13 +124,12 @@ func (c *CollectionStatus) UnmarshallText(text []byte) error {
 func (c *Collection) GetCheckoutCount() (int, error) {
 	row, err := DB.Select(db.Raw("count(1) as _t")).
 		From("collection_products as cp").
-		Join("cart_items as ci").On("cp.product_id = ci.product_id").
-		Join("checkouts as ck").On("ci.checkout_id = ck.id").
+		LeftJoin("cart_items as ci").On("cp.product_id = ci.product_id").
+		LeftJoin("carts c").On("c.id = ci.cart_id").
 		Where(
 			db.Cond{
 				"cp.collection_id": c.ID,
-				"ck.status":        CheckoutStatusPaymentSuccess,
-				"ci.checkout_id":   db.IsNotNull(),
+				"c.status":         CartStatusPaymentSuccess,
 			},
 		).QueryRow()
 	if err != nil {
