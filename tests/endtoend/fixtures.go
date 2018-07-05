@@ -13,7 +13,7 @@ import (
 )
 
 type fixture struct {
-	user1, user2, user3, user4, user5, user6, user7, user8, user9, user10                                                                             auth.AuthUser
+	user1, user2, user3, user4, user5, user6, user7, user8, user9, user10                                                          auth.AuthUser
 	testStore                                                                                                                      *data.Place
 	productInStock, productNotInStock, lightningProductValid, lightningProductExpired, lightningProductCapHit                      *data.Product
 	variantInStock, variantNotInStock, variantWithDiscount, variantLightningValid, variantLightningExpired, variantLightningCapHit *data.ProductVariant
@@ -174,8 +174,8 @@ func (f *fixture) SetupLightningCollection(t *testing.T) {
 		Name:        "Valid Collection",
 		Description: "Test",
 		Lightning:   true,
-		StartTime:   &yesterday,
-		EndTime:     &tomorrow,
+		StartAt:     &yesterday,
+		EndAt:       &tomorrow,
 		Cap:         1,
 		Status:      data.CollectionStatusActive,
 	}
@@ -183,8 +183,8 @@ func (f *fixture) SetupLightningCollection(t *testing.T) {
 		Name:        "Cap Hit Collection",
 		Description: "Test",
 		Lightning:   true,
-		StartTime:   &yesterday,
-		EndTime:     &tomorrow,
+		StartAt:     &yesterday,
+		EndAt:       &tomorrow,
 		Cap:         1,
 		Status:      data.CollectionStatusActive,
 	}
@@ -192,8 +192,8 @@ func (f *fixture) SetupLightningCollection(t *testing.T) {
 		Name:        "Expired Collection",
 		Description: "Test",
 		Lightning:   true,
-		StartTime:   &yesterday,
-		EndTime:     &yesterday,
+		StartAt:     &yesterday,
+		EndAt:       &yesterday,
 		Cap:         1,
 		Status:      data.CollectionStatusInactive,
 	}

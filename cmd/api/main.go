@@ -62,7 +62,6 @@ func main() {
 
 	c := cron.New()
 	c.AddFunc("@every 5s", func() { data.CheckCollectionExpireTime() })
-	c.AddFunc("every 5s", func() { data.CheckCapLimit() })
 	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)

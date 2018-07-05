@@ -37,6 +37,7 @@ func (suite *CheckoutTestSuite) TearDownSuite() {
 
 // E2E checkout tests
 
+
 func (suite *CheckoutTestSuite) TestCheckoutSuccess() {
 	fullAddress := &data.CartAddress{
 		Address:   "123 Toronto Street",
@@ -718,6 +719,7 @@ func (suite *CheckoutTestSuite) TestHappyExpressCheckout() {
 
 }
 
+
 func (suite *CheckoutTestSuite) TestExpiredLightningCollectionCheckout(){
 	{ // verify default cart exists
 		req, _ := http.NewRequest("GET", fmt.Sprintf("%s/carts/express", suite.env.URL), nil)
@@ -737,6 +739,7 @@ func (suite *CheckoutTestSuite) TestExpiredLightningCollectionCheckout(){
 		}
 	}
 }
+
 
 func (suite *CheckoutTestSuite) TestCapHitLightningCollectionCheckout(){
 	{ // verify default cart exists

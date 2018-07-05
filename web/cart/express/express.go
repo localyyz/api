@@ -51,28 +51,25 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	/*checking if the user is attempting to add an item from an expired deal*/
-	var collectionProduct []*data.CollectionProduct
-	res := data.DB.CollectionProduct.Find(db.Cond{"product_id": payload.ProductID}).Limit(1)
-	res.All(&collectionProduct)
+	var collection data.Collection
+
+	data.DB.Select("c.*").From("collections as c").LeftJoin("collection_products as cp").On("c.id = cp.collection_id").
+		Where(db.Cond{"c.lightning": true, "cp.product_id": payload.ProductID}).One(&collection)
 
 	//product is part of a collection
-	if len(collectionProduct) == 1 {
-		//getting the collection
-		collection, _ := data.DB.Collection.FindByID(collectionProduct[0].CollectionID)
-		//we only care if its a lightning collection
-		if collection.Lightning {
-			if collection.Status == data.CollectionStatusInactive || collection.Status == data.CollectionStatusQueued {
-				render.Render(w, r, api.ErrExpired)
+	if collection.Lightning {
+		if collection.Status == data.CollectionStatusInactive || collection.Status == data.CollectionStatusQueued {
+			render.Render(w, r, api.ErrExpiredDeal)
+			return
+		} else {
+			//the cron might not be in sync therefore we need to check percentage completion as well
+			totalCheckouts := data.DB.Collection.GetCollectionCheckouts(collection.ID)
+			if int64(totalCheckouts) == collection.Cap {
+				render.Render(w, r, api.ErrLightningOutOfStock)
 				return
-			} else {
-				//the cron might not be in sync therefore we need to check percentage completion as well
-				totalCheckouts := data.DB.Collection.GetCollectionCheckouts(collection)
-				if int64(totalCheckouts) == collection.Cap {
-					render.Render(w, r, api.ErrLightningOutOfStock)
-					return
-				}
 			}
 		}
+
 	}
 
 	// fetch the variant from given payload (product id, color and size)
@@ -192,7 +189,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
-	
+
 	var (
 		placeID     int64
 		shopifyData *data.CartShopifyData
@@ -238,8 +235,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-
-
 	// 4. send payment to shopify
 	p, _, err := client.Checkout.Payment(ctx, shopifyData.Token, payment)
 	if err != nil {
@@ -248,7 +243,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		// TODO: do we return here?
 		return
 	}
-
 
 	// check payment transaction
 	if p.Transaction == nil {

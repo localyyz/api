@@ -24,8 +24,8 @@ type Collection struct {
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 
 	Lightning bool             `db:"lightning" json:"lightning"`
-	StartTime *time.Time       `db:"time_start" json:"startTime"`
-	EndTime   *time.Time       `db:"time_end" json:"endTime"`
+	StartAt   *time.Time        `db:"time_start" json:"startTime"`
+	EndAt     *time.Time        `db:"time_end" json:"endTime"`
 	Status    CollectionStatus `db:"status" json:"status"`
 	Cap       int64            `db:"cap" json:"cap"`
 }
@@ -58,7 +58,7 @@ const (
 	CollectionStatusInactive                         //3
 )
 
-var collectionStatuses = []string{"active", "inactive", "queued"}
+var collectionStatuses = []string{"-", "queued", "active", "inactive"}
 
 func (*CollectionProduct) CollectionName() string {
 	return `collection_products`
@@ -89,20 +89,18 @@ func (store CollectionStore) FindAll(cond db.Cond) ([]*Collection, error) {
 /*
 	Returns the completion percent(0.0-1) of a collection
 */
-func (store CollectionStore) GetCollectionCheckouts(collection *Collection) int {
+func (store CollectionStore) GetCollectionCheckouts(collectionID int64) int {
 	var checkouts []*Checkout
 	DB.Select("ck.*").
 		From("collection_products as cp").
 		Join("cart_items as ci").On("cp.product_id = ci.product_id").
 		Join("checkouts as ck").On("ci.checkout_id = ck.id").
 		Where(
-			db.And(
-				db.Cond{
-					"cp.collection_id": collection.ID,
-					"ck.status":        CheckoutStatusPaymentSuccess,
-				},
-				db.Raw("ci.checkout_id IS NOT NULL"),
-			),
+			db.Cond{
+				"cp.collection_id": collectionID,
+				"ck.status":        CheckoutStatusPaymentSuccess,
+				"ci.checkout_id":  db.IsNotNull(),
+			},
 		).All(&checkouts)
 
 	return len(checkouts)
@@ -148,8 +146,8 @@ func CheckCollectionExpireTime() {
 	}
 	for _, collection := range collections {
 		time := time.Now()
-		if collection.EndTime != nil {
-			if collection.EndTime.Before(time) {
+		if collection.EndAt != nil {
+			if collection.EndAt.Before(time) {
 				collection.Status = CollectionStatusInactive
 				if err := DB.Save(collection); err != nil {
 					lg.Warn("Error: failed to set the collection status to inactive")
@@ -157,21 +155,4 @@ func CheckCollectionExpireTime() {
 			}
 		}
 	}
-}
-
-func CheckCapLimit() {
-	collections, err := DB.Collection.FindAll(db.Cond{"lightning": true, "status": CollectionStatusActive})
-	if err != nil {
-		lg.Warn("Error: could not retrieve collections for cron job")
-	}
-	for _, collection := range collections {
-		totalCheckouts := DB.Collection.GetCollectionCheckouts(collection)
-		if int64(totalCheckouts) >= collection.Cap {
-			collection.Status = CollectionStatusInactive
-			if err := DB.Save(collection); err != nil {
-				lg.Warn("Error: failed to set the collection status to inactive")
-			}
-		}
-	}
-
 }
