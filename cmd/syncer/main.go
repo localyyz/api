@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	flags    = flag.NewFlagSet("api", flag.ExitOnError)
+	flags    = flag.NewFlagSet("syncer", flag.ExitOnError)
 	confFile = flags.String("config", "", "path to config file")
 )
 

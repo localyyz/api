@@ -11,6 +11,7 @@ import (
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/lib/apparelsorter"
 	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 )
@@ -28,6 +29,10 @@ type Product struct {
 	// TODO: remove + backwards compat
 	Etc ProductEtc `json:"etc,omitempty"`
 
+	ViewCount     int64 `json:"views"`
+	PurchaseCount int64 `json:"purchased"`
+	LiveViewCount int64 `json:"liveViews"`
+
 	CreateAt  interface{} `json:"createdAt,omitempty"`
 	UpdatedAt interface{} `json:"updatedAt,omitempty"`
 	DeleteAt  interface{} `json:"deletedAt,omitempty"`
@@ -37,6 +42,12 @@ type Product struct {
 	Description      interface{} `json:"description"`
 
 	ctx context.Context
+}
+
+type ProductView struct {
+	*data.Product
+	// the session user who viewed the product
+	ViewerID int64 `json:"viewerId"`
 }
 
 type ProductEtc struct {
@@ -238,6 +249,10 @@ func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Product.Description, -1)
 	p.NoTagDescription = htmlx.StripTags(p.Product.Description)
 	p.Etc = ProductEtc{Brand: p.Brand}
+
+	p.ViewCount, _ = stash.GetProductViews(p.ID)
+	p.LiveViewCount, _ = stash.GetProductLiveViews(p.ID)
+	p.PurchaseCount, _ = stash.GetProductPurchases(p.ID)
 
 	return nil
 }

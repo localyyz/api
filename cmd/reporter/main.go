@@ -12,19 +12,15 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
-	"bitbucket.org/moodie-app/moodie-api/lib/token"
-	"bitbucket.org/moodie-app/moodie-api/web"
+	"bitbucket.org/moodie-app/moodie-api/reporter"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
-	"github.com/robfig/cron"
 	"github.com/zenazn/goji/graceful"
 )
 
 var (
-	flags    = flag.NewFlagSet("api", flag.ExitOnError)
+	flags    = flag.NewFlagSet("reporter", flag.ExitOnError)
 	confFile = flags.String("config", "", "path to config file")
-	pemFile  = flags.String("pem", "", "path to apns pem file")
 )
 
 func main() {
@@ -39,40 +35,23 @@ func main() {
 	rand.Seed(time.Now().Unix())
 
 	//[db]
-	db, err := data.NewDBSession(&conf.DB)
-	if err != nil {
+	if _, err := data.NewDBSession(&conf.DB); err != nil {
 		lg.Fatal(errors.Wrap(err, "database connection failed"))
 	}
 
+	//[connect]
+	connect.SetupSlack(conf.Connect.Slack)
+	nats := connect.SetupNatsStream(conf.Connect.Nats)
+
 	//[stash]
 	if err := stash.SetupDefaultClient(conf.Stash.Host); err != nil {
-		if conf.Environment == "production" {
-			lg.Fatal(errors.Wrap(err, "stash connection failed"))
-		} else {
-			lg.Warn(errors.Wrap(err, "stash connection failed"))
-		}
+		lg.Fatal(errors.Wrap(err, "stash connection failed"))
 	}
 
-	// new web handler
-	h := web.New(db)
-	h.Debug = (conf.Environment == "development")
-
-	//[connect]
-	connect.Configure(conf.Connect)
-
-	//[jwt]
-	token.SetupJWTAuth(conf.Jwt.Secret)
-
-	// pusher
-	if pemFile != nil && *pemFile != "" {
-		if err := pusher.Setup(*pemFile, conf.Pusher.Topic, conf.Environment); err != nil {
-			lg.Fatal(errors.Wrap(err, "invalid pem file"))
-		}
-	}
-
-	c := cron.New()
-	c.AddFunc("@every 1s", data.UpdateCollectionStatus)
-	c.Start()
+	// new handler
+	h := reporter.New(nats)
+	// subscribe to all the nats streams
+	h.Subscribe(conf.Connect.Nats)
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
@@ -84,9 +63,13 @@ func main() {
 		if err := data.DB.Close(); err != nil {
 			lg.Alert(err)
 		}
+		if !conf.Connect.Nats.Durable {
+			nats.UnsubscribeAll()
+		}
+		nats.Close()
 	})
 
-	lg.Warnf("API starting on %v", conf.Bind)
+	lg.Warnf("Reporter starting on %v", conf.Bind)
 
 	if err := graceful.ListenAndServe(conf.Bind, h.Routes()); err != nil {
 		lg.Fatal(err)

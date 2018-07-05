@@ -12,11 +12,21 @@ type SlackConfig struct {
 	Webhooks map[string]Config `toml:"webhooks"`
 }
 
+type NatsConfig struct {
+	ServerURL   string                 `toml:"server_url"`
+	ClusterID   string                 `toml:"cluster_id"`
+	AppName     string                 `toml:"app_name"`
+	Durable     bool                   `toml:"durable"`
+	Publishers  map[string]NatsSubject `toml:"publishers"`
+	Subscribers map[string]NatsSubject `toml:"subscribers"`
+}
+
 type Configs struct {
 	Facebook Config      `toml:"facebook"`
 	Shopify  Config      `toml:"shopify"`
 	Stripe   Config      `toml:"stripe"`
 	Slack    SlackConfig `toml:"slack"`
+	Nats     NatsConfig  `toml:"nats"`
 }
 
 // Configure loads the connect configs from config file
@@ -25,4 +35,5 @@ func Configure(confs Configs) {
 	SetupShopify(confs.Shopify)
 	SetupStripe(confs.Stripe)
 	SetupSlack(confs.Slack)
+	SetupNatsStream(confs.Nats)
 }
