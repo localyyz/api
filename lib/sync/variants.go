@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/pkg/errors"
+	set "gopkg.in/fatih/set.v0"
 )
 
 var (
@@ -14,13 +15,17 @@ var (
 )
 
 type shopifyVariantSyncer struct {
-	product *data.Product
-	toSaves []*data.ProductVariant
+	product   *data.Product
+	toSaves   []*data.ProductVariant
+	toRemoves []*data.ProductVariant
 }
 
 func (s *shopifyVariantSyncer) Finalize() error {
 	for _, v := range s.toSaves {
 		data.DB.ProductVariant.Save(v)
+	}
+	for _, v := range s.toRemoves {
+		data.DB.ProductVariant.Delete(v)
 	}
 	return nil
 }
@@ -52,7 +57,12 @@ func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 		dbVariantsMap[v.OfferID] = v
 	}
 
+	syncVariantsSet := set.New()
+
 	for i, v := range variants {
+		// add to variants sets.
+		syncVariantsSet.Add(v.ID)
+
 		price, prevPrice := setPrices(
 			v.Price,
 			v.CompareAtPrice,
@@ -106,6 +116,12 @@ func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 		}
 
 		s.toSaves = append(s.toSaves, editV)
+	}
+
+	for _, v := range dbVariantsMap {
+		if !syncVariantsSet.Has(v.OfferID) {
+			s.toRemoves = append(s.toRemoves, v)
+		}
 	}
 
 	return s.Finalize()
