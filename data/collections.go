@@ -146,6 +146,9 @@ func (c *Collection) GetCheckoutCount() (int, error) {
 }
 
 // find and de-activate active collections that has expired
-func ExpireCollections() {
-	DB.Exec(`UPDATE collections SET status = 3 WHERE NOW > endAt and status = 2`)
+func UpdateCollectionStatus() {
+	// expire collections
+	DB.Exec(`UPDATE collections SET status = 3 WHERE lightning = true AND NOW() > endAt and status = 2`)
+	// activate collections
+	DB.Exec(`UPDATE collections SET status = 2 WHERE lightning = true AND startAt > NOW() and status = 1`)
 }

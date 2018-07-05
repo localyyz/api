@@ -61,7 +61,7 @@ func main() {
 	}
 
 	c := cron.New()
-	c.AddFunc("@every 5s", data.ExpireCollections)
+	c.AddFunc("@every 1s", data.UpdateCollectionStatus)
 	c.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
