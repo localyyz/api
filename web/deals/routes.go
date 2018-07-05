@@ -87,15 +87,14 @@ func GetDeal(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	dealID := ctx.Value("dealID")
 
-	var collections []*data.Collection
-	res := data.DB.Collection.Find(db.Cond{"lightning": true, "status": data.CollectionStatusActive, "id": dealID}).OrderBy("end_at ASC")
-	err := res.All(&collections)
+	var collection data.Collection
+	err := data.DB.Collection.Find(db.Cond{"lightning": true, "status": data.CollectionStatusActive, "id": dealID}).OrderBy("end_at ASC").One(&collection)
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
-	if err := render.RenderList(w, r, presenter.NewLightningCollectionList(ctx, collections)); err != nil {
+	if err := render.Render(w, r, presenter.NewLightningCollection(r.Context(), &collection)); err != nil {
 		render.Respond(w, r, err)
 	}
 }
