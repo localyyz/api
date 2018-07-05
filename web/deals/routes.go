@@ -7,8 +7,10 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 	"upper.io/db.v3"
 )
 
@@ -24,10 +26,26 @@ func Routes() chi.Router {
 
 func DealCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
+		dealID, err := strconv.ParseInt(chi.URLParam(r, "dealID"), 10, 64)
+		if err != nil {
+			render.Render(w, r, api.ErrBadID)
+			return
+		}
+
+		deal, err := data.DB.Collection.FindOne(
+			db.Cond{
+				"id":     dealID,
+				"status": data.CollectionStatusActive,
+			},
+		)
+		if err != nil {
+			render.Respond(w, r, err)
+			return
+		}
 		ctx := r.Context()
-		dealIDRaw := chi.URLParam(r, "dealID")
-		dealID, _ := strconv.Atoi(dealIDRaw)
-		ctx = context.WithValue(ctx, "dealID", dealID)
+		ctx = context.WithValue(ctx, "deal", deal)
+		lg.SetEntryField(ctx, "deal_id", deal.ID)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
@@ -85,16 +103,9 @@ func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 
 func GetDeal(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	dealID := ctx.Value("dealID")
-
-	var collection data.Collection
-	err := data.DB.Collection.Find(db.Cond{"lightning": true, "status": data.CollectionStatusActive, "id": dealID}).OrderBy("end_at ASC").One(&collection)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	if err := render.Render(w, r, presenter.NewLightningCollection(r.Context(), &collection)); err != nil {
+	deal := ctx.Value("deal").(*data.Collection)
+	presented := presenter.NewLightningCollection(ctx, deal)
+	if err := render.Render(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}
 }
