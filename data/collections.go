@@ -13,6 +13,8 @@ type Collection struct {
 	Name        string        `db:"name" json:"name"`
 	Description string        `db:"description" json:"description"`
 	ImageURL    string        `db:"image_url" json:"imageUrl"`
+	ImageWidth	int64		  `db:"image_width" json:"imageWidth"`
+	ImageHeight	int64		  `db:"image_height" json:"imageHeight"`
 	Gender      ProductGender `db:"gender" json:"gender"`
 
 	PlaceIDs   *postgresql.Int64Array  `db:"place_ids" json:"-"`
