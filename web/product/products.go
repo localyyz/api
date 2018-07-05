@@ -36,13 +36,13 @@ func ProductCtx(next http.Handler) http.Handler {
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		{
-			view := &presenter.ProductView{
+			evt := &presenter.ProductEvent{
 				Product: product,
 			}
 			if sessionUser, ok := ctx.Value("session.user").(*data.User); ok {
-				view.ViewerID = sessionUser.ID
+				evt.ViewerID = sessionUser.ID
 			}
-			connect.NATS.Emit(events.EvProductViewed, view)
+			connect.NATS.Emit(events.EvProductViewed, evt)
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))

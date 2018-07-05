@@ -81,12 +81,13 @@ func (s *Stash) IncrProductViews(productID, userID int64) error {
 		conn.Do("EXEC")
 	}
 
-	{ // live view count. Rolling 30s window expiry
+	{ // live view count. Rolling 15min window expiry
 		k := s.productDataKey(productID, "live")
 		n := time.Now().Unix()
 		d := n - int64(ProductLiveExpire.Seconds())
 		conn.Send("MULTI")
 		conn.Send("ZADD", k, n, userID)
+		// TODO: this should be a cronjob cleanup
 		conn.Send("ZREMRANGEBYSCORE", k, 0, d)
 		conn.Do("EXEC")
 	}

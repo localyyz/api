@@ -44,10 +44,11 @@ type Product struct {
 	ctx context.Context
 }
 
-type ProductView struct {
+type ProductEvent struct {
 	*data.Product
 	// the session user who viewed the product
 	ViewerID int64 `json:"viewerId"`
+	BuyerID  int64 `json:"buyerId"`
 }
 
 type ProductEtc struct {
@@ -242,6 +243,10 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		}
 	}
 
+	p.ViewCount, _ = stash.GetProductViews(p.ID)
+	p.LiveViewCount, _ = stash.GetProductLiveViews(p.ID)
+	p.PurchaseCount, _ = stash.GetProductPurchases(p.ID)
+
 	return p
 }
 
@@ -249,10 +254,6 @@ func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Product.Description, -1)
 	p.NoTagDescription = htmlx.StripTags(p.Product.Description)
 	p.Etc = ProductEtc{Brand: p.Brand}
-
-	p.ViewCount, _ = stash.GetProductViews(p.ID)
-	p.LiveViewCount, _ = stash.GetProductLiveViews(p.ID)
-	p.PurchaseCount, _ = stash.GetProductPurchases(p.ID)
 
 	return nil
 }

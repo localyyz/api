@@ -8,6 +8,8 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
@@ -293,6 +295,23 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	user.Email = payload.Email
 	user.Name = fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName)
 	data.DB.User.Save(user)
+
+	// fetch the product from the checkout
+
+	go func() {
+		cartItem, err := data.DB.CartItem.FindOne(db.Cond{"cart_id": cart.ID})
+		if err != nil {
+			return
+		}
+		product, err := data.DB.Product.FindByID(cartItem.ProductID)
+		if err != nil {
+			return
+		}
+		connect.NATS.Emit(events.EvProductPurchased, &presenter.ProductEvent{
+			Product: product,
+			BuyerID: user.ID,
+		})
+	}()
 
 	render.Render(w, r, presenter.NewCart(ctx, cart))
 }
