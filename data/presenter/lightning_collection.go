@@ -25,55 +25,31 @@ func (c *LightningCollection) Render(w http.ResponseWriter, r *http.Request) err
 func NewLightningCollectionList(ctx context.Context, collections []*data.Collection) []render.Renderer {
 	list := []render.Renderer{}
 	for _, c := range collections {
-
-		presented := &LightningCollection{
-			Collection: c,
-		}
-		if c.Status == data.CollectionStatusActive {
-			cps, err := data.DB.CollectionProduct.FindByCollectionID(c.ID)
-			if err != nil {
-				return list
-			}
-			var productIDs []int64
-			for _, p := range cps {
-				productIDs = append(productIDs, p.ProductID)
-			}
-			products, err := data.DB.Product.FindAll(db.Cond{
-				"id":     productIDs,
-				"status": data.ProductStatusApproved,
-			})
-			presented.Products = NewProductList(ctx, products)
-		}
-
 		//append to the final list to return
-		list = append(list, presented)
+		list = append(list, NewLightningCollection(ctx, c))
 	}
 
 	return list
 }
 
-func NewLightningCollection(ctx context.Context, collection *data.Collection) render.Renderer {
-	lightningCollection := &LightningCollection{}
-
-	//setting the collection
-	lightningCollection.Collection = collection
-
-	var collectionProducts []*data.CollectionProduct
-	err := data.DB.CollectionProduct.Find(db.Cond{"collection_id": collection.ID}).All(&collectionProducts)
-	if err != nil {
-		return nil
+func NewLightningCollection(ctx context.Context, collection *data.Collection) *LightningCollection {
+	presented := &LightningCollection{
+		Collection: collection,
 	}
-
-	//iterate over the products from the collection
-	var productIDs []int64
-	for _, collectionProduct := range collectionProducts {
-		productIDs = append(productIDs, collectionProduct.ProductID)
+	if collection.Status == data.CollectionStatusActive {
+		cps, err := data.DB.CollectionProduct.FindByCollectionID(collection.ID)
+		if err != nil {
+			return presented
+		}
+		var productIDs []int64
+		for _, p := range cps {
+			productIDs = append(productIDs, p.ProductID)
+		}
+		products, err := data.DB.Product.FindAll(db.Cond{
+			"id":     productIDs,
+			"status": data.ProductStatusApproved,
+		})
+		presented.Products = NewProductList(ctx, products)
 	}
-	products, err := data.DB.Product.FindAll(db.Cond{
-		"id":     productIDs,
-		"status": data.ProductStatusApproved,
-	})
-
-	lightningCollection.Products = NewProductList(ctx, products)
-	return lightningCollection
+	return presented
 }
