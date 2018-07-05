@@ -25,8 +25,8 @@ type Collection struct {
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 
 	Lightning bool             `db:"lightning" json:"lightning"`
-	StartAt   *time.Time       `db:"startAt" json:"startAt"`
-	EndAt     *time.Time       `db:"endAt" json:"endAt"`
+	StartAt   *time.Time       `db:"start_at" json:"startAt"`
+	EndAt     *time.Time       `db:"end_at" json:"endAt"`
 	Status    CollectionStatus `db:"status" json:"status"`
 	Cap       int64            `db:"cap" json:"cap"`
 }
@@ -148,7 +148,7 @@ func (c *Collection) GetCheckoutCount() (int, error) {
 // find and de-activate active collections that has expired
 func UpdateCollectionStatus() {
 	// expire collections
-	DB.Exec(`UPDATE collections SET status = 3 WHERE lightning = true AND NOW() > endAt and status = 2`)
+	DB.Exec(`UPDATE collections SET status = 3 WHERE lightning = true AND NOW() > end_at and status = 2`)
 	// activate collections
-	DB.Exec(`UPDATE collections SET status = 2 WHERE lightning = true AND startAt > NOW() and status = 1`)
+	DB.Exec(`UPDATE collections SET status = 2 WHERE lightning = true AND start_at > NOW() and status = 1`)
 }

@@ -46,7 +46,7 @@ func ListActiveDeals(w http.ResponseWriter, r *http.Request) {
 			"lightning": true,
 			"status":    data.CollectionStatusActive,
 		},
-	).OrderBy("endAt ASC")
+	).OrderBy("end_at ASC")
 	err := res.All(&collections)
 	if err != nil {
 		render.Respond(w, r, err)
@@ -71,7 +71,7 @@ func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 			"lightning": true,
 			"status":    data.CollectionStatusQueued,
 		},
-	).OrderBy("startAt ASC")
+	).OrderBy("start_at ASC")
 	err := res.All(&collections)
 	if err != nil {
 		render.Respond(w, r, err)
@@ -88,7 +88,7 @@ func GetDeal(w http.ResponseWriter, r *http.Request) {
 	dealID := ctx.Value("dealID")
 
 	var collections []*data.Collection
-	res := data.DB.Collection.Find(db.Cond{"lightning": true, "status": data.CollectionStatusActive, "id": dealID}).OrderBy("time_end ASC")
+	res := data.DB.Collection.Find(db.Cond{"lightning": true, "status": data.CollectionStatusActive, "id": dealID}).OrderBy("end_at ASC")
 	err := res.All(&collections)
 	if err != nil {
 		render.Respond(w, r, err)

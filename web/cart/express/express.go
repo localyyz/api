@@ -53,14 +53,15 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	/*checking if the user is attempting to add an item from an expired deal*/
 	var collection *data.Collection
 
+	// TODO: make this better
 	data.DB.Select("c.*").
 		From("collections as c").
 		LeftJoin("collection_products as cp").On("c.id = cp.collection_id").
 		Where(db.Cond{
 			"c.lightning":   true,
 			"cp.product_id": payload.ProductID,
-		},
-		).One(collection)
+		}).
+		One(collection)
 
 	//product is part of a collection
 	if collection != nil {
