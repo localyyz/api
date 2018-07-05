@@ -77,18 +77,14 @@ func (s *Stash) IncrProductViews(productID int64) error {
 		k := s.productDataKey(productID, "views")
 		conn.Send("MULTI")
 		conn.Send("INCR", k)
-		conn.Send("EXPIRE", k, ProductViewExpire.Seconds())
-		if _, err := conn.Do("EXEC"); err != nil {
-			return err
-		}
+		conn.Send("EXPIREAT", k, time.Now().Add(ProductViewExpire).Unix())
+		conn.Do("EXEC")
 	}
 
 	{ // live view count. Rolling 30s window expiry
 		k := s.productDataKey(productID, "live")
-
 		n := time.Now().Unix()
 		d := n - int64(ProductLiveExpire.Seconds())
-
 		conn.Send("MULTI")
 		conn.Send("ZADD", k, n, n)
 		conn.Send("ZREMRANGEBYSCORE", k, 0, d)

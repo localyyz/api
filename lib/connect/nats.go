@@ -34,6 +34,12 @@ var (
 )
 
 func SetupNatsStream(config NatsConfig) *Nats {
+
+	NATS = &Nats{
+		publishers:  map[events.Event]*natsq.PubClient{},
+		subscribers: map[events.Event]*natsq.SubClient{},
+	}
+
 	// setup the default client first
 	hostName, _ := os.Hostname()
 	clientID := fmt.Sprintf("%s %s", config.AppName, hostName)
@@ -43,12 +49,7 @@ func SetupNatsStream(config NatsConfig) *Nats {
 		lg.Warnf("connect to nats %+v", err)
 		return nil
 	}
-
-	NATS = &Nats{
-		publishers:  map[events.Event]*natsq.PubClient{},
-		subscribers: map[events.Event]*natsq.SubClient{},
-		sc:          sc,
-	}
+	NATS.sc = sc
 	for _, pubs := range config.Publishers {
 		client, err := natsq.NewPublisher(pubs.Subject, pubs.Encoding)
 		if err != nil {
