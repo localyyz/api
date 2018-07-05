@@ -51,25 +51,30 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	/*checking if the user is attempting to add an item from an expired deal*/
-	var collection data.Collection
+	var collection *data.Collection
 
-	data.DB.Select("c.*").From("collections as c").LeftJoin("collection_products as cp").On("c.id = cp.collection_id").
-		Where(db.Cond{"c.lightning": true, "cp.product_id": payload.ProductID}).One(&collection)
+	data.DB.Select("c.*").
+		From("collections as c").
+		LeftJoin("collection_products as cp").On("c.id = cp.collection_id").
+		Where(db.Cond{
+			"c.lightning":   true,
+			"cp.product_id": payload.ProductID,
+		},
+		).One(collection)
 
 	//product is part of a collection
-	if collection.Lightning {
-		if collection.Status == data.CollectionStatusInactive || collection.Status == data.CollectionStatusQueued {
+	if collection != nil {
+		if collection.Status != data.CollectionStatusActive {
 			render.Render(w, r, api.ErrExpiredDeal)
 			return
-		} else {
-			//the cron might not be in sync therefore we need to check percentage completion as well
-			totalCheckouts := data.DB.Collection.GetCollectionCheckouts(collection.ID)
-			if int64(totalCheckouts) == collection.Cap {
-				render.Render(w, r, api.ErrLightningOutOfStock)
-				return
-			}
 		}
 
+		//the cron might not be in sync therefore we need to check percentage completion as well
+		totalCheckouts, _ := collection.GetCheckoutCount()
+		if int64(totalCheckouts) == collection.Cap {
+			render.Render(w, r, api.ErrLightningOutOfStock)
+			return
+		}
 	}
 
 	// fetch the variant from given payload (product id, color and size)

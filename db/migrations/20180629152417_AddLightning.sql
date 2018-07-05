@@ -2,8 +2,8 @@
 -- +goose Up
 -- SQL in section 'Up' is executed when this migration is applied
 ALTER TABLE collections ADD lightning BOOLEAN DEFAULT false;
-ALTER TABLE collections ADD time_start TIMESTAMP;
-ALTER TABLE collections ADD time_end TIMESTAMP;
+ALTER TABLE collections ADD startAt TIMESTAMP;
+ALTER TABLE collections ADD endAt TIMESTAMP;
 ALTER TABLE collections ADD status SMALLINT  DEFAULT 0;
 ALTER TABLE collections ADD cap INT DEFAULT 0;
 

@@ -4,7 +4,8 @@ import (
 	"time"
 
 	"fmt"
-	"github.com/pressly/lg"
+
+	"github.com/pkg/errors"
 	"upper.io/bond"
 	"upper.io/db.v3"
 	"upper.io/db.v3/postgresql"
@@ -24,8 +25,8 @@ type Collection struct {
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 
 	Lightning bool             `db:"lightning" json:"lightning"`
-	StartAt   *time.Time        `db:"time_start" json:"startTime"`
-	EndAt     *time.Time        `db:"time_end" json:"endTime"`
+	StartAt   *time.Time       `db:"startAt" json:"startAt"`
+	EndAt     *time.Time       `db:"endAt" json:"endAt"`
 	Status    CollectionStatus `db:"status" json:"status"`
 	Cap       int64            `db:"cap" json:"cap"`
 }
@@ -39,7 +40,6 @@ func (*Collection) CollectionName() string {
 }
 
 type CollectionProduct struct {
-	ID           int64      `db:"id,pk,omitempty" json:"id,omitempty"`
 	CollectionID int64      `db:"collection_id" json:"collection_id"`
 	ProductID    int64      `db:"product_id" json:"product_id"`
 	CreatedAt    *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
@@ -86,27 +86,6 @@ func (store CollectionStore) FindAll(cond db.Cond) ([]*Collection, error) {
 	return collections, nil
 }
 
-/*
-	Returns the completion percent(0.0-1) of a collection
-*/
-func (store CollectionStore) GetCollectionCheckouts(collectionID int64) int {
-	var checkouts []*Checkout
-	DB.Select("ck.*").
-		From("collection_products as cp").
-		Join("cart_items as ci").On("cp.product_id = ci.product_id").
-		Join("checkouts as ck").On("ci.checkout_id = ck.id").
-		Where(
-			db.Cond{
-				"cp.collection_id": collectionID,
-				"ck.status":        CheckoutStatusPaymentSuccess,
-				"ci.checkout_id":  db.IsNotNull(),
-			},
-		).All(&checkouts)
-
-	return len(checkouts)
-
-}
-
 func (store CollectionProductStore) FindByCollectionID(collectionID int64) ([]*CollectionProduct, error) {
 	return DB.CollectionProduct.FindAll(db.Cond{"collection_id": collectionID})
 }
@@ -139,20 +118,34 @@ func (c *CollectionStatus) UnmarshallText(text []byte) error {
 	return fmt.Errorf("unknown collection status %s", enum)
 }
 
-func CheckCollectionExpireTime() {
-	collections, err := DB.Collection.FindAll(db.Cond{"lightning": true, "status": CollectionStatusActive})
+/*
+	Returns the completion percent(0.0-1) of a collection
+*/
+func (c *Collection) GetCheckoutCount() (int, error) {
+	row, err := DB.Select("count(1) as _t").
+		From("collection_products as cp").
+		Join("cart_items as ci").On("cp.product_id = ci.product_id").
+		Join("checkouts as ck").On("ci.checkout_id = ck.id").
+		Where(
+			db.Cond{
+				"cp.collection_id": c.ID,
+				"ck.status":        CheckoutStatusPaymentSuccess,
+				"ci.checkout_id":   db.IsNotNull(),
+			},
+		).QueryRow()
 	if err != nil {
-		return
+		return 0, errors.Wrap(err, "collection checkout prepare")
 	}
-	for _, collection := range collections {
-		time := time.Now()
-		if collection.EndAt != nil {
-			if collection.EndAt.Before(time) {
-				collection.Status = CollectionStatusInactive
-				if err := DB.Save(collection); err != nil {
-					lg.Warn("Error: failed to set the collection status to inactive")
-				}
-			}
-		}
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, errors.Wrap(err, "collection checkout scan")
 	}
+
+	return count, nil
+}
+
+// find and de-activate active collections that has expired
+func ExpireCollections() {
+	DB.Exec(`UPDATE collections SET status = 3 WHERE NOW > endAt and status = 2`)
 }
