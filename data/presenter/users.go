@@ -11,8 +11,6 @@ type User struct {
 	*data.User
 
 	Addresses []*data.UserAddress `json:"addresses"`
-
-	InviteURL string `json:"inviteUrl"`
 }
 
 func NewUser(ctx context.Context, user *data.User) *User {

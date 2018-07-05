@@ -44,6 +44,12 @@ type Product struct {
 	ctx context.Context
 }
 
+type ProductView struct {
+	*data.Product
+	// the session user who viewed the product
+	ViewerID int64 `json:"viewerId"`
+}
+
 type ProductEtc struct {
 	Brand string `json:"brand"`
 }

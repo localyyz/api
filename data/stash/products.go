@@ -34,11 +34,11 @@ func GetProductPurchases(productID int64) (int64, error) {
 	return DefaultClient.GetProductPurchases(productID)
 }
 
-func IncrProductViews(productID int64) error {
+func IncrProductViews(productID, userID int64) error {
 	if DefaultClient == nil {
 		return ErrDefaultNotConfigured
 	}
-	return DefaultClient.IncrProductViews(productID)
+	return DefaultClient.IncrProductViews(productID, userID)
 }
 
 func IncrProductPurchases(productID int64) (int, error) {
@@ -69,7 +69,7 @@ func (s *Stash) GetProductPurchases(productID int64) (int64, error) {
 	return redis.Int64(conn.Do("GET", s.productDataKey(productID, "buys")))
 }
 
-func (s *Stash) IncrProductViews(productID int64) error {
+func (s *Stash) IncrProductViews(productID, userID int64) error {
 	conn := s.conn()
 	defer conn.Close()
 
@@ -86,7 +86,7 @@ func (s *Stash) IncrProductViews(productID int64) error {
 		n := time.Now().Unix()
 		d := n - int64(ProductLiveExpire.Seconds())
 		conn.Send("MULTI")
-		conn.Send("ZADD", k, n, n)
+		conn.Send("ZADD", k, n, userID)
 		conn.Send("ZREMRANGEBYSCORE", k, 0, d)
 		conn.Do("EXEC")
 	}
