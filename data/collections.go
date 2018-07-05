@@ -148,7 +148,7 @@ func (c *Collection) GetCheckoutCount() (int, error) {
 // find and de-activate active collections that has expired
 func UpdateCollectionStatus() {
 	// expire collections
-	DB.Exec(`UPDATE collections SET status = 3 WHERE lightning = true AND NOW() > end_at and status = 2`)
+	DB.Exec(`UPDATE collections SET status = 3 WHERE lightning = true AND NOW() at time zone 'utc' > end_at and status = 2`)
 	// activate collections
-	DB.Exec(`UPDATE collections SET status = 2 WHERE lightning = true AND start_at > NOW() and status = 1`)
+	DB.Exec(`UPDATE collections SET status = 2 WHERE lightning = true AND NOW() at time zone 'utc' > start_at and status = 1`)
 }
