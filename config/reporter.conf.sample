@@ -1,5 +1,5 @@
-environment     = "development"
-bind            = "0.0.0.0:5337"
+environment     = "sample"
+bind            = "0.0.0.0:5339"
 
 [db]
 database          = "localyyz"

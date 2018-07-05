@@ -1,0 +1,117 @@
+# Reporter
+---
+version: 0.5
+
+env:
+  NAME: reporter
+  IMAGE: gcr.io/verdant-descent-153101/api
+  HOST_PORT: 5339
+  CONTAINER_PORT: 5339
+  CONFIG: /data/etc/reporter.conf
+  GITORIGIN: $(git rev-parse origin/master)
+  GITSTAGING: $(git rev-parse origin/staging)
+
+networks:
+  local:
+    env:
+      ENV: localhost
+    hosts:
+      - localhost
+  staging:
+    env:
+      ENV: staging
+      ENV_BRANCH: staging
+      IMAGENAME: ${IMAGE}:staging-${GITSTAGING}
+      NETWORK: staging
+    hosts:
+      - root@138.197.154.71
+  production:
+    env:
+      ENV: production
+      ENV_BRANCH: master
+      IMAGENAME: ${IMAGE}:master-${GITORIGIN}
+      NETWORK: localyyz
+    hosts:
+      - root@138.197.148.245
+
+commands:
+  config:
+    desc: Upload/test config file.
+    upload:
+     - src: ./config/$NAME.$SUP_NETWORK.conf
+       dst: /tmp/
+    run:
+        test -f /tmp/config/$NAME.$SUP_NETWORK.conf || exit 1 && mv /tmp/config/$NAME.$SUP_NETWORK.conf $CONFIG
+
+  ping:
+    desc: Print uname and current date/time.
+    run: echo $IMAGENAME; uname -a; date
+
+  ps:
+    desc: List running Docker containers
+    run: docker ps | grep $IMAGENAME
+
+  pull:
+    desc: Pull latest Docker image
+    run: docker pull $IMAGENAME
+
+  image:
+    desc: List Docker image
+    run: docker images | grep $IMAGE
+  
+  migrate:
+    desc: Migrate database
+    script: ./scripts/migrate.sh
+    once: true
+
+  run:
+    desc: Run Docker container
+    script: ./scripts/docker-run.sh
+
+  logs:
+    desc: Docker logs
+    run: docker logs $NAME
+
+  tail-logs:
+    desc: Tail Docker logs
+    run: docker logs --tail=20 -f $NAME 2>&1
+
+  start:
+    desc: Start Docker container
+    run: docker start $NAME || exit 0
+
+  restart:
+    desc: Restart Docker container
+    run: docker restart $NAME || exit 0
+
+  stop:
+    desc: Stop Docker container
+    run: docker stop $NAME || exit 0
+
+  rm:
+    desc: Remove Docker container
+    run: docker rm $NAME || exit 0
+
+  prune:
+    desc: Prune stale containers
+    run: docker system prune --force || exit 0
+
+  clean-tags:
+    desc: Clean old docker image tags
+    local: >
+      make clean-tags
+
+  shell:
+    desc: Interactive shell on all hosts
+    stdin: true
+    run: /bin/sh
+
+targets:
+  deploy:
+    - pull
+    - config
+    #- stop
+    #- rm
+    - run
+    - ps
+    - logs
