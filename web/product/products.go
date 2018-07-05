@@ -13,6 +13,8 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
@@ -32,6 +34,8 @@ func ProductCtx(next http.Handler) http.Handler {
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "product", product)
 		lg.SetEntryField(ctx, "product_id", product.ID)
+
+		connect.NATS.Emit(events.EvProductViewed, product)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 

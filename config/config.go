@@ -23,6 +23,11 @@ type Config struct {
 	// [db]
 	DB data.DBConf `toml:"db"`
 
+	// [stash]
+	Stash struct {
+		Host string `toml:"host"`
+	} `toml:"stash"`
+
 	// [connect]
 	Connect connect.Configs `toml:"connect"`
 

@@ -1,0 +1,24 @@
+environment     = "development"
+bind            = "0.0.0.0:5337"
+
+[db]
+database          = "localyyz"
+hosts             = [ "localhost" ]
+username          = "localyyz"
+password          = ""
+debug_queries     = true
+application_name  = "reporter"
+
+[connect.nats]
+app_name          = "reporter"
+server_url        = "localhost:4222"
+cluster_id        = "development"
+durable           = true
+
+    [connect.nats.subscribers.product_views]
+    durable_name      = "product_views"
+    subject           = "data.product.viewed"
+
+    [connect.nats.subscribers.product_purchases]
+    durable_name      = "product_purchases"
+    subject           = "data.product.purchased"
