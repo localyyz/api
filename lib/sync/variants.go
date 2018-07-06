@@ -85,14 +85,15 @@ func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 		etc := data.ProductVariantEtc{Sku: v.Sku}
 		// variant option values
 		for _, o := range v.OptionValues {
+			n := strings.ToLower(o.Name)
 			vv := strings.ToLower(o.Value)
-			switch strings.ToLower(o.Name) {
-			case "size":
+			// comment: the naming for sizes are fairly complex.
+			// for example, 'it/men 46'
+			if strings.Contains(n, "size") {
+				etc.SizeName = n
 				etc.Size = vv
-			case "color":
+			} else if strings.Contains(n, "color") {
 				etc.Color = vv
-			default:
-				// pass
 			}
 		}
 

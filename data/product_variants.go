@@ -32,12 +32,10 @@ type ProductVariantStore struct {
 }
 
 type ProductVariantEtc struct {
-	Price     float64 `json:"prc"`
-	PrevPrice float64 `json:"prv"`
-	Sku       string  `json:"sku"`
-
-	Size  string `json:"size"`
-	Color string `json:"color"`
+	Sku      string `json:"sku,omitempty"`
+	SizeName string `json:"sn,omitempty"`
+	Size     string `json:"size,omitempty"`
+	Color    string `json:"color,omitempty"`
 	*postgresql.JSONBConverter
 }
 
