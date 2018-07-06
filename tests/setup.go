@@ -56,6 +56,8 @@ func SetupEnv(t *testing.T) *Env {
 	db, err := data.NewDBSession(&config.DB)
 	require.NoError(t, err, "DB failed to connect")
 
+	connect.SetupNatsStream(connect.NatsConfig{})
+
 	// TODO: other initialization
 	//  connect shopify/slack/facebook etc
 

@@ -121,7 +121,7 @@ func (c *CollectionStatus) UnmarshallText(text []byte) error {
 }
 
 /*
-	Returns the completion percent(0.0-1) of a collection
+	Returns the total number of successfull checkouts of a collection
 */
 func (c *Collection) GetCheckoutCount() (int, error) {
 	row, err := DB.Select(db.Raw("count(1) as _t")).

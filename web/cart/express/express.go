@@ -8,8 +8,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
@@ -17,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 	"upper.io/db.v3"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/events"
 )
 
 type cartItemRequest struct {
@@ -44,6 +44,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
+	user := ctx.Value("session.user").(*data.User)
 
 	var payload cartItemRequest
 	if err := render.Bind(r, &payload); err != nil {
@@ -69,8 +70,15 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//product is part of a collection
+	//product is part of a lightning collection
 	if collection != nil {
+
+		userPurchased, _ := user.GetTotalCheckout(payload.ProductID)
+		if userPurchased > 0 {	//user has a limit of one purchase per deal
+			render.Render(w, r, api.ErrMultiplePurchase)
+			return
+		}
+
 		if collection.Status != data.CollectionStatusActive {
 			render.Render(w, r, api.ErrExpiredDeal)
 			return
