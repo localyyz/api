@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	s "bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"github.com/go-chi/render"
+	set "gopkg.in/fatih/set.v0"
 	db "upper.io/db.v3"
 )
 
@@ -40,13 +41,58 @@ func GetProductCount(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
-	ourCount, _ := data.DB.Product.Find(db.Cond{"place_id": place.ID}).Count()
+	ourCount, _ := data.DB.Product.Find(db.Cond{
+		"place_id":   place.ID,
+		"deleted_at": db.IsNull(),
+	}).Count()
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
 	render.Respond(w, r, map[string]int{"theirs": int(theirsCount), "ours": int(ourCount)})
+}
+
+func CleanupProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	place := ctx.Value("place").(*data.Place)
+	client := ctx.Value("shopify.client").(*shopify.Client)
+
+	page := 1
+	productSet := set.New()
+	for {
+		products, _, _ := client.ProductList.Get(
+			ctx,
+			&shopify.ProductListParam{
+				Page:  page,
+				Limit: 200,
+			},
+		)
+		if len(products) == 0 {
+			break
+		}
+		log.Printf("fetched page %d", page)
+		for _, v := range products {
+			productSet.Add(v.ProductID)
+		}
+		log.Printf("size %d", productSet.Size())
+		page++
+	}
+	log.Println("done fetching products")
+
+	removeSet := set.New()
+
+	dbProducts, _ := data.DB.Product.FindAll(db.Cond{"place_id": place.ID})
+	for _, v := range dbProducts {
+		if !productSet.Has(v.ExternalID) {
+			removeSet.Add(v.ID)
+		}
+	}
+
+	log.Printf("removed %d products", removeSet.Size())
+
+	data.DB.Product.Find(db.Cond{"id": set.IntSlice(removeSet)}).Delete()
 }
 
 func SyncProducts(w http.ResponseWriter, r *http.Request) {
@@ -73,21 +119,52 @@ func SyncProducts(w http.ResponseWriter, r *http.Request) {
 
 	// Create or update depending on PUT or POST
 
-	for i := 1; i <= 30; i++ {
-		log.Printf("fetching page %d", i)
+	for i := 0; i <= 34; i++ {
+		log.Printf("fetching page %d", i+1)
+
+		var products []*data.Product
+		err := data.DB.Select("p.*").
+			From("products p").
+			LeftJoin("product_variants pv").On("pv.product_id = p.id").
+			Where(db.Cond{
+				"pv.place_id":             place.ID,
+				"p.deleted_at":            db.IsNull(),
+				"p.status":                data.ProductStatusApproved,
+				db.Raw("pv.etc->>'size'"): "",
+			}).
+			Limit(200).
+			Offset(i * 200).
+			All(&products)
+
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		if len(products) == 0 {
+			log.Println("db call got nothing")
+			break
+		}
+
+		externalIDs := make([]int64, len(products))
+		for i, v := range products {
+			externalIDs[i] = *v.ExternalID
+		}
+
+		log.Println("Fetching %v", externalIDs)
 
 		productList, _, _ := client.ProductList.Get(
 			ctx,
 			&shopify.ProductListParam{
-				Limit: 200,
-				Page:  i,
+				ProductIDs: externalIDs,
+				Limit:      200,
+				Page:       1,
 			},
 		)
 		if len(productList) == 0 {
 			log.Printf("no more pages at %d", i)
-			return
+			break
 		}
-		log.Printf("found %d to create for page %d", len(productList), i)
+		log.Printf("found %d to create for page %d", len(productList), i+1)
 
 		for _, p := range productList {
 			if !p.Available {
