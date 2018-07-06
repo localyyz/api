@@ -206,6 +206,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			PlanEnabled: true,
 		}
 	}
+
 	// upgrade place status to "waiting for agreement"
 	place.Status = data.PlaceStatusWaitAgreement
 	place.Gender = data.PlaceGender(data.ProductGenderUnisex)
@@ -217,9 +218,26 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		place.PaymentMethods = append(place.PaymentMethods, &data.PaymentMethod{Type: "stripe", ID: checkout.ShopifyPaymentAccountID})
 	}
 
+	var merchantApproval *data.MerchantApproval
+	// if currency is not CAD / USD. reject with reason international currency
+	if place.Currency != "CAD" && place.Currency != "USD" {
+		place.Status = data.PlaceStatusInActive
+		// inject an approval row for this merchant
+		merchantApproval = &data.MerchantApproval{
+			RejectionReason: data.MerchantApprovalRejectionInternational,
+			RejectedAt:      data.GetTimeUTCPointer(),
+		}
+	}
+
 	// save the place!
 	if err := data.DB.Place.Save(place); err != nil {
 		return errors.Wrap(err, "failed to save place")
+	}
+
+	// if merchant approval is not nil, save
+	if merchantApproval != nil {
+		merchantApproval.PlaceID = place.ID
+		data.DB.MerchantApproval.Save(merchantApproval)
 	}
 
 	// save authorization
@@ -255,7 +273,11 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		lg.Warnf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
 	}
 
-	SL.Notify("store", fmt.Sprintf("%s (id: %d - %s) just connected!", place.Name, place.ID, place.Plan))
+	msg := fmt.Sprintf("%s (id: %d - %s) just connected!", place.Name, place.ID, place.Plan)
+	if place.Status == data.PlaceStatusInActive && merchantApproval != nil {
+		msg = fmt.Sprintf("%s. But automatically marked as inactive. Reason: %s", msg, merchantApproval.RejectionReason)
+	}
+	SL.Notify("store", msg)
 	return nil
 }
 

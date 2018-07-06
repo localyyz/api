@@ -24,7 +24,6 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/products/score", syncProductImageScores)
 
 	r.Get("/products/update", UpdateCategories)
-	r.Get("/products/blacklist", BlacklistProducts)
 	r.Get("/products/count", GetMerchantProductCount)
 	r.Get("/places/active", ListActive)
 	r.Get("/places/permissions", ListPermissions)
@@ -57,6 +56,9 @@ func (h *Handler) Routes() chi.Router {
 		r.Get("/products", GetProduct)
 		r.Put("/products/sync", SyncProducts)
 		r.Post("/products/sync", SyncProducts)
+		r.Delete("/products/sync", CleanupProduct)
+
+		r.Put("/variants/sync", SyncVariants)
 	})
 
 	return r

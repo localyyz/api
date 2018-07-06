@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/apparelsorter"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
@@ -225,6 +227,17 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 		values = append(values, v)
 	}
 	rows.Close()
+
+	// context aware sorter
+	if len(values) > 0 {
+		if strings.Contains(o.filterBy.Raw(), "size") {
+			sizesorter := apparelsorter.New(values...)
+			sort.Sort(sizesorter)
+			values = sizesorter.StringSlice()
+		} else {
+			sort.Strings(values)
+		}
+	}
 
 	return values, nil
 }

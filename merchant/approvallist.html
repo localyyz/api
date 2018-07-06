@@ -26,6 +26,7 @@
                   <th>ID</th>
                   <th>Name</th>
                   <th>Plan</th>
+                  <th>Currency</th>
                   <th>Website</th>
                   <th>Applied On</th>
                   <th>Approval Link</th>
@@ -36,6 +37,7 @@
                 <td>{{ p.ID }}</td>
                 <td>{{ p.Name }}</td>
                 <td>{{ p.Plan }}</td>
+                <td>{{ p.Currency }}</td>
                 <td><a href="{{ p.Website }}" target="_blank">Website</a></td>
                 <td>{{ p.TOSAgreedAt }}</td>
                 <td><a href="/approval/{{ p.ID }}">Approval Link</a></td>
