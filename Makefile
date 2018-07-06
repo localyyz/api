@@ -3,6 +3,7 @@
 TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf
 MERCHANT_CONFIG := $$PWD/config/merchant.conf
+REPORTER_CONFIG := $$PWD/config/reporter.conf
 TOOL_CONFIG := $$PWD/config/tool.conf
 SYNCER_CONFIG := $$PWD/config/syncer.conf
 TEST_CONFIG := $$PWD/config/test.conf
@@ -81,7 +82,7 @@ db-loadstaging:
 
 ## TESTS
 eetest:
-	@(export CONFIG=${TEST_CONFIG}; export DBSCRIPTS=$$PWD/db/db.sh; export MIGRATIONDIR=$$PWD/db; go test -v ./tests/... -run=TestSyncTestSuite)
+	@(export CONFIG=${TEST_CONFIG}; export DBSCRIPTS=$$PWD/db/db.sh; export MIGRATIONDIR=$$PWD/db; go test -v ./tests/endtoend)
 ##
 # Deploy / GCP
 ##
@@ -105,6 +106,9 @@ run-tool:
 
 run-syncer:
 	@(export CONFIG=${SYNCER_CONFIG}; fresh -c runner.conf -p ./cmd/syncer)
+
+run-reporter:
+	@(export CONFIG=${REPORTER_CONFIG}; fresh -c runner.conf -p ./cmd/reporter)
 
 build-merchant:
 	@mkdir -p ./bin

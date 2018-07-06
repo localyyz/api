@@ -6,6 +6,8 @@ config/api.conf
 config/merchant.conf
 config/push.pem
 tools/*/data
+.idea/
+dump.rdb
 
 *~
 \#*\#

@@ -11,6 +11,7 @@ import (
 	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/lib/apparelsorter"
 	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 )
@@ -28,6 +29,10 @@ type Product struct {
 	// TODO: remove + backwards compat
 	Etc ProductEtc `json:"etc,omitempty"`
 
+	ViewCount     int64 `json:"views"`
+	PurchaseCount int64 `json:"purchased"`
+	LiveViewCount int64 `json:"liveViews"`
+
 	CreateAt  interface{} `json:"createdAt,omitempty"`
 	UpdatedAt interface{} `json:"updatedAt,omitempty"`
 	DeleteAt  interface{} `json:"deletedAt,omitempty"`
@@ -37,6 +42,13 @@ type Product struct {
 	Description      interface{} `json:"description"`
 
 	ctx context.Context
+}
+
+type ProductEvent struct {
+	*data.Product
+	// the session user who viewed the product
+	ViewerID int64 `json:"viewerId"`
+	BuyerID  int64 `json:"buyerId"`
 }
 
 type ProductEtc struct {
@@ -230,6 +242,10 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 			}
 		}
 	}
+
+	p.ViewCount, _ = stash.GetProductViews(p.ID)
+	p.LiveViewCount, _ = stash.GetProductLiveViews(p.ID)
+	p.PurchaseCount, _ = stash.GetProductPurchases(p.ID)
 
 	return p
 }

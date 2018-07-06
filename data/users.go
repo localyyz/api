@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"upper.io/bond"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -90,6 +91,29 @@ func (u *User) BeforeUpdate(bond.Session) error {
 	u.UpdatedAt = GetTimeUTCPointer()
 
 	return nil
+}
+
+func (u *User) GetTotalCheckout(productID int64) (int, error) {
+	row, err := DB.Select(db.Raw("count(1) as _t")).
+		From("cart_items as ci").
+		LeftJoin("carts as c").On("ci.cart_id = c.id").
+		Where(
+			db.Cond{
+				"ci.product_id": productID,
+				"c.user_id":     u.ID,
+				"c.status":      CartStatusPaymentSuccess,
+			},
+		).QueryRow()
+	if err != nil {
+		return 0, errors.Wrap(err, "product checkout prepare")
+	}
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, errors.Wrap(err, "product checkout scan")
+	}
+
+	return count, nil
 }
 
 func (s UserStore) FindByUsername(username string) (*User, error) {
