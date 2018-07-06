@@ -14,12 +14,13 @@ import (
 )
 
 type fixture struct {
-	user1, user2, user3, user4, user5, user6, user7, user8, user9, user10                                                          auth.AuthUser
+	user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11, user12                                          auth.AuthUser
 	testStore                                                                                                                      *data.Place
 	productInStock, productNotInStock, lightningProductValid, lightningProductExpired, lightningProductCapHit                      *data.Product
+	lightningProductMultiplePurchase                                                                                               *data.Product
 	variantInStock, variantNotInStock, variantWithDiscount, variantLightningValid, variantLightningExpired, variantLightningCapHit *data.ProductVariant
-	lightningValid, lightningCapHit, lightningExpired                                                                              *data.Collection
-	collectionProductValid, collectionProductExpired, collectionProductCapHit                                                      data.CollectionProduct
+	variantMultiplePurchase                                                                                                        *data.ProductVariant
+	lightningValid, lightningCapHit, lightningExpired, lightningMultiplePurchase                                                   *data.Collection
 	cart                                                                                                                           *data.Cart
 	cartItem                                                                                                                       *data.CartItem
 	checkout                                                                                                                       *data.Checkout
@@ -36,6 +37,8 @@ func (f *fixture) setupUser(t *testing.T) {
 	f.user8 = newTestUser(t, 8)
 	f.user9 = newTestUser(t, 9)
 	f.user10 = newTestUser(t, 10)
+	f.user11 = newTestUser(t, 11)
+	f.user12 = newTestUser(t, 12)
 }
 
 func newTestUser(t *testing.T, n int) auth.AuthUser {
@@ -100,6 +103,13 @@ func (f *fixture) setupProduct(t *testing.T) {
 	}
 	assert.NoError(t, data.DB.Save(f.lightningProductExpired))
 
+	f.lightningProductMultiplePurchase = &data.Product{
+		Title:   "sample product in lightning collection - multiple purchase by same user",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.lightningProductMultiplePurchase))
+
 	// NOTE: https://best-test-store-toronto.myshopify.com/admin/products/10761547971.json
 	f.variantInStock = &data.ProductVariant{
 		ProductID: f.productInStock.ID,
@@ -159,6 +169,17 @@ func (f *fixture) setupProduct(t *testing.T) {
 			Color: "deep",
 		},
 	}
+	f.variantMultiplePurchase = &data.ProductVariant{
+		ProductID: f.lightningProductMultiplePurchase.ID,
+		PlaceID:   f.testStore.ID,
+		Price:     10,
+		Limits:    10,
+		OfferID:   43252300547,
+		Etc: data.ProductVariantEtc{
+			Size:  "small",
+			Color: "deep",
+		},
+	}
 
 	assert.NoError(t, data.DB.Save(f.variantInStock))
 	assert.NoError(t, data.DB.Save(f.variantNotInStock))
@@ -166,6 +187,7 @@ func (f *fixture) setupProduct(t *testing.T) {
 	assert.NoError(t, data.DB.Save(f.variantLightningValid))
 	assert.NoError(t, data.DB.Save(f.variantLightningExpired))
 	assert.NoError(t, data.DB.Save(f.variantLightningCapHit))
+	assert.NoError(t, data.DB.Save(f.variantMultiplePurchase))
 }
 
 func (f *fixture) SetupLightningCollection(t *testing.T) {
@@ -177,7 +199,7 @@ func (f *fixture) SetupLightningCollection(t *testing.T) {
 		Lightning:   true,
 		StartAt:     &yesterday,
 		EndAt:       &tomorrow,
-		Cap:         1,
+		Cap:         3,
 		Status:      data.CollectionStatusActive,
 	}
 	f.lightningCapHit = &data.Collection{
@@ -198,31 +220,47 @@ func (f *fixture) SetupLightningCollection(t *testing.T) {
 		Cap:         1,
 		Status:      data.CollectionStatusInactive,
 	}
+	f.lightningMultiplePurchase = &data.Collection{
+		Name:        "Multiple Purchase",
+		Description: "Test",
+		Lightning:   true,
+		StartAt:     &yesterday,
+		EndAt:       &tomorrow,
+		Cap:         2,
+		Status:      data.CollectionStatusActive,
+	}
 	assert.NoError(t, data.DB.Save(f.lightningValid))
 	assert.NoError(t, data.DB.Save(f.lightningCapHit))
 	assert.NoError(t, data.DB.Save(f.lightningExpired))
+	assert.NoError(t, data.DB.Save(f.lightningMultiplePurchase))
 }
 
 func (f *fixture) LinkProductsWithCollection(t *testing.T) {
 
-	f.collectionProductValid = data.CollectionProduct{
+	collectionProductValid := data.CollectionProduct{
 		CollectionID: f.lightningValid.ID,
 		ProductID:    f.lightningProductValid.ID,
 	}
 
-	f.collectionProductExpired = data.CollectionProduct{
+	collectionProductExpired := data.CollectionProduct{
 		CollectionID: f.lightningExpired.ID,
 		ProductID:    f.lightningProductExpired.ID,
 	}
 
-	f.collectionProductCapHit = data.CollectionProduct{
+	collectionProductCapHit := data.CollectionProduct{
 		CollectionID: f.lightningCapHit.ID,
 		ProductID:    f.lightningProductCapHit.ID,
 	}
 
-	assert.NoError(t, data.DB.CollectionProduct.Create(f.collectionProductValid))
-	assert.NoError(t, data.DB.CollectionProduct.Create(f.collectionProductExpired))
-	assert.NoError(t, data.DB.CollectionProduct.Create(f.collectionProductCapHit))
+	collectionProductMultiplePurchase := data.CollectionProduct{
+		CollectionID: f.lightningMultiplePurchase.ID,
+		ProductID:    f.lightningProductMultiplePurchase.ID,
+	}
+
+	assert.NoError(t, data.DB.CollectionProduct.Create(collectionProductValid))
+	assert.NoError(t, data.DB.CollectionProduct.Create(collectionProductExpired))
+	assert.NoError(t, data.DB.CollectionProduct.Create(collectionProductCapHit))
+	assert.NoError(t, data.DB.CollectionProduct.Create(collectionProductMultiplePurchase))
 }
 
 func (f *fixture) CreateCart(t *testing.T) {
