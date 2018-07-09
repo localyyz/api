@@ -8,7 +8,7 @@ env:
   HOST_PORT: 5339
   CONTAINER_PORT: 5339
   CONFIG: /data/etc/reporter.conf
-  GITORIGIN: $(git rev-parse origin/master)
+  GITMASTER: $(git rev-parse origin/master)
   GITSTAGING: $(git rev-parse origin/staging)
 
 networks:
@@ -29,19 +29,19 @@ networks:
     env:
       ENV: production
       ENV_BRANCH: master
-      IMAGENAME: ${IMAGE}:master-${GITORIGIN}
+      IMAGENAME: ${IMAGE}:master-${GITMASTER}
       NETWORK: localyyz
     hosts:
-      - root@138.197.148.245
+      - root@159.203.40.217
 
 commands:
   config:
     desc: Upload/test config file.
     upload:
-     - src: ./config/$NAME.$SUP_NETWORK.conf
+     - src: ./config/reporter.$SUP_NETWORK.conf
        dst: /tmp/
     run:
-        test -f /tmp/config/$NAME.$SUP_NETWORK.conf || exit 1 && mv /tmp/config/$NAME.$SUP_NETWORK.conf $CONFIG
+        test -f /tmp/config/reporter.$SUP_NETWORK.conf && echo "config uploaded" && mv /tmp/config/reporter.$SUP_NETWORK.conf $CONFIG || echo "config upload failed"
 
   ping:
     desc: Print uname and current date/time.

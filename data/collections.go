@@ -19,6 +19,7 @@ type Collection struct {
 	ImageWidth  int64         `db:"image_width" json:"imageWidth"`
 	ImageHeight int64         `db:"image_height" json:"imageHeight"`
 	Gender      ProductGender `db:"gender" json:"gender"`
+	Featured    bool          `db:"featured" json:"featured"`
 
 	PlaceIDs   *postgresql.Int64Array  `db:"place_ids" json:"-"`
 	Categories *postgresql.StringArray `db:"categories" json:"-"`
