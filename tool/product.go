@@ -4,10 +4,12 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strconv"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	s "bitbucket.org/moodie-app/moodie-api/lib/sync"
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	set "gopkg.in/fatih/set.v0"
 	db "upper.io/db.v3"
@@ -93,6 +95,57 @@ func CleanupProduct(w http.ResponseWriter, r *http.Request) {
 	log.Printf("removed %d products", removeSet.Size())
 
 	data.DB.Product.Find(db.Cond{"id": set.IntSlice(removeSet)}).Delete()
+}
+
+func SyncProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+
+	categoryCache := make(map[string]*data.Category)
+	categories, err := data.DB.Category.FindAll(nil)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	for _, c := range categories {
+		categoryCache[c.Value] = c
+	}
+
+	blacklistCache := make(map[string]*data.Blacklist)
+	if blacklist, _ := data.DB.Blacklist.FindAll(nil); blacklist != nil {
+		for _, word := range blacklist {
+			blacklistCache[word.Word] = word
+		}
+	}
+	client := ctx.Value("shopify.client").(*shopify.Client)
+
+	{
+		externalID, err := strconv.ParseInt(chi.URLParam(r, "externalID"), 10, 64)
+		if err != nil {
+			log.Println("invalid param")
+			return
+		}
+
+		// Create or update depending on PUT or POST
+		p, _, _ := client.ProductList.GetProduct(
+			ctx,
+			externalID,
+		)
+		if p == nil {
+			log.Println("not found")
+			return
+		}
+
+		if !p.Available {
+			return
+		}
+		ctx := context.WithValue(context.Background(), "sync.list", []*shopify.ProductList{p})
+		ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
+		ctx = context.WithValue(ctx, "category.cache", categoryCache)
+		ctx = context.WithValue(ctx, "sync.place", place)
+		s.ShopifyProductListingsUpdate(ctx)
+	}
+
 }
 
 func SyncProducts(w http.ResponseWriter, r *http.Request) {
