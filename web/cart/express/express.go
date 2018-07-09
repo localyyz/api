@@ -8,6 +8,8 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
@@ -15,8 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 	"upper.io/db.v3"
-	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/events"
 )
 
 type cartItemRequest struct {
@@ -48,7 +48,6 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 
 	var payload cartItemRequest
 	if err := render.Bind(r, &payload); err != nil {
-		lg.Warn(err)
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
@@ -74,7 +73,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	if collection != nil {
 
 		userPurchased, _ := user.GetTotalCheckout(payload.ProductID)
-		if userPurchased > 0 {	//user has a limit of one purchase per deal
+		if userPurchased > 0 { //user has a limit of one purchase per deal
 			render.Render(w, r, api.ErrMultiplePurchase)
 			return
 		}
@@ -182,6 +181,7 @@ type CartPaymentRequest struct {
 
 func (p *CartPaymentRequest) Bind(r *http.Request) error {
 	if p.BillingAddress == nil {
+		lg.Warn("billing address")
 		return errors.New("invalid billing address")
 	}
 	if len(p.ExpressPaymentToken) == 0 {
@@ -298,11 +298,21 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	// TODO: create a customer on stripe after the first
 	// tokenization so we can send stripe customer id moving forward
 
-	// save email and name to user object
+	// upgrade user to a full user
 	user := ctx.Value("session.user").(*data.User)
-	user.Email = payload.Email
-	user.Name = fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName)
-	data.DB.User.Save(user)
+	newUser := &data.User{
+		ID:          user.ID,
+		Username:    user.Email,
+		Email:       user.Email,
+		DeviceToken: &(user.Username),
+		Name:        fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName),
+		Network:     "shadow",
+		LastLogInAt: data.GetTimeUTCPointer(),
+		LoggedIn:    true,
+		Etc:         data.UserEtc{},
+	}
+	// TODO: how does the user login here??
+	data.DB.User.Save(newUser)
 
 	// fetch the product from the checkout
 
