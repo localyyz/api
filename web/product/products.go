@@ -34,17 +34,6 @@ func ProductCtx(next http.Handler) http.Handler {
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "product", product)
 		lg.SetEntryField(ctx, "product_id", product.ID)
-
-		{
-			evt := &presenter.ProductEvent{
-				Product: product,
-			}
-			if sessionUser, ok := ctx.Value("session.user").(*data.User); ok {
-				evt.ViewerID = sessionUser.ID
-			}
-			connect.NATS.Emit(events.EvProductViewed, evt)
-		}
-
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 
@@ -90,6 +79,15 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 func GetProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
+
+	{
+		evt := presenter.ProductEvent{Product: product}
+		if sessionUser, ok := ctx.Value("session.user").(*data.User); ok {
+			evt.ViewerID = sessionUser.ID
+		}
+		connect.NATS.Emit(events.EvProductViewed, evt)
+	}
+
 	render.Render(w, r, presenter.NewProduct(ctx, product))
 }
 
