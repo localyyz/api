@@ -18,10 +18,6 @@ func (c *LightningCollection) Render(w http.ResponseWriter, r *http.Request) err
 	return nil
 }
 
-/*
-	Calculates the percentage complete -> counts the number of checkouts for the products in the collection
-	Selects one product -> retrieves the first product from the collection which is in stock
-*/
 func NewLightningCollectionList(ctx context.Context, collections []*data.Collection) []render.Renderer {
 	list := []render.Renderer{}
 	for _, c := range collections {
@@ -36,7 +32,7 @@ func NewLightningCollection(ctx context.Context, collection *data.Collection) *L
 	presented := &LightningCollection{
 		Collection: collection,
 	}
-	if collection.Status == data.CollectionStatusActive {
+	if collection.Status == data.CollectionStatusActive || collection.Status == data.CollectionStatusInactive{
 		cps, err := data.DB.CollectionProduct.FindByCollectionID(collection.ID)
 		if err != nil {
 			return presented
