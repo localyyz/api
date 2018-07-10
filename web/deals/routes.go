@@ -115,7 +115,7 @@ func ListInactiveDeals(w http.ResponseWriter, r *http.Request){
 			"lightning": true,
 			"status": data.CollectionStatusInactive,
 		},
-	).OrderBy("end_at ASC")
+	).OrderBy("end_at DESC")
 
 	err := res.All(&collections)
 	if err != nil {
