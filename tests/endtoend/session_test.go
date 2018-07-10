@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/tests"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"github.com/stretchr/testify/suite"
@@ -35,9 +36,23 @@ func (suite *SessionTestSuite) TearDownSuite() {
 func (suite *SessionTestSuite) TestSessionPublic() {
 	// public routes can be accessed without session
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%s", suite.env.URL), nil)
-	// verify default cart is okay
+	// verify request returns successfully
 	rr, _ := http.DefaultClient.Do(req)
 	suite.Equal(http.StatusOK, rr.StatusCode)
+}
+
+func (suite *SessionTestSuite) TestShadowUser() {
+	//when new user opens the app for the first time the backend creates a "shadow" user
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s", suite.env.URL), nil)
+	req.Header.Add("X-DEVICE-ID", "test-device-token")
+
+	//verify it returns ok
+	rr, _ := http.DefaultClient.Do(req)
+	suite.Equal(http.StatusOK, rr.StatusCode)
+
+	//manualy verify if the backend created a shadow user
+	user, _ := data.DB.User.FindByUsername("test-device-token")
+	suite.Equal("shadow", user.Network)
 }
 
 func (suite *SessionTestSuite) TestSessionSemiAuthRouteWithDeviceID() {
@@ -74,7 +89,7 @@ func (suite *SessionTestSuite) TestSessionEmailSignupWithDeviceID() {
 	uID := "test-device-token-email-signup"
 	req.Header.Add("X-DEVICE-ID", uID)
 
-	// verify default cart is Unauthorized
+	// verify new user is created
 	rr, _ := http.DefaultClient.Do(req)
 	suite.Equal(http.StatusCreated, rr.StatusCode)
 
@@ -105,7 +120,7 @@ func (suite *SessionTestSuite) TestSessionEmailSignup() {
 
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/signup", suite.env.URL), buf)
 
-	// verify default cart is Unauthorized
+	// verify new user is created
 	rr, _ := http.DefaultClient.Do(req)
 	suite.Equal(http.StatusCreated, rr.StatusCode)
 
@@ -123,8 +138,35 @@ func (suite *SessionTestSuite) TestSessionEmailSignup() {
 	suite.Nil(dbUser.DeviceToken)
 }
 
-// TODO: can we somehow test facebook login? mock?
-func (suite *SessionTestSuite) TestSessionFacebookSignupWithDeviceID() {
+func (suite *SessionTestSuite) TestSessionFacebookSignup() {
+	connect.FacebookLogin = &MockFacebook{}
+
+	buf := &bytes.Buffer{}
+	json.NewEncoder(buf).Encode(map[string]string{
+		"token":      "localyyz-test-token-signup",
+		"inviteCode": "etc",
+	})
+
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login/facebook", suite.env.URL), buf)
+	uID := "test-device-token-email-signup"
+	req.Header.Add("X-DEVICE-ID", uID)
+
+	// verify new user is created
+	rr, _ := http.DefaultClient.Do(req)
+	suite.Equal(http.StatusOK, rr.StatusCode)
+
+	var authUser *auth.AuthUser
+	suite.NoError(json.NewDecoder(rr.Body).Decode(&authUser))
+
+
+	//validate new user
+	suite.Equal("facebook", authUser.Network)
+	suite.Equal("test@localyyz.com", authUser.Email)
+
+	//getting it from data to manually check
+	user, _ :=data.DB.User.FindByID(authUser.ID)
+	suite.Equal("test-device-token-email-signup", *user.DeviceToken)
+	suite.NotEmpty(authUser.ID)
 }
 
 func TestSessionTestSuite(t *testing.T) {
