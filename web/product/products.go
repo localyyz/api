@@ -117,7 +117,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 			"p.status": data.ProductStatusApproved,
 			"p.id":     productIDs,
 		}).
-		OrderBy("p.score DESC")
+		OrderBy(data.MaintainOrder("p.id", productIDs))
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
