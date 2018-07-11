@@ -3,6 +3,7 @@ package product
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -103,8 +104,14 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
 	var result presenter.ProductTrend
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(b, &result); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
