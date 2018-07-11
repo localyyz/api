@@ -21,11 +21,14 @@ func (h *Handler) HandleProductPurchased(product *presenter.ProductEvent) {
 }
 
 func (h *Handler) GetTrending(w http.ResponseWriter, r *http.Request) {
-	productIDs := []int64{}
+	result := &presenter.ProductTrend{
+		// always initialize so it's not null
+		IDs: []int64{},
+	}
 	scores, _ := h.trend.TopScores(50)
 	for k, _ := range scores {
 		ID, _ := strconv.ParseInt(k, 10, 64)
-		productIDs = append(productIDs, ID)
+		result.IDs = append(result.IDs, ID)
 	}
-	render.Respond(w, r, productIDs)
+	render.Respond(w, r, result)
 }

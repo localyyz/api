@@ -51,6 +51,10 @@ type ProductEvent struct {
 	BuyerID  int64 `json:"buyerId"`
 }
 
+type ProductTrend struct {
+	IDs []int64 `json:"IDs"`
+}
+
 type ProductEtc struct {
 	Brand string `json:"brand"`
 }

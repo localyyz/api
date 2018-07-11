@@ -97,14 +97,14 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	resp, err := http.Get("http://reporter:5339/trend")
+	resp, err := http.DefaultClient.Get("http://reporter:5339/trend")
 	if err != nil {
 		render.Respond(w, r, []struct{}{})
 		return
 	}
 
-	var productIDs []int64
-	if err := json.NewDecoder(resp.Body).Decode(&productIDs); err != nil {
+	var result presenter.ProductTrend
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
@@ -113,9 +113,9 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		Where(db.Cond{
 			"p.status": data.ProductStatusApproved,
-			"p.id":     productIDs,
+			"p.id":     result.IDs,
 		}).
-		OrderBy(data.MaintainOrder("p.id", productIDs))
+		OrderBy(data.MaintainOrder("p.id", result.IDs))
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
