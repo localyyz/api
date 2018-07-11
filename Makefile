@@ -110,6 +110,9 @@ run-syncer:
 run-reporter:
 	@(export CONFIG=${REPORTER_CONFIG}; fresh -c runner.conf -p ./cmd/reporter)
 
+run-nats:
+	@nats-streaming-server -DV -cid development
+
 build-merchant:
 	@mkdir -p ./bin
 	GOGO=off go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/merchant ./cmd/merchant

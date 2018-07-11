@@ -17,7 +17,7 @@ type Handler struct {
 	Debug bool
 }
 
-func New(DB *data.Database, Debug bool) *Handler {
+func New(DB *data.Database) *Handler {
 	if places, _ := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive}); places != nil {
 		shopify.SetupShopCache(places...)
 	}
@@ -27,7 +27,7 @@ func New(DB *data.Database, Debug bool) *Handler {
 	if blacklist, _ := DB.Blacklist.FindAll(nil); blacklist != nil {
 		shopify.SetupCategoryBlacklistCache(blacklist...)
 	}
-	return &Handler{DB, Debug}
+	return &Handler{DB: DB}
 }
 
 func (h *Handler) Routes() chi.Router {

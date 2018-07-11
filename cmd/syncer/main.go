@@ -41,9 +41,11 @@ func main() {
 
 	//[connect]
 	connect.SetupSlack(conf.Connect.Slack)
+	connect.SetupNatsStream(conf.Connect.Nats)
 
 	// new web handler
-	h := syncer.New(db, (conf.Environment == "development"))
+	h := syncer.New(db)
+	h.Debug = (conf.Environment == "development")
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
