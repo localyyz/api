@@ -36,7 +36,7 @@ var (
 
 var DefaultOptions = Options{
 	Norm:     2,
-	Lifetime: 30 * time.Second,
+	Lifetime: 3 * Day,
 }
 
 type Option func(*Options) error
