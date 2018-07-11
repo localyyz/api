@@ -108,6 +108,9 @@ func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 	in the presenter -> returns the products associated with it
 */
 func ListInactiveDeals(w http.ResponseWriter, r *http.Request){
+	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
+
 	var collections []*data.Collection
 
 	res := data.DB.Collection.Find(
@@ -117,8 +120,8 @@ func ListInactiveDeals(w http.ResponseWriter, r *http.Request){
 		},
 	).OrderBy("end_at DESC")
 
-	err := res.All(&collections)
-	if err != nil {
+	paginate := cursor.UpdateQueryUpper(res)
+	if err := paginate.All(&collections); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
