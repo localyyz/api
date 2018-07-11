@@ -12,6 +12,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/forgett"
 	"bitbucket.org/moodie-app/moodie-api/reporter"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
@@ -44,14 +45,23 @@ func main() {
 	nats := connect.SetupNatsStream(conf.Connect.Nats)
 
 	//[stash]
-	if err := stash.SetupDefaultClient(conf.Stash.Host); err != nil {
+	_, err = stash.NewStash(conf.Stash.Host)
+	if err != nil {
 		lg.Fatal(errors.Wrap(err, "stash connection failed"))
+	}
+
+	//[forgett]
+	_, err = forgett.NewForgett(stash.NewPool(stash.NewDialer(conf.Stash.Host)))
+	if err != nil {
+		lg.Fatal(errors.Wrap(err, "forgett setup failed"))
 	}
 
 	// new handler
 	h := reporter.New(nats)
-	// subscribe to all the nats streams
-	h.Subscribe(conf.Connect.Nats)
+	if nats != nil {
+		// subscribe to all the nats streams
+		h.Subscribe(conf.Connect.Nats)
+	}
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
@@ -63,10 +73,13 @@ func main() {
 		if err := data.DB.Close(); err != nil {
 			lg.Alert(err)
 		}
-		if !conf.Connect.Nats.Durable {
-			nats.UnsubscribeAll()
+
+		if nats != nil {
+			if !conf.Connect.Nats.Durable {
+				nats.UnsubscribeAll()
+			}
+			nats.Close()
 		}
-		nats.Close()
 	})
 
 	lg.Warnf("Reporter starting on %v", conf.Bind)

@@ -44,7 +44,11 @@ func NewPool(dial func() (redis.Conn, error)) *redis.Pool {
 
 func NewStash(host string) (*Stash, error) {
 	pool := NewPool(NewDialer(host))
-	return &Stash{pool: pool}, nil
+	s := &Stash{
+		pool: pool,
+	}
+	DefaultClient = s
+	return s, nil
 }
 
 func SetupDefaultClient(host string) (err error) {
