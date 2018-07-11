@@ -80,14 +80,24 @@ func DeviceCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		// find a user with username similar to this device id
-		user, err := data.DB.User.FindByUsername(deviceId)
+		// find a user with username or device token of deviceID
+		var user *data.User
+		res := data.DB.User.Find(
+			db.Or(
+				db.Cond{"username": deviceId},
+				db.Cond{"device_token": deviceId},
+			),
+		)
+		err := res.One(&user)
 		if err != nil {
+			// any error other than a row not found
 			if err != db.ErrNoMoreRows {
 				render.Respond(w, r, err)
 				return
 			}
-			// not found, create new user
+
+			// did not find user by either username or device token
+			// so create new shadow user and save it
 			user = &data.User{
 				Username:    deviceId,
 				Email:       deviceId,
@@ -95,6 +105,8 @@ func DeviceCtx(next http.Handler) http.Handler {
 				LastLogInAt: data.GetTimeUTCPointer(),
 				LoggedIn:    true,
 			}
+
+			// save the new user
 			if err := data.DB.User.Save(user); err != nil {
 				render.Respond(w, r, err)
 				return

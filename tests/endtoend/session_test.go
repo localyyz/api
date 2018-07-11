@@ -143,12 +143,12 @@ func (suite *SessionTestSuite) TestSessionFacebookSignup() {
 
 	buf := &bytes.Buffer{}
 	json.NewEncoder(buf).Encode(map[string]string{
-		"token":      "localyyz-test-token-signup",
+		"token":      "localyyz-test-token-login",
 		"inviteCode": "etc",
 	})
 
 	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login/facebook", suite.env.URL), buf)
-	uID := "test-device-token-email-signup"
+	uID := "test-device-token-email-login"
 	req.Header.Add("X-DEVICE-ID", uID)
 
 	// verify new user is created
@@ -164,8 +164,8 @@ func (suite *SessionTestSuite) TestSessionFacebookSignup() {
 	suite.Equal("test@localyyz.com", authUser.Email)
 
 	//getting it from data to manually check
-	user, _ :=data.DB.User.FindByID(authUser.ID)
-	suite.Equal("test-device-token-email-signup", *user.DeviceToken)
+	user, _ := data.DB.User.FindByID(authUser.ID)
+	suite.Equal("test-device-token-email-login", *user.DeviceToken)
 	suite.NotEmpty(authUser.ID)
 }
 
