@@ -90,15 +90,19 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	cond := db.Cond{
+		"product_id": payload.ProductID,
+		"limits >=":  1,
+	}
+	if len(payload.Color) > 0 {
+		cond[db.Raw("lower(etc->>'color')")] = payload.Color
+	}
+	if len(payload.Size) > 0 {
+		cond[db.Raw("lower(etc->>'size')")] = payload.Size
+	}
+
 	// fetch the variant from given payload (product id, color and size)
-	variant, err := data.DB.ProductVariant.FindOne(
-		db.Cond{
-			"product_id":                   payload.ProductID,
-			"limits >=":                    1,
-			db.Raw("lower(etc->>'color')"): payload.Color,
-			db.Raw("lower(etc->>'size')"):  payload.Size,
-		},
-	)
+	variant, err := data.DB.ProductVariant.FindOne(cond)
 	if err != nil {
 		if err == db.ErrNoMoreRows {
 			render.Render(w, r, api.ErrOutOfStockAdd(err))

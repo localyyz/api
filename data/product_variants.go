@@ -34,8 +34,8 @@ type ProductVariantStore struct {
 type ProductVariantEtc struct {
 	Sku      string `json:"sku,omitempty"`
 	SizeName string `json:"sn,omitempty"`
-	Size     string `json:"size,omitempty"`
-	Color    string `json:"color,omitempty"`
+	Size     string `json:"size"`
+	Color    string `json:"color"`
 	*postgresql.JSONBConverter
 }
 
