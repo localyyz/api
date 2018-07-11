@@ -299,7 +299,7 @@ func (f *fixture) TeardownData(t *testing.T) {
 type MockFacebook struct{}
 
 func (f *MockFacebook) Login(token, inviteCode string) (*data.User, error){
-	if token == "localyyz-test-token-signup" {
+	if token == "localyyz-test-token-login" {
 		user := data.User{ID: 0, Network:"facebook", Email: "test@localyyz.com"}
 		return &user, nil
 	}

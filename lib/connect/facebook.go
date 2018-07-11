@@ -48,6 +48,7 @@ func (f *Facebook) Login(token, inviteCode string) (*data.User, error) {
 		}
 	}
 
+	//if the user does not exist create a new one
 	if user == nil {
 		user = &data.User{Network: `facebook`}
 	}
