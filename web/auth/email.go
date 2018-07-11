@@ -105,6 +105,8 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 
 	if u, ok := r.Context().Value("session.user").(*data.User); ok && u.Network == "shadow" {
 		// session user already exists. most likely device
+		// remember: the user is already created when using DeviceCtx
+		// we simply set the newUser.ID to be the one we first created and update the username
 		newUser.ID = u.ID
 		newUser.DeviceToken = &u.Username
 	}

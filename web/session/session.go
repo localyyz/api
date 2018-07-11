@@ -117,7 +117,7 @@ func UserRefresh(next http.Handler) http.Handler {
 			// for now, just facebook
 			if user.Network == "facebook" {
 				if user.UpdatedAt == nil || time.Since(*user.UpdatedAt) > 20*24*time.Hour {
-					if err := connect.FB.GetUser(user); err != nil {
+					if err := connect.FacebookLogin.GetUser(user); err != nil {
 						lg.Warn(errors.Wrap(err, "unable to refresh user"))
 						return
 					}

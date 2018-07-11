@@ -13,25 +13,19 @@ import (
 )
 
 var (
-	FB *Facebook
+	FacebookLogin FacebookInterface
 	// Facebook API version
 	// See: https://developers.facebook.com/docs/apps/changelog for updates
 	FBVersion = "v2.9"
 )
 
-type Facebook struct {
-	*fb.App
+type FacebookInterface interface {
+	Login(token, inviteCode string)(*data.User, error)
+	GetUser(user *data.User) error
 }
 
-// TODO package lib/auther
-
-func SetupFacebook(conf Config) {
-	FB = &Facebook{
-		App: &fb.App{
-			AppId:     conf.AppId,
-			AppSecret: conf.AppSecret,
-		},
-	}
+type Facebook struct{
+	*fb.App
 }
 
 func (f *Facebook) Login(token, inviteCode string) (*data.User, error) {
@@ -118,3 +112,14 @@ func (f *Facebook) GetUser(u *data.User) error {
 
 	return nil
 }
+
+func SetupFacebook(conf Config) {
+	FacebookLogin = &Facebook{
+		App: &fb.App{
+			AppId: conf.AppId,
+			AppSecret: conf.AppSecret,
+		},
+	}
+}
+
+// TODO package lib/auther
