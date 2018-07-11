@@ -295,3 +295,17 @@ func (f *fixture) TeardownData(t *testing.T) {
 	data.DB.Exec("TRUNCATE users cascade;")
 	data.DB.Exec("TRUNCATE places cascade;")
 }
+
+type MockFacebook struct{}
+
+func (f *MockFacebook) Login(token, inviteCode string) (*data.User, error){
+	if token == "localyyz-test-token-login" {
+		user := data.User{ID: 0, Network:"facebook", Email: "test@localyyz.com"}
+		return &user, nil
+	}
+	return nil, nil
+}
+
+func (f *MockFacebook) GetUser(u *data.User) error {
+	return nil
+}

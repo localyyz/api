@@ -45,13 +45,15 @@ func main() {
 	}
 
 	//[stash]
-	if err := stash.SetupDefaultClient(conf.Stash.Host); err != nil {
+	st, err := stash.NewStash(conf.Stash.Host)
+	if err != nil {
 		if conf.Environment == "production" {
 			lg.Fatal(errors.Wrap(err, "stash connection failed"))
 		} else {
 			lg.Warn(errors.Wrap(err, "stash connection failed"))
 		}
 	}
+	_ = st
 
 	// new web handler
 	h := web.New(db)

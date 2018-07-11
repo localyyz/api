@@ -19,11 +19,15 @@ func Routes() chi.Router {
 
 	r.Get("/active", ListActiveDeals)
 	r.Get("/upcoming", ListQueuedDeals)
+	r.Get("/history", ListInactiveDeals)
 	r.With(DealCtx).Get("/active/{dealID}", GetDeal)
 
 	return r
 }
 
+/*
+	parses the dealID from the request url and fetches the deal to put in context
+*/
 func DealCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		dealID, err := strconv.ParseInt(chi.URLParam(r, "dealID"), 10, 64)
@@ -53,8 +57,7 @@ func DealCtx(next http.Handler) http.Handler {
 
 /*
 	retrieves all the active lightning collections ordered by the earliest it ends
-	in the presenter -> calculates percentage complete
-	in the presenter -> returns one product from the lightning collection
+	in the presenter -> returns the products associated with it
 */
 func ListActiveDeals(w http.ResponseWriter, r *http.Request) {
 	var collections []*data.Collection
@@ -78,8 +81,7 @@ func ListActiveDeals(w http.ResponseWriter, r *http.Request) {
 
 /*
 	retrieves all the upcoming lightning collections ordered by the earliest it starts
-	in the presenter -> calculates percentage complete
-	in the presenter -> returns one product from the lightning collection
+	in the presenter -> does not return any products
 */
 func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 	var collections []*data.Collection
@@ -92,6 +94,34 @@ func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 	).OrderBy("start_at ASC")
 	err := res.All(&collections)
 	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	if err := render.RenderList(w, r, presenter.NewLightningCollectionList(r.Context(), collections)); err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
+/*
+	retrieves all the inactive lightning collections ordered by the earliest it ended
+	in the presenter -> returns the products associated with it
+*/
+func ListInactiveDeals(w http.ResponseWriter, r *http.Request){
+	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
+
+	var collections []*data.Collection
+
+	res := data.DB.Collection.Find(
+		db.Cond{
+			"lightning": true,
+			"status": data.CollectionStatusInactive,
+		},
+	).OrderBy("end_at DESC")
+
+	paginate := cursor.UpdateQueryUpper(res)
+	if err := paginate.All(&collections); err != nil {
 		render.Respond(w, r, err)
 		return
 	}

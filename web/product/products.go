@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -89,6 +90,45 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Render(w, r, presenter.NewProduct(ctx, product))
+}
+
+func ListTrending(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
+	cursor := ctx.Value("cursor").(*api.Page)
+
+	resp, err := http.Get("http://reporter:5339/trend")
+	if err != nil {
+		render.Respond(w, r, []struct{}{})
+		return
+	}
+
+	var productIDs []int64
+	if err := json.NewDecoder(resp.Body).Decode(&productIDs); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	query := data.DB.Select("p.*").
+		From("products p").
+		Where(db.Cond{
+			"p.status": data.ProductStatusApproved,
+			"p.id":     productIDs,
+		}).
+		OrderBy(data.MaintainOrder("p.id", productIDs))
+	query = filterSort.UpdateQueryBuilder(query)
+
+	var products []*data.Product
+	if !filterSort.HasFilter() {
+		paginate := cursor.UpdateQueryBuilder(query)
+		if err := paginate.All(&products); err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+		cursor.Update(products)
+	}
+
+	render.RenderList(w, r, presenter.NewProductList(ctx, products))
 }
 
 func ListProducts(w http.ResponseWriter, r *http.Request) {

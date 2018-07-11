@@ -12,9 +12,9 @@ import (
 	"github.com/go-chi/render"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 )
 
 // Authenticated user with jwt embed
@@ -143,8 +143,8 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// inspect the token for userId and expiry
-	user, err := connect.FB.Login(payload.Token, payload.InviteCode)
+	//inspect the token for userId and expiry
+	user, err := connect.FacebookLogin.Login(payload.Token, payload.InviteCode)
 	if err != nil {
 		if err == connect.ErrTokenExpired {
 			render.Status(r, http.StatusUnauthorized)
@@ -159,7 +159,11 @@ func FacebookLogin(w http.ResponseWriter, r *http.Request) {
 	// 1. check if session device user is set
 	// 2. check if this is a new user event
 	// 3. merge two users
+
+	// user.ID == 0 ensures that its a new user created using FB
 	if u, ok := r.Context().Value("session.user").(*data.User); ok && u.Network == "shadow" && user.ID == 0 {
+		// remember: the user is already created when using DeviceCtx
+		// we simply set the newUser.ID to be the one we first created and update the username
 		user.ID = u.ID
 		user.DeviceToken = &u.Username
 	}

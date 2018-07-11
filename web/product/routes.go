@@ -9,6 +9,7 @@ func Routes() chi.Router {
 
 	r := api.WithFilterRoutes(ListProducts)
 	r.Get("/history", ListHistoryProduct)
+	r.Get("/trend", ListTrending)
 	r.Route("/{productID}", func(r chi.Router) {
 		r.Use(ProductCtx)
 		r.Get("/", GetProduct)
