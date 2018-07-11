@@ -99,7 +99,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	resp, err := http.Get("http://reporter/trend")
+	resp, err := http.Get("http://reporter:5339/trend")
 	if err != nil {
 		render.Respond(w, r, []struct{}{})
 		return
