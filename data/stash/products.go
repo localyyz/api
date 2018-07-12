@@ -74,7 +74,7 @@ func (s *Stash) IncrProductViews(productID, userID int64) error {
 	defer conn.Close()
 
 	// count the view
-	conn.Do("ZADD", "product:views", 1, productID)
+	conn.Do("ZINCRBY", "product:views", 1, productID)
 
 	{ // live view count. Rolling 15min window expiry
 		k := s.productDataKey(productID, "live")
@@ -93,9 +93,7 @@ func (s *Stash) IncrProductViews(productID, userID int64) error {
 func (s *Stash) IncrProductPurchases(productID int64) (int, error) {
 	conn := s.conn()
 	defer conn.Close()
-
-	// count the view
-	return redis.Int(conn.Do("ZADD", "product:buys", 1, productID))
+	return redis.Int(conn.Do("ZINCRBY", "product:buys", 1, productID))
 }
 
 func (s *Stash) productDataKey(productID int64, parts ...string) string {
