@@ -30,6 +30,11 @@ func (s *shopifyVariantSyncer) Finalize() error {
 	for _, v := range s.toRemoves {
 		data.DB.ProductVariant.Delete(v)
 	}
+	if len(s.toSaves) == 0 {
+		// this means for whatever the reason, all variants
+		// were removed
+		return ErrProductUnavailable
+	}
 	return nil
 }
 
