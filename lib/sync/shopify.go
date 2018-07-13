@@ -70,6 +70,7 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		product.Status = data.ProductStatusProcessing
+		data.DB.Product.Save(product) // lock product in as processing
 		syncer := &productSyncer{
 			place:   place,
 			product: product,
