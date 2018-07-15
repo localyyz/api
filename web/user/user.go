@@ -28,9 +28,10 @@ func MeCtx(next http.Handler) http.Handler {
 }
 
 type userRequest struct {
-	Gender  data.UserGender `json:"gender"`
-	Name    string          `json:"name"`
-	Network string          `json:"network"`
+	Gender   data.UserGender `json:"gender"`
+	Name     string          `json:"name"`
+	Network  string          `json:"network"`
+	PlayerID string          `json:"playerId"`
 }
 
 func (u *userRequest) Bind(r *http.Request) error {
@@ -53,6 +54,9 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if payload.Name != "" {
 		me.Name = payload.Name
+	}
+	if payload.PlayerID != "" {
+		me.Etc.PlayerID = payload.PlayerID
 	}
 
 	if err := data.DB.User.Save(me); err != nil {
@@ -92,32 +96,5 @@ func Ping(w http.ResponseWriter, r *http.Request) {
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
-	render.Render(w, r, presenter.NewUser(ctx, user))
-}
-
-type deviceTokenRequst struct {
-	DeviceToken string `json:"deviceToken,required"`
-}
-
-func (*deviceTokenRequst) Bind(r *http.Request) error {
-	return nil
-}
-
-func SetDeviceToken(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
-
-	payload := &deviceTokenRequst{}
-	if err := render.Bind(r, payload); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	user.DeviceToken = &payload.DeviceToken
-	if err := data.DB.User.Save(user); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
 	render.Render(w, r, presenter.NewUser(ctx, user))
 }

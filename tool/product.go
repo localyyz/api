@@ -173,45 +173,14 @@ func SyncProducts(w http.ResponseWriter, r *http.Request) {
 
 	// Create or update depending on PUT or POST
 
-	for i := 0; i <= 34; i++ {
+	for i := 1; i <= 34; i++ {
 		log.Printf("fetching page %d", i+1)
-
-		var products []*data.Product
-		err := data.DB.Select("p.*").
-			From("products p").
-			LeftJoin("product_variants pv").On("pv.product_id = p.id").
-			Where(db.Cond{
-				"pv.place_id":             place.ID,
-				"p.deleted_at":            db.IsNull(),
-				"p.status":                data.ProductStatusApproved,
-				db.Raw("pv.etc->>'size'"): "",
-			}).
-			Limit(200).
-			Offset(i * 200).
-			All(&products)
-
-		if err != nil {
-			log.Println(err)
-			break
-		}
-		if len(products) == 0 {
-			log.Println("db call got nothing")
-			break
-		}
-
-		externalIDs := make([]int64, len(products))
-		for i, v := range products {
-			externalIDs[i] = *v.ExternalID
-		}
-
-		log.Println("Fetching %v", externalIDs)
 
 		productList, _, _ := client.ProductList.Get(
 			ctx,
 			&shopify.ProductListParam{
-				ProductIDs: externalIDs,
-				Limit:      200,
-				Page:       1,
+				Limit: 200,
+				Page:  i,
 			},
 		)
 		if len(productList) == 0 {

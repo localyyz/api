@@ -5,7 +5,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
@@ -13,6 +12,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/cart/express"
 	"bitbucket.org/moodie-app/moodie-api/web/category"
 	"bitbucket.org/moodie-app/moodie-api/web/collection"
+	"bitbucket.org/moodie-app/moodie-api/web/deals"
 	"bitbucket.org/moodie-app/moodie-api/web/designer"
 	"bitbucket.org/moodie-app/moodie-api/web/ping"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
@@ -21,11 +21,9 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
-	"bitbucket.org/moodie-app/moodie-api/web/deals"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/render"
 	"github.com/pressly/lg"
 )
 
@@ -88,9 +86,6 @@ func (h *Handler) Routes() chi.Router {
 		r.Get("/connect", shopify.Connect)
 		r.Get("/oauth/shopify/callback", connect.SH.OAuthCb)
 
-		// push notification
-		r.Post("/echo", echoPush)
-
 		// public api routes
 		r.Mount("/search", search.Routes())
 		r.Mount("/collections", collection.Routes())
@@ -121,28 +116,4 @@ func (h *Handler) Routes() chi.Router {
 
 func NewStructuredLogger() func(next http.Handler) http.Handler {
 	return api.RequestLogger(lg.DefaultLogger)
-}
-
-type pushRequest struct {
-	DeviceToken string `json:"deviceToken,required"`
-	Payload     string `json:"payload"`
-}
-
-func (*pushRequest) Bind(r *http.Request) error {
-	return nil
-}
-
-// test function: echo push to apns
-func echoPush(w http.ResponseWriter, r *http.Request) {
-	payload := &pushRequest{}
-	if err := render.Bind(r, payload); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	b := []byte(payload.Payload)
-	t := payload.DeviceToken
-	if err := pusher.Push(t, b); err != nil {
-		render.Respond(w, r, err)
-	}
 }
