@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
@@ -230,6 +231,76 @@ func SyncProducts(w http.ResponseWriter, r *http.Request) {
 			s.ShopifyProductListingsUpdate(ctx)
 		}
 	}
+
+}
+
+func ValidateSyncProducts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	place := ctx.Value("place").(*data.Place)
+
+	iter := data.DB.Select("*").
+		From("products").
+		Where(
+			db.Cond{
+				"place_id": place.ID,
+				"status":   3,
+				"id":       db.Gt(261303),
+			},
+		).
+		OrderBy("id").
+		Iterator()
+	defer iter.Close()
+
+	worker := func(i int, chnn chan data.Product) {
+		for {
+			p, ok := <-chnn
+			if !ok {
+				log.Printf("wrk(%d) finished.", i)
+				break
+			}
+
+			pi, err := data.DB.ProductImage.FindOne(db.Cond{"product_id": p.ID})
+			if err != nil {
+				log.Println("wkr(%d): product_image %v", i, err)
+				continue
+			}
+
+			s := time.Now()
+			resp, err := http.DefaultClient.Head(pi.ImageURL)
+			if err != nil {
+				log.Printf("wrk(%d): product %d fetch image err %v", i, p.ID, err)
+				continue
+			}
+			log.Printf("timeit: %v", time.Since(s))
+
+			if resp.StatusCode == http.StatusNotFound {
+				p.Status = data.ProductStatusRejected
+				data.DB.Product.Save(&p)
+				log.Printf("wrk(%d): product %d was rejected, timeit: %v", i, p.ID, time.Since(s))
+			}
+		}
+	}
+
+	productChann := make(chan data.Product, 10)
+	for i := 1; i <= 10; i++ {
+		log.Printf("starting worker %d", i)
+		go worker(i, productChann)
+	}
+
+	for {
+		var p data.Product
+		if !iter.Next(&p) {
+			log.Println("done")
+			break
+		}
+		productChann <- p
+	}
+
+	if err := iter.Err(); err != nil {
+		log.Println(err)
+	}
+
+	close(productChann)
 
 }
 

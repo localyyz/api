@@ -35,10 +35,13 @@ func ShopifyProductListingsRemove(ctx context.Context) error {
 			lg.Warnf("failed to delete product %s with %+v", p.Handle, err)
 			return nil
 		}
+		lg.SetEntryField(ctx, "product_id", dbProduct.ID)
 		// Mark as deleted at and save
 		dbProduct.DeletedAt = data.GetTimeUTCPointer()
 		dbProduct.Status = data.ProductStatusDeleted
-		data.DB.Product.Save(dbProduct)
+		if err := data.DB.Product.Save(dbProduct); err != nil {
+			return err
+		}
 	}
 	return nil
 }
