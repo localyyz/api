@@ -57,8 +57,8 @@ type UserEtc struct {
 	FirstName string     `json:"firstName"`
 	Gender    UserGender `json:"gender"`
 	// OneSignal player id
-	PlayerID  string `json:"playerId"`
-	InvitedBy int64  `json:"invitedBy"`
+	OSPlayerID string `json:"osId"`
+	InvitedBy  int64  `json:"invitedBy"`
 
 	*postgresql.JSONBConverter
 }

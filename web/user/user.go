@@ -28,10 +28,9 @@ func MeCtx(next http.Handler) http.Handler {
 }
 
 type userRequest struct {
-	Gender   data.UserGender `json:"gender"`
-	Name     string          `json:"name"`
-	Network  string          `json:"network"`
-	PlayerID string          `json:"playerId"`
+	Gender  data.UserGender `json:"gender"`
+	Name    string          `json:"name"`
+	Network string          `json:"network"`
 }
 
 func (u *userRequest) Bind(r *http.Request) error {
@@ -54,9 +53,6 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if payload.Name != "" {
 		me.Name = payload.Name
-	}
-	if payload.PlayerID != "" {
-		me.Etc.PlayerID = payload.PlayerID
 	}
 
 	if err := data.DB.User.Save(me); err != nil {

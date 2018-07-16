@@ -94,7 +94,7 @@ func (h *Handler) Routes() chi.Router {
 		r.Mount("/places", place.Routes())
 		r.Mount("/products", product.Routes())
 		r.Mount("/deals", deals.Routes())
-		r.Mount("/ping", ping.Routes())
+		r.Post("/ping", ping.LogDeviceData)
 	})
 
 	// Semi-authed route. User can be "shadow"
