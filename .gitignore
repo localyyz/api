@@ -8,6 +8,7 @@ config/push.pem
 tools/*/data
 .idea/
 dump.rdb
+scratch/*
 
 *~
 \#*\#

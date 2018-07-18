@@ -57,9 +57,10 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		Where(
 			db.Cond{
-				"p.place_id": product.PlaceID,
-				"p.gender":   product.Gender,
-				"p.id":       db.NotEq(product.ID),
+				"p.place_id":                   product.PlaceID,
+				"p.gender":                     product.Gender,
+				"p.id":                         db.NotEq(product.ID),
+				"p.status":                     data.ProductStatusApproved,
 				db.Raw("p.category->>'value'"): product.Category.Value,
 			}).
 		OrderBy("p.score desc")
