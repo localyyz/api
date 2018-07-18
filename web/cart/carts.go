@@ -2,6 +2,7 @@ package cart
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
@@ -28,6 +29,16 @@ type cartRequest struct {
 }
 
 func (c *cartRequest) Bind(r *http.Request) error {
+	if c.ShippingAddress != nil {
+		c.ShippingAddress.Normalize()
+	}
+	if c.BillingAddress != nil {
+		c.BillingAddress.Normalize()
+	}
+	if c.Email != "" {
+		c.Email = strings.TrimSpace(c.Email)
+	}
+
 	return nil
 }
 
