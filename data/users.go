@@ -56,7 +56,9 @@ const (
 type UserEtc struct {
 	FirstName string     `json:"firstName"`
 	Gender    UserGender `json:"gender"`
-	InvitedBy int64      `json:"invitedBy"`
+	// OneSignal player id
+	OSPlayerID string `json:"osId"`
+	InvitedBy  int64  `json:"invitedBy"`
 
 	*postgresql.JSONBConverter
 }

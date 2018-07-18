@@ -37,6 +37,8 @@ var (
 
 	defaultSortField        = ""
 	ErrInvalidFilterSortKey = errors.New("invalid filter or sort key")
+
+	MaxPrice = 300
 )
 
 const (
@@ -306,7 +308,10 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 				fConds = append(fConds, db.Cond{"p.price": db.Gte(f.MinValue)})
 			}
 			if f.MaxValue != nil {
-				fConds = append(fConds, db.Cond{"p.price": db.Lte(f.MaxValue)})
+				//the frontend can only return 300 as the max so anything above that there should be no Lte
+				if f.MaxValue != MaxPrice {
+					fConds = append(fConds, db.Cond{"p.price": db.Lte(f.MaxValue)})
+				}
 			}
 		}
 		selector = selector.Where(db.And(fConds...))

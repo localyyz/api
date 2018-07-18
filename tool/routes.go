@@ -57,6 +57,7 @@ func (h *Handler) Routes() chi.Router {
 		r.Post("/products/sync/{externalID}", SyncProduct)
 		r.Put("/products/sync", SyncProducts)
 		r.Post("/products/sync", SyncProducts)
+		r.Post("/products/validate", ValidateSyncProducts)
 		r.Delete("/products/sync", CleanupProduct)
 
 		r.Put("/variants/sync", SyncVariants)

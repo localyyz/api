@@ -1,11 +1,11 @@
 package auth
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/render"
+	"github.com/goware/emailx"
 	"github.com/pressly/lg"
 
 	"golang.org/x/crypto/bcrypt"
@@ -19,37 +19,6 @@ const (
 	bCryptCost        int = 10
 )
 
-// Signup via website
-func RegisterSignup(w http.ResponseWriter, r *http.Request) {
-	var newRegister struct {
-		Email string `json:"email"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&newRegister)
-	if err != nil {
-		render.Respond(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-	if len(newRegister.Email) == 0 {
-		return
-	}
-
-	newUser := &data.User{
-		Username:     newRegister.Email,
-		Email:        newRegister.Email,
-		EmailStatus:  data.EmailStatusUnconfirmed,
-		Name:         newRegister.Email,
-		Network:      "website",
-		PasswordHash: "",
-		LastLogInAt:  data.GetTimeUTCPointer(),
-		LoggedIn:     false,
-	}
-	if err := data.DB.User.Save(newUser); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	return
-}
-
 type userSignup struct {
 	FullName        string          `json:"fullName,required"`
 	Email           string          `json:"email,required"`
@@ -61,7 +30,7 @@ type userSignup struct {
 }
 
 func (u *userSignup) Bind(r *http.Request) error {
-	return nil
+	return emailx.Validate(u.Email)
 }
 
 func EmailSignup(w http.ResponseWriter, r *http.Request) {
@@ -84,15 +53,14 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	// encrypt with bcrypt
 	epw, err := bcrypt.GenerateFromPassword([]byte(newSignup.Password), bCryptCost)
 	if err != nil {
-		lg.Warn(err)
 		// mask the encryption error and return
 		render.Respond(w, r, api.ErrEncryptinError)
 		return
 	}
 
 	newUser := &data.User{
-		Username:     newSignup.Email,
-		Email:        newSignup.Email,
+		Username:     emailx.Normalize(newSignup.Email),
+		Email:        emailx.Normalize(newSignup.Email),
 		Name:         newSignup.FullName,
 		Network:      "email",
 		PasswordHash: string(epw),

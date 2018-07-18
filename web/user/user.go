@@ -94,30 +94,3 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	user := ctx.Value("session.user").(*data.User)
 	render.Render(w, r, presenter.NewUser(ctx, user))
 }
-
-type deviceTokenRequst struct {
-	DeviceToken string `json:"deviceToken,required"`
-}
-
-func (*deviceTokenRequst) Bind(r *http.Request) error {
-	return nil
-}
-
-func SetDeviceToken(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	user := ctx.Value("session.user").(*data.User)
-
-	payload := &deviceTokenRequst{}
-	if err := render.Bind(r, payload); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	user.DeviceToken = &payload.DeviceToken
-	if err := data.DB.User.Save(user); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-
-	render.Render(w, r, presenter.NewUser(ctx, user))
-}

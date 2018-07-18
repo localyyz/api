@@ -22,11 +22,12 @@ type NatsConfig struct {
 }
 
 type Configs struct {
-	Facebook Config      `toml:"facebook"`
-	Shopify  Config      `toml:"shopify"`
-	Stripe   Config      `toml:"stripe"`
-	Slack    SlackConfig `toml:"slack"`
-	Nats     NatsConfig  `toml:"nats"`
+	Facebook  Config      `toml:"facebook"`
+	Shopify   Config      `toml:"shopify"`
+	Stripe    Config      `toml:"stripe"`
+	OneSignal Config      `toml:"onesignal"`
+	Slack     SlackConfig `toml:"slack"`
+	Nats      NatsConfig  `toml:"nats"`
 }
 
 // Configure loads the connect configs from config file
@@ -36,4 +37,5 @@ func Configure(confs Configs) {
 	SetupStripe(confs.Stripe)
 	SetupSlack(confs.Slack)
 	SetupNatsStream(confs.Nats)
+	SetupOneSignal(confs.OneSignal)
 }

@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -71,6 +72,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: move webhook registration to after billing is accepted
 	billing, _ := data.DB.PlaceBilling.FindByPlaceID(place.ID)
 	if billing != nil && billing.Status != data.BillingStatusActive {
+		lg.SetEntryField(ctx, "error", errors.New("billing inactive"))
 		return
 	}
 
@@ -81,7 +83,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		lib.TopicProductListingsUpdate,
 		lib.TopicProductListingsRemove:
 		if err := ProductListingHandler(r); err != nil {
-			lg.Warnf("webhook: %s for place(%s) failed with %v", topic, place.Name, err)
+			lg.Alertf("webhook: %s for place(%s) failed with %v", topic, place.Name, err)
 			lg.SetEntryField(ctx, "error", err)
 			return
 		}
