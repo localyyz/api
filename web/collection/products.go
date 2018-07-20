@@ -38,11 +38,16 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	}
 	cond := db.And(
 		productCond,
-		db.Cond{
-			"p.gender": collection.Gender,
-			"p.status": data.ProductStatusApproved,
-		},
+		db.Cond{"p.status": data.ProductStatusApproved},
 	)
+
+	// change up the product shown based on logged in user preference
+	if user, ok := ctx.Value("session.user").(*data.User); ok {
+		if user.Etc.Gender != data.UserGenderUnknown {
+			cond = cond.And(db.Cond{"p.gender": user.Etc.Gender})
+		}
+	}
+
 	query := data.DB.Select(db.Raw("distinct p.*")).
 		From("products p").
 		Where(cond).
