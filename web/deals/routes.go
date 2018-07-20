@@ -107,7 +107,7 @@ func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 	retrieves all the inactive lightning collections ordered by the earliest it ended
 	in the presenter -> returns the products associated with it
 */
-func ListInactiveDeals(w http.ResponseWriter, r *http.Request){
+func ListInactiveDeals(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := ctx.Value("cursor").(*api.Page)
 
@@ -116,7 +116,7 @@ func ListInactiveDeals(w http.ResponseWriter, r *http.Request){
 	res := data.DB.Collection.Find(
 		db.Cond{
 			"lightning": true,
-			"status": data.CollectionStatusInactive,
+			"status":    data.CollectionStatusInactive,
 		},
 	).OrderBy("end_at DESC")
 
