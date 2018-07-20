@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
@@ -50,6 +51,22 @@ type CartAddress struct {
 	// Internal ID
 	ID int64 `json:"id,omitempty"`
 	*postgresql.JSONBConverter
+}
+
+// normalize trims all fields
+func (a *CartAddress) Normalize() {
+	a.FirstName = strings.TrimSpace(a.FirstName)
+	a.LastName = strings.TrimSpace(a.LastName)
+	a.Address = strings.TrimSpace(a.Address)
+	a.AddressOpt = strings.TrimSpace(a.AddressOpt)
+	a.City = strings.TrimSpace(a.City)
+	a.Country = strings.TrimSpace(a.Country)
+	a.CountryCode = strings.TrimSpace(a.CountryCode)
+	a.Province = strings.TrimSpace(a.Province)
+	a.ProvinceCode = strings.TrimSpace(a.ProvinceCode)
+	a.Zip = strings.TrimSpace(a.Zip)
+	a.Email = strings.TrimSpace(a.Email)
+	a.Phone = strings.TrimSpace(a.Phone)
 }
 
 type CartShippingMethod struct {

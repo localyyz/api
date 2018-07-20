@@ -47,6 +47,7 @@ func GetProductCount(w http.ResponseWriter, r *http.Request) {
 	ourCount, _ := data.DB.Product.Find(db.Cond{
 		"place_id":   place.ID,
 		"deleted_at": db.IsNull(),
+		"status":     data.ProductStatusApproved,
 	}).Count()
 	if err != nil {
 		render.Respond(w, r, err)

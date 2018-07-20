@@ -328,7 +328,12 @@ func GetMerchantProductCount(w http.ResponseWriter, r *http.Request) {
 			log.Printf("place %d: %+v", cred.PlaceID, err)
 			continue
 		}
-		ourCount, _ := data.DB.Product.Find(db.Cond{"place_id": cred.PlaceID}).Count()
+		ourCount, _ := data.DB.Product.Find(
+			db.Cond{
+				"place_id": cred.PlaceID,
+				"status":   data.ProductStatusApproved,
+			},
+		).Count()
 		if err != nil {
 			log.Printf("place %d: %+v", cred.PlaceID, err)
 			continue
