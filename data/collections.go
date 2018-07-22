@@ -24,8 +24,9 @@ type Collection struct {
 	PlaceIDs   *postgresql.Int64Array  `db:"place_ids" json:"-"`
 	Categories *postgresql.StringArray `db:"categories" json:"-"`
 
-	Ordering  int32      `db:"ordering" json:"ordering"`
-	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
+	Ordering   int32      `db:"ordering" json:"ordering"`
+	CreatedAt  *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
+	ExternalID *int64     `db:"external_id,omitempty" json:"-"`
 
 	Lightning bool             `db:"lightning" json:"lightning"`
 	StartAt   *time.Time       `db:"start_at" json:"startAt"`

@@ -50,6 +50,7 @@ func (h *Handler) Routes() chi.Router {
 			return http.HandlerFunc(handler)
 		})
 
+		r.Put("/deals/sync", SyncDeals)
 		r.Get("/discount", ListPriceRule)
 		r.Get("/products/count", GetProductCount)
 
