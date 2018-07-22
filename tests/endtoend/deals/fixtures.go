@@ -1,29 +1,20 @@
-package endtoend
+package deals
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/tests/apiclient"
+	"bitbucket.org/moodie-app/moodie-api/lib/token"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
+	"github.com/go-chi/jwtauth"
 	"github.com/stretchr/testify/assert"
 )
 
-type UserClient struct {
-	*auth.AuthUser
-	client *apiclient.Client
-}
-
 type fixture struct {
-	apiURL string
-
-	user *UserClient
-
-	user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11, user12                                          *UserClient
+	user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11, user12                                          auth.AuthUser
 	testStore                                                                                                                      *data.Place
 	productInStock, productNotInStock, lightningProductValid, lightningProductExpired, lightningProductCapHit                      *data.Product
 	lightningProductMultiplePurchase                                                                                               *data.Product
@@ -36,44 +27,33 @@ type fixture struct {
 }
 
 func (f *fixture) setupUser(t *testing.T) {
-	f.user = f.newTestUser(t, 123)
-
-	f.user1 = f.newTestUser(t, 1)
-	f.user2 = f.newTestUser(t, 2)
-	f.user3 = f.newTestUser(t, 3)
-	f.user4 = f.newTestUser(t, 4)
-	f.user5 = f.newTestUser(t, 5)
-	f.user6 = f.newTestUser(t, 6)
-	f.user7 = f.newTestUser(t, 7)
-	f.user8 = f.newTestUser(t, 8)
-	f.user9 = f.newTestUser(t, 9)
-	f.user10 = f.newTestUser(t, 10)
-	f.user11 = f.newTestUser(t, 11)
-	f.user12 = f.newTestUser(t, 12)
+	f.user1 = newTestUser(t, 1)
+	f.user2 = newTestUser(t, 2)
+	f.user3 = newTestUser(t, 3)
+	f.user4 = newTestUser(t, 4)
+	f.user5 = newTestUser(t, 5)
+	f.user6 = newTestUser(t, 6)
+	f.user7 = newTestUser(t, 7)
+	f.user8 = newTestUser(t, 8)
+	f.user9 = newTestUser(t, 9)
+	f.user10 = newTestUser(t, 10)
+	f.user11 = newTestUser(t, 11)
+	f.user12 = newTestUser(t, 12)
 }
 
-func (f *fixture) newTestUser(t *testing.T, n int) *UserClient {
-	client, err := apiclient.NewClient(f.apiURL)
-	assert.NoError(t, err)
-
+func newTestUser(t *testing.T, n int) auth.AuthUser {
 	// setup fixtures for test suite
-	ctx := context.Background()
-	authUser, _, err := client.User.Signup(
-		ctx,
-		&data.User{
-			Name:  "Paul X",
-			Email: fmt.Sprintf("test%d@localyyz.com", n),
-		},
-	)
-	assert.NoError(t, err)
-
-	// setup clients JWT
-	client.JWT(authUser.JWT)
-
-	return &UserClient{
-		AuthUser: authUser,
-		client:   client,
+	user := &data.User{
+		Username:     fmt.Sprintf("user%d", n),
+		Email:        "nobody@localyyz.com",
+		Name:         "Paul X",
+		Network:      "email",
+		PasswordHash: string(""),
+		LoggedIn:     true,
 	}
+	assert.NoError(t, data.DB.Save(user))
+	token, _ := token.Encode(jwtauth.Claims{"user_id": user.ID})
+	return auth.AuthUser{User: user, JWT: token.Raw}
 }
 
 func (f *fixture) setupTestStores(t *testing.T) {
@@ -301,9 +281,7 @@ func (f *fixture) CreateCartItems(t *testing.T) {
 	assert.NoError(t, data.DB.Save(f.cartItem))
 }
 
-func (f *fixture) SetupData(t *testing.T, apiURL string) {
-	f.apiURL = apiURL
-
+func (f *fixture) SetupData(t *testing.T) {
 	f.setupUser(t)
 	f.setupTestStores(t)
 	f.setupProduct(t)
@@ -316,18 +294,4 @@ func (f *fixture) SetupData(t *testing.T, apiURL string) {
 func (f *fixture) TeardownData(t *testing.T) {
 	data.DB.Exec("TRUNCATE users cascade;")
 	data.DB.Exec("TRUNCATE places cascade;")
-}
-
-type MockFacebook struct{}
-
-func (f *MockFacebook) Login(token, inviteCode string) (*data.User, error) {
-	if token == "localyyz-test-token-login" {
-		user := data.User{ID: 0, Network: "facebook", Email: "test@localyyz.com"}
-		return &user, nil
-	}
-	return nil, nil
-}
-
-func (f *MockFacebook) GetUser(u *data.User) error {
-	return nil
 }
