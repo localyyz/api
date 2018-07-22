@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"log"
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -15,34 +16,43 @@ func SyncDeals(w http.ResponseWriter, r *http.Request) {
 
 	collections, _, _ := client.CollectionList.List(ctx, nil)
 	for _, c := range collections {
-		// check if collection already exists
-		exists, _ := data.DB.Collection.Find(db.Cond{
+		dbCollection, err := data.DB.Collection.FindOne(db.Cond{
 			"external_id": c.ID,
-		}).Exists()
-		if exists {
+		})
+		if err != nil {
+			if err == db.ErrNoMoreRows {
+				dbCollection = &data.Collection{
+					Name:        c.Title,
+					ExternalID:  &(c.ID),
+					Lightning:   true,
+					Description: htmlx.StripTags(c.BodyHTML),
+					Status:      data.CollectionStatusQueued,
+				}
+				if c.Image != nil {
+					dbCollection.ImageURL = c.Image.Src
+				}
+				data.DB.Collection.Save(dbCollection)
+
+			}
+
 			continue
 		}
 
-		dbCollection := &data.Collection{
-			Name:        c.Title,
-			ExternalID:  &(c.ID),
-			Lightning:   true,
-			Description: htmlx.StripTags(c.BodyHTML),
-		}
-		if c.Image != nil {
-			dbCollection.ImageURL = c.Image.Src
-		}
-		data.DB.Collection.Save(dbCollection)
-
 		// fetch the products
 		productIDs, _, _ := client.CollectionList.ListProductIDs(ctx, c.ID)
+		if len(productIDs) == 0 {
+			continue
+		}
 
-		products, _ := data.DB.Product.FindAll(db.Cond{"external_id": productIDs})
+		products, err := data.DB.Product.FindAll(db.Cond{"external_id": productIDs})
 		for _, p := range products {
-			data.DB.CollectionProduct.Save(&data.CollectionProduct{
+			err := data.DB.CollectionProduct.Create(data.CollectionProduct{
 				CollectionID: dbCollection.ID,
 				ProductID:    p.ID,
 			})
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
