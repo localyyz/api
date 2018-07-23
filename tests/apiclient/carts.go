@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -65,6 +66,22 @@ func (c *CartService) Checkout(ctx context.Context) (*presenter.Cart, *http.Resp
 	}
 
 	return cartResponse, resp, nil
+}
+
+func (c *CartService) AddDiscountCode(ctx context.Context, checkoutID int64, discountCode string) (*presenter.Checkout, *http.Response, error) {
+	payload := struct {
+		DiscountCode string `json:"discount"`
+	}{discountCode}
+	req, err := c.client.NewRequest("PUT", fmt.Sprintf("/carts/default/checkout/%d", checkoutID), payload)
+	if err != nil {
+		return nil, nil, err
+	}
+	checkoutResponse := new(presenter.Checkout)
+	resp, err := c.client.Do(ctx, req, checkoutResponse)
+	if err != nil {
+		return nil, resp, err
+	}
+	return checkoutResponse, resp, nil
 }
 
 func (c *CartService) Pay(ctx context.Context, card *shopper.PaymentCard) (*presenter.Cart, *http.Response, error) {

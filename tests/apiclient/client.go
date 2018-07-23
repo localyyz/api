@@ -23,8 +23,10 @@ type Client struct {
 
 	common service
 
-	Cart *CartService
-	User *UserService
+	Deal        *DealService
+	Cart        *CartService
+	ExpressCart *ExpressCartService
+	User        *UserService
 }
 
 type service struct {
@@ -45,7 +47,9 @@ func NewClient(apiURL string) (*Client, error) {
 	}
 	c.common.client = c
 	c.Cart = (*CartService)(&c.common)
+	c.ExpressCart = (*ExpressCartService)(&c.common)
 	c.User = (*UserService)(&c.common)
+	c.Deal = (*DealService)(&c.common)
 
 	return c, nil
 }
@@ -104,7 +108,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		default:
 		}
 
-		return nil, err
+		return resp, err
 	}
 
 	defer func() {
@@ -117,7 +121,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 	case 200, 201, 204, 301, 302:
 		// do nothing, valid response.
 	default:
-		return nil, NewError(resp)
+		return resp, NewError(resp)
 	}
 
 	if v != nil {

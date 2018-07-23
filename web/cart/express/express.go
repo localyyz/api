@@ -19,14 +19,14 @@ import (
 	"upper.io/db.v3"
 )
 
-type cartItemRequest struct {
+type CartItemRequest struct {
 	ProductID int64  `json:"productId"`
 	Color     string `json:"color"`
 	Size      string `json:"size"`
 	Quantity  uint32 `json:"quantity"`
 }
 
-func (*cartItemRequest) Bind(r *http.Request) error {
+func (*CartItemRequest) Bind(r *http.Request) error {
 	return nil
 }
 
@@ -46,14 +46,14 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	cart := ctx.Value("cart").(*data.Cart)
 	user := ctx.Value("session.user").(*data.User)
 
-	var payload cartItemRequest
+	var payload CartItemRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
 	/*checking if the user is attempting to add an item from an expired deal*/
-	var collection *data.Collection
+	var deal *data.Collection
 
 	// TODO: make this better
 	err := data.DB.Select("c.*").
@@ -63,29 +63,41 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 			"c.lightning":   true,
 			"cp.product_id": payload.ProductID,
 		}).
-		One(&collection)
+		One(&deal)
 	if err != nil && err != db.ErrNoMoreRows {
 		render.Respond(w, r, err)
 		return
 	}
 
 	//product is part of a lightning collection
-	if collection != nil {
-
+	if deal != nil {
+		// check if the user has already  purchased
 		userPurchased, _ := user.GetTotalCheckout(payload.ProductID)
 		if userPurchased > 0 { //user has a limit of one purchase per deal
 			render.Render(w, r, api.ErrMultiplePurchase)
 			return
 		}
 
-		if collection.Status != data.CollectionStatusActive {
-			render.Render(w, r, api.ErrExpiredDeal)
+		//the cron might not be in sync therefore we need to check percentage completion as well
+		totalCheckouts, _ := deal.GetCheckoutCount()
+		if int64(totalCheckouts) == deal.Cap {
+			render.Render(w, r, api.ErrLightningOutOfStock)
 			return
 		}
-		//the cron might not be in sync therefore we need to check percentage completion as well
-		totalCheckouts, _ := collection.GetCheckoutCount()
-		if int64(totalCheckouts) == collection.Cap {
-			render.Render(w, r, api.ErrLightningOutOfStock)
+
+		// check if user deal exists + active
+		userDeal, _ := data.DB.UserDeal.FindOne(db.Cond{
+			"deal_id": deal.ID,
+			"user_id": user.ID,
+			"status":  data.CollectionStatusActive,
+		})
+
+		// expire if:
+		// - the deal is expired and no user deal
+		// - the deal is expired and the user deal has expired
+		if (deal.Status != data.CollectionStatusActive && userDeal == nil) ||
+			(userDeal.Status != data.CollectionStatusActive) {
+			render.Render(w, r, api.ErrExpiredDeal)
 			return
 		}
 	}
@@ -135,7 +147,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 
 	client := shopify.NewClient(nil, cred.AccessToken)
 	client.BaseURL, _ = url.Parse(cred.ApiURL)
-	client.Debug = true
+	//client.Debug = true
 	checkout, _, err := client.Checkout.Create(
 		ctx,
 		shopifyCheckout,

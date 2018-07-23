@@ -63,14 +63,14 @@ func DealCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-type activateDealRequest struct {
+type ActivateRequest struct {
 	DealID int64 `json:"dealId,required"`
 	//Token    string     `json:"token,required"`
 	StartAt  *time.Time `json:"startAt,omitempty"`
 	Duration int64      `json:"duration,omitempty"`
 }
 
-func (a *activateDealRequest) Bind(r *http.Request) error {
+func (a *ActivateRequest) Bind(r *http.Request) error {
 	if a.StartAt == nil {
 		a.StartAt = data.GetTimeUTCPointer()
 	}
@@ -85,7 +85,7 @@ func ActivateDeal(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	var payload activateDealRequest
+	var payload ActivateRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
@@ -105,25 +105,38 @@ func ActivateDeal(w http.ResponseWriter, r *http.Request) {
 
 	// validate that the deal id must be a lightning deal
 	// it can be any deal
-	isLightning, err := data.DB.Collection.Find(db.Cond{
+	deal, err := data.DB.Collection.FindOne(db.Cond{
 		"id":        payload.DealID,
 		"lightning": true,
-	}).Exists()
-	if !isLightning {
+	})
+	if err != nil {
 		// return that the deal has already expired
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
 	}
 
-	// insert an active deal
-	data.DB.UserDeal.Create(data.UserDeal{
+	// insert an active user deal
+	userDeal := data.UserDeal{
 		UserID:  user.ID,
-		DealID:  payload.DealID,
+		DealID:  deal.ID,
+		Status:  data.CollectionStatusActive, // TODO... activate later?
 		StartAt: *payload.StartAt,
 		EndAt:   payload.StartAt.Add(time.Duration(payload.Duration) * time.Hour),
-	})
+	}
+	if err := data.DB.UserDeal.Create(userDeal); err != nil {
+		lg.Warn(err, userDeal)
+		// return that the deal has already expired
+		render.Respond(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	// activate the deal
+	deal.Status = data.CollectionStatusActive
+	deal.StartAt = &userDeal.StartAt
+	deal.EndAt = &userDeal.EndAt
 
 	render.Status(r, http.StatusCreated)
+	render.Render(w, r, presenter.NewDeal(ctx, deal))
 }
 
 /*
@@ -172,7 +185,7 @@ func ListActiveDeals(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	presented := presenter.NewLightningCollectionList(ctx, collections)
+	presented := presenter.NewDealList(ctx, collections)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}
@@ -197,7 +210,7 @@ func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.RenderList(w, r, presenter.NewLightningCollectionList(r.Context(), collections)); err != nil {
+	if err := render.RenderList(w, r, presenter.NewDealList(r.Context(), collections)); err != nil {
 		render.Respond(w, r, err)
 	}
 }
@@ -225,7 +238,7 @@ func ListInactiveDeals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.RenderList(w, r, presenter.NewLightningCollectionList(r.Context(), collections)); err != nil {
+	if err := render.RenderList(w, r, presenter.NewDealList(r.Context(), collections)); err != nil {
 		render.Respond(w, r, err)
 	}
 }
@@ -233,7 +246,7 @@ func ListInactiveDeals(w http.ResponseWriter, r *http.Request) {
 func GetDeal(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	deal := ctx.Value("deal").(*data.Collection)
-	presented := presenter.NewLightningCollection(ctx, deal)
+	presented := presenter.NewDeal(ctx, deal)
 	if err := render.Render(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}

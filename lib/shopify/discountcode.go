@@ -17,6 +17,6 @@ type AppliedDiscount struct {
 	Description         string `json:"description"`
 	Value               string `json:"value"`
 	ValueType           string `json:"value_type"`
-	NonApplicableReason string `json:"non_applicable_reason"`
 	Applicable          bool   `json:"applicable"`
+	NonApplicableReason string `json:"non_applicable_reason,omitempty"`
 }

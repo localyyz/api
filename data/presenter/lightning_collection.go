@@ -11,28 +11,27 @@ import (
 
 type LightningCollection struct {
 	*data.Collection
-	Products []render.Renderer `json:"products"`
+	Products []*Product `json:"products"`
 }
 
 func (c *LightningCollection) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func NewLightningCollectionList(ctx context.Context, collections []*data.Collection) []render.Renderer {
+func NewDealList(ctx context.Context, collections []*data.Collection) []render.Renderer {
 	list := []render.Renderer{}
 	for _, c := range collections {
 		//append to the final list to return
-		list = append(list, NewLightningCollection(ctx, c))
+		list = append(list, NewDeal(ctx, c))
 	}
-
 	return list
 }
 
-func NewLightningCollection(ctx context.Context, collection *data.Collection) *LightningCollection {
+func NewDeal(ctx context.Context, collection *data.Collection) *LightningCollection {
 	presented := &LightningCollection{
 		Collection: collection,
 	}
-	if collection.Status == data.CollectionStatusActive || collection.Status == data.CollectionStatusInactive{
+	if collection.Status == data.CollectionStatusActive || collection.Status == data.CollectionStatusInactive {
 		cps, err := data.DB.CollectionProduct.FindByCollectionID(collection.ID)
 		if err != nil {
 			return presented
@@ -45,7 +44,7 @@ func NewLightningCollection(ctx context.Context, collection *data.Collection) *L
 			"id":     productIDs,
 			"status": data.ProductStatusApproved,
 		})
-		presented.Products = NewProductList(ctx, products)
+		presented.Products = newProductList(ctx, products)
 	}
 	return presented
 }

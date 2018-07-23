@@ -30,3 +30,11 @@ func (store UserDealStore) FindAll(cond db.Cond) ([]*UserDeal, error) {
 	}
 	return userDeals, nil
 }
+
+func (store UserDealStore) FindOne(cond db.Cond) (*UserDeal, error) {
+	var userDeal *UserDeal
+	if err := store.Find(cond).One(&userDeal); err != nil {
+		return nil, err
+	}
+	return userDeal, nil
+}
