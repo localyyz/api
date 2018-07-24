@@ -94,7 +94,6 @@ func ActivateDeal(w http.ResponseWriter, r *http.Request) {
 	// validate that user has not activated this deal before
 	exists, _ := data.DB.UserDeal.Find(db.Cond{
 		"user_id": user.ID,
-		"status":  db.NotEq(data.CollectionStatusActive),
 		"deal_id": payload.DealID,
 	}).Exists()
 	if exists {
