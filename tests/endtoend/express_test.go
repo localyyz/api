@@ -60,12 +60,16 @@ func (suite *ExpressTestSuite) TestExpressSuccess() {
 			})
 		suite.NoError(err)
 
-		_, _, err = client.ExpressCart.UpdateShippingMethod(ctx, "canada_post-DOM.EP-10.47")
-		suite.NoError(err)
-
+		// fetch the shipping rate (
+		// NOTE shopify will error out with "expired shipping_line" error if we
+		// dont fetch shipping rate
 		cart, _, err = client.ExpressCart.GetShippingRates(ctx)
+		require.NoError(suite.T(), err)
+		require.NotEmpty(suite.T(), cart.ShippingRates)
+
+		// update shipping method
+		_, _, err = client.ExpressCart.UpdateShippingMethod(ctx, cart.ShippingRates[0].Handle)
 		suite.NoError(err)
-		suite.NotEmpty(cart.ShippingRates)
 	}
 
 	{ // pay.

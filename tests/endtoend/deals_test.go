@@ -64,6 +64,12 @@ func (suite *DealsTestSuite) TestSuccess() {
 			})
 		require.NoError(suite.T(), err)
 
+		// fetch the shipping rate (
+		// NOTE shopify will error out with "expired shipping_line" error if we
+		// dont fetch shipping rate
+		_, _, err = client.ExpressCart.GetShippingRates(ctx)
+		require.NoError(suite.T(), err)
+
 		_, _, err = client.ExpressCart.UpdateShippingMethod(ctx, "canada_post-DOM.EP-10.47")
 		require.NoError(suite.T(), err)
 	}
