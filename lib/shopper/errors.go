@@ -8,6 +8,7 @@ var (
 	ErrItemOutofStock = errors.New("item is out of stock")
 
 	ErrEmptyPaymentTransaction = errors.New("payment missing transaction")
+	ErrDiscountCode            = errors.New("discount code cannot be applied")
 )
 
 type CheckoutError struct {
@@ -26,6 +27,7 @@ const (
 	CheckoutErrorCodeNoShipping
 	CheckoutErrorCodeShippingAddress
 	CheckoutErrorCodeBillingAddress
+	CheckoutErrorCodeDiscountCode
 )
 
 func (e *CheckoutError) Error() string {

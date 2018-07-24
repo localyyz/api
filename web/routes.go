@@ -28,8 +28,9 @@ import (
 )
 
 type Handler struct {
-	DB    *data.Database
-	Debug bool
+	DB     *data.Database
+	Debug  bool
+	Silent bool
 }
 
 func New(DB *data.Database) *Handler {
@@ -45,10 +46,13 @@ func (h *Handler) Routes() chi.Router {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.NoCache)
 	r.Use(middleware.RequestID)
-	if h.Debug {
-		r.Use(middleware.Logger)
-	} else {
-		r.Use(NewStructuredLogger())
+
+	if !h.Silent {
+		if h.Debug {
+			r.Use(middleware.Logger)
+		} else {
+			r.Use(NewStructuredLogger())
+		}
 	}
 	r.Use(func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

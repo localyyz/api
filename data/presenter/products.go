@@ -75,7 +75,11 @@ func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error 
 }
 
 func NewSearchProductList(ctx context.Context, products []*data.Product) []render.Renderer {
-	return newProductList(ctx, products)
+	list := []render.Renderer{}
+	for _, p := range newProductList(ctx, products) {
+		list = append(list, p)
+	}
+	return list
 }
 
 type CartProductList []*Product
@@ -100,8 +104,8 @@ func NewCartProductList(ctx context.Context, products []*data.Product) CartProdu
 	return list
 }
 
-func newProductList(ctx context.Context, products []*data.Product) []render.Renderer {
-	list := []render.Renderer{}
+func newProductList(ctx context.Context, products []*data.Product) []*Product {
+	list := []*Product{}
 
 	productIDSet := set.New()
 	placeIDset := set.New()
@@ -168,7 +172,11 @@ func newProductList(ctx context.Context, products []*data.Product) []render.Rend
 }
 
 func NewProductList(ctx context.Context, products []*data.Product) []render.Renderer {
-	return newProductList(ctx, products)
+	list := []render.Renderer{}
+	for _, p := range newProductList(ctx, products) {
+		list = append(list, p)
+	}
+	return list
 }
 
 func NewProduct(ctx context.Context, product *data.Product) *Product {

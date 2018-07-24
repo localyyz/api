@@ -91,6 +91,10 @@ func (p *Payment) HandleError(req *shopify.Payment, err error) {
 		p.Err = err
 		return
 	}
+	if len(req.PaymentProcessingErrorMessage) != 0 {
+		p.Err = api.ErrCardVaultProcess(fmt.Errorf(req.PaymentProcessingErrorMessage))
+		return
+	}
 	if t := req.Transaction; t != nil {
 		if t.Status != shopify.TransactionStatusSuccess {
 			p.Err = api.ErrCardVaultProcess(
@@ -145,7 +149,7 @@ func (p *Payment) doPayment(ctx context.Context, req *shopify.Payment) (*shopify
 
 	client := shopify.NewClient(nil, cred.AccessToken)
 	client.BaseURL, _ = url.Parse(cred.ApiURL)
-	client.Debug = true
+	//client.Debug = true
 
 	_, _, err = client.Checkout.Payment(ctx, p.checkout.Token, req)
 	return req, err

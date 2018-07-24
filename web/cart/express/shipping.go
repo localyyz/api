@@ -34,12 +34,12 @@ func GetShippingRates(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, presenter.NewCart(ctx, cart))
 }
 
-type shippingAddressRequest struct {
+type ShippingAddressRequest struct {
 	*data.CartAddress
 	IsPartial bool `json:"isPartial"`
 }
 
-func (p *shippingAddressRequest) Bind(r *http.Request) error {
+func (p *ShippingAddressRequest) Bind(r *http.Request) error {
 	// Make sure there're no extra spaces at the beginning or end
 	p.FirstName = strings.TrimSpace(p.FirstName)
 	p.LastName = strings.TrimSpace(p.LastName)
@@ -102,7 +102,7 @@ func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 	checkout := ctx.Value("shopify.checkout").(*data.CartShopifyData)
 	cart := ctx.Value("cart").(*data.Cart)
 
-	var payload shippingAddressRequest
+	var payload ShippingAddressRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
@@ -142,11 +142,11 @@ func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, presenter.NewCart(ctx, cart))
 }
 
-type shippingMethodRequest struct {
+type ShippingMethodRequest struct {
 	Handle string `json:"handle"`
 }
 
-func (*shippingMethodRequest) Bind(r *http.Request) error {
+func (*ShippingMethodRequest) Bind(r *http.Request) error {
 	return nil
 }
 
@@ -156,7 +156,7 @@ func UpdateShippingMethod(w http.ResponseWriter, r *http.Request) {
 	checkout := ctx.Value("shopify.checkout").(*data.CartShopifyData)
 	cart := ctx.Value("cart").(*data.Cart)
 
-	var payload shippingMethodRequest
+	var payload ShippingMethodRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Respond(w, r, err)
 		return

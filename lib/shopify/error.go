@@ -20,6 +20,8 @@ import (
 // }
 //
 
+// TODO: https://github.com/Jeffail/gabs (????)
+
 type ShopifyErrorer interface {
 	Type() string
 }
@@ -163,7 +165,7 @@ func findFirstError(r *ErrorResponse) error {
 
 		if vv, ok := v.(map[string]interface{}); ok {
 			switch k {
-			//shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
+			//TODO: shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
 			case "line_items":
 				for pos, vvv := range vv {
 					b, _ := json.Marshal(vvv)

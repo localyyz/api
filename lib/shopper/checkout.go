@@ -7,6 +7,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"github.com/pkg/errors"
 	db "upper.io/db.v3"
 )
 
@@ -41,10 +42,17 @@ func (c *Checkout) doCheckout(ctx context.Context, req *shopify.Checkout) (*shop
 
 	client := shopify.NewClient(nil, cred.AccessToken)
 	client.BaseURL, _ = url.Parse(cred.ApiURL)
-	client.Debug = true
+	//client.Debug = true
 
-	if _, _, err = client.Checkout.CreateOrUpdate(ctx, req); err != nil {
+	update, _, err := client.Checkout.CreateOrUpdate(ctx, req)
+	if err != nil {
 		return req, err
+	}
+	// validate discount code is applied. if applicable
+	if update.AppliedDiscount != nil && update.AppliedDiscount != nil {
+		if reason := update.AppliedDiscount.NonApplicableReason; len(reason) != 0 {
+			return req, errors.Wrap(ErrDiscountCode, reason)
+		}
 	}
 
 	// TODO: make proper shipping. For now, pick the cheapest one.
@@ -88,10 +96,17 @@ func NewCheckout(ctx context.Context, checkout *data.Checkout) *Checkout {
 }
 
 func (c *Checkout) HandleError(req *shopify.Checkout, err error) {
+	// check applied discount
+	if e := errors.Cause(err); e == ErrDiscountCode {
+		c.Err = &CheckoutError{
+			ErrCode: CheckoutErrorCodeDiscountCode,
+			Err:     err,
+		}
+		return
+	}
 	if err == nil {
 		return
 	}
-
 	if e, ok := err.(*shopify.LineItemError); ok && e != nil && e.Position != "" {
 		idx, _ := strconv.Atoi(e.Position)
 		c.Err = &CheckoutError{
@@ -99,6 +114,7 @@ func (c *Checkout) HandleError(req *shopify.Checkout, err error) {
 			ErrCode: CheckoutErrorCodeLineItem,
 			Err:     ErrItemOutofStock,
 		}
+		return
 	}
 	if e, ok := err.(*shopify.AddressError); ok && e != nil {
 		code := CheckoutErrorCodeShippingAddress
@@ -110,6 +126,7 @@ func (c *Checkout) HandleError(req *shopify.Checkout, err error) {
 			ErrCode: code,
 			Err:     err,
 		}
+		return
 	}
 	if err == ErrShippingRates {
 		c.Err = &CheckoutError{
@@ -117,6 +134,7 @@ func (c *Checkout) HandleError(req *shopify.Checkout, err error) {
 			ErrCode: CheckoutErrorCodeNoShipping,
 			Err:     err,
 		}
+		return
 	}
 	c.Err = &CheckoutError{
 		PlaceID: c.PlaceID,
