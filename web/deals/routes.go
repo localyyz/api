@@ -103,10 +103,10 @@ func ActivateDeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// validate that the deal id must be a lightning deal
-	// it can be any deal
+	// validate that the deal id must be a lightning deal and is not currently active.
 	deal, err := data.DB.Collection.FindOne(db.Cond{
 		"id":        payload.DealID,
+		"status":    db.NotEq(data.CollectionStatusActive),
 		"lightning": true,
 	})
 	if err != nil {

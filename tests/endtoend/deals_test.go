@@ -130,6 +130,22 @@ func (suite *DealsTestSuite) TestUserLimit() {
 	require.Contains(suite.T(), err.Error(), "you have already purchased today's deal")
 }
 
+func (suite *DealsTestSuite) TestActivateAlreadyActive() {
+	user := suite.user
+	client := user.client
+
+	payload := &deals.ActivateRequest{
+		DealID:   suite.dealValid.ID,
+		StartAt:  data.GetTimeUTCPointer(),
+		Duration: 1,
+	}
+
+	// Should error. cannot activate a current active deal
+	_, resp, err := client.Deal.Activate(context.Background(), payload)
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+	require.Error(suite.T(), err)
+}
+
 func (suite *DealsTestSuite) TestActivate() {
 	user := suite.user
 	client := user.client
