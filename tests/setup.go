@@ -68,6 +68,7 @@ func SetupEnv(t *testing.T) *Env {
 	token.SetupJWTAuth(config.Jwt.Secret)
 
 	w := web.New(db)
+	w.Silent = true // silence the web logger
 	h := httptest.NewServer(w.Routes())
 
 	return &Env{

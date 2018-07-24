@@ -13,7 +13,7 @@ import (
 	"github.com/pressly/lg"
 )
 
-type cartItemRequest struct {
+type CartItemRequest struct {
 	ProductID *int64 `json:"productId,omitempty"`
 	Color     string `json:"color"`
 	Size      string `json:"size"`
@@ -22,7 +22,7 @@ type cartItemRequest struct {
 	VariantID *int64 `json:"variantId,omitempty"`
 }
 
-func (c *cartItemRequest) Bind(r *http.Request) error {
+func (c *CartItemRequest) Bind(r *http.Request) error {
 	if c.ProductID == nil && c.VariantID == nil {
 		return errors.New("invalid add item")
 	}
@@ -36,7 +36,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
 
-	var payload cartItemRequest
+	var payload CartItemRequest
 	if err := render.Bind(r, &payload); err != nil {
 		render.Render(w, r, api.ErrInvalidRequest(err))
 		return

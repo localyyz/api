@@ -26,7 +26,7 @@ func (suite *SessionTestSuite) SetupSuite() {
 
 	suite.TeardownData(suite.T())
 	suite.fixture = &fixture{}
-	suite.SetupData(suite.T())
+	suite.SetupData(suite.T(), suite.env.URL)
 }
 
 func (suite *SessionTestSuite) TearDownSuite() {
@@ -157,7 +157,6 @@ func (suite *SessionTestSuite) TestSessionFacebookSignup() {
 
 	var authUser *auth.AuthUser
 	suite.NoError(json.NewDecoder(rr.Body).Decode(&authUser))
-
 
 	//validate new user
 	suite.Equal("facebook", authUser.Network)
