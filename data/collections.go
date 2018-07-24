@@ -153,4 +153,6 @@ func UpdateCollectionStatus() {
 	DB.Exec(`UPDATE collections SET status = 3 WHERE lightning = true AND NOW() at time zone 'utc' > end_at and status = 2`)
 	// activate collections
 	DB.Exec(`UPDATE collections SET status = 2 WHERE lightning = true AND NOW() at time zone 'utc' > start_at and status = 1`)
+	// expire user deals
+	DB.Exec(`UPDATE user_deals SET status = 3 WHERE NOW() at time zone 'utc' > end_at and status = 2`)
 }

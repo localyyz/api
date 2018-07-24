@@ -267,7 +267,7 @@ func (suite *CheckoutTestSuite) TestCheckoutInvalidCVC() {
 		if !ok {
 			suite.FailNow("unknown error", "expected api error got: %+v", err)
 		}
-		suite.Contains(apiErr.Message, "Your card's security code is incorrect")
+		suite.Contains(apiErr.Message, "Security code was not matched by the processor")
 	}
 }
 

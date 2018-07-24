@@ -123,6 +123,7 @@ func ActivateDeal(w http.ResponseWriter, r *http.Request) {
 		StartAt: *payload.StartAt,
 		EndAt:   payload.StartAt.Add(time.Duration(payload.Duration) * time.Hour),
 	}
+
 	if err := data.DB.UserDeal.Create(userDeal); err != nil {
 		lg.Warn(err, userDeal)
 		// return that the deal has already expired
@@ -168,9 +169,11 @@ func ListActiveDeals(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if len(userDeals) > 0 {
+			userDealsSet := map[int64]*data.UserDeal{}
 			dealIDs := make([]int64, len(userDeals))
 			for i, d := range userDeals {
 				dealIDs[i] = d.DealID
+				userDealsSet[d.DealID] = d
 			}
 
 			// fetch the user deals. for now let's assume
@@ -179,6 +182,12 @@ func ListActiveDeals(w http.ResponseWriter, r *http.Request) {
 				"id":        dealIDs,
 				"lightning": true,
 			})
+
+			for _, d := range deals {
+				dd := userDealsSet[d.ID]
+				d.StartAt = &dd.StartAt
+				d.EndAt = &dd.EndAt
+			}
 
 			// prepend the user deals
 			collections = append(deals, collections...)

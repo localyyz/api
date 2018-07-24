@@ -96,7 +96,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		// - the deal is expired and no user deal
 		// - the deal is expired and the user deal has expired
 		if (deal.Status != data.CollectionStatusActive && userDeal == nil) ||
-			(userDeal.Status != data.CollectionStatusActive) {
+			(userDeal != nil && userDeal.Status != data.CollectionStatusActive) {
 			render.Render(w, r, api.ErrExpiredDeal)
 			return
 		}

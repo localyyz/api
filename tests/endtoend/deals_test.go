@@ -128,11 +128,15 @@ func (suite *DealsTestSuite) TestActivate() {
 	user := suite.user
 	client := user.client
 
+	duration := int64(2)
+	startAt := data.GetTimeUTCPointer()
+	endAt := startAt.Add(time.Duration(duration) * time.Hour)
+
 	{
 		payload := &deals.ActivateRequest{
 			DealID:   suite.dealExpired.ID,
-			StartAt:  data.GetTimeUTCPointer(),
-			Duration: 2,
+			StartAt:  startAt,
+			Duration: duration,
 		}
 		deal, resp, err := client.Deal.Activate(context.Background(), payload)
 		suite.Equal(http.StatusCreated, resp.StatusCode)
@@ -140,8 +144,8 @@ func (suite *DealsTestSuite) TestActivate() {
 		require.NotEmpty(suite.T(), deal)
 
 		suite.Equal(data.CollectionStatusActive, deal.Status, "unexpected status")
-		suite.Equal(payload.StartAt, deal.StartAt, "unexpected start time")
-		suite.Equal(payload.StartAt.Add(time.Duration(payload.Duration)*time.Hour), *deal.EndAt, "unexpected end time")
+		suite.Equal(startAt, deal.StartAt, "unexpected start time")
+		suite.Equal(endAt, *deal.EndAt, "unexpected end time")
 	}
 
 	{ // fetch active, deal should include expired but user active deal
@@ -155,14 +159,16 @@ func (suite *DealsTestSuite) TestActivate() {
 		for _, d := range deals {
 			if d.ID == suite.dealExpired.ID {
 				isFound = true
+				// validate deal has the right expiry
+				suite.WithinDuration(startAt.UTC(), d.StartAt.UTC(), time.Second)
+				suite.WithinDuration(endAt.UTC(), (*d.EndAt).UTC(), time.Second)
 			}
 		}
 		require.True(suite.T(), isFound)
 	}
 
-	// test purchasing expired deal
+	//test purchasing expired deal
 	{
-		//add item to cart
 		ctx := context.Background()
 		_, resp, err := client.ExpressCart.AddItem(ctx, suite.variantDealExpired)
 		suite.NoError(err)
@@ -188,7 +194,6 @@ func (suite *DealsTestSuite) TestActivate() {
 		_, _, err = client.ExpressCart.UpdateShippingMethod(ctx, "canada_post-DOM.EP-10.47")
 		require.NoError(suite.T(), err)
 
-		// pay
 		cart, _, err := client.ExpressCart.Pay(
 			ctx,
 			&data.CartAddress{
