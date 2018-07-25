@@ -105,13 +105,13 @@ func (h *Handler) Routes() chi.Router {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.DeviceCtx)
 		r.Mount("/carts/express", express.Routes())
+		r.Mount("/users", user.Routes())
 	})
 
 	// Authed Routes
 	r.Group(func(r chi.Router) {
 		r.Use(auth.SessionCtx)
 		r.Mount("/session", session.Routes())
-		r.Mount("/users", user.Routes())
 		r.Mount("/carts", cart.Routes())
 	})
 

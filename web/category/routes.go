@@ -12,13 +12,7 @@ func Routes() chi.Router {
 	r.Route("/{categoryType}", func(r chi.Router) {
 		r.Use(CategoryTypeCtx)
 		r.Get("/", GetCategory)
-
-		r.Route("/{subcategory}", func(r chi.Router) {
-			r.Use(SubcategoryCtx)
-			r.Route("/products", api.FilterRoutes(ListProducts))
-		})
 		r.Route("/products", api.FilterRoutes(ListProducts))
 	})
-
 	return r
 }
