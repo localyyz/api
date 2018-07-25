@@ -207,6 +207,11 @@ func Index(w http.ResponseWriter, r *http.Request) {
 type merchantApprovalRequest struct {
 	*data.MerchantApproval
 
+	Collection      int32 `json:"collection"`
+	Category        int32 `json:"category"`
+	PriceRange      int32 `json:"priceRange"`
+	RejectionReason int32 `json:"rejectionReason"`
+
 	Gender data.PlaceGender `json:"gender"`
 
 	ID         interface{} `json:"id"`
@@ -232,13 +237,13 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	approval := ctx.Value("approval").(*data.MerchantApproval)
 
 	if payload.Category != 0 {
-		approval.Category = payload.Category
+		approval.Category = data.MerchantApprovalCategory(payload.Category)
 	}
 	if payload.PriceRange != 0 {
-		approval.PriceRange = payload.PriceRange
+		approval.PriceRange = data.MerchantApprovalPriceRange(payload.PriceRange)
 	}
 	if payload.Collection != 0 {
-		approval.Collection = payload.Collection
+		approval.Collection = data.MerchantApprovalCollection(payload.Collection)
 	}
 	if payload.Gender != 0 {
 		place := ctx.Value("place").(*data.Place)
@@ -249,7 +254,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if payload.RejectionReason != 0 {
-		approval.RejectionReason = payload.RejectionReason
+		approval.RejectionReason = data.MerchantApprovalRejection(payload.RejectionReason)
 	}
 
 	if err := data.DB.MerchantApproval.Save(approval); err != nil {
