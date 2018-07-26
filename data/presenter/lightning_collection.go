@@ -41,8 +41,10 @@ func NewDeal(ctx context.Context, collection *data.Collection) *LightningCollect
 			productIDs = append(productIDs, p.ProductID)
 		}
 		products, err := data.DB.Product.FindAll(db.Cond{
-			"id":     productIDs,
-			"status": data.ProductStatusApproved,
+			"id": productIDs,
+			// NOTE: did not query for "active" product on purpose.
+			// but we really should filter out products that are
+			// dotd in other product list queries
 		})
 		presented.Products = newProductList(ctx, products)
 	}
