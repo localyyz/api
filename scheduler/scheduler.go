@@ -34,7 +34,7 @@ func (h *Handler) Start() {
 
 	h.cron.AddFunc(fmt.Sprintf("@every %s", duration), h.ScheduleDeals)
 	h.cron.AddFunc(fmt.Sprintf("@every %s", duration), h.ScheduleWelcomeEmail)
-	h.cron.AddFunc(fmt.Sprintf("@every %s", duration), h.SyncDOTD)
+	h.cron.AddFunc("@midnight", h.SyncDOTD)
 	h.cron.Start()
 }
 

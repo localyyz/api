@@ -12,6 +12,7 @@ import (
 )
 
 const LocalyyzStoreId = 4164
+const DotdCollectionId = 76596346998
 
 func (h *Handler) SyncDOTD() {
 	ctx := context.Background()
@@ -27,118 +28,115 @@ func (h *Handler) SyncDOTD() {
 		return
 	}
 
-	// get the collections from the store
-	collections, response, err := client.CustomCollection.Get(ctx, nil)
-	if err != nil || response.StatusCode != http.StatusOK {
+	// get the dotd collection
+	collection, resp, err := client.CollectionList.Get(ctx, DotdCollectionId)
+	if err != nil || resp.StatusCode != http.StatusOK {
 		return
 	}
 
-	// iterating through collections
-	for _, collection := range collections {
-		if collection.Title == "DOTD" {
-			// getting all the product ids associated with the collection
-			productIDs, resp, err := client.CollectionList.ListProductIDs(ctx, collection.ID)
-			if err != nil || resp.StatusCode != http.StatusOK {
+	// getting the product ids
+	extIDs, resp, err := client.CollectionList.ListProductIDs(ctx, collection.ID)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return
+	}
+
+	// iterating through the product IDs
+	for _, extID := range extIDs {
+		// get the product
+		product, err := data.DB.Product.FindByExternalID(extID)
+		if err != nil {
+			if err == db.ErrNoMoreRows {
+				// product does not exist
+				continue
+			} else {
 				return
 			}
-			for _, externalProductID := range productIDs {
-				// find if the product is synced
-				product, err := data.DB.Product.FindByExternalID(externalProductID)
+		}
+		// check if the product already exists
+		var cp *data.CollectionProduct
+		res := data.DB.CollectionProduct.Find(db.Cond{"product_id": product.ID})
+		err = res.One(&cp)
+		if err != nil {
+			if err == db.ErrNoMoreRows {
+				// product does not exist -> create new collection
+
+				// get product variant
+				var pv *data.ProductVariant
+				res := data.DB.ProductVariant.Find(db.Cond{"product_id": product.ID, "limits": db.Gt(0)})
+				err := res.One(&pv)
 				if err != nil {
-					if err == db.ErrNoMoreRows {
-						//if not found just skip the rest of the lines
-						continue
-					} else {
-						// some other error
-						return
-					}
+					return
 				}
 
-				// see if the entry exists in the collection_products table
-				var collectionProduct *data.CollectionProduct
-				res := data.DB.CollectionProduct.Find(db.Cond{"product_id": product.ID})
-				err = res.One(&collectionProduct)
+				// get product image
+				var pImg *data.ProductImage
+				res = data.DB.ProductImage.Find(db.Cond{"product_id": product.ID, "ordering": 1})
+				err = res.One(&pImg)
 				if err != nil {
-					// the entry does not exist - if it exists then skip
-					if err == db.ErrNoMoreRows {
-						// get the variants
-						productVariant, err := data.DB.ProductVariant.FindByID(product.ID)
-						if err != nil {
-							return
-						}
-						// get the images
-						productImage, err := data.DB.ProductImage.FindByID(product.ID)
-						if err != nil {
-							return
-						}
-						// get the upcoming collections
-						var dotdCollection []*data.Collection
-						res := data.DB.Collection.Find(
-							db.Cond{
-								"lightning": true,
-								"status":    data.CollectionStatusQueued,
-							},
-						).OrderBy("end_at DESC")
-						err = res.All(&dotdCollection)
-						if err != nil {
-							return
-						}
+					return
+				}
 
-						// creating the new collections
-						newCollection := &data.Collection{}
-						newCollection.Name = product.Title
-						newCollection.Description = product.Description
-						newCollection.ImageURL = productImage.ImageURL
-						newCollection.ImageWidth = productImage.Width
-						newCollection.ImageHeight = productImage.Height
-						newCollection.Gender = product.Gender
-						newCollection.Lightning = true
-						if len(dotdCollection) > 0 {
-							// there are upcoming dotds
-							lastStartTime := dotdCollection[0].StartAt
-							lastEndTime := dotdCollection[0].EndAt
-							startTime := lastStartTime.AddDate(0, 0, 1)
-							endTime := lastEndTime.AddDate(0, 0, 1)
-							newCollection.StartAt = &startTime
-							newCollection.EndAt = &endTime
-						} else {
-							// there are no upcoming dotds
-							now := time.Now()
-							if now.Hour() < 12 {
-								// schedule for today
-								startTime := time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, time.UTC)
-								endTime := startTime.Add(time.Hour)
-								newCollection.StartAt = &startTime
-								newCollection.EndAt = &endTime
-							} else {
-								// schedule for tomorrow
-								startTime := time.Date(now.Year(), now.Month(), now.Day()+1, 16, 0, 0, 0, time.UTC)
-								endTime := startTime.Add(time.Hour)
-								newCollection.StartAt = &startTime
-								newCollection.EndAt = &endTime
-							}
-						}
-						newCollection.Status = data.CollectionStatusQueued
-						newCollection.Cap = productVariant.Limits / 10 //10% of the original
-						// saving the new collection
-						err = data.DB.Collection.Save(newCollection)
-						if err != nil {
-							return
-						}
-						// creating the collection product - we need the ID from the db
-						savedCollection, err := data.DB.Collection.FindOne(db.Cond{"name": product.Title})
-						if err != nil {
-							return
-						}
-						newCollectionProduct := data.CollectionProduct{ProductID: product.ID, CollectionID: savedCollection.ID}
-						err = data.DB.CollectionProduct.Create(newCollectionProduct)
-						if err != nil {
-							return
-						}
-					} else {
-						//some other error
-						return
-					}
+				// get the queued collections
+				var dotdColl []*data.Collection
+				res = data.DB.Collection.Find(
+					db.Cond{
+						"lightning": true,
+						"status":    data.CollectionStatusQueued,
+					},
+				).OrderBy("end_at DESC")
+				err = res.All(&dotdColl)
+				if err != nil {
+					return
+				}
+
+				// create the new collection
+				newColl := &data.Collection{
+					Name:        product.Title,
+					Description: product.Description,
+					ImageURL:    pImg.ImageURL,
+					ImageWidth:  pImg.Width,
+					ImageHeight: pImg.Height,
+					Gender:      product.Gender,
+					Lightning:   true,
+					Status:      data.CollectionStatusQueued,
+				}
+
+				// calculating the cap
+				cap := pv.Limits / 10
+				if cap == 0 {
+					newColl.Cap = 1
+				} else {
+					newColl.Cap = cap
+				}
+
+				if len(dotdColl) > 0 {
+					// there are upcoming dotds -> so just schedule it the day after the last one
+					lastStartTime := dotdColl[0].StartAt
+					lastEndTime := dotdColl[0].EndAt
+					startTime := lastStartTime.AddDate(0, 0, 1)
+					endTime := lastEndTime.AddDate(0, 0, 1)
+					newColl.StartAt = &startTime
+					newColl.EndAt = &endTime
+				} else {
+					// no upcoming dotd -> schedule for tomorrow
+					now := time.Now()
+					startTime := time.Date(now.Year(), now.Month(), now.Day()+1, 16, 0, 0, 0, time.UTC)
+					endTime := startTime.Add(time.Hour)
+					newColl.StartAt = &startTime
+					newColl.EndAt = &endTime
+				}
+
+				// saving the new collection
+				err = data.DB.Collection.Save(newColl)
+				if err != nil {
+					return
+				}
+
+				// create the entry in the collection_products table
+				newCollProd := data.CollectionProduct{ProductID: product.ID, CollectionID: newColl.ID}
+				err = data.DB.CollectionProduct.Create(newCollProd)
+				if err != nil {
+					return
 				}
 			}
 		}
