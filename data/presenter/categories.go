@@ -6,43 +6,88 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
 type Category struct {
-	Type   data.CategoryType `json:"type"`
-	Values []string          `json:"values"`
+	Type     string      `json:"type"`
+	Values   []*Category `json:"values"`
+	ImageURL string      `json:"imageUrl"`
 
 	ctx context.Context
 }
 
-type subCatCache map[data.CategoryType][]string
+type subCatCache map[string][]*data.Category
+
+func fetchSubcategory(ctx context.Context, categoryTypes ...data.CategoryType) []*data.Category {
+	cond := db.Cond{
+		// for now, just fetch the 2ndary categories
+		"mapping": db.NotEq(""),
+		"type":    categoryTypes,
+	}
+	// fetch based on user's gender if available
+	if sessionUser, ok := ctx.Value("session.user").(*data.User); ok {
+		if sessionUser.Etc.Gender == data.UserGenderMale {
+			cond["gender"] = data.ProductGenderMale
+		} else if sessionUser.Etc.Gender == data.UserGenderFemale {
+			cond["gender"] = data.ProductGenderFemale
+		}
+	}
+
+	// bulk fetch product categories
+	// this is the 2nd level mapping
+	//
+	// category type -> mapping -> category values
+	rows, err := data.DB.
+		Select(db.Raw("distinct mapping"), "type", "image_url").
+		From("product_categories").
+		Where(cond).
+		OrderBy("mapping").
+		Query()
+	if err != nil {
+		lg.Warn(err)
+		return nil
+	}
+
+	var subcategories []*data.Category
+	for rows.Next() {
+		var mapping string
+		var typ data.CategoryType
+		var imgUrl string
+		if err := rows.Scan(&mapping, &typ, &imgUrl); err != nil {
+			break
+		}
+		subcategories = append(
+			subcategories,
+			&data.Category{
+				Type:     typ,
+				Mapping:  mapping,
+				ImageURL: imgUrl,
+			},
+		)
+	}
+
+	return subcategories
+}
 
 func NewCategory(ctx context.Context, categoryType data.CategoryType) *Category {
 	category := &Category{
-		Type: categoryType,
+		Type: categoryType.String(),
 		ctx:  ctx,
 	}
+	var values []*data.Category
 	if subcats, ok := ctx.Value("subcat").(subCatCache); ok {
-		category.Values = subcats[categoryType]
+		values = subcats[categoryType.String()]
 	} else {
-		cond := db.Cond{
-			"type":       categoryType,
-			"mapping !=": "",
-		}
-		var categories []*data.Category
-		data.DB.
-			Select(db.Raw("distinct mapping")).
-			From("product_categories").
-			Where(cond).
-			OrderBy("mapping").
-			All(&categories)
+		values = fetchSubcategory(ctx, categoryType)
+	}
 
-		category.Values = []string{}
-		for _, c := range categories {
-			category.Values = append(category.Values, c.Mapping)
-		}
-
+	for _, v := range values {
+		category.Values = append(category.Values, &Category{
+			Type:     v.Mapping,
+			ImageURL: v.ImageURL,
+		})
 	}
 	return category
 }
@@ -53,40 +98,17 @@ func (c *Category) Render(w http.ResponseWriter, r *http.Request) error {
 
 type CategoryList []*Category
 
-func NewCategoryList(ctx context.Context, categories []data.CategoryType) []render.Renderer {
+func NewCategoryList(ctx context.Context, categoryTypes []data.CategoryType) []render.Renderer {
 	list := []render.Renderer{}
 
-	cond := db.Cond{
-		"mapping": db.NotEq(""),
-		"type":    categories,
+	// bulk fetch subcategories
+	subcatMap := make(subCatCache)
+	for _, c := range fetchSubcategory(ctx, categoryTypes...) {
+		subcatMap[c.Type.String()] = append(subcatMap[c.Type.String()], c)
 	}
-	if sessionUser, ok := ctx.Value("session.user").(*data.User); ok {
-		if sessionUser.Etc.Gender == data.UserGenderMale {
-			cond["gender"] = data.ProductGenderMale
-		} else if sessionUser.Etc.Gender == data.UserGenderFemale {
-			cond["gender"] = data.ProductGenderFemale
-		}
-	}
-	// bulk fetch product categories
-	rows, _ := data.DB.
-		Select(db.Raw("distinct mapping"), "type").
-		From("product_categories").
-		Where(cond).
-		OrderBy("mapping").
-		Query()
 
-	subcatMap := subCatCache{}
-	for rows.Next() {
-		var mapping string
-		var typ data.CategoryType
-		if err := rows.Scan(&mapping, &typ); err != nil {
-			break
-		}
-		subcatMap[typ] = append(subcatMap[typ], mapping)
-	}
 	ctx = context.WithValue(ctx, "subcat", subcatMap)
-
-	for _, c := range categories {
+	for _, c := range categoryTypes {
 		list = append(list, NewCategory(ctx, c))
 	}
 	return list
