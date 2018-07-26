@@ -40,6 +40,30 @@ func (h *Handler) SyncDOTD() {
 		return
 	}
 
+	// get the queued collections
+	var dotdColl []*data.Collection
+	res := data.DB.Collection.Find(
+		db.Cond{
+			"lightning": true,
+			"status":    data.CollectionStatusQueued,
+		},
+	).OrderBy("end_at DESC")
+	err = res.All(&dotdColl)
+	if err != nil {
+		return
+	}
+
+	// setting the initial time
+	// collections are scheduled +1 day from startTime
+	now := time.Now()
+	startTime := &now
+	if len(dotdColl) > 0 {
+		startTime = dotdColl[0].StartAt
+	}
+
+	// used to keep track of how many new collections are being saved
+	saveCount := 1
+
 	// iterating through the product IDs
 	for _, extID := range extIDs {
 		// get the product
@@ -61,6 +85,7 @@ func (h *Handler) SyncDOTD() {
 				// product does not exist -> create new collection
 
 				// get product variant
+				// A DOTD PRODUCT CANNOT BE USED IN MORE THAN ONE COLLECTION
 				var pv *data.ProductVariant
 				res := data.DB.ProductVariant.Find(db.Cond{"product_id": product.ID, "limits": db.Gt(0)})
 				err := res.One(&pv)
@@ -72,19 +97,6 @@ func (h *Handler) SyncDOTD() {
 				var pImg *data.ProductImage
 				res = data.DB.ProductImage.Find(db.Cond{"product_id": product.ID, "ordering": 1})
 				err = res.One(&pImg)
-				if err != nil {
-					return
-				}
-
-				// get the queued collections
-				var dotdColl []*data.Collection
-				res = data.DB.Collection.Find(
-					db.Cond{
-						"lightning": true,
-						"status":    data.CollectionStatusQueued,
-					},
-				).OrderBy("end_at DESC")
-				err = res.All(&dotdColl)
 				if err != nil {
 					return
 				}
@@ -109,22 +121,12 @@ func (h *Handler) SyncDOTD() {
 					newColl.Cap = cap
 				}
 
-				if len(dotdColl) > 0 {
-					// there are upcoming dotds -> so just schedule it the day after the last one
-					lastStartTime := dotdColl[0].StartAt
-					lastEndTime := dotdColl[0].EndAt
-					startTime := lastStartTime.AddDate(0, 0, 1)
-					endTime := lastEndTime.AddDate(0, 0, 1)
-					newColl.StartAt = &startTime
-					newColl.EndAt = &endTime
-				} else {
-					// no upcoming dotd -> schedule for tomorrow
-					now := time.Now()
-					startTime := time.Date(now.Year(), now.Month(), now.Day()+1, 16, 0, 0, 0, time.UTC)
-					endTime := startTime.Add(time.Hour)
-					newColl.StartAt = &startTime
-					newColl.EndAt = &endTime
-				}
+				// adding the start and end times
+				start := time.Date(startTime.Year(), startTime.Month(), startTime.Day()+saveCount, 16, 0, 0, 0, time.UTC)
+				end := start.Add(time.Hour)
+
+				newColl.StartAt = &start
+				newColl.EndAt = &end
 
 				// saving the new collection
 				err = data.DB.Collection.Save(newColl)
@@ -138,6 +140,9 @@ func (h *Handler) SyncDOTD() {
 				if err != nil {
 					return
 				}
+
+				// increment the number of collections saved
+				saveCount++
 			}
 		}
 	}
