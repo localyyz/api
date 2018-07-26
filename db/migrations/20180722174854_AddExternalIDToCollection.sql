@@ -6,4 +6,4 @@ ALTER TABLE collections ADD COLUMN external_id bigint;
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
-ALTER TABLE collections DELETE COLUMN external_id;
+ALTER TABLE collections DROP COLUMN external_id;
