@@ -8,11 +8,12 @@ import (
 )
 
 type Category struct {
-	Type    CategoryType  `db:"type" json:"type"`
-	Value   string        `db:"value" json:"value"`
-	Mapping string        `db:"mapping"`
-	Gender  ProductGender `db:"gender" json:"-"`
-	Weight  int32         `db:"weight" json:"-"`
+	Type     CategoryType  `db:"type" json:"type"`
+	Value    string        `db:"value" json:"value"`
+	Mapping  string        `db:"mapping" json:"mapping"`
+	ImageURL string        `db:"image_url" json:"imageUrl"`
+	Gender   ProductGender `db:"gender" json:"-"`
+	Weight   int32         `db:"weight" json:"-"`
 }
 
 type CategoryStore struct {
