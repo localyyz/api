@@ -59,7 +59,8 @@ func main() {
 		}
 
 		// wait for all schedulers to finish up
-		h.wg.Wait()
+		// was causing to crash so commented it out during testing
+		// h.wg.Wait()
 	})
 
 	lg.Warnf("Scheduler starting on %v", conf.Bind)
