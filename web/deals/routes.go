@@ -186,6 +186,7 @@ func ListActiveDeals(w http.ResponseWriter, r *http.Request) {
 				dd := userDealsSet[d.ID]
 				d.StartAt = &dd.StartAt
 				d.EndAt = &dd.EndAt
+				d.Status = data.CollectionStatusActive
 			}
 
 			// prepend the user deals
