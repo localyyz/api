@@ -49,9 +49,9 @@ var (
 		"cosmetics",
 		"fragrances",
 		"home",
-		"bag",
+		"bags",
 		"lingerie",
-		"sneaker",
+		"sneakers",
 		"swimwear",
 	}
 

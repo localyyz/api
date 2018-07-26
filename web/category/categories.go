@@ -51,10 +51,9 @@ var (
 		data.CategoryShoe,
 		data.CategoryJewelry,
 		data.CategoryAccessory,
+		data.CategoryBag,
 		data.CategoryCosmetic,
-		//data.CategoryFragrance,
 		data.CategorySneaker,
-		//data.CategoryLingerie,
 		data.CategorySwimwear,
 	}
 )

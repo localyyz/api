@@ -8,7 +8,7 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Get("/", List)
+	r.With(api.FilterSortCtx).Get("/", List)
 	r.Route("/{categoryType}", func(r chi.Router) {
 		r.Use(CategoryTypeCtx)
 		r.Get("/", GetCategory)

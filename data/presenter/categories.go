@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
@@ -26,12 +27,17 @@ func fetchSubcategory(ctx context.Context, categoryTypes ...data.CategoryType) [
 		"mapping": db.NotEq(""),
 		"type":    categoryTypes,
 	}
-	// fetch based on user's gender if available
-	if sessionUser, ok := ctx.Value("session.user").(*data.User); ok {
-		if sessionUser.Etc.Gender == data.UserGenderMale {
-			cond["gender"] = data.ProductGenderMale
-		} else if sessionUser.Etc.Gender == data.UserGenderFemale {
-			cond["gender"] = data.ProductGenderFemale
+
+	if filterSort, ok := ctx.Value(api.FilterSortCtxKey).(*api.FilterSort); ok {
+		// TODO: pull this out into the filtersort api
+		if f, ok := filterSort.Filters["gender"]; ok {
+			v := new(data.ProductGender)
+			if err := v.UnmarshalText([]byte(f.Value.(string))); err == nil {
+				cond["gender"] = []data.ProductGender{
+					*v,
+					data.ProductGenderUnisex,
+				}
+			}
 		}
 	}
 
@@ -109,7 +115,10 @@ func NewCategoryList(ctx context.Context, categoryTypes []data.CategoryType) []r
 
 	ctx = context.WithValue(ctx, "subcat", subcatMap)
 	for _, c := range categoryTypes {
-		list = append(list, NewCategory(ctx, c))
+		presented := NewCategory(ctx, c)
+		if len(presented.Values) > 0 {
+			list = append(list, presented)
+		}
 	}
 	return list
 }
