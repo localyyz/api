@@ -20,7 +20,7 @@ import (
 
 type FilterSort struct {
 	Sort    *Sort
-	Filters []*Filter
+	Filters map[string]*Filter
 
 	// internals
 	filterBy db.RawValue
@@ -52,6 +52,7 @@ type Sort struct {
 }
 
 type Filter struct {
+	// TODO: expand type and use it to derive sql queries
 	Type     string      `json:"type"`
 	MinValue interface{} `json:"min"`
 	MaxValue interface{} `json:"max"`
@@ -80,12 +81,25 @@ func (o *FilterSort) Header() http.Header {
 	return o.w.Header()
 }
 
+func FilterSortHijacksCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		filterSort := NewFilterSort(w, r)
+		ctx := context.WithValue(r.Context(), FilterSortCtxKey, filterSort)
+		// filter sort hijacks the response
+		// typically, the next line looks something like
+		//
+		// next.ServeHTTP(w, r.WithContext(ctx))
+		// howerver we've hijacked the default http writer with our own
+		next.ServeHTTP(filterSort, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
+}
+
 func FilterSortCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		filterSort := NewFilterSort(w, r)
-		// filterSort hijacks the response writer
 		ctx := context.WithValue(r.Context(), FilterSortCtxKey, filterSort)
-		next.ServeHTTP(filterSort, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
 }
@@ -107,7 +121,7 @@ func WithFilterBy(val interface{}) func(next http.Handler) http.Handler {
 }
 
 func wrapFilterRoutes(r chi.Router, handlerFn http.HandlerFunc) {
-	r.Use(FilterSortCtx)
+	r.Use(FilterSortHijacksCtx)
 	r.Get("/", handlerFn)
 	r.With(WithFilterBy("p.brand")).Get("/brands", handlerFn)
 	r.With(WithFilterBy("pv.etc->>'size'")).Get("/sizes", handlerFn)
@@ -150,6 +164,7 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 		}
 	}
 
+	o.Filters = make(map[string]*Filter)
 	for _, value := range q[FilterParam] {
 		f := &Filter{}
 		for _, p := range strings.Split(value, ",") {
@@ -163,7 +178,7 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 				f.Type = p
 			}
 		}
-		o.Filters = append(o.Filters, f)
+		o.Filters[f.Type] = f
 	}
 
 	if len(o.Filters) > 0 {
