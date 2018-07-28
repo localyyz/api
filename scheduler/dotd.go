@@ -1,23 +1,33 @@
 package scheduler
 
 import (
-	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"context"
 	"net/http"
 	"net/url"
+
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"upper.io/db.v3"
 
-	"github.com/pressly/lg"
 	"time"
+
+	"github.com/pressly/lg"
 )
 
 const LocalyyzStoreId = 4164
 const DotdCollectionId = 76596346998
 
 func (h *Handler) SyncDOTD() {
-	ctx := context.Background()
+	h.wg.Add(1)
+	defer h.wg.Done()
 
+	s := time.Now()
+	lg.Info("job_sync_deals running...")
+	defer func() {
+		lg.Infof("job_sync_deals finished in %s", time.Since(s))
+	}()
+
+	ctx := context.Background()
 	// getting the shopify cred
 	cred, err := data.DB.ShopifyCred.FindOne(db.Cond{"place_id": LocalyyzStoreId})
 	if err != nil {

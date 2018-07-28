@@ -1,8 +1,20 @@
 package scheduler
 
+import (
+	"time"
+
+	"github.com/pressly/lg"
+)
+
 func (h *Handler) ScheduleDeals() {
 	h.wg.Add(1)
 	defer h.wg.Done()
+
+	s := time.Now()
+	lg.Info("job_schedule_deals running...")
+	defer func() {
+		lg.Infof("job_schedule_deals finished in %s", time.Since(s))
+	}()
 
 	// expire collections
 	h.DB.Exec(`UPDATE collections SET status = 3 WHERE lightning = true AND NOW() at time zone 'utc' > end_at and status = 2`)
