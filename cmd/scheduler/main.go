@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	flags    = flag.NewFlagSet("reporter", flag.ExitOnError)
+	flags    = flag.NewFlagSet("scheduler", flag.ExitOnError)
 	confFile = flags.String("config", "", "path to config file")
 )
 

@@ -5,8 +5,8 @@ version: 0.5
 env:
   NAME: scheduler
   IMAGE: gcr.io/verdant-descent-153101/api
-  HOST_PORT: 5339
-  CONTAINER_PORT: 5339
+  HOST_PORT: 5341
+  CONTAINER_PORT: 5341
   CONFIG: /data/etc/scheduler.conf
   GITMASTER: $(git rev-parse origin/master)
   GITSTAGING: $(git rev-parse origin/staging)
