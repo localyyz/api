@@ -8,6 +8,7 @@ RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asm
 RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/tool ./cmd/tool
 RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/syncer ./cmd/syncer
 RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/reporter ./cmd/reporter
+RUN GOGC=off CGO_ENABLED=0 GOOS=linux go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/scheduler ./cmd/scheduler
 
 # STAGE 2: SCRATCH BINARY
 FROM scratch
@@ -20,6 +21,7 @@ COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/merchant /bin/merc
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/tool /bin/tool
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/syncer /bin/syncer
 COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/reporter /bin/reporter
+COPY --from=0 /go/src/bitbucket.org/moodie-app/moodie-api/bin/scheduler /bin/scheduler
 COPY --from=0 /bin/goose /bin/goose
 ADD ca-certificates.crt /etc/ssl/certs/
 
@@ -28,5 +30,6 @@ EXPOSE 5333
 EXPOSE 5335
 EXPOSE 5337
 EXPOSE 5339
+EXPOSE 5341
 
 CMD ["/bin/api", "-config=/etc/api.conf", "-pem=/etc/push.pem"]

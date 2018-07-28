@@ -29,7 +29,7 @@ func New(db *data.Database) *Handler {
 func (h *Handler) Start() {
 	duration := time.Second
 	if h.Environment != "production" {
-		duration = 1 * time.Minute
+		duration = 1 * time.Hour
 	}
 
 	h.cron.AddFunc(fmt.Sprintf("@every %s", duration), h.ScheduleDeals)

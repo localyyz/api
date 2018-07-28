@@ -1,0 +1,10 @@
+environment     = "development"
+bind            = "0.0.0.0:5341"
+
+[db]
+database          = "localyyz"
+hosts             = [ "localhost" ]
+username          = "localyyz"
+password          = ""
+debug_queries     = true
+application_name  = "scheduler"
