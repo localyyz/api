@@ -10,20 +10,16 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
-	"bitbucket.org/moodie-app/moodie-api/lib/token"
-	"bitbucket.org/moodie-app/moodie-api/web"
+	"bitbucket.org/moodie-app/moodie-api/scheduler"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 	"github.com/zenazn/goji/graceful"
 )
 
 var (
-	flags    = flag.NewFlagSet("api", flag.ExitOnError)
+	flags    = flag.NewFlagSet("scheduler", flag.ExitOnError)
 	confFile = flags.String("config", "", "path to config file")
-	pemFile  = flags.String("pem", "", "path to apns pem file")
 )
 
 func main() {
@@ -37,39 +33,19 @@ func main() {
 	// initialize seed
 	rand.Seed(time.Now().Unix())
 
-	//[db]
+	// [db]
 	db, err := data.NewDBSession(&conf.DB)
 	if err != nil {
 		lg.Fatal(errors.Wrap(err, "database connection failed"))
 	}
 
-	//[stash]
-	st, err := stash.NewStash(conf.Stash.Host)
-	if err != nil {
-		if conf.Environment == "production" {
-			lg.Fatal(errors.Wrap(err, "stash connection failed"))
-		} else {
-			lg.Warn(errors.Wrap(err, "stash connection failed"))
-		}
-	}
-	_ = st
+	// [connect]
+	connect.SetupSlack(conf.Connect.Slack)
 
-	// new web handler
-	h := web.New(db)
-	h.Debug = (conf.Environment == "development")
-
-	//[connect]
-	connect.Configure(conf.Connect)
-
-	//[jwt]
-	token.SetupJWTAuth(conf.Jwt.Secret)
-
-	// pusher
-	if pemFile != nil && *pemFile != "" {
-		if err := pusher.Setup(*pemFile, conf.Pusher.Topic, conf.Environment); err != nil {
-			lg.Fatal(errors.Wrap(err, "invalid pem file"))
-		}
-	}
+	// new scheduler handler
+	h := scheduler.New(db)
+	h.Environment = conf.Environment
+	h.Start()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
@@ -81,9 +57,13 @@ func main() {
 		if err := data.DB.Close(); err != nil {
 			lg.Alert(err)
 		}
+
+		// wait for all schedulers to finish up
+		// was causing to crash so commented it out during testing
+		// h.wg.Wait()
 	})
 
-	lg.Warnf("API starting on %v", conf.Bind)
+	lg.Warnf("Scheduler starting on %v", conf.Bind)
 
 	if err := graceful.ListenAndServe(conf.Bind, h.Routes()); err != nil {
 		lg.Fatal(err)

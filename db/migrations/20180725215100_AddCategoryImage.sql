@@ -1,9 +1,9 @@
 
 -- +goose Up
 -- SQL in section 'Up' is executed when this migration is applied
-ALTER TABLE collections ADD COLUMN external_id bigint;
+ALTER TABLE product_categories ADD image_url text DEFAULT '' NOT NULL;
 
 
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
-ALTER TABLE collections DROP COLUMN external_id;
+ALTER TABLE product_categories DELETE image_url;

@@ -4,6 +4,7 @@ TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf
 MERCHANT_CONFIG := $$PWD/config/merchant.conf
 REPORTER_CONFIG := $$PWD/config/reporter.conf
+SCHEDULER_CONFIG := $$PWD/config/scheduler.conf
 TOOL_CONFIG := $$PWD/config/tool.conf
 SYNCER_CONFIG := $$PWD/config/syncer.conf
 TEST_CONFIG := $$PWD/config/test.conf
@@ -21,6 +22,8 @@ all:
 	@echo "  run-merchant          - run merchant app in dev mode"
 	@echo "  run-tool              - run tool app in dev mode"
 	@echo "  run-syncer            - run syncer app in dev mode"
+	@echo "  run-reporter          - run reporter app in dev mode"
+	@echo "  run-scheduler         - run scheduler app in dev mode"
 	@echo ""
 	@echo "  eetest                - run end to end tests"
 	@echo "  tests                 - run all tests under project"
@@ -109,6 +112,9 @@ run-syncer:
 
 run-reporter:
 	@(export CONFIG=${REPORTER_CONFIG}; fresh -c runner.conf -p ./cmd/reporter)
+
+run-scheduler:
+	@(export CONFIG=${SCHEDULER_CONFIG}; fresh -c runner.conf -p ./cmd/scheduler)
 
 run-nats:
 	@nats-streaming-server -DV -cid development

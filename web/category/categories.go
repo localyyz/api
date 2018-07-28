@@ -13,42 +13,32 @@ import (
 	db "upper.io/db.v3"
 )
 
-func SubcategoryCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		subcategory := chi.URLParam(r, "subcategory")
-		categories, err := data.DB.Category.FindByMapping(subcategory)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-
-		var values []string
-		for _, c := range categories {
-			values = append(values, c.Value)
-		}
-		ctx = context.WithValue(ctx, "category.value", values)
-		lg.SetEntryField(ctx, "subcategory", subcategory)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
-}
-
 func CategoryTypeCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		rawCategoryType := chi.URLParam(r, "categoryType")
-
+		input := chi.URLParam(r, "categoryType")
 		var categoryType data.CategoryType
-		if err := categoryType.UnmarshalText([]byte(rawCategoryType)); err != nil {
-			render.Render(w, r, api.ErrInvalidRequest(err))
-			return
+		if err := categoryType.UnmarshalText([]byte(input)); err != nil {
+			// did not parse as category. attempt to parse as subcategory
+			categories, err := data.DB.Category.FindByMapping(input)
+			if err != nil {
+				// did not parse either. return error
+				render.Respond(w, r, api.ErrInvalidRequest(err))
+				return
+			}
+
+			var values []string
+			for _, c := range categories {
+				values = append(values, c.Value)
+			}
+			ctx = context.WithValue(ctx, "category.value", values)
+			lg.SetEntryField(ctx, "subcategory", input)
+		} else {
+			ctx = context.WithValue(ctx, "category.type", categoryType)
+			lg.SetEntryField(ctx, "category", input)
 		}
 
-		ctx = context.WithValue(ctx, "category.type", categoryType)
-		lg.SetEntryField(ctx, "category", rawCategoryType)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(handler)
@@ -61,20 +51,15 @@ var (
 		data.CategoryShoe,
 		data.CategoryJewelry,
 		data.CategoryAccessory,
+		data.CategoryBag,
 		data.CategoryCosmetic,
-		//data.CategoryFragrance,
 		data.CategorySneaker,
-		//data.CategoryLingerie,
 		data.CategorySwimwear,
 	}
 )
 
 func List(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		ctx = context.WithValue(ctx, "product.gender", gender)
-	}
-	render.RenderList(w, r, presenter.NewCategoryList(ctx, displayCategories))
+	render.RenderList(w, r, presenter.NewCategoryList(r.Context(), displayCategories))
 }
 
 func GetCategory(w http.ResponseWriter, r *http.Request) {
@@ -85,14 +70,15 @@ func GetCategory(w http.ResponseWriter, r *http.Request) {
 
 func ListProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	categoryType := ctx.Value("category.type").(data.CategoryType)
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
 	cond := db.Cond{
-		"p.status":                    data.ProductStatusApproved,
-		db.Raw("p.category->>'type'"): categoryType.String(),
-		"p.deleted_at":                nil,
+		"p.status":     data.ProductStatusApproved,
+		"p.deleted_at": nil,
+	}
+	if categoryType, ok := ctx.Value("category.type").(data.CategoryType); ok {
+		cond[db.Raw("p.category->>'type'")] = categoryType.String()
 	}
 	if categoryValue, ok := ctx.Value("category.value").([]string); ok {
 		cond[db.Raw("p.category->>'value'")] = categoryValue
