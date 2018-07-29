@@ -8,6 +8,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/cart/cartitem"
+	"bitbucket.org/moodie-app/moodie-api/web/cart/express"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
@@ -17,6 +18,7 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Mount("/express", express.Routes())
 	r.Route("/default", func(r chi.Router) {
 		r.Use(DefaultCartCtx)
 		r.Mount("/", cartRoutes())

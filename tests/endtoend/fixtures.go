@@ -22,6 +22,7 @@ type fixture struct {
 	apiURL string
 
 	user, user2 *UserClient
+	anonUser    *UserClient
 	testStore   *data.Place
 
 	productInStock, productNotInStock                      *data.Product
@@ -35,7 +36,29 @@ type fixture struct {
 func (f *fixture) setupUser(t *testing.T) {
 	f.user = f.newTestUser(t, 1)
 	f.user2 = f.newTestUser(t, 2)
+	f.anonUser = f.newAnonUser(t)
+}
 
+func (f *fixture) newAnonUser(t *testing.T) *UserClient {
+	client, err := apiclient.NewClient(f.apiURL)
+	assert.NoError(t, err)
+
+	mockDeviceId := "localyyz_device_user"
+	// this is used to make api calls with device id
+	client.AddHeader("X-Device-Id", mockDeviceId)
+
+	// ping the api. should create a mock device user
+	_, _, err = client.Cart.Get(context.Background())
+	assert.NoError(t, err)
+
+	return &UserClient{
+		AuthUser: &auth.AuthUser{
+			User: &data.User{
+				Username: mockDeviceId,
+			},
+		},
+		client: client,
+	}
 }
 
 func (f *fixture) newTestUser(t *testing.T, n int) *UserClient {
