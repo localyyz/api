@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
-	set "gopkg.in/fatih/set.v0"
 
 	db "upper.io/db.v3"
 
@@ -79,23 +78,24 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 
 	if len(payload.DiscountCode) != 0 {
 		// find all the merchant that this discount code applies to
-		placeSet := set.New()
-		discounts, _ := data.DB.PlaceDiscount.FindAllByCode(payload.DiscountCode)
-		for _, d := range discounts {
-			placeSet.Add(d.PlaceID)
+		discount, err := data.DB.PlaceDiscount.FindByCode(payload.DiscountCode)
+		if err != nil {
+			render.Respond(w, r, api.ErrInvalidDiscountCode)
+			return
 		}
-
 		// find the checkout from these places
-		checkouts, _ := data.DB.Checkout.FindAll(
+		checkout, err := data.DB.Checkout.FindOne(
 			db.Cond{
 				"cart_id":  cart.ID,
-				"place_id": set.IntSlice(placeSet),
+				"place_id": discount.PlaceID,
 			},
 		)
-		for _, c := range checkouts {
-			c.DiscountCode = payload.DiscountCode
-			data.DB.Checkout.Save(c)
+		if err != nil {
+			render.Respond(w, r, api.ErrInvalidDiscountCode)
+			return
 		}
+		checkout.DiscountCode = payload.DiscountCode
+		data.DB.Checkout.Save(checkout)
 	}
 	if payload.ShippingAddress != nil {
 		cart.ShippingAddress = payload.ShippingAddress
