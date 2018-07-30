@@ -33,6 +33,8 @@ type Collection struct {
 	EndAt     *time.Time       `db:"end_at" json:"endAt"`
 	Status    CollectionStatus `db:"status" json:"status"`
 	Cap       int64            `db:"cap" json:"cap"`
+
+	MerchantID int64 `db:"merchant_id" json:"-"`
 }
 
 type CollectionStore struct {

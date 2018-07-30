@@ -8,14 +8,18 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
+	"net/http"
+	"net/url"
 )
 
 var (
 	ErrOutofStock      = errors.New("out of stock")
 	ErrProductExist    = errors.New("exists")
 	ErrProductRejected = errors.New("rejected")
+	ErrCollectionExist = errors.New("exists")
 	SyncListenerCtxKey = "sync.listener"
 )
 
@@ -194,4 +198,189 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}(syncer)
 	}
 	return nil
+}
+
+func ShopifyCollectionListingsRemove(ctx context.Context) error {
+	list := ctx.Value("sync.list").([]*shopify.CollectionList)
+
+	for _, c := range list {
+		// find the collection in our db
+		dbColl, err := data.DB.Collection.FindOne(db.Cond{"external_id": c.ID})
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Shopify syncer failed to find collection with external id: %d", c.ID))
+		}
+
+		// find all the collection products
+		collProd, err := data.DB.CollectionProduct.FindAll(db.Cond{"collection_id": dbColl.ID})
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Shopify syncer failed to collection products for collection with external id: %d", c.ID))
+		}
+
+		// deleting all the collection products
+		for _, cp := range collProd {
+			err := data.DB.CollectionProduct.Delete(cp)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Shopify syncer failed to delete collection product: %d for collection with external id: %d",cp.ProductID, c.ID))
+			}
+		}
+
+		// deleting the collection
+		err = data.DB.Collection.Delete(dbColl)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Shopiy syncer failed to delete collection with ID: %d", dbColl.ID))
+		}
+	}
+	return nil
+}
+
+func ShopifyCollectionListingsUpdate(ctx context.Context) error {
+	place := ctx.Value("sync.place").(*data.Place)
+	list := ctx.Value("sync.list").([]*shopify.CollectionList)
+
+	client, err := getShopifyClient(place.ID)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("Shopify could not create client for place: %d", place.ID))
+	}
+
+	for _, c := range list {
+		// check if it already exists
+		if exists, _ := data.DB.Collection.Find(db.Cond{"external_id":c.ID}).Exists(); !exists {
+			continue
+		}
+
+		// perform the update
+		for _, c := range list {
+			var mC *data.Collection
+			err := data.DB.Collection.Find(db.Cond{"external_id": c.ID}).All(&mC)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Error: Shopify syncer update collection listing but could not find collection with external id: %d", c.ID))
+			}
+
+			mC.Name = c.Title
+			mC.ImageURL = c.Image.Src
+
+			err = data.DB.Collection.Save(mC)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Error: Shopify syncer unable to save collection with id: %d ", mC.ID))
+			}
+
+			// getting the product IDs
+			extIDs, resp, err := client.CollectionList.ListProductIDs(ctx, c.ID)
+			if err != nil || resp.StatusCode != http.StatusOK {
+				return err
+			}
+
+			// add new products
+			for _, extID := range extIDs {
+				product, _ := data.DB.Product.FindByExternalID(extID)
+				if exist, _ := data.DB.CollectionProduct.Find(db.Cond{"product_id":product.ID}).Exists(); !exist {
+					// add to collection_products
+					cp := data.CollectionProduct{ProductID: product.ID, CollectionID: mC.ID}
+					err = data.DB.CollectionProduct.Create(cp)
+					if err != nil {
+						return errors.Wrap(err, fmt.Sprintf("Shopify could not save to collection_products for collection: %d", mC.ID))
+					}
+				}
+			}
+
+			// remove products from the collection
+			prodColls, _ := data.DB.CollectionProduct.FindByCollectionID(mC.ID)
+			for _, prodColl := range prodColls {
+				if !containsProduct(prodColl.ProductID, extIDs) {
+					err := data.DB.CollectionProduct.Delete(prodColl)
+					if err != nil {
+						return errors.Wrap(err, fmt.Sprintf("Shopify syncer failed to remove from product collection for collection: %d", mC.ID))
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func ShopifyCollectionListingsCreate(ctx context.Context) error {
+	place := ctx.Value("sync.place").(*data.Place)
+	list := ctx.Value("sync.list").([]*shopify.CollectionList)
+
+	for _, coll := range list {
+		//validate collection does not exist
+		if exist, _ := data.DB.Collection.Find(db.Cond{"external_id": coll.ID}).Exists(); exist {
+			return ErrCollectionExist
+		}
+
+		// the new collection to save
+		collection := data.Collection{
+			Name:        coll.Title,
+			Description: coll.BodyHTML,
+			ImageURL:    coll.Image.Src,
+			Featured:    false,
+			MerchantID:  place.ID,
+			Lightning:   false,
+			ExternalID:  &coll.ID,
+		}
+
+		// saving the new collection
+		err := data.DB.Collection.Save(collection)
+		if err != nil {
+			return errors.Wrap(err, "Shopify collection create")
+		}
+
+		client, err := getShopifyClient(place.ID)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Shopify could not create client for place: %d", place.ID))
+		}
+
+		// getting the product ids
+		extIDs, resp, err := client.CollectionList.ListProductIDs(ctx, coll.ID)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			return errors.Wrap(err, fmt.Sprintf("Shopify could not product ids for collection : %d", collection.ID))
+		}
+
+		for _, extID := range extIDs {
+			// validate product exists
+			if exist, _ := data.DB.Product.Find(db.Cond{"external_id": extID}).Exists(); !exist {
+				continue
+			}
+
+			// retrieve the product
+			p, err := data.DB.Product.FindByExternalID(extID)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Shopify could not find product in db for collection: %d", collection.ID))
+			}
+
+			// add to collection_products
+			cp := data.CollectionProduct{ProductID: p.ID, CollectionID: collection.ID}
+			err = data.DB.CollectionProduct.Create(cp)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Shopify could not save to collection_products for collection: %d", collection.ID))
+			}
+		}
+	}
+	return nil
+}
+
+func getShopifyClient(placeId int64) (*shopify.Client, error){
+	// getting the shopify cred
+	cred, err := data.DB.ShopifyCred.FindOne(db.Cond{"place_id": placeId})
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Shopify credentials for place_id: %d", placeId))
+	}
+
+	// creating the client
+	client := shopify.NewClient(nil, cred.AccessToken)
+	client.BaseURL, err = url.Parse(cred.ApiURL)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Shopify could not create client for place: %d", placeId))
+	}
+
+	return client, nil
+}
+
+func containsProduct(productID int64, list []int64) bool{
+	for _, p := range list {
+		if productID == p {
+			return true
+		}
+	}
+	return false
 }

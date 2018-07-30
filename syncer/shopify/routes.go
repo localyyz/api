@@ -87,6 +87,14 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 			lg.SetEntryField(ctx, "error", err)
 			return
 		}
+	case lib.TopicCollectionListingsAdd,
+		lib.TopicCollectionListingsRemove,
+		lib.TopicCollectionListingsUpdate:
+		if err := CollectionListingHandler(r); err != nil {
+			lg.Alertf("webhook: %s for place(%s) failed with %v", topic, place.Name, err)
+			lg.SetEntryField(ctx, "error", err)
+			return
+		}
 	case lib.TopicAppUninstalled, lib.TopicShopUpdate:
 		ShopHandler(r)
 	case lib.TopicCheckoutsUpdate:
@@ -94,7 +102,6 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		lg.Infof("ignoring webhook topic %s for place(id=%d)", topic, place.ID)
 	}
-
 }
 
 func Routes() chi.Router {
