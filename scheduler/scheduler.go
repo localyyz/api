@@ -32,10 +32,17 @@ func (f FuncJob) Run() {
 }
 
 func New(db *data.Database) *Handler {
+	var wg sync.WaitGroup
 	return &Handler{
 		DB:   db,
+		wg:   wg,
 		cron: cron.New(),
 	}
+}
+
+func (h *Handler) Wait() {
+	// wait for jobs to complete
+	h.wg.Wait()
 }
 
 func (h *Handler) Start() {
