@@ -88,10 +88,9 @@ func (h *Handler) SyncDOTD() {
 				// product does not exist
 				lg.Infof("product with ext id %d does not exist", extID)
 				continue
-			} else {
-				lg.Alert("Sync DOTD: Failed to retrieve product from DB")
-				return
 			}
+			lg.Alertf("Sync DOTD: Failed to retrieve product from DB with %v", err)
+			return
 		}
 
 		// check if the product already exists as part of a collection
