@@ -1,4 +1,4 @@
-.PHONY: help run docs build tools db-migrate list-tags
+.PHONY: help run docs build tools db-migrate list-tags connect-prod
 
 TEST_FLAGS ?=
 API_CONFIG := $$PWD/config/api.conf
@@ -24,6 +24,7 @@ all:
 	@echo "  run-syncer            - run syncer app in dev mode"
 	@echo "  run-reporter          - run reporter app in dev mode"
 	@echo "  run-scheduler         - run scheduler app in dev mode"
+	@echo "  connect-prod          - DANGER: open ssh tunnel to production db"
 	@echo ""
 	@echo "  eetest                - run end to end tests"
 	@echo "  tests                 - run all tests under project"
@@ -105,7 +106,7 @@ run-merchant:
 	@(export CONFIG=${MERCHANT_CONFIG}; fresh -c runner.conf -p ./cmd/merchant)
 
 run-tool:
-	@(export CONFIG=${TOOL_CONFIG}; fresh -c runner.conf -p ./cmd/tool)
+	@(export CONFIG=${TOOL_CONFIG}; go run -v ./cmd/tool/*.go)
 
 run-syncer:
 	@(export CONFIG=${SYNCER_CONFIG}; fresh -c runner.conf -p ./cmd/syncer)
@@ -126,3 +127,6 @@ build-merchant:
 build:
 	@mkdir -p ./bin
 	GOGC=off go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/api ./cmd/api/main.go
+
+connect-prod:
+	@ssh -v -nNT -L 1234:localhost:5432 root@localyyz.db

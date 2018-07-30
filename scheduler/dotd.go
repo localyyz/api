@@ -72,7 +72,7 @@ func (h *Handler) SyncDOTD() {
 	// if no upcoming deal schedule +1 day from TODAY
 	now := time.Now()
 	lastEndTime := &now
-	if len(dotdColl) > 0 {
+	if len(dotdColl) > 0 && dotdColl[0].EndAt.After(now) {
 		lastEndTime = dotdColl[0].EndAt
 	}
 
@@ -86,11 +86,11 @@ func (h *Handler) SyncDOTD() {
 		if err != nil {
 			if err == db.ErrNoMoreRows {
 				// product does not exist
+				lg.Infof("product with ext id %d does not exist", extID)
 				continue
-			} else {
-				lg.Alert("Sync DOTD: Failed to retrieve product from DB")
-				return
 			}
+			lg.Alertf("Sync DOTD: Failed to retrieve product from DB with %v", err)
+			return
 		}
 
 		// check if the product already exists as part of a collection
@@ -127,13 +127,16 @@ func (h *Handler) SyncDOTD() {
 			// create the new collection
 			newColl := &data.Collection{
 				Name:        product.Title,
-				Description: product.Description,
 				ImageURL:    pImg.ImageURL,
 				ImageWidth:  pImg.Width,
 				ImageHeight: pImg.Height,
 				Gender:      product.Gender,
 				Lightning:   true,
+				Featured:    true, // NOTE: this means the deal is a default global deal
 				Status:      data.CollectionStatusQueued,
+				// TODO:
+				// description should be this format:
+				// <title>. Retail <price>, #dotd = <dotd price>.
 			}
 
 			// calculating the cap
@@ -146,7 +149,11 @@ func (h *Handler) SyncDOTD() {
 
 			// adding the start and end times
 			// manually setting the time to 12 o'clock and adding +saveCount days to ensure deal is scheduled at noon of the next day of the last deal
-			start := time.Date(lastEndTime.Year(), lastEndTime.Month(), lastEndTime.Day()+saveCount, 16, 0, 0, 0, time.UTC)
+			start := time.Date(
+				lastEndTime.Year(),
+				lastEndTime.Month(),
+				lastEndTime.Day()+saveCount,
+				16, 0, 0, 0, time.UTC)
 			end := start.Add(time.Hour)
 
 			newColl.StartAt = &start
@@ -158,6 +165,8 @@ func (h *Handler) SyncDOTD() {
 				lg.Alert("Sync DOTD: Failed to save new DOTD collection to DB")
 				return
 			}
+
+			lg.Infof("dotd #%d (%s) synced. startAt: %s", newColl.ID, newColl.Name, newColl.StartAt)
 
 			// create the entry in the collection_products table
 			newCollProd := data.CollectionProduct{ProductID: product.ID, CollectionID: newColl.ID}
