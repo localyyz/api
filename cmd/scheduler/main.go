@@ -54,13 +54,13 @@ func main() {
 	})
 	graceful.PostHook(func() {
 		lg.Info("finishing up...")
+		// wait for all schedulers to finish up
+		h.Wait()
+
+		// close down database connections
 		if err := data.DB.Close(); err != nil {
 			lg.Alert(err)
 		}
-
-		// wait for all schedulers to finish up
-		// was causing to crash so commented it out during testing
-		// h.wg.Wait()
 	})
 
 	lg.Warnf("Scheduler starting on %v", conf.Bind)
