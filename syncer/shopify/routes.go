@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
+	"upper.io/db.v3"
+	"net/url"
 )
 
 func ShopifyStoreWhCtx(next http.Handler) http.Handler {
@@ -48,12 +50,27 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 		topic := h.Get(lib.WebhookHeaderTopic)
 		lg.SetEntryField(ctx, "topic", topic)
 
+		// getting the shopify cred
+		cred, err := data.DB.ShopifyCred.FindOne(db.Cond{"place_id": place.ID})
+		if err != nil {
+			return
+		}
+
+		// creating the client
+		client := lib.NewClient(nil, cred.AccessToken)
+		client.BaseURL, err = url.Parse(cred.ApiURL)
+		if err != nil {
+			return
+		}
+
 		// loadup contexts
 		ctx = context.WithValue(ctx, "place", place)
 		ctx = context.WithValue(ctx, "sync.place", place)
 		ctx = context.WithValue(ctx, "sync.topic", topic)
 		ctx = context.WithValue(ctx, "category.cache", categoryCache)
 		ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
+		ctx = context.WithValue(ctx, "shopify.client", client)
+
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}

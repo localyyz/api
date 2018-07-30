@@ -62,9 +62,10 @@ const (
 	CollectionStatusQueued                           //1
 	CollectionStatusActive                           //2
 	CollectionStatusInactive                         //3
+	CollectionStatusDeleted                          //4
 )
 
-var collectionStatuses = []string{"-", "queued", "active", "inactive"}
+var collectionStatuses = []string{"-", "queued", "active", "inactive", "deleted"}
 
 func (*CollectionProduct) CollectionName() string {
 	return `collection_products`
