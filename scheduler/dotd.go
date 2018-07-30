@@ -134,6 +134,9 @@ func (h *Handler) SyncDOTD() {
 				Lightning:   true,
 				Featured:    true, // NOTE: this means the deal is a default global deal
 				Status:      data.CollectionStatusQueued,
+				// TODO:
+				// description should be this format:
+				// <title>. Retail <price>, #dotd = <dotd price>.
 			}
 
 			// calculating the cap
