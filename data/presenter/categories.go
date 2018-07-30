@@ -30,13 +30,16 @@ func fetchSubcategory(ctx context.Context, categoryTypes ...data.CategoryType) [
 
 	if filterSort, ok := ctx.Value(api.FilterSortCtxKey).(*api.FilterSort); ok {
 		// TODO: pull this out into the filtersort api
-		if f, ok := filterSort.Filters["gender"]; ok {
-			v := new(data.ProductGender)
-			if err := v.UnmarshalText([]byte(f.Value.(string))); err == nil {
-				cond["gender"] = []data.ProductGender{
-					*v,
-					data.ProductGenderUnisex,
+		for _, f := range filterSort.Filters {
+			if f.Type == "gender" {
+				v := new(data.ProductGender)
+				if err := v.UnmarshalText([]byte(f.Value.(string))); err == nil {
+					cond["gender"] = []data.ProductGender{
+						*v,
+						data.ProductGenderUnisex,
+					}
 				}
+				break
 			}
 		}
 	}

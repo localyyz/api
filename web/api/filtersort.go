@@ -20,7 +20,7 @@ import (
 
 type FilterSort struct {
 	Sort    *Sort
-	Filters map[string]*Filter
+	Filters []*Filter
 
 	// internals
 	filterBy db.RawValue
@@ -164,7 +164,6 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 		}
 	}
 
-	o.Filters = make(map[string]*Filter)
 	for _, value := range q[FilterParam] {
 		f := &Filter{}
 		for _, p := range strings.Split(value, ",") {
@@ -178,7 +177,7 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 				f.Type = p
 			}
 		}
-		o.Filters[f.Type] = f
+		o.Filters = append(o.Filters, f)
 	}
 
 	if len(o.Filters) > 0 {
