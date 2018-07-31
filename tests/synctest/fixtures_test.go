@@ -26,6 +26,50 @@ type fixture struct {
 	discount []*shopify.ProductList
 
 	testStore *data.Place
+
+	CollectionNotUnique, CollectionUnique *data.Collection
+	ProductNotUnique, ProductUnique       *data.Product
+}
+
+func (f *fixture) setupProduct(t *testing.T) {
+	f.ProductUnique = &data.Product{
+		Title:   "sample product 1",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.ProductUnique))
+
+	f.ProductNotUnique = &data.Product{
+		Title:   "sample product 2",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.ProductNotUnique))
+}
+
+func (f *fixture) setupCollection(t *testing.T) {
+
+	f.CollectionUnique = &data.Collection{
+		Name:        "Test Collection 1",
+		Description: "Test",
+	}
+
+	f.CollectionNotUnique = &data.Collection{
+		Name:        "Test Collection 2",
+		Description: "Test",
+	}
+	assert.NoError(t, data.DB.Save(f.CollectionUnique))
+	assert.NoError(t, data.DB.Save(f.CollectionNotUnique))
+}
+
+func (f *fixture) linkProductsWithCollection(t *testing.T) {
+
+	collectionProduct := data.CollectionProduct{
+		CollectionID: f.CollectionNotUnique.ID,
+		ProductID:    f.ProductNotUnique.ID,
+	}
+
+	assert.NoError(t, data.DB.CollectionProduct.Create(collectionProduct))
 }
 
 func (f *fixture) SetupData(t *testing.T) {
@@ -84,6 +128,10 @@ func (f *fixture) SetupData(t *testing.T) {
 		Gender:  data.ProductGenderUnisex,
 		Weight:  1,
 	}))
+
+	f.setupProduct(t)
+	f.setupCollection(t)
+	f.linkProductsWithCollection(t)
 }
 
 func (f *fixture) TeardownData(t *testing.T) {

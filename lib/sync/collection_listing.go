@@ -8,6 +8,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"fmt"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"net/http"
 )
@@ -84,15 +85,7 @@ func ShopifyCollectionListingsUpdate(ctx context.Context) error {
 		}
 
 		for _, product := range products {
-			// not part of the collections products
-			if exist, _ := data.DB.CollectionProduct.Find(db.Cond{"product_id": product.ID}).Exists(); !exist {
-				// add to collection_products
-				cp := data.CollectionProduct{ProductID: product.ID, CollectionID: mC.ID}
-				err = data.DB.CollectionProduct.Create(cp)
-				if err != nil {
-					return errors.Wrap(err, fmt.Sprintf("Shopify syncer could not save to collection_products for collection: %d", mC.ID))
-				}
-			}
+			AddProductToCollection(product.ID, mC.ID)
 		}
 
 		// not concerned about removing products due to use of table as metadata
@@ -138,7 +131,7 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 		}
 
 		// finding all the products
-		products, err := data.DB.Product.FindAll(db.Cond{"external_id":extIDs})
+		products, err := data.DB.Product.FindAll(db.Cond{"external_id": extIDs})
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Shopify could not find product in db for collection: %d", collection.ID))
 		}
@@ -151,6 +144,16 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 				return errors.Wrap(err, fmt.Sprintf("Shopify could not save to collection_products for collection: %d", collection.ID))
 			}
 		}
+	}
+	return nil
+}
+
+func AddProductToCollection(productID, collectionID int64) error {
+	// add to collection_products
+	cp := data.CollectionProduct{ProductID: productID, CollectionID: collectionID}
+	err := data.DB.CollectionProduct.Create(cp)
+	if err != nil && err.(*pq.Error).Code.Name() != "unique_violation" {
+		return errors.Wrap(err, fmt.Sprintf("Shopify syncer could not save to collection_products for collection: %d", collectionID))
 	}
 	return nil
 }

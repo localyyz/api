@@ -85,7 +85,7 @@ db-loadstaging:
 
 ## TESTS
 eetest:
-	@(export CONFIG=${TEST_CONFIG}; export DBSCRIPTS=$$PWD/db/db.sh; export MIGRATIONDIR=$$PWD/db; go test -v ./tests/endtoend)
+	@(export CONFIG=${TEST_CONFIG}; export DBSCRIPTS=$$PWD/db/db.sh; export MIGRATIONDIR=$$PWD/db; go test -v ./tests/synctest/)
 ##
 # Deploy / GCP
 ##
