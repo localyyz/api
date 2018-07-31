@@ -16,6 +16,7 @@ var (
 	ErrOutofStock      = errors.New("out of stock")
 	ErrProductExist    = errors.New("exists")
 	ErrProductRejected = errors.New("rejected")
+	ErrCollectionExist = errors.New("exists")
 	SyncListenerCtxKey = "sync.listener"
 )
 

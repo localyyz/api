@@ -33,6 +33,8 @@ type Collection struct {
 	EndAt     *time.Time       `db:"end_at" json:"endAt"`
 	Status    CollectionStatus `db:"status" json:"status"`
 	Cap       int64            `db:"cap" json:"cap"`
+
+	MerchantID int64 `db:"merchant_id" json:"-"`
 }
 
 type CollectionStore struct {
@@ -60,9 +62,10 @@ const (
 	CollectionStatusQueued                           //1
 	CollectionStatusActive                           //2
 	CollectionStatusInactive                         //3
+	CollectionStatusDeleted                          //4
 )
 
-var collectionStatuses = []string{"-", "queued", "active", "inactive"}
+var collectionStatuses = []string{"-", "queued", "active", "inactive", "deleted"}
 
 func (*CollectionProduct) CollectionName() string {
 	return `collection_products`

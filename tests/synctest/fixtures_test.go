@@ -26,6 +26,28 @@ type fixture struct {
 	discount []*shopify.ProductList
 
 	testStore *data.Place
+
+	// collection sync test
+	collection *data.Collection
+	product    *data.Product
+}
+
+func (f *fixture) setupProduct(t *testing.T) {
+	f.product = &data.Product{
+		Title:   "sample product 1",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
+	assert.NoError(t, data.DB.Save(f.product))
+}
+
+func (f *fixture) setupCollection(t *testing.T) {
+
+	f.collection = &data.Collection{
+		Name:        "Test Collection 1",
+		Description: "Test",
+	}
+	assert.NoError(t, data.DB.Save(f.collection))
 }
 
 func (f *fixture) SetupData(t *testing.T) {
@@ -84,9 +106,13 @@ func (f *fixture) SetupData(t *testing.T) {
 		Gender:  data.ProductGenderUnisex,
 		Weight:  1,
 	}))
+
+	f.setupProduct(t)
+	f.setupCollection(t)
 }
 
 func (f *fixture) TeardownData(t *testing.T) {
 	data.DB.Exec("TRUNCATE users cascade;")
 	data.DB.Exec("TRUNCATE places cascade;")
+	data.DB.Exec("TRUNCATE collections cascade;")
 }
