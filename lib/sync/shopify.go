@@ -196,6 +196,3 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 	}
 	return nil
 }
-
-func ShopifyCollectionListingsRemove(ctx context.Context) error {
-}

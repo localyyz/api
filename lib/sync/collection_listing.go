@@ -7,29 +7,35 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
-	"github.com/pkg/errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"net/http"
 )
-
 
 func ShopifyCollectionListingsRemove(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.CollectionList)
 
+	// putting all the external ids into one list
+	var collectionIDs []int64
 	for _, c := range list {
-		// find the collection in our db
-		dbColl, err := data.DB.Collection.FindOne(db.Cond{"external_id": c.ID})
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Shopify syncer failed to find collection with external id: %d", c.ID))
-		}
+		collectionIDs = append(collectionIDs, c.ID)
+	}
 
-		// marking the collection as deleted
-		dbColl.Status = data.CollectionStatusDeleted
-		err = data.DB.Collection.Save(dbColl)
+	// get all the collections
+	collections, err := data.DB.Collection.FindAll(db.Cond{"external_id": collectionIDs})
+	if err != nil {
+		return errors.Wrap(err, "Shopify syncer failed to find collections")
+	}
+
+	// run through all the collections
+	for _, c := range collections {
+		c.Status = data.CollectionStatusDeleted
+		err := data.DB.Collection.Save(c)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Shopiy syncer failed to delete collection: %d", dbColl.ID))
+			return errors.Wrap(err, fmt.Sprintf("Shopiy syncer failed to mark collection: %d as deleted", c.ID))
 		}
 	}
+
 	return nil
 }
 
@@ -38,8 +44,15 @@ func ShopifyCollectionListingsUpdate(ctx context.Context) error {
 	client := ctx.Value("shopify.client").(*shopify.Client)
 
 	for _, c := range list {
-		// check if it already exists
-		if exists, _ := data.DB.Collection.Find(db.Cond{"external_id": c.ID}).Exists(); !exists {
+
+		// getting the merchant collection from db
+		mC, err := data.DB.Collection.FindOne(db.Cond{"external_id": c.ID})
+		if err != nil && err != db.ErrNoMoreRows {
+			return errors.Wrap(err, "Shopify syncer had some error reading the db while attempting to update collection")
+		}
+
+		// check if it doesnt exist -> create it
+		if err == db.ErrNoMoreRows {
 			err := ShopifyCollectionListingsCreate(ctx)
 			if err != nil {
 				return err
@@ -47,31 +60,31 @@ func ShopifyCollectionListingsUpdate(ctx context.Context) error {
 			continue
 		}
 
-		// perform the update
-		var mC *data.Collection
-		err := data.DB.Collection.Find(db.Cond{"external_id": c.ID}).All(&mC)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Error: Shopify syncer update collection listing but could not find collection with external id: %d", c.ID))
-		}
-
+		// updating the title and image
 		mC.Name = c.Title
-		mC.ImageURL = c.Image.Src
+		if c.Image != nil {
+			mC.ImageURL = c.Image.Src
+		}
 
 		err = data.DB.Collection.Save(mC)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Error: Shopify syncer unable to save collection with id: %d ", mC.ID))
 		}
 
-		// getting the product IDs
+		// getting the product IDs for the collection
 		extIDs, resp, err := client.CollectionList.ListProductIDs(ctx, c.ID)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			return err
 		}
 
 		// add new products
-		for _, extID := range extIDs {
-			product, _ := data.DB.Product.FindByExternalID(extID)
-			// its not a part of collection_products
+		products, err := data.DB.Product.FindAll(db.Cond{"external_id": extIDs})
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Error: Shopify syncer unable to find products"))
+		}
+
+		for _, product := range products {
+			// not part of the collections products
 			if exist, _ := data.DB.CollectionProduct.Find(db.Cond{"product_id": product.ID}).Exists(); !exist {
 				// add to collection_products
 				cp := data.CollectionProduct{ProductID: product.ID, CollectionID: mC.ID}
@@ -82,21 +95,7 @@ func ShopifyCollectionListingsUpdate(ctx context.Context) error {
 			}
 		}
 
-		// remove products from the collection
-		prodColls, _ := data.DB.CollectionProduct.FindByCollectionID(mC.ID)
-		for _, prodColl := range prodColls {
-			product, err := data.DB.Product.FindByID(prodColl.ProductID)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("Shopify syncer could not find product with id: %d", product.ID))
-			}
-			if !containsProduct(product.ExternalID, extIDs) {
-				err := data.DB.CollectionProduct.Delete(prodColl)
-				if err != nil {
-					return errors.Wrap(err, fmt.Sprintf("Shopify syncer failed to remove from product collection for collection: %d", mC.ID))
-				}
-			}
-		}
-
+		// not concerned about removing products due to use of table as metadata
 	}
 	return nil
 }
@@ -116,11 +115,14 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 		collection := data.Collection{
 			Name:        coll.Title,
 			Description: coll.BodyHTML,
-			ImageURL:    coll.Image.Src,
 			Featured:    false,
 			MerchantID:  place.ID,
 			Lightning:   false,
 			ExternalID:  &coll.ID,
+		}
+
+		if coll.Image != nil {
+			collection.ImageURL = coll.Image.Src
 		}
 
 		// saving the new collection
@@ -135,20 +137,14 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 			return errors.Wrap(err, fmt.Sprintf("Shopify could not get the product ids for collection : %d", collection.ID))
 		}
 
-		for _, extID := range extIDs {
-			// validate product exists
-			if exist, _ := data.DB.Product.Find(db.Cond{"external_id": extID}).Exists(); !exist {
-				// product does not exist skip
-				continue
-			}
+		// finding all the products
+		products, err := data.DB.Product.FindAll(db.Cond{"external_id":extIDs})
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Shopify could not find product in db for collection: %d", collection.ID))
+		}
 
-			// retrieve the product
-			p, err := data.DB.Product.FindByExternalID(extID)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("Shopify could not find product in db for collection: %d", collection.ID))
-			}
-
-			// add to collection_products
+		// add to collection_products
+		for _, p := range products {
 			cp := data.CollectionProduct{ProductID: p.ID, CollectionID: collection.ID}
 			err = data.DB.CollectionProduct.Create(cp)
 			if err != nil {
@@ -157,13 +153,4 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 		}
 	}
 	return nil
-}
-
-func containsProduct(productID *int64, list []int64) bool {
-	for _, p := range list {
-		if *productID == p {
-			return true
-		}
-	}
-	return false
 }
