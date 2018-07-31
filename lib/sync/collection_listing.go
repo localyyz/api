@@ -2,15 +2,17 @@ package sync
 
 import (
 	"context"
+	"log"
 
 	"upper.io/db.v3"
 
+	"fmt"
+	"net/http"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
-	"fmt"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
-	"net/http"
 )
 
 func ShopifyCollectionListingsRemove(ctx context.Context) error {
@@ -150,10 +152,20 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 
 func AddProductToCollection(productID, collectionID int64) error {
 	// add to collection_products
-	cp := data.CollectionProduct{ProductID: productID, CollectionID: collectionID}
+	cp := data.CollectionProduct{
+		ProductID:    productID,
+		CollectionID: collectionID,
+	}
 	err := data.DB.CollectionProduct.Create(cp)
-	if err != nil && err.(*pq.Error).Code.Name() != "unique_violation" {
-		return errors.Wrap(err, fmt.Sprintf("Shopify syncer could not save to collection_products for collection: %d", collectionID))
+	if err != nil {
+		if pErr, ok := err.(*pq.Error); ok {
+			log.Println(pErr.Code.Name())
+			if pErr.Code.Name() != "unique_violation" {
+				return err
+			}
+			return nil
+		}
+		return errors.Wrapf(err, "Shopify syncer could not save to collection_products for collection: %d", collectionID)
 	}
 	return nil
 }

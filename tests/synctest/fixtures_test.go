@@ -27,49 +27,27 @@ type fixture struct {
 
 	testStore *data.Place
 
-	CollectionNotUnique, CollectionUnique *data.Collection
-	ProductNotUnique, ProductUnique       *data.Product
+	// collection sync test
+	collection *data.Collection
+	product    *data.Product
 }
 
 func (f *fixture) setupProduct(t *testing.T) {
-	f.ProductUnique = &data.Product{
+	f.product = &data.Product{
 		Title:   "sample product 1",
 		Status:  data.ProductStatusApproved,
 		PlaceID: f.testStore.ID,
 	}
-	assert.NoError(t, data.DB.Save(f.ProductUnique))
-
-	f.ProductNotUnique = &data.Product{
-		Title:   "sample product 2",
-		Status:  data.ProductStatusApproved,
-		PlaceID: f.testStore.ID,
-	}
-	assert.NoError(t, data.DB.Save(f.ProductNotUnique))
+	assert.NoError(t, data.DB.Save(f.product))
 }
 
 func (f *fixture) setupCollection(t *testing.T) {
 
-	f.CollectionUnique = &data.Collection{
+	f.collection = &data.Collection{
 		Name:        "Test Collection 1",
 		Description: "Test",
 	}
-
-	f.CollectionNotUnique = &data.Collection{
-		Name:        "Test Collection 2",
-		Description: "Test",
-	}
-	assert.NoError(t, data.DB.Save(f.CollectionUnique))
-	assert.NoError(t, data.DB.Save(f.CollectionNotUnique))
-}
-
-func (f *fixture) linkProductsWithCollection(t *testing.T) {
-
-	collectionProduct := data.CollectionProduct{
-		CollectionID: f.CollectionNotUnique.ID,
-		ProductID:    f.ProductNotUnique.ID,
-	}
-
-	assert.NoError(t, data.DB.CollectionProduct.Create(collectionProduct))
+	assert.NoError(t, data.DB.Save(f.collection))
 }
 
 func (f *fixture) SetupData(t *testing.T) {
@@ -131,10 +109,10 @@ func (f *fixture) SetupData(t *testing.T) {
 
 	f.setupProduct(t)
 	f.setupCollection(t)
-	f.linkProductsWithCollection(t)
 }
 
 func (f *fixture) TeardownData(t *testing.T) {
 	data.DB.Exec("TRUNCATE users cascade;")
 	data.DB.Exec("TRUNCATE places cascade;")
+	data.DB.Exec("TRUNCATE collections cascade;")
 }
