@@ -31,7 +31,8 @@ func NewDeal(ctx context.Context, collection *data.Collection) *LightningCollect
 	presented := &LightningCollection{
 		Collection: collection,
 	}
-	if collection.Status == data.CollectionStatusActive || collection.Status == data.CollectionStatusInactive {
+
+	if collection.Status != data.CollectionStatusInactive || collection.Status != data.CollectionStatusDeleted {
 		cps, err := data.DB.CollectionProduct.FindByCollectionID(collection.ID)
 		if err != nil {
 			return presented

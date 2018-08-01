@@ -57,7 +57,7 @@ var (
 	errOutOfStockAdd  = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "this variant is out of stock."}
 
 	/* Lightning Section */
-	ErrExpiredDeal = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "expired interval", ErrorText: "this lightning deal has ended"}
+	ErrExpiredDeal = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "invalid interval", ErrorText: "this lightning deal has expired or is not available yet"}
 	ErrLightningOutOfStock = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out of stock", ErrorText: "the products from this lightning collection have been sold out"}
 	ErrMultiplePurchase = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "already purchased", ErrorText: "you have already purchased today's deal"}
 
