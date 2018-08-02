@@ -18,6 +18,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
+	"time"
 )
 
 func ProductCtx(next http.Handler) http.Handler {
@@ -182,4 +183,32 @@ func GetVariant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Respond(w, r, variant)
+}
+
+func AddFavouriteProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	user := ctx.Value("session.user").(*data.User)
+	product := ctx.Value("product").(*data.Product)
+
+	now := time.Now()
+	favProd := data.FavouriteProduct{ProductID: product.ID, UserID: user.ID, CreatedAt: &now}
+
+	err := data.DB.FavouriteProduct.Create(favProd)
+	if err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
+func DeleteFavouriteProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	user := ctx.Value("session.user").(*data.User)
+	product := ctx.Value("product").(*data.Product)
+
+	err := data.DB.FavouriteProduct.Find(db.Cond{"user_id": user.ID, "product_id": product.ID}).Delete()
+	if err != nil {
+		render.Respond(w, r, err)
+	}
+
 }
