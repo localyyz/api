@@ -190,7 +190,7 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 				lg.Warnf("shopify score%v", err)
 				return
 			}
-
+			s.SyncDOTD(p.Tags)
 			s.Finalize()
 		}(syncer)
 	}

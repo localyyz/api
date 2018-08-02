@@ -3,7 +3,13 @@ package sync
 import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"gopkg.in/fatih/set.v0"
+	"strings"
 	db "upper.io/db.v3"
+)
+
+const (
+	LOCALYYDOTDSTRING = "LOCALYYDOTD"
 )
 
 type productSyncer struct {
@@ -60,6 +66,17 @@ func (s *productSyncer) SyncScore() error {
 	}
 	s.product.Score = score
 	return nil
+}
+
+///////
+// SOMEWHAT HACKY
+// WE NEED TO MARK CERTAIN PRODUCTS AS DOTD FOR BUYING AFTER/BEFORE DOTD ENDS -> LOOK FOR THE TAG FROM THE SHOPIFY STORE
+func (s *productSyncer) SyncDOTD(tags string) {
+	split_tags := strings.Split(tags, " ")
+	tag_set := set.New(split_tags)
+	if tag_set.Has(LOCALYYDOTDSTRING) {
+		s.product.Status = data.ProductStatusDOTD
+	}
 }
 
 func (s *productSyncer) FinalizeStatus(status data.ProductStatus) error {

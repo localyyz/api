@@ -50,6 +50,7 @@ var productStatuses = []string{
 	"rejected",
 	"deleted",
 	"outstock",
+	"dotd",
 }
 
 type ProductStatus uint32
@@ -62,6 +63,7 @@ const (
 	ProductStatusRejected                        //4
 	ProductStatusDeleted                         //5
 	ProductStatusOutofStock                      //6
+	ProductStatusDOTD							 //7
 )
 
 type ProductGender uint32
