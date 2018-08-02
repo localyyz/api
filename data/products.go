@@ -63,7 +63,7 @@ const (
 	ProductStatusRejected                        //4
 	ProductStatusDeleted                         //5
 	ProductStatusOutofStock                      //6
-	ProductStatusDOTD							 //7
+	ProductStatusDOTD                            //7
 )
 
 type ProductGender uint32
