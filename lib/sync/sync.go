@@ -71,10 +71,13 @@ func (s *productSyncer) SyncScore() error {
 ///////
 // SOMEWHAT HACKY
 // WE NEED TO MARK CERTAIN PRODUCTS AS DOTD FOR BUYING AFTER/BEFORE DOTD ENDS -> LOOK FOR THE TAG FROM THE SHOPIFY STORE
-func (s *productSyncer) SyncDOTD(tags string) {
-	split_tags := strings.Split(tags, " ")
-	tag_set := set.New(split_tags)
-	if tag_set.Has(LOCALYYDOTDSTRING) {
+func (s *productSyncer) SyncDOTDProductStatus(tags string) {
+	splitTags := strings.Split(tags, " ")
+	tagSet := set.New()
+	for _, tag := range splitTags {
+		tagSet.Add(tag)
+	}
+	if tagSet.Has(LOCALYYDOTDSTRING) {
 		s.product.Status = data.ProductStatusDOTD
 	}
 }
