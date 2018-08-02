@@ -27,7 +27,7 @@ func Routes() chi.Router {
 		r.Use(CartCtx)
 		r.Mount("/", cartRoutes())
 	})
-	r.With(CartStatusScopeCtx).Get("/{cartStatus}", ListCart)
+	//r.With(CartStatusScopeCtx).Get("/{cartStatus}", ListCart)
 
 	return r
 }
