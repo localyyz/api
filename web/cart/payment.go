@@ -2,6 +2,7 @@ package cart
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -33,6 +34,7 @@ func (c *cartPaymentRequest) Bind(r *http.Request) error {
 func CreatePayments(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
+	sessionUser := ctx.Value("session.user").(*data.User)
 
 	var payload cartPaymentRequest
 	if err := render.Bind(r, &payload); err != nil {
@@ -51,6 +53,7 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx = context.WithValue(ctx, shopper.PayerUserCtxKey, sessionUser)
 	ctx = context.WithValue(ctx, shopper.BillingAddressCtxKey, cart.BillingAddress)
 	ctx = context.WithValue(ctx, shopper.RequestIPCtxKey, r.RemoteAddr)
 	ctx = context.WithValue(ctx, shopper.PaymentCardCtxKey, payload.Card)
@@ -85,6 +88,21 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 
 		render.Status(r, http.StatusBadRequest)
 		break
+	}
+
+	// upgrade user to a full user
+	if sessionUser.Network == "shadow" {
+		// TODO: --> let's test this throughly <--
+		newUser := &data.User{
+			ID:          sessionUser.ID,
+			Username:    cart.Email,
+			Email:       cart.Email,
+			DeviceToken: &(sessionUser.Username),
+			Name:        fmt.Sprintf("%s %s", cart.BillingAddress.FirstName, cart.BillingAddress.LastName),
+			Network:     "email",
+		}
+		// TODO: how does the user login here??
+		data.DB.User.Save(newUser)
 	}
 
 	// give us a nice alert

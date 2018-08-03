@@ -15,7 +15,8 @@ import (
 
 const BillingAddressCtxKey = "shopper.billing.address"
 const ShippingAddressCtxKey = "shopper.shipping.address"
-const EmailCtxKey = "shipper.email"
+const PayerUserCtxKey = "shopper.user"
+const EmailCtxKey = "shopper.email"
 const RequestIPCtxKey = "shopper.request.ip"
 const PaymentCardCtxKey = "shopper.payment.card"
 

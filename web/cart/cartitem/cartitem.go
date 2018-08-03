@@ -94,6 +94,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 				CartID:  &cart.ID,
 				UserID:  cart.UserID,
 				PlaceID: variant.PlaceID,
+				Status:  data.CheckoutStatusPending,
 			}
 			if err := data.DB.Checkout.Save(checkout); err != nil {
 				lg.Alertf("checkout create: %s", err)

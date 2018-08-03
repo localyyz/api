@@ -434,6 +434,17 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountFailure() {
 	}
 }
 
+// anonUser should be able to add to cart successfully.
+func (suite *CheckoutTestSuite) TestAnonAddtoCart() {
+	user := suite.anonUser
+	client := user.client
+	ctx := context.Background()
+
+	_, resp, err := client.Cart.AddItem(ctx, &data.CartItem{VariantID: suite.variantInStock.ID})
+	require.NoError(suite.T(), err)
+	require.Equal(suite.T(), http.StatusCreated, resp.StatusCode)
+}
+
 func TestCheckoutTestSuite(t *testing.T) {
 	suite.Run(t, new(CheckoutTestSuite))
 }
