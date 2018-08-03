@@ -13,7 +13,8 @@ func FavouriteProductList(ctx context.Context, favProds []*data.FavouriteProduct
 		productIDs = append(productIDs, c.ProductID)
 	}
 
-	products, _ := data.DB.Product.FindAll(db.Cond{"id": productIDs})
-
+	var products []*data.Product
+	res := data.DB.Product.Find(db.Cond{"id": productIDs}).OrderBy(data.MaintainOrder("id", productIDs))
+	res.All(&products)
 	return NewProductList(ctx, products)
 }

@@ -18,7 +18,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
-	"time"
 )
 
 func ProductCtx(next http.Handler) http.Handler {
@@ -191,8 +190,7 @@ func AddFavouriteProduct(w http.ResponseWriter, r *http.Request) {
 	user := ctx.Value("session.user").(*data.User)
 	product := ctx.Value("product").(*data.Product)
 
-	now := time.Now()
-	favProd := data.FavouriteProduct{ProductID: product.ID, UserID: user.ID, CreatedAt: &now}
+	favProd := data.FavouriteProduct{ProductID: product.ID, UserID: user.ID}
 
 	err := data.DB.FavouriteProduct.Create(favProd)
 	if err != nil {

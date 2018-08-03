@@ -9,7 +9,7 @@ import (
 type FavouriteProduct struct {
 	UserID    int64 `db:"user_id" json:"userID"`
 	ProductID int64 `db:"product_id" json:"productID"`
-	CreatedAt *time.Time `db:"created_at" json:"createdAt"`
+	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 }
 
 type FavouriteProductStore struct {

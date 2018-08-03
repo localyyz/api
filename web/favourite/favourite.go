@@ -22,11 +22,11 @@ func GetFavouriteProducts(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
+	cursor.Update(favProducts)
 
-	if err != db.ErrNoMoreRows {
-		presented := presenter.FavouriteProductList(ctx, favProducts)
-		if err := render.RenderList(w, r, presented); err != nil {
-			render.Respond(w, r, err)
-		}
+	presented := presenter.FavouriteProductList(ctx, favProducts)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
 	}
+
 }
