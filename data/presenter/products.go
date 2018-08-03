@@ -167,7 +167,14 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	user := ctx.Value("session.user")
 	if user != nil {
 		user := user.(*data.User)
-		favouriteProducts, _ := data.DB.FavouriteProduct.FindByUserID(user.ID)
+
+		var productIDs []int64
+		for _, p := range products {
+			productIDs = append(productIDs, p.ID)
+		}
+
+		var favouriteProducts []*data.FavouriteProduct
+		data.DB.FavouriteProduct.Find(db.Cond{"user_id": user.ID, "product_id": productIDs}).All(&favouriteProducts)
 		for _, favProd := range favouriteProducts {
 			favouriteCache.Add(favProd.ProductID)
 		}
