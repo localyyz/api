@@ -183,3 +183,30 @@ func GetVariant(w http.ResponseWriter, r *http.Request) {
 
 	render.Respond(w, r, variant)
 }
+
+func AddFavouriteProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	user := ctx.Value("session.user").(*data.User)
+	product := ctx.Value("product").(*data.Product)
+
+	favProd := data.FavouriteProduct{ProductID: product.ID, UserID: user.ID}
+
+	err := data.DB.FavouriteProduct.Create(favProd)
+	if err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
+func DeleteFavouriteProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	user := ctx.Value("session.user").(*data.User)
+	product := ctx.Value("product").(*data.Product)
+
+	err := data.DB.FavouriteProduct.Find(db.Cond{"user_id": user.ID, "product_id": product.ID}).Delete()
+	if err != nil {
+		render.Respond(w, r, err)
+	}
+
+}
