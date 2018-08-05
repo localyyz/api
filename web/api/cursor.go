@@ -155,8 +155,8 @@ func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Pagin
 			//go func() {
 			row, _ := selector.
 				SetColumns(db.Raw("count(1)")).
-				GroupBy(db.Raw("1=1")).
-				OrderBy(db.Raw("1=1")).
+				GroupBy(db.Raw("")).
+				OrderBy(nil).
 				QueryRowContext(ctx)
 			var count uint64
 			if err := row.Scan(&count); err != nil {
