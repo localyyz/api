@@ -9,6 +9,7 @@ import (
 func Routes() chi.Router {
 
 	r := api.WithFilterRoutes(ListProducts)
+	r.Get("/feed", ListRandomProduct)
 	r.Get("/history", ListHistoryProduct)
 	r.Get("/trend", ListTrending)
 	r.With(auth.DeviceCtx).Route("/favourite", api.FilterRoutes(ListFavourite))
