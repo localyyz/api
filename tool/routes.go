@@ -21,6 +21,7 @@ type Handler struct {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 
+	r.Post("/testdata", InsertTestPurchasableProduct)
 	r.Get("/products/score", syncProductImageScores)
 
 	r.Get("/products/update", UpdateCategories)
