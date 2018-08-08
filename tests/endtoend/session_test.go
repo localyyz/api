@@ -28,7 +28,6 @@ func (suite *SessionTestSuite) SetupSuite() {
 
 	suite.TeardownData(suite.T())
 	suite.fixture = &fixture{}
-	suite.SetupData(suite.T(), suite.env.URL)
 }
 
 func (suite *SessionTestSuite) TearDownSuite() {
@@ -37,6 +36,9 @@ func (suite *SessionTestSuite) TearDownSuite() {
 
 func (suite *SessionTestSuite) TearDownTest() {
 	data.DB.Exec("TRUNCATE users cascade;")
+}
+
+func (suite *SessionTestSuite) SetupTest(){
 	suite.SetupData(suite.T(), suite.env.URL)
 }
 

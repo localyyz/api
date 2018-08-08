@@ -22,7 +22,7 @@ type fixture struct {
 	apiURL string
 
 	user, user2 *UserClient
-	anonUser, anonUser2, anonUser3, anonUser4, anonUser5    *UserClient
+	anonUser    *UserClient
 	testStore   *data.Place
 
 	productInStock, productNotInStock                      *data.Product
