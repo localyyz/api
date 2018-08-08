@@ -50,6 +50,7 @@ func NewClient(apiURL string) (*Client, error) {
 	c.ExpressCart = (*ExpressCartService)(&c.common)
 	c.User = (*UserService)(&c.common)
 	c.Deal = (*DealService)(&c.common)
+	c.User = (*UserService)(&c.common)
 
 	return c, nil
 }

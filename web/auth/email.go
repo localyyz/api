@@ -12,6 +12,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
+	"upper.io/db.v3"
 )
 
 const (
@@ -55,6 +56,12 @@ func EmailSignup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// mask the encryption error and return
 		render.Respond(w, r, api.ErrEncryptinError)
+		return
+	}
+
+	// checking if the user already exists
+	if exists, _ := data.DB.User.Find(db.Cond{"username":emailx.Normalize(newSignup.Email)}).Exists(); exists {
+		render.Respond(w, r, api.ErrUserExists)
 		return
 	}
 

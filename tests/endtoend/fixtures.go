@@ -36,25 +36,30 @@ type fixture struct {
 func (f *fixture) setupUser(t *testing.T) {
 	f.user = f.newTestUser(t, 1)
 	f.user2 = f.newTestUser(t, 2)
-	f.anonUser = f.newAnonUser(t)
+	f.anonUser = f.newAnonUser(t, "1")
 }
 
-func (f *fixture) newAnonUser(t *testing.T) *UserClient {
+func (f *fixture) newAnonUser(t *testing.T, count string) *UserClient {
 	client, err := apiclient.NewClient(f.apiURL)
 	assert.NoError(t, err)
 
-	mockDeviceId := "localyyz_device_user"
+	mockDeviceId := "localyyz_device_user_" + count
 	// this is used to make api calls with device id
-	client.AddHeader("X-Device-Id", mockDeviceId)
+	client.AddHeader("X-DEVICE-ID", mockDeviceId)
 
 	// ping the api. should create a mock device user
 	_, _, err = client.Cart.Get(context.Background())
 	assert.NoError(t, err)
 
+	// we need to read in the ID from the DB
+	mockUser, _ := data.DB.User.FindByUsername(mockDeviceId)
+
 	return &UserClient{
 		AuthUser: &auth.AuthUser{
 			User: &data.User{
+				ID: mockUser.ID,
 				Username: mockDeviceId,
+				Email: mockDeviceId,
 			},
 		},
 		client: client,
@@ -67,12 +72,11 @@ func (f *fixture) newTestUser(t *testing.T, n int) *UserClient {
 
 	// setup fixtures for test suite
 	ctx := context.Background()
-	authUser, _, err := client.User.Signup(
+	authUser, _, err := client.User.SignupWithEmail(
 		ctx,
-		&data.User{
-			Name:  "Paul X",
-			Email: fmt.Sprintf("test%d@localyyz.com", n),
-		},
+		fmt.Sprintf("test%d@localyyz.com", n),
+		"Test Localyyz",
+		"test1234",
 	)
 	assert.NoError(t, err)
 
@@ -241,11 +245,9 @@ func (f *fixture) TeardownData(t *testing.T) {
 type MockFacebook struct{}
 
 func (f *MockFacebook) Login(token, inviteCode string) (*data.User, error) {
-	if token == "localyyz-test-token-login" {
-		user := data.User{ID: 0, Network: "facebook", Email: "test@localyyz.com"}
-		return &user, nil
-	}
-	return nil, nil
+	username := fmt.Sprintf("test%s@localyyz.com", token[len(token)-1:])
+	user := data.User{ID: 0, Network: "facebook", Email: username, Username: username, Name: username}
+	return &user, nil
 }
 
 func (f *MockFacebook) GetUser(u *data.User) error {

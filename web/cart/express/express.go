@@ -314,20 +314,12 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	// TODO: create a customer on stripe after the first
 	// tokenization so we can send stripe customer id moving forward
 
-	// upgrade user to a full user
+	// get the user email but keep the user as a shadow user so they can login
 	user := ctx.Value("session.user").(*data.User)
 	if user.Network == "shadow" {
-		// TODO: --> let's test this throughly <--
-		newUser := &data.User{
-			ID:          user.ID,
-			Username:    cart.Email,
-			Email:       cart.Email,
-			DeviceToken: &(user.Username),
-			Name:        fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName),
-			Network:     "email",
-		}
-		// TODO: how does the user login here??
-		data.DB.User.Save(newUser)
+		user.Email = cart.Email
+		user.Name = fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName)
+		data.DB.User.Save(user)
 	}
 
 	go func() {
