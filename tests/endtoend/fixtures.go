@@ -37,10 +37,6 @@ func (f *fixture) setupUser(t *testing.T) {
 	f.user = f.newTestUser(t, 1)
 	f.user2 = f.newTestUser(t, 2)
 	f.anonUser = f.newAnonUser(t, "1")
-	f.anonUser2 = f.newAnonUser(t, "2")
-	f.anonUser3 = f.newAnonUser(t, "3")
-	f.anonUser4 = f.newAnonUser(t, "4")
-	f.anonUser5 = f.newAnonUser(t, "5")
 }
 
 func (f *fixture) newAnonUser(t *testing.T, count string) *UserClient {
@@ -55,9 +51,13 @@ func (f *fixture) newAnonUser(t *testing.T, count string) *UserClient {
 	_, _, err = client.Cart.Get(context.Background())
 	assert.NoError(t, err)
 
+	// we need to read in the ID from the DB
+	mockUser, _ := data.DB.User.FindByUsername(mockDeviceId)
+
 	return &UserClient{
 		AuthUser: &auth.AuthUser{
 			User: &data.User{
+				ID: mockUser.ID,
 				Username: mockDeviceId,
 				Email: mockDeviceId,
 			},
@@ -75,6 +75,8 @@ func (f *fixture) newTestUser(t *testing.T, n int) *UserClient {
 	authUser, _, err := client.User.SignupWithEmail(
 		ctx,
 		fmt.Sprintf("test%d@localyyz.com", n),
+		"Test Localyyz",
+		"test1234",
 	)
 	assert.NoError(t, err)
 
@@ -244,7 +246,7 @@ type MockFacebook struct{}
 
 func (f *MockFacebook) Login(token, inviteCode string) (*data.User, error) {
 	username := fmt.Sprintf("test%s@localyyz.com", token[len(token)-1:])
-	user := data.User{ID: 0, Network: "facebook", Email: username, Username: username}
+	user := data.User{ID: 0, Network: "facebook", Email: username, Username: username, Name: username}
 	return &user, nil
 }
 

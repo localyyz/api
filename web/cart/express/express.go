@@ -318,6 +318,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	user := ctx.Value("session.user").(*data.User)
 	if user.Network == "shadow" {
 		user.Email = cart.Email
+		user.Name = fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName)
 		data.DB.User.Save(user)
 	}
 

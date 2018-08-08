@@ -10,7 +10,7 @@ import (
 
 type UserService service
 
-func (c *UserService) SignupWithEmail(ctx context.Context, email string) (*auth.AuthUser, *http.Response, error) {
+func (c *UserService) SignupWithEmail(ctx context.Context, email, name, password string) (*auth.AuthUser, *http.Response, error) {
 	postUserRequest := struct {
 		Name            string          `json:"fullName,required"`
 		Email           string          `json:"email,required"`
@@ -18,10 +18,10 @@ func (c *UserService) SignupWithEmail(ctx context.Context, email string) (*auth.
 		PasswordConfirm string          `json:"passwordConfirm,required"`
 		Gender          data.UserGender `json:"gender"`
 	}{
-		Name:            email,
+		Name:            name,
 		Email:           email,
-		Password:        "test1234",
-		PasswordConfirm: "test1234",
+		Password:        password,
+		PasswordConfirm: password,
 		// TODO: gender?
 	}
 
