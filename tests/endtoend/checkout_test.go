@@ -80,12 +80,12 @@ func (suite *CheckoutTestSuite) TestCheckoutSuccess() {
 
 	// pricing
 	suite.Equal(213.60, cart.Checkouts[0].SubtotalPrice)
-	suite.Equal(251.84, cart.Checkouts[0].TotalPrice)
-	suite.Equal("251.84", cart.Checkouts[0].PaymentDue)
+	suite.Equal(251.98, cart.Checkouts[0].TotalPrice)
+	suite.Equal("251.98", cart.Checkouts[0].PaymentDue)
 
 	// shipping line
 	suite.NotNil(cart.Checkouts[0].ShippingLine)
-	suite.Equal(10.47, cart.Checkouts[0].TotalShipping)
+	suite.Equal(10.61, cart.Checkouts[0].TotalShipping)
 
 	// tax lines
 	suite.NotNil(cart.Checkouts[0].TaxLines)
@@ -374,9 +374,9 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 				}
 			}
 			suite.EqualValues(3136, cart.TotalDiscount)
-			suite.EqualValues(1047, cart.TotalShipping)
+			suite.EqualValues(1061, cart.TotalShipping)
 			suite.EqualValues(3669, cart.TotalTax)
-			suite.EqualValues(32940, cart.TotalPrice)
+			suite.EqualValues(32954, cart.TotalPrice)
 		}
 	}
 }

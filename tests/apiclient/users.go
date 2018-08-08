@@ -10,7 +10,7 @@ import (
 
 type UserService service
 
-func (c *UserService) Signup(ctx context.Context, user *data.User) (*auth.AuthUser, *http.Response, error) {
+func (c *UserService) SignupWithEmail(ctx context.Context, email string) (*auth.AuthUser, *http.Response, error) {
 	postUserRequest := struct {
 		Name            string          `json:"fullName,required"`
 		Email           string          `json:"email,required"`
@@ -18,8 +18,8 @@ func (c *UserService) Signup(ctx context.Context, user *data.User) (*auth.AuthUs
 		PasswordConfirm string          `json:"passwordConfirm,required"`
 		Gender          data.UserGender `json:"gender"`
 	}{
-		Name:            user.Name,
-		Email:           user.Email,
+		Name:            email,
+		Email:           email,
 		Password:        "test1234",
 		PasswordConfirm: "test1234",
 		// TODO: gender?
@@ -36,5 +36,51 @@ func (c *UserService) Signup(ctx context.Context, user *data.User) (*auth.AuthUs
 		return nil, resp, err
 	}
 
+	return userResponse, resp, nil
+}
+
+func (c *UserService) SignupWithFacebook(ctx context.Context, token string) (*auth.AuthUser, *http.Response, error) {
+	postUserRequest := struct {
+		Token string `json:"token"`
+		InviteCode string `json:"inviteCode"`
+	}{
+		Token: token,
+		InviteCode: "etc",
+	}
+
+	req, err := c.client.NewRequest("POST", "/login/facebook", postUserRequest )
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	userResponse := new(auth.AuthUser)
+	resp, err := c.client.Do(ctx, req, userResponse)
+	if err != nil {
+		return nil, resp, err
+	}
+	return userResponse, resp, nil
+}
+
+func (c *UserService) LoginWithEmail(ctx context.Context, email, password string) (*auth.AuthUser, *http.Response, error) {
+	postUserRequest := struct {
+		Email string `json:"email"`
+		Password string `json:"password"`
+	}{
+		Email: email,
+		Password: password,
+	}
+
+	req, err := c.client.NewRequest("POST", "/login", postUserRequest)
+
+	if err != nil {
+		return nil, nil, nil
+	}
+
+	userResponse := new(auth.AuthUser)
+	resp, err := c.client.Do(ctx, req, userResponse)
+	if err != nil {
+		return nil, resp, err
+	}
 	return userResponse, resp, nil
 }

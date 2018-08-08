@@ -39,6 +39,8 @@ var (
 	ErrEncryptinError = errors.New("internal error")
 	// Invalid login
 	ErrInvalidLogin = errors.New("invalid login credentials, check username and/or password")
+	// User Already exists
+	ErrUserExists = errors.New("user already exists")
 
 	/* Shopify */
 	ErrConflictStore      = &ApiError{StatusCode: http.StatusConflict, ErrorText: "store already connected"}

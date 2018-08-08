@@ -22,7 +22,7 @@ type fixture struct {
 	apiURL string
 
 	user, user2 *UserClient
-	anonUser    *UserClient
+	anonUser, anonUser2, anonUser3, anonUser4, anonUser5    *UserClient
 	testStore   *data.Place
 
 	productInStock, productNotInStock                      *data.Product
@@ -36,16 +36,20 @@ type fixture struct {
 func (f *fixture) setupUser(t *testing.T) {
 	f.user = f.newTestUser(t, 1)
 	f.user2 = f.newTestUser(t, 2)
-	f.anonUser = f.newAnonUser(t)
+	f.anonUser = f.newAnonUser(t, "1")
+	f.anonUser2 = f.newAnonUser(t, "2")
+	f.anonUser3 = f.newAnonUser(t, "3")
+	f.anonUser4 = f.newAnonUser(t, "4")
+	f.anonUser5 = f.newAnonUser(t, "5")
 }
 
-func (f *fixture) newAnonUser(t *testing.T) *UserClient {
+func (f *fixture) newAnonUser(t *testing.T, count string) *UserClient {
 	client, err := apiclient.NewClient(f.apiURL)
 	assert.NoError(t, err)
 
-	mockDeviceId := "localyyz_device_user"
+	mockDeviceId := "localyyz_device_user_" + count
 	// this is used to make api calls with device id
-	client.AddHeader("X-Device-Id", mockDeviceId)
+	client.AddHeader("X-DEVICE-ID", mockDeviceId)
 
 	// ping the api. should create a mock device user
 	_, _, err = client.Cart.Get(context.Background())
@@ -55,6 +59,7 @@ func (f *fixture) newAnonUser(t *testing.T) *UserClient {
 		AuthUser: &auth.AuthUser{
 			User: &data.User{
 				Username: mockDeviceId,
+				Email: mockDeviceId,
 			},
 		},
 		client: client,
@@ -67,12 +72,9 @@ func (f *fixture) newTestUser(t *testing.T, n int) *UserClient {
 
 	// setup fixtures for test suite
 	ctx := context.Background()
-	authUser, _, err := client.User.Signup(
+	authUser, _, err := client.User.SignupWithEmail(
 		ctx,
-		&data.User{
-			Name:  "Paul X",
-			Email: fmt.Sprintf("test%d@localyyz.com", n),
-		},
+		fmt.Sprintf("test%d@localyyz.com", n),
 	)
 	assert.NoError(t, err)
 
@@ -241,11 +243,9 @@ func (f *fixture) TeardownData(t *testing.T) {
 type MockFacebook struct{}
 
 func (f *MockFacebook) Login(token, inviteCode string) (*data.User, error) {
-	if token == "localyyz-test-token-login" {
-		user := data.User{ID: 0, Network: "facebook", Email: "test@localyyz.com"}
-		return &user, nil
-	}
-	return nil, nil
+	username := fmt.Sprintf("test%s@localyyz.com", token[len(token)-1:])
+	user := data.User{ID: 0, Network: "facebook", Email: username, Username: username}
+	return &user, nil
 }
 
 func (f *MockFacebook) GetUser(u *data.User) error {
