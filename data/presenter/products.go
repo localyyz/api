@@ -33,6 +33,8 @@ type Product struct {
 	PurchaseCount int64 `json:"purchased"`
 	LiveViewCount int64 `json:"liveViews"`
 
+	IsFavourite bool `json:"isFavourite"`
+
 	CreateAt  interface{} `json:"createdAt,omitempty"`
 	UpdatedAt interface{} `json:"updatedAt,omitempty"`
 	DeleteAt  interface{} `json:"deletedAt,omitempty"`
@@ -160,10 +162,29 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 		imageCache[v.ProductID] = append(imageCache[v.ProductID], v)
 	}
 
+	// fetch users favourites
+	favouriteCache := set.New()
+	user := ctx.Value("session.user")
+	if user != nil {
+		user := user.(*data.User)
+
+		var productIDs []int64
+		for _, p := range products {
+			productIDs = append(productIDs, p.ID)
+		}
+
+		var favouriteProducts []*data.FavouriteProduct
+		data.DB.FavouriteProduct.Find(db.Cond{"user_id": user.ID, "product_id": productIDs}).All(&favouriteProducts)
+		for _, favProd := range favouriteProducts {
+			favouriteCache.Add(favProd.ProductID)
+		}
+	}
+
 	ctx = context.WithValue(ctx, "variant.cache", variantCache)
 	ctx = context.WithValue(ctx, "variant.image.cache", variantImageCache)
 	ctx = context.WithValue(ctx, "image.cache", imageCache)
 	ctx = context.WithValue(ctx, "place.cache", placeCache)
+	ctx = context.WithValue(ctx, "favourite.cache", favouriteCache)
 
 	for _, product := range products {
 		list = append(list, NewProduct(ctx, product))
@@ -252,6 +273,14 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 			if place, _ := data.DB.Place.FindByID(p.PlaceID); place != nil {
 				p.Place = &Place{Place: place}
 			}
+		}
+	}
+
+	if cache, _ := ctx.Value("favourite.cache").(*set.Set); cache != nil {
+		if cache.Size() != 0 && cache.Has(product.ID) {
+			p.IsFavourite = true
+		} else {
+			p.IsFavourite = false
 		}
 	}
 

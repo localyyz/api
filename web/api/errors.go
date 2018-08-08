@@ -52,14 +52,15 @@ var (
 	ErrClaimDistance = errors.New("claim distance")
 
 	/* Cart */
-	ErrEmptyCart      = &ApiError{StatusCode: http.StatusOK, ErrorText: "empty cart"}
-	errOutOfStockCart = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "one or more items in your cart are out of stock"}
-	errOutOfStockAdd  = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "this variant is out of stock."}
+	ErrEmptyCart           = &ApiError{StatusCode: http.StatusOK, ErrorText: "empty cart"}
+	ErrInvalidDiscountCode = &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "discount code is invalid"}
+	errOutOfStockCart      = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "one or more items in your cart are out of stock"}
+	errOutOfStockAdd       = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "this variant is out of stock."}
 
 	/* Lightning Section */
-	ErrExpiredDeal = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "expired interval", ErrorText: "this lightning deal has ended"}
+	ErrExpiredDeal         = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "invalid interval", ErrorText: "this lightning deal has expired or is not available yet"}
 	ErrLightningOutOfStock = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out of stock", ErrorText: "the products from this lightning collection have been sold out"}
-	ErrMultiplePurchase = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "already purchased", ErrorText: "you have already purchased today's deal"}
+	ErrMultiplePurchase    = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "already purchased", ErrorText: "you have already purchased today's deal"}
 
 	// generic api error
 	errGeneric  = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Something went wrong"}

@@ -201,8 +201,8 @@ func ListActiveDeals(w http.ResponseWriter, r *http.Request) {
 }
 
 /*
-	retrieves all the upcoming lightning collections ordered by the earliest it starts
-	in the presenter -> does not return any products
+	retrieves the top 5 upcoming lightning collections ordered by the earliest it starts
+	in the presenter -> returns the products associated with it
 */
 func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 	var collections []*data.Collection
@@ -212,7 +212,7 @@ func ListQueuedDeals(w http.ResponseWriter, r *http.Request) {
 			"lightning": true,
 			"status":    data.CollectionStatusQueued,
 		},
-	).OrderBy("start_at ASC")
+	).Limit(5).OrderBy("start_at ASC")
 	err := res.All(&collections)
 	if err != nil {
 		render.Respond(w, r, err)

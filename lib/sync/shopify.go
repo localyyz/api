@@ -16,6 +16,7 @@ var (
 	ErrOutofStock      = errors.New("out of stock")
 	ErrProductExist    = errors.New("exists")
 	ErrProductRejected = errors.New("rejected")
+	ErrCollectionExist = errors.New("exists")
 	SyncListenerCtxKey = "sync.listener"
 )
 
@@ -189,7 +190,7 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 				lg.Warnf("shopify score%v", err)
 				return
 			}
-
+			s.SyncDOTDProductStatus(p.Tags)
 			s.Finalize()
 		}(syncer)
 	}

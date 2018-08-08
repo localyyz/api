@@ -49,6 +49,8 @@ type Database struct {
 	Checkout CheckoutStore
 
 	SearchWord SearchWordStore
+
+	FavouriteProduct FavouriteProductStore
 }
 
 type DBConf struct {
@@ -127,6 +129,8 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 
 	// set max db open connection
 	db.SetMaxOpenConns(conf.MaxConnection)
+
+	db.FavouriteProduct = FavouriteProductStore{db.Store(&FavouriteProduct{})}
 
 	DB = db
 	return db, nil

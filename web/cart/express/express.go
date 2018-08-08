@@ -316,21 +316,19 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 	// upgrade user to a full user
 	user := ctx.Value("session.user").(*data.User)
-	newUser := &data.User{
-		ID:          user.ID,
-		Username:    user.Email,
-		Email:       user.Email,
-		DeviceToken: &(user.Username),
-		Name:        fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName),
-		Network:     "shadow",
-		LastLogInAt: data.GetTimeUTCPointer(),
-		LoggedIn:    true,
-		Etc:         data.UserEtc{},
+	if user.Network == "shadow" {
+		// TODO: --> let's test this throughly <--
+		newUser := &data.User{
+			ID:          user.ID,
+			Username:    cart.Email,
+			Email:       cart.Email,
+			DeviceToken: &(user.Username),
+			Name:        fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName),
+			Network:     "email",
+		}
+		// TODO: how does the user login here??
+		data.DB.User.Save(newUser)
 	}
-	// TODO: how does the user login here??
-	data.DB.User.Save(newUser)
-
-	// fetch the product from the checkout
 
 	go func() {
 		cartItem, err := data.DB.CartItem.FindOne(db.Cond{"cart_id": cart.ID})

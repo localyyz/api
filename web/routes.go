@@ -9,7 +9,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
 	"bitbucket.org/moodie-app/moodie-api/web/cart"
-	"bitbucket.org/moodie-app/moodie-api/web/cart/express"
 	"bitbucket.org/moodie-app/moodie-api/web/category"
 	"bitbucket.org/moodie-app/moodie-api/web/collection"
 	"bitbucket.org/moodie-app/moodie-api/web/deals"
@@ -21,6 +20,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
+	"bitbucket.org/moodie-app/moodie-api/web/favourite"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -104,15 +104,16 @@ func (h *Handler) Routes() chi.Router {
 	// Semi-authed route. User can be "shadow"
 	r.Group(func(r chi.Router) {
 		r.Use(auth.DeviceCtx)
-		r.Mount("/carts/express", express.Routes())
+		r.Mount("/carts", cart.Routes())
 		r.Mount("/users", user.Routes())
+
+		r.Get("/favourite", favourite.GetFavouriteProducts)
 	})
 
 	// Authed Routes
 	r.Group(func(r chi.Router) {
 		r.Use(auth.SessionCtx)
 		r.Mount("/session", session.Routes())
-		r.Mount("/carts", cart.Routes())
 	})
 
 	return r

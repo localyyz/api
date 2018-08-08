@@ -103,8 +103,8 @@ func (h *Handler) SyncDOTD() {
 
 		}
 
-		// did not find any entry -> create new collection
-		if err == db.ErrNoMoreRows {
+		// did not find any entry and its a dotd product-> create new collection
+		if err == db.ErrNoMoreRows && product.Status == data.ProductStatusDOTD{
 			// get product variant
 			// A DOTD PRODUCT CANNOT BE USED IN MORE THAN ONE COLLECTION
 			var pv *data.ProductVariant
