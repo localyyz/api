@@ -204,7 +204,7 @@ func (f *fixture) setupDeal(t *testing.T) {
 	}
 
 	f.dealExpired = &data.Deal{
-		Code:       "EXPIRED_DEAL",
+		Code:       "TEST_EXPIRED_DISCOUNT",
 		MerchantID: f.testStore.ID,
 		Value:      1,
 		ExternalID: 307041402935,

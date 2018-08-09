@@ -1,14 +1,11 @@
 package deals
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
@@ -61,29 +58,13 @@ func ActivateDeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, err := connect.GetShopifyClient(parentDeal.MerchantID)
-	if err != nil {
-		render.Respond(w, r, errors.Wrap(err, "shopify client"))
-		return
-	}
-
 	user := ctx.Value("session.user").(*data.User)
-	d := &shopify.DiscountCode{
-		PriceRuleID: parentDeal.ExternalID,
-		Code:        fmt.Sprintf("%s_USER_%s", parentDeal.Code, user.InviteCode),
-	}
-	if _, _, err := client.DiscountCode.Create(ctx, d); err != nil {
-		render.Respond(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
 	userDeal := &data.Deal{
-		ExternalID: d.ID,
 		UserID:     &(user.ID),
 		ParentID:   &(parentDeal.ID),
 		MerchantID: parentDeal.MerchantID,
 		Status:     data.DealStatusActive,
-		Code:       d.Code,
+		Code:       parentDeal.Code,
 		StartAt:    payload.StartAt,
 		EndAt:      payload.EndAt,
 	}
