@@ -43,6 +43,7 @@ var (
 		"read_checkouts",
 		"write_checkouts",
 		"read_price_rules",
+		"write_price_rules",
 	}
 	WebhookTopics = []shopify.Topic{
 		shopify.TopicShopUpdate,
@@ -329,6 +330,22 @@ func (s *Shopify) VerifySignature(sig []byte, query string) bool {
 	hex.Encode(expectedSig, src)
 
 	return hmac.Equal(sig, expectedSig)
+}
+
+func GetShopifyClient(merchantID int64) (*shopify.Client, error) {
+	// getting the shopify cred
+	cred, err := data.DB.ShopifyCred.FindOne(db.Cond{"place_id": merchantID})
+	if err != nil {
+		return nil, err
+	}
+
+	// creating the client
+	client := shopify.NewClient(nil, cred.AccessToken)
+	client.BaseURL, err = url.Parse(cred.ApiURL)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 func init() {

@@ -6,9 +6,6 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/go-chi/render"
-	"github.com/pkg/errors"
-	"github.com/pressly/lg"
-	"upper.io/db.v3"
 )
 
 type ProductVariant struct {
@@ -16,6 +13,7 @@ type ProductVariant struct {
 	Place   *Place        `json:"place,omitempty"`
 	Product *data.Product `json:"product,omitempty"`
 	ImageID int64         `json:"imageId,omitempty"`
+	Price   float64       `json:"price,omitempty"`
 
 	// Hide fields
 	ProductID interface{} `json:"productId,omitempty"`
@@ -32,22 +30,14 @@ type ProductVariant struct {
 func NewProductVariant(ctx context.Context, variant *data.ProductVariant) *ProductVariant {
 	p := &ProductVariant{
 		ProductVariant: variant,
+		Price:          variant.Price,
 		ctx:            ctx,
 	}
 
-	if p.Place == nil {
-		var place *data.Place
-		err := data.DB.Place.
-			Find(p.PlaceID).
-			Select(db.Raw("*")).
-			OrderBy("distance").
-			One(&place)
-		if err != nil {
-			if err != db.ErrNoMoreRows {
-				lg.Error(errors.Wrapf(err, "failed to present variant(%v) place", p.ID))
-			}
-		}
-		p.Place = NewPlace(ctx, place)
+	// modify product price if deal is active
+	if deal, ok := ctx.Value(DealCtxKey).(*data.Deal); ok {
+		// NOTE: deal value here is negative because the type is fixed amount only for now
+		p.Price += deal.Value
 	}
 
 	return p

@@ -26,8 +26,9 @@ type Product struct {
 	ImageURL string   `json:"imageUrl"`
 	Sizes    []string `json:"sizes"`
 	Colors   []string `json:"colors"`
-	// TODO: remove + backwards compat
-	Etc ProductEtc `json:"etc,omitempty"`
+
+	// potentially (deal) modified price.
+	Price float64 `json:"price"`
 
 	ViewCount     int64 `json:"views"`
 	PurchaseCount int64 `json:"purchased"`
@@ -57,55 +58,13 @@ type ProductTrend struct {
 	IDs []int64 `json:"IDs"`
 }
 
-type ProductEtc struct {
-	Brand string `json:"brand"`
-}
 type VariantCache map[int64][]*ProductVariant
 type VariantImageCache map[int64]int64
 type PlaceCache map[int64]*data.Place
 type ImageCache map[int64][]*data.ProductImage
-type SearchProductList []*Product
-type PreviewProductList []*Product
 type FavoriteCache map[int64]bool
 
-func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error {
-	for _, v := range l {
-		if err := v.Render(w, r); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func NewSearchProductList(ctx context.Context, products []*data.Product) []render.Renderer {
-	list := []render.Renderer{}
-	for _, p := range newProductList(ctx, products) {
-		list = append(list, p)
-	}
-	return list
-}
-
-type CartProductList []*Product
-
-func (l CartProductList) Render(w http.ResponseWriter, r *http.Request) error {
-	for _, v := range l {
-		if err := v.Render(w, r); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func NewCartProductList(ctx context.Context, products []*data.Product) CartProductList {
-	list := CartProductList{}
-	variants := ctx.Value("variants").(map[int64]*data.ProductVariant)
-	for _, product := range products {
-		p := NewProduct(ctx, product)
-		p.Variants = []*ProductVariant{NewProductVariant(ctx, variants[p.ID])}
-		list = append(list, p)
-	}
-	return list
-}
+const PlaceCacheCtxKey = "place.cache"
 
 func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	list := []*Product{}
@@ -121,6 +80,19 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 		return list
 	}
 
+	// fetch places
+	placeCache := make(PlaceCache)
+	if place, _ := ctx.Value("place").(*data.Place); place != nil {
+		placeCache[place.ID] = place
+	} else {
+		if places, _ := data.DB.Place.FindAll(db.Cond{"id": set.IntSlice(placeIDset)}); places != nil {
+			for _, p := range places {
+				placeCache[p.ID] = p
+			}
+		}
+	}
+	ctx = context.WithValue(ctx, PlaceCacheCtxKey, placeCache)
+
 	// fetch product variants
 	variants, _ := data.DB.ProductVariant.FindAll(db.Cond{
 		"product_id": set.IntSlice(productIDSet),
@@ -128,7 +100,10 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	variantCache := make(VariantCache)
 	variantIDSet := set.New()
 	for _, v := range variants {
-		variantCache[v.ProductID] = append(variantCache[v.ProductID], &ProductVariant{ProductVariant: v})
+		variantCache[v.ProductID] = append(
+			variantCache[v.ProductID],
+			NewProductVariant(ctx, v),
+		)
 		variantIDSet.Add(int(v.ID))
 	}
 
@@ -140,18 +115,6 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	})
 	for _, v := range variantImages {
 		variantImageCache[v.VariantID] = v.ImageID
-	}
-
-	// fetch places
-	placeCache := make(PlaceCache)
-	if place, _ := ctx.Value("place").(*data.Place); place != nil {
-		placeCache[place.ID] = place
-	} else {
-		if places, _ := data.DB.Place.FindAll(db.Cond{"id": set.IntSlice(placeIDset)}); places != nil {
-			for _, p := range places {
-				placeCache[p.ID] = p
-			}
-		}
 	}
 
 	// fetch product images
@@ -178,7 +141,6 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	ctx = context.WithValue(ctx, "variant.cache", variantCache)
 	ctx = context.WithValue(ctx, "variant.image.cache", variantImageCache)
 	ctx = context.WithValue(ctx, "image.cache", imageCache)
-	ctx = context.WithValue(ctx, "place.cache", placeCache)
 	ctx = context.WithValue(ctx, "favourite.cache", favouriteCache)
 
 	for _, product := range products {
@@ -198,6 +160,7 @@ func NewProductList(ctx context.Context, products []*data.Product) []render.Rend
 func NewProduct(ctx context.Context, product *data.Product) *Product {
 	p := &Product{
 		Product: product,
+		Price:   product.Price,
 		ctx:     ctx,
 	}
 
@@ -206,7 +169,7 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	} else {
 		if vv, _ := data.DB.ProductVariant.FindByProductID(product.ID); vv != nil {
 			for _, v := range vv {
-				p.Variants = append(p.Variants, &ProductVariant{ProductVariant: v})
+				p.Variants = append(p.Variants, NewProductVariant(ctx, v))
 			}
 		}
 	}
@@ -286,13 +249,18 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	p.LiveViewCount, _ = stash.GetProductLiveViews(p.ID)
 	p.PurchaseCount, _ = stash.GetProductPurchases(p.ID)
 
+	// modify product price if deal is active
+	if deal, ok := ctx.Value(DealCtxKey).(*data.Deal); ok {
+		// NOTE: deal value here is negative because the type is fixed amount only for now
+		p.Price += deal.Value
+	}
+
 	return p
 }
 
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Product.Description, -1)
 	p.NoTagDescription = htmlx.StripTags(p.Product.Description)
-	p.Etc = ProductEtc{Brand: p.Brand}
 
 	return nil
 }

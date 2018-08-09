@@ -18,7 +18,9 @@ type Database struct {
 
 	User        UserStore
 	UserAddress UserAddressStore
-	UserDeal    UserDealStore
+
+	Deal        DealStore
+	DealProduct DealProductStore
 
 	BillingPlan BillingPlanStore
 
@@ -95,7 +97,9 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	}
 	db.User = UserStore{db.Store(&User{})}
 	db.UserAddress = UserAddressStore{db.Store(&UserAddress{})}
-	db.UserDeal = UserDealStore{db.Store(&UserDeal{})}
+
+	db.Deal = DealStore{db.Store(&Deal{})}
+	db.DealProduct = DealProductStore{db.Store(&DealProduct{})}
 
 	db.BillingPlan = BillingPlanStore{db.Store(&BillingPlan{})}
 

@@ -7,6 +7,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"bitbucket.org/moodie-app/moodie-api/scheduler"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -51,7 +52,6 @@ func (h *Handler) Routes() chi.Router {
 			return http.HandlerFunc(handler)
 		})
 
-		r.Put("/deals/sync", SyncDeals)
 		r.Get("/discount", ListPriceRule)
 		r.Get("/products/count", GetProductCount)
 
@@ -63,6 +63,11 @@ func (h *Handler) Routes() chi.Router {
 		r.Delete("/products/sync", CleanupProduct)
 
 		r.Put("/variants/sync", SyncVariants)
+	})
+
+	r.Post("/syncer/deal", func(w http.ResponseWriter, r *http.Request) {
+		z := scheduler.New(h.DB)
+		z.SyncDeals()
 	})
 
 	return r

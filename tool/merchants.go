@@ -176,8 +176,8 @@ func ListPriceRules(w http.ResponseWriter, r *http.Request) {
 					PlaceWebsite: prules.Place.Website,
 
 					Title:      r.Title,
-					TargetType: r.TargetType,
-					ValueType:  r.ValueType,
+					TargetType: string(r.TargetType),
+					ValueType:  string(r.ValueType),
 					Value:      r.Value,
 					PrerequisiteQuantityRange:      r.PrerequisiteQuantityRange,
 					PrerequisiteShippingPriceRange: r.PrerequisiteShippingPriceRange,

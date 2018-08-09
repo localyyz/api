@@ -226,5 +226,5 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	cursor.Update(products)
 
-	render.RenderList(w, r, presenter.NewSearchProductList(ctx, products))
+	render.RenderList(w, r, presenter.NewProductList(ctx, products))
 }
