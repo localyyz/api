@@ -66,6 +66,7 @@ type PlaceCache map[int64]*data.Place
 type ImageCache map[int64][]*data.ProductImage
 type SearchProductList []*Product
 type PreviewProductList []*Product
+type FavoriteCache map[int64]bool
 
 func (l SearchProductList) Render(w http.ResponseWriter, r *http.Request) error {
 	for _, v := range l {
@@ -163,20 +164,14 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	}
 
 	// fetch users favourites
-	favouriteCache := set.New()
-	user := ctx.Value("session.user")
-	if user != nil {
-		user := user.(*data.User)
-
-		var productIDs []int64
-		for _, p := range products {
-			productIDs = append(productIDs, p.ID)
-		}
-
-		var favouriteProducts []*data.FavouriteProduct
-		data.DB.FavouriteProduct.Find(db.Cond{"user_id": user.ID, "product_id": productIDs}).All(&favouriteProducts)
-		for _, favProd := range favouriteProducts {
-			favouriteCache.Add(favProd.ProductID)
+	favouriteCache := make(FavoriteCache)
+	if user, ok := ctx.Value("session.user").(*data.User); ok {
+		favouriteProducts, _ := data.DB.FavouriteProduct.FindAll(db.Cond{
+			"user_id":    user.ID,
+			"product_id": set.IntSlice(productIDSet),
+		})
+		for _, f := range favouriteProducts {
+			favouriteCache[f.ProductID] = true
 		}
 	}
 
@@ -276,11 +271,14 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		}
 	}
 
-	if cache, _ := ctx.Value("favourite.cache").(*set.Set); cache != nil {
-		if cache.Size() != 0 && cache.Has(product.ID) {
-			p.IsFavourite = true
-		} else {
-			p.IsFavourite = false
+	if cache, _ := ctx.Value("favourite.cache").(FavoriteCache); cache != nil {
+		p.IsFavourite = cache[p.ID]
+	} else {
+		if user, ok := ctx.Value("session.user").(*data.User); ok {
+			p.IsFavourite, _ = data.DB.FavouriteProduct.Find(db.Cond{
+				"product_id": p.ID,
+				"user_id":    user.ID,
+			}).Exists()
 		}
 	}
 
