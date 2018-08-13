@@ -23,7 +23,7 @@ func ListDeal(w http.ResponseWriter, r *http.Request) {
 			db.Cond{"status": status, "user_id": user.ID},
 		)
 	} else {
-		dealCond = db.Cond{"status": data.DealStatusActive}
+		dealCond = db.Cond{"status": status}
 	}
 	var orderBy string
 	switch status {

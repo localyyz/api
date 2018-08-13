@@ -17,7 +17,7 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Post("/activate", ActivateDeal)
-	r.With(StatusCtx(data.DealStatusActive)).Get("/upcoming", ListDeal)
+	r.With(StatusCtx(data.DealStatusQueued)).Get("/upcoming", ListDeal)
 	r.With(StatusCtx(data.DealStatusInactive)).Get("/history", ListDeal)
 	r.Route("/active", func(r chi.Router) {
 		r.With(StatusCtx(data.DealStatusActive)).Get("/", ListDeal)
