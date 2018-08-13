@@ -11,13 +11,13 @@ import (
 
 type DealService service
 
-func (s *DealService) Activate(ctx context.Context, payload *deals.ActivateRequest) (*presenter.LightningCollection, *http.Response, error) {
+func (s *DealService) Activate(ctx context.Context, payload *deals.ActivateRequest) (*presenter.Deal, *http.Response, error) {
 	req, err := s.client.NewRequest("POST", "/deals/activate", payload)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	dealResponse := new(presenter.LightningCollection)
+	dealResponse := new(presenter.Deal)
 	resp, err := s.client.Do(ctx, req, dealResponse)
 	if err != nil {
 		return nil, resp, err
@@ -26,13 +26,13 @@ func (s *DealService) Activate(ctx context.Context, payload *deals.ActivateReque
 	return dealResponse, resp, nil
 }
 
-func (s *DealService) ListActive(ctx context.Context) ([]*presenter.LightningCollection, *http.Response, error) {
+func (s *DealService) ListActive(ctx context.Context) ([]*presenter.Deal, *http.Response, error) {
 	req, err := s.client.NewRequest("GET", "/deals/active", nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	var dealResponses []*presenter.LightningCollection
+	var dealResponses []*presenter.Deal
 	resp, err := s.client.Do(ctx, req, &dealResponses)
 	if err != nil {
 		return nil, resp, err
@@ -41,13 +41,13 @@ func (s *DealService) ListActive(ctx context.Context) ([]*presenter.LightningCol
 	return dealResponses, resp, nil
 }
 
-func (s *DealService) Get(ctx context.Context, dealID int64) (*presenter.LightningCollection, *http.Response, error) {
+func (s *DealService) Get(ctx context.Context, dealID int64) (*presenter.Deal, *http.Response, error) {
 	req, err := s.client.NewRequest("GET", fmt.Sprintf("/deals/active/%d", dealID), nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	dealResponse := new(presenter.LightningCollection)
+	dealResponse := new(presenter.Deal)
 	resp, err := s.client.Do(ctx, req, dealResponse)
 	if err != nil {
 		return nil, resp, err

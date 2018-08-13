@@ -3,9 +3,6 @@ package data
 import (
 	"time"
 
-	"fmt"
-
-	"github.com/pkg/errors"
 	"upper.io/bond"
 	"upper.io/db.v3"
 	"upper.io/db.v3/postgresql"
@@ -28,12 +25,6 @@ type Collection struct {
 	CreatedAt  *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	ExternalID *int64     `db:"external_id,omitempty" json:"-"`
 
-	Lightning bool             `db:"lightning" json:"lightning"`
-	StartAt   *time.Time       `db:"start_at" json:"startAt"`
-	EndAt     *time.Time       `db:"end_at" json:"endAt"`
-	Status    CollectionStatus `db:"status" json:"status"`
-	Cap       int64            `db:"cap" json:"cap"`
-
 	MerchantID int64 `db:"merchant_id" json:"-"`
 }
 
@@ -54,18 +45,6 @@ type CollectionProduct struct {
 type CollectionProductStore struct {
 	bond.Store
 }
-
-type CollectionStatus int32
-
-const (
-	_                        CollectionStatus = iota //0
-	CollectionStatusQueued                           //1
-	CollectionStatusActive                           //2
-	CollectionStatusInactive                         //3
-	CollectionStatusDeleted                          //4
-)
-
-var collectionStatuses = []string{"-", "queued", "active", "inactive", "deleted"}
 
 func (*CollectionProduct) CollectionName() string {
 	return `collection_products`
@@ -104,49 +83,4 @@ func (store CollectionProductStore) FindAll(cond db.Cond) ([]*CollectionProduct,
 		return nil, err
 	}
 	return collections, nil
-}
-
-func (c CollectionStatus) String() string {
-	return collectionStatuses[c]
-}
-
-func (c CollectionStatus) MarshallText() ([]byte, error) {
-	return []byte(c.String()), nil
-}
-
-func (c *CollectionStatus) UnmarshallText(text []byte) error {
-	enum := string(text)
-	for i := 0; i < len(collectionStatuses); i++ {
-		if enum == collectionStatuses[i] {
-			*c = CollectionStatus(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("unknown collection status %s", enum)
-}
-
-/*
-	Returns the total number of successfull checkouts of a collection
-*/
-func (c *Collection) GetCheckoutCount() (int, error) {
-	row, err := DB.Select(db.Raw("count(1) as _t")).
-		From("collection_products as cp").
-		LeftJoin("cart_items as ci").On("cp.product_id = ci.product_id").
-		LeftJoin("carts c").On("c.id = ci.cart_id").
-		Where(
-			db.Cond{
-				"cp.collection_id": c.ID,
-				"c.status":         CartStatusPaymentSuccess,
-			},
-		).QueryRow()
-	if err != nil {
-		return 0, errors.Wrap(err, "collection checkout prepare")
-	}
-
-	var count int
-	if err := row.Scan(&count); err != nil {
-		return 0, errors.Wrap(err, "collection checkout scan")
-	}
-
-	return count, nil
 }

@@ -58,14 +58,9 @@ func (h *Handler) Start() {
 			fn:   h.ScheduleDeals,
 		},
 		{
-			name: "job_welcome_email",
-			spec: fmt.Sprintf("@every %s", duration),
-			fn:   h.ScheduleWelcomeEmail,
-		},
-		{
 			name: "job_sync_deals",
 			spec: "@midnight",
-			fn:   h.SyncDOTD,
+			fn:   h.SyncDeals,
 		},
 	}
 

@@ -76,7 +76,6 @@ func ExpressShopifyClientCtx(next http.Handler) http.Handler {
 		}
 		client := shopify.NewClient(nil, cred.AccessToken)
 		client.BaseURL, _ = url.Parse(cred.ApiURL)
-		//client.Debug = true
 
 		ctx = context.WithValue(ctx, "shopify.client", client)
 		ctx = context.WithValue(ctx, "shopify.checkout", checkout)

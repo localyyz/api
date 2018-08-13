@@ -21,16 +21,29 @@ type UserClient struct {
 type fixture struct {
 	apiURL string
 
-	user, user2 *UserClient
-	anonUser    *UserClient
-	testStore   *data.Place
+	user, user2   *UserClient
+	anonUser      *UserClient
+	testStore     *data.Place
+	testStoreCred *data.ShopifyCred
 
-	productInStock, productNotInStock                      *data.Product
-	variantInStock, variantNotInStock, variantWithDiscount *data.ProductVariant
+	// address
+	validAddress *data.CartAddress
 
-	lightningProductValid, lightningProductExpired *data.Product
-	variantDealValid, variantDealExpired           *data.ProductVariant
-	dealValid, dealExpired                         *data.Collection
+	// products and variants
+	productInStock, productNotInStock *data.Product
+	variantInStock, variantNotInStock *data.ProductVariant
+
+	// discount
+	variantWithDiscount *data.ProductVariant
+
+	// deals
+	dealActive        *data.Deal
+	productDealActive *data.Product
+	variantDealActive *data.ProductVariant
+
+	dealExpired        *data.Deal
+	productDealExpired *data.Product
+	variantDealExpired *data.ProductVariant
 }
 
 func (f *fixture) setupUser(t *testing.T) {
@@ -93,11 +106,12 @@ func (f *fixture) setupTestStores(t *testing.T) {
 	// test stores with actual shopify cred
 	f.testStore = &data.Place{Name: "best merchant"}
 	assert.NoError(t, data.DB.Save(f.testStore))
-	assert.NoError(t, data.DB.Save(&data.ShopifyCred{
+	f.testStoreCred = &data.ShopifyCred{
 		PlaceID:     f.testStore.ID,
 		AccessToken: "ab4f6c5f522de90702e52f95e3e72d88",
 		ApiURL:      "https://best-test-store-toronto.myshopify.com",
-	}))
+	}
+	assert.NoError(t, data.DB.Save(f.testStoreCred))
 }
 
 func (f *fixture) setupProduct(t *testing.T) {
@@ -113,22 +127,19 @@ func (f *fixture) setupProduct(t *testing.T) {
 		Status:  data.ProductStatusApproved,
 		PlaceID: f.testStore.ID,
 	}
+	f.productDealActive = &data.Product{
+		Title:   "product with active deal",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
+	f.productDealExpired = &data.Product{
+		Title:   "product with expired deal",
+		Status:  data.ProductStatusApproved,
+		PlaceID: f.testStore.ID,
+	}
 	assert.NoError(t, data.DB.Save(f.productNotInStock))
-
-	// lightning
-	f.lightningProductValid = &data.Product{
-		Title:   "sample product in lightning collection",
-		Status:  data.ProductStatusApproved,
-		PlaceID: f.testStore.ID,
-	}
-	assert.NoError(t, data.DB.Save(f.lightningProductValid))
-
-	f.lightningProductExpired = &data.Product{
-		Title:   "sample product in lightning collection - collection expired",
-		Status:  data.ProductStatusApproved,
-		PlaceID: f.testStore.ID,
-	}
-	assert.NoError(t, data.DB.Save(f.lightningProductExpired))
+	assert.NoError(t, data.DB.Save(f.productDealActive))
+	assert.NoError(t, data.DB.Save(f.productDealExpired))
 
 	// NOTE: https://best-test-store-toronto.myshopify.com/admin/products/10761547971.json
 	f.variantInStock = &data.ProductVariant{
@@ -156,85 +167,91 @@ func (f *fixture) setupProduct(t *testing.T) {
 		Limits:    15,
 		OfferID:   43252300611,
 	}
-	f.variantDealValid = &data.ProductVariant{
-		ProductID: f.lightningProductValid.ID,
+	f.variantDealActive = &data.ProductVariant{
+		ProductID: f.productDealActive.ID,
 		PlaceID:   f.testStore.ID,
 		Price:     10,
-		Limits:    10,
-		OfferID:   43252300547,
-		Etc: data.ProductVariantEtc{
-			Size:  "small",
-			Color: "deep",
-		},
+		Limits:    15,
+		OfferID:   43252300611,
 	}
 	f.variantDealExpired = &data.ProductVariant{
-		ProductID: f.lightningProductExpired.ID,
+		ProductID: f.productDealExpired.ID,
 		PlaceID:   f.testStore.ID,
 		Price:     10,
-		Limits:    10,
-		OfferID:   43252300547,
-		Etc: data.ProductVariantEtc{
-			Size:  "small",
-			Color: "deep",
-		},
+		Limits:    15,
+		OfferID:   43251994371,
 	}
 
 	assert.NoError(t, data.DB.Save(f.variantInStock))
 	assert.NoError(t, data.DB.Save(f.variantNotInStock))
 	assert.NoError(t, data.DB.Save(f.variantWithDiscount))
-	assert.NoError(t, data.DB.Save(f.variantDealValid))
+	assert.NoError(t, data.DB.Save(f.variantDealActive))
 	assert.NoError(t, data.DB.Save(f.variantDealExpired))
 }
 
-func (f *fixture) setupDealCollection(t *testing.T) {
+func (f *fixture) setupDeal(t *testing.T) {
 	yesterday := time.Now().AddDate(0, 0, -1)
 	tomorrow := time.Now().AddDate(0, 0, 1)
-	f.dealValid = &data.Collection{
-		Name:        "Valid Collection",
-		Description: "Test",
-		Lightning:   true,
-		StartAt:     &yesterday,
-		EndAt:       &tomorrow,
-		Cap:         1,
-		Status:      data.CollectionStatusActive,
+
+	f.dealActive = &data.Deal{
+		Code:       "VALID_DEAL",
+		MerchantID: f.testStore.ID,
+		Value:      10,
+		ExternalID: 306976555063,
+		StartAt:    &yesterday,
+		EndAt:      &tomorrow,
+		Status:     data.DealStatusActive,
 	}
 
-	f.dealExpired = &data.Collection{
-		Name:        "Expired Collection",
-		Description: "Test",
-		Lightning:   true,
-		StartAt:     &yesterday,
-		EndAt:       &yesterday,
-		Cap:         1,
-		Status:      data.CollectionStatusInactive,
+	f.dealExpired = &data.Deal{
+		Code:       "TEST_EXPIRED_DISCOUNT",
+		MerchantID: f.testStore.ID,
+		Value:      1,
+		ExternalID: 307041402935,
+		StartAt:    &yesterday,
+		EndAt:      &yesterday,
+		Status:     data.DealStatusInactive,
 	}
-	assert.NoError(t, data.DB.Save(f.dealValid))
+	assert.NoError(t, data.DB.Save(f.dealActive))
 	assert.NoError(t, data.DB.Save(f.dealExpired))
 }
 
-func (f *fixture) linkProductsWithCollection(t *testing.T) {
-	collectionProductValid := data.CollectionProduct{
-		CollectionID: f.dealValid.ID,
-		ProductID:    f.lightningProductValid.ID,
+func (f *fixture) linkProductsWithDeal(t *testing.T) {
+	dpValid := data.DealProduct{
+		DealID:    f.dealActive.ID,
+		ProductID: f.productDealActive.ID,
 	}
 
-	collectionProductExpired := data.CollectionProduct{
-		CollectionID: f.dealExpired.ID,
-		ProductID:    f.lightningProductExpired.ID,
+	dpExpired := data.DealProduct{
+		DealID:    f.dealExpired.ID,
+		ProductID: f.productDealExpired.ID,
 	}
 
-	assert.NoError(t, data.DB.CollectionProduct.Create(collectionProductValid))
-	assert.NoError(t, data.DB.CollectionProduct.Create(collectionProductExpired))
+	assert.NoError(t, data.DB.DealProduct.Create(dpValid))
+	assert.NoError(t, data.DB.DealProduct.Create(dpExpired))
 }
 
 func (f *fixture) SetupData(t *testing.T, apiURL string) {
 	f.apiURL = apiURL
 
+	f.validAddress = &data.CartAddress{
+		FirstName:    "Test",
+		LastName:     "User",
+		Address:      "180 John Street",
+		AddressOpt:   "",
+		City:         "Toronto",
+		Country:      "Canada",
+		CountryCode:  "CA",
+		Province:     "Ontario",
+		ProvinceCode: "ON",
+		Zip:          "M2J3J3",
+	}
+
 	f.setupUser(t)
 	f.setupTestStores(t)
 	f.setupProduct(t)
-	f.setupDealCollection(t)
-	f.linkProductsWithCollection(t)
+	f.setupDeal(t)
+	f.linkProductsWithDeal(t)
 }
 
 func (f *fixture) TeardownData(t *testing.T) {
