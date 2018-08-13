@@ -23,6 +23,7 @@ type Collection struct {
 
 	Ordering   int32      `db:"ordering" json:"ordering"`
 	CreatedAt  *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
+	DeletedAt  *time.Time `db:"deleted_At,omitempty" json:"deletedAt,omitempty"`
 	ExternalID *int64     `db:"external_id,omitempty" json:"-"`
 
 	MerchantID int64 `db:"merchant_id" json:"-"`

@@ -32,7 +32,7 @@ func ShopifyCollectionListingsRemove(ctx context.Context) error {
 
 	// run through all the collections
 	for _, c := range collections {
-		c.Status = data.CollectionStatusDeleted
+		c.DeletedAt = data.GetTimeUTCPointer()
 		err := data.DB.Collection.Save(c)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Shopiy syncer failed to mark collection: %d as deleted", c.ID))
@@ -112,7 +112,6 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 			Description: coll.BodyHTML,
 			Featured:    false,
 			MerchantID:  place.ID,
-			Lightning:   false,
 			ExternalID:  &coll.ID,
 		}
 
