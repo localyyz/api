@@ -2,6 +2,7 @@ package presenter
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -12,12 +13,40 @@ import (
 type Deal struct {
 	*data.Deal
 	Products []*Product `json:"products"`
-	// TODO: image + sizing etc
+
+	Code       interface{} `json:"code,omitempty"`
+	ExternalID interface{} `json:"externalId,omitempty"`
+	MerchantID interface{} `json:"merchantId,omitempty"`
+	ParentID   interface{} `json:"parentId,omitempty"`
+	UserID     interface{} `json:"userId,omitempty"`
+
+	// pulled from products
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	ImageURL    string `json:"imageUrl,omitempty"`
+	ImageWidth  int64  `json:"imageWidth,omitempty"`
+	ImageHeight int64  `json:"imageHeight,omitempty"`
 }
 
 const DealCtxKey = "presenter.deal"
 
 func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
+	if len(c.Products) > 0 {
+		p := c.Products[0]
+		v := p.Variants[0]
+		c.Title = p.Title
+		c.Description = fmt.Sprintf(
+			"Retail price $%.2f. Deal price $%.2f -> %.f%% (or $%.2f) OFF!",
+			v.PrevPrice,
+			v.Price,
+			(v.Price * 100 / v.PrevPrice),
+			c.Value,
+		)
+
+		c.ImageURL = p.Images[0].ImageURL
+		c.ImageWidth = p.Images[0].Width
+		c.ImageHeight = p.Images[0].Height
+	}
 	return nil
 }
 
