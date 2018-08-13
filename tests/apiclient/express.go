@@ -132,6 +132,7 @@ func (c *ExpressCartService) Pay(ctx context.Context, billing *data.CartAddress,
 
 func (c *ExpressCartService) AddItem(ctx context.Context, variant *data.ProductVariant) (*presenter.CartItem, *http.Response, error) {
 	itemRequest := express.CartItemRequest{
+		VariantID: &(variant.ID),
 		ProductID: variant.ProductID,
 		Color:     variant.Etc.Color,
 		Size:      variant.Etc.Size,

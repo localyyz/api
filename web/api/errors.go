@@ -39,6 +39,8 @@ var (
 	ErrEncryptinError = errors.New("internal error")
 	// Invalid login
 	ErrInvalidLogin = errors.New("invalid login credentials, check username and/or password")
+	// User Already exists
+	ErrUserExists = errors.New("user already exists")
 
 	/* Shopify */
 	ErrConflictStore      = &ApiError{StatusCode: http.StatusConflict, ErrorText: "store already connected"}
@@ -58,9 +60,10 @@ var (
 	errOutOfStockAdd       = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "this variant is out of stock."}
 
 	/* Lightning Section */
-	ErrExpiredDeal         = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "invalid interval", ErrorText: "this lightning deal has expired or is not available yet"}
-	ErrLightningOutOfStock = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out of stock", ErrorText: "the products from this lightning collection have been sold out"}
-	ErrMultiplePurchase    = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "already purchased", ErrorText: "you have already purchased today's deal"}
+	ErrDealActive           = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "already active", ErrorText: "this deal is already active"}
+	ErrDealExpired          = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "invalid interval", ErrorText: "this deal has expired or is not available yet"}
+	ErrDealOutOfStock       = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out of stock", ErrorText: "the products from this deal have been sold out"}
+	ErrDealMultiplePurchase = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "already purchased", ErrorText: "you have already purchased today's deal"}
 
 	// generic api error
 	errGeneric  = &ApiError{StatusCode: http.StatusInternalServerError, ErrorText: "Something went wrong"}

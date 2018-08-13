@@ -1,17 +1,19 @@
 package endtoend
 
 import (
+	"context"
+	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/tests"
+	"github.com/stretchr/testify/suite"
+	"net/http"
+	"upper.io/db.v3"
+	"github.com/stretchr/testify/require"
+	"testing"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"testing"
-
-	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/tests"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
-	"github.com/stretchr/testify/suite"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 )
 
 type SessionTestSuite struct {
@@ -26,11 +28,18 @@ func (suite *SessionTestSuite) SetupSuite() {
 
 	suite.TeardownData(suite.T())
 	suite.fixture = &fixture{}
-	suite.SetupData(suite.T(), suite.env.URL)
 }
 
 func (suite *SessionTestSuite) TearDownSuite() {
 	suite.TeardownData(suite.T())
+}
+
+func (suite *SessionTestSuite) TearDownTest() {
+	data.DB.Exec("TRUNCATE users cascade;")
+}
+
+func (suite *SessionTestSuite) SetupTest(){
+	suite.SetupData(suite.T(), suite.env.URL)
 }
 
 func (suite *SessionTestSuite) TestSessionPublic() {
@@ -73,7 +82,18 @@ func (suite *SessionTestSuite) TestSessionAuthRouteWithDeviceID() {
 
 	// verify default cart is Unauthorized
 	rr, _ := http.DefaultClient.Do(req)
-	suite.Equal(http.StatusUnauthorized, rr.StatusCode)
+	suite.Equal(http.StatusOK, rr.StatusCode)
+}
+
+func (suite *SessionTestSuite) TestLoginWithEmail(){
+	user := suite.user
+	client := suite.user.client
+	ctx := context.Background()
+
+	authUser, resp, err := client.User.LoginWithEmail(ctx, user.Email, "test1234")
+	suite.NoError(err)
+	suite.Equal(resp.StatusCode, http.StatusOK)
+	suite.Equal(user.ID, authUser.ID)
 }
 
 func (suite *SessionTestSuite) TestSessionEmailSignupWithDeviceID() {
@@ -110,63 +130,309 @@ func (suite *SessionTestSuite) TestSessionEmailSignupWithDeviceID() {
 }
 
 func (suite *SessionTestSuite) TestSessionEmailSignup() {
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(map[string]string{
-		"fullName":        "newuser signup",
-		"email":           "newuser@localyyz.com",
-		"password":        "test1234",
-		"passwordConfirm": "test1234",
-	})
 
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/signup", suite.env.URL), buf)
+	client := suite.anonUser.client
+	ctx := context.Background()
 
-	// verify new user is created
-	rr, _ := http.DefaultClient.Do(req)
-	suite.Equal(http.StatusCreated, rr.StatusCode)
+	userCountBefore, _ := data.DB.User.Find(db.Cond{}).Count()
 
-	var authUser *auth.AuthUser
-	suite.NoError(json.NewDecoder(rr.Body).Decode(&authUser))
-
-	// validate new user
-	suite.Equal("newuser@localyyz.com", authUser.Username)
-	suite.Equal("newuser signup", authUser.Name)
+	authUser, resp, err := client.User.SignupWithEmail(ctx, "waseef@localyyz.com", "W S", "test1234")
+	suite.NoError(err)
+	suite.Equal(resp.StatusCode, http.StatusCreated)
+	suite.Equal("waseef@localyyz.com", authUser.Username)
+	suite.Equal("waseef@localyyz.com", authUser.Email)
+	suite.Equal("W S", authUser.Name)
 	suite.Equal("email", authUser.Network)
+	suite.Equal(suite.anonUser.ID, authUser.ID)
 	suite.NotEmpty(authUser.ID)
 
-	dbUser, err := data.DB.User.FindByID(authUser.ID)
-	suite.NoError(err)
-	suite.Nil(dbUser.DeviceToken)
+	userCountAfter, _ := data.DB.User.Find(db.Cond{}).Count()
+
+	// indicates no new entries were added
+	suite.Equal(userCountBefore, userCountAfter)
 }
+
 
 func (suite *SessionTestSuite) TestSessionFacebookSignup() {
 	connect.FacebookLogin = &MockFacebook{}
 
-	buf := &bytes.Buffer{}
-	json.NewEncoder(buf).Encode(map[string]string{
-		"token":      "localyyz-test-token-login",
-		"inviteCode": "etc",
-	})
+	client := suite.anonUser.client
+	ctx := context.Background()
 
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/login/facebook", suite.env.URL), buf)
-	uID := "test-device-token-email-login"
-	req.Header.Add("X-DEVICE-ID", uID)
+	userCountBefore, _ := data.DB.User.Find(db.Cond{}).Count()
 
-	// verify new user is created
-	rr, _ := http.DefaultClient.Do(req)
-	suite.Equal(http.StatusOK, rr.StatusCode)
-
-	var authUser *auth.AuthUser
-	suite.NoError(json.NewDecoder(rr.Body).Decode(&authUser))
-
-	//validate new user
+	authUser, resp, err := client.User.SignupWithFacebook(ctx, "localyyz-test-token-login-3")
+	suite.NoError(err)
+	suite.Equal(resp.StatusCode, http.StatusOK)
 	suite.Equal("facebook", authUser.Network)
-	suite.Equal("test@localyyz.com", authUser.Email)
+	suite.Equal("test3@localyyz.com", authUser.Email)
+	suite.Equal("test3@localyyz.com", authUser.Name)
+	suite.Equal(suite.anonUser.ID, authUser.ID)
 
-	//getting it from data to manually check
-	user, _ := data.DB.User.FindByID(authUser.ID)
-	suite.Equal("test-device-token-email-login", *user.DeviceToken)
-	suite.NotEmpty(authUser.ID)
+	userCountAfter, _ := data.DB.User.Find(db.Cond{}).Count()
+	suite.Equal(userCountBefore, userCountAfter)
+
 }
+
+func (suite *SessionTestSuite) TestTransitionPaymentUserSameEmail() {
+	user := suite.anonUser
+	client := user.client
+	ctx := context.Background()
+
+	{ // verify default cart exists
+		ctx := context.Background()
+		cart, _, err := client.ExpressCart.Get(ctx)
+		suite.NotNil(cart)
+		suite.NoError(err)
+
+		_, resp, err := client.ExpressCart.AddItem(ctx, suite.variantInStock)
+		suite.NoError(err)
+		require.NotNil(suite.T(), resp)
+		require.Equal(suite.T(), http.StatusOK, resp.StatusCode)
+
+		_, _, err = client.ExpressCart.UpdateShippingAddress(
+			ctx,
+			&data.CartAddress{
+				Address:   "123 Toronto Street",
+				FirstName: "Someone",
+				LastName:  "Localyyz",
+				City:      "Toronto",
+				Country:   "Canada",
+				Province:  "Ontario",
+				Zip:       "M5J 1B7",
+			})
+		suite.NoError(err)
+
+		// fetch the shipping rate (
+		// NOTE shopify will error out with "expired shipping_line" error if we
+		// dont fetch shipping rate
+		cart, _, err = client.ExpressCart.GetShippingRates(ctx)
+		require.NoError(suite.T(), err)
+		require.NotEmpty(suite.T(), cart.ShippingRates)
+
+		// update shipping method
+		_, _, err = client.ExpressCart.UpdateShippingMethod(ctx, cart.ShippingRates[0].Handle)
+		suite.NoError(err)
+	}
+
+	{ // pay.
+		ctx := context.Background()
+		cart, _, err := client.ExpressCart.Pay(
+			ctx,
+			&data.CartAddress{
+				FirstName:    "Test",
+				LastName:     "Test",
+				Address:      "12 Deerford Road",
+				AddressOpt:   "",
+				City:         "Toronto",
+				Country:      "Canada",
+				CountryCode:  "CA",
+				Province:     "Ontario",
+				ProvinceCode: "ON",
+				Zip:          "M2J3J3",
+			},
+			"tok_ca",
+			"waseef@localyyz.com",
+		)
+		require.NoError(suite.T(), err)
+
+		// validate cart
+		suite.NotNil(cart)
+		suite.Equal(data.CartStatusPaymentSuccess, cart.Status)
+	}
+
+	{
+		userCountBefore, _ := data.DB.User.Find(db.Cond{}).Count()
+
+		authUser, resp, err := client.User.SignupWithEmail(ctx, "waseef@localyyz.com", "W S", "test1234")
+		suite.NoError(err)
+
+		suite.Equal(resp.StatusCode, http.StatusCreated)
+		suite.Equal("waseef@localyyz.com", authUser.Username)
+		suite.Equal("waseef@localyyz.com", authUser.Email)
+		suite.Equal("email", authUser.Network)
+		suite.Equal("W S", authUser.Name)
+		suite.Equal(suite.anonUser.ID, authUser.ID)
+		suite.NotEmpty(authUser.ID)
+
+		userCountAfter, _ := data.DB.User.Find(db.Cond{}).Count()
+		suite.Equal(userCountBefore, userCountAfter)
+	}
+}
+
+func (suite *SessionTestSuite) TestTransitionPaymentUserDifferentEmail() {
+	user := suite.anonUser
+	client := user.client
+	ctx := context.Background()
+
+	{ // verify default cart exists
+		ctx := context.Background()
+		cart, _, err := client.ExpressCart.Get(ctx)
+		suite.NotNil(cart)
+		suite.NoError(err)
+
+		_, resp, err := client.ExpressCart.AddItem(ctx, suite.variantInStock)
+		suite.NoError(err)
+		require.NotNil(suite.T(), resp)
+		require.Equal(suite.T(), http.StatusOK, resp.StatusCode)
+
+		_, _, err = client.ExpressCart.UpdateShippingAddress(
+			ctx,
+			&data.CartAddress{
+				Address:   "123 Toronto Street",
+				FirstName: "Someone",
+				LastName:  "Localyyz",
+				City:      "Toronto",
+				Country:   "Canada",
+				Province:  "Ontario",
+				Zip:       "M5J 1B7",
+			})
+		suite.NoError(err)
+
+		// fetch the shipping rate (
+		// NOTE shopify will error out with "expired shipping_line" error if we
+		// dont fetch shipping rate
+		cart, _, err = client.ExpressCart.GetShippingRates(ctx)
+		require.NoError(suite.T(), err)
+		require.NotEmpty(suite.T(), cart.ShippingRates)
+
+		// update shipping method
+		_, _, err = client.ExpressCart.UpdateShippingMethod(ctx, cart.ShippingRates[0].Handle)
+		suite.NoError(err)
+	}
+
+	{ // pay.
+		ctx := context.Background()
+		cart, _, err := client.ExpressCart.Pay(
+			ctx,
+			&data.CartAddress{
+				FirstName:    "Test",
+				LastName:     "Test",
+				Address:      "12 Deerford Road",
+				AddressOpt:   "",
+				City:         "Toronto",
+				Country:      "Canada",
+				CountryCode:  "CA",
+				Province:     "Ontario",
+				ProvinceCode: "ON",
+				Zip:          "M2J3J3",
+			},
+			"tok_ca",
+			"waseef@localyyz.com",
+		)
+		require.NoError(suite.T(), err)
+
+		// validate cart
+		suite.NotNil(cart)
+		suite.Equal(data.CartStatusPaymentSuccess, cart.Status)
+	}
+
+	{
+		userCountBefore, _ := data.DB.User.Find(db.Cond{}).Count()
+
+		authUser, resp, err := client.User.SignupWithEmail(ctx, "waseef_test@localyyz.com", "W S", "test1234")
+		suite.NoError(err)
+
+		suite.Equal(resp.StatusCode, http.StatusCreated)
+		suite.Equal("waseef_test@localyyz.com", authUser.Username)
+		suite.Equal("waseef_test@localyyz.com", authUser.Email)
+		suite.Equal("email", authUser.Network)
+		suite.Equal("W S", authUser.Name)
+		suite.Equal(suite.anonUser.ID, authUser.ID)
+		suite.NotEmpty(authUser.ID)
+
+		userCountAfter, _ := data.DB.User.Find(db.Cond{}).Count()
+		suite.Equal(userCountBefore, userCountAfter)
+	}
+}
+
+func (suite *SessionTestSuite) TestTransitionPaymentUserFacebook() {
+
+	connect.FacebookLogin = &MockFacebook{}
+
+	user := suite.anonUser
+	client := user.client
+	ctx := context.Background()
+
+	{ // verify default cart exists
+		ctx := context.Background()
+		cart, _, err := client.ExpressCart.Get(ctx)
+		suite.NotNil(cart)
+		suite.NoError(err)
+
+		_, resp, err := client.ExpressCart.AddItem(ctx, suite.variantInStock)
+		suite.NoError(err)
+		require.NotNil(suite.T(), resp)
+		require.Equal(suite.T(), http.StatusOK, resp.StatusCode)
+
+		_, _, err = client.ExpressCart.UpdateShippingAddress(
+			ctx,
+			&data.CartAddress{
+				Address:   "123 Toronto Street",
+				FirstName: "Someone",
+				LastName:  "Localyyz",
+				City:      "Toronto",
+				Country:   "Canada",
+				Province:  "Ontario",
+				Zip:       "M5J 1B7",
+			})
+		suite.NoError(err)
+
+		// fetch the shipping rate (
+		// NOTE shopify will error out with "expired shipping_line" error if we
+		// dont fetch shipping rate
+		cart, _, err = client.ExpressCart.GetShippingRates(ctx)
+		require.NoError(suite.T(), err)
+		require.NotEmpty(suite.T(), cart.ShippingRates)
+
+		// update shipping method
+		_, _, err = client.ExpressCart.UpdateShippingMethod(ctx, cart.ShippingRates[0].Handle)
+		suite.NoError(err)
+	}
+
+	{ // pay.
+		ctx := context.Background()
+		cart, _, err := client.ExpressCart.Pay(
+			ctx,
+			&data.CartAddress{
+				FirstName:    "Test",
+				LastName:     "Test",
+				Address:      "12 Deerford Road",
+				AddressOpt:   "",
+				City:         "Toronto",
+				Country:      "Canada",
+				CountryCode:  "CA",
+				Province:     "Ontario",
+				ProvinceCode: "ON",
+				Zip:          "M2J3J3",
+			},
+			"tok_ca",
+			"waseef@localyyz.com",
+		)
+		require.NoError(suite.T(), err)
+
+		// validate cart
+		suite.NotNil(cart)
+		suite.Equal(data.CartStatusPaymentSuccess, cart.Status)
+	}
+
+	{
+		userCountBefore, _ := data.DB.User.Find(db.Cond{}).Count()
+
+		authUser, resp, err := client.User.SignupWithFacebook(ctx, "localyyz-test-token-login-4")
+		suite.NoError(err)
+		suite.Equal(resp.StatusCode, http.StatusOK)
+		suite.Equal("facebook", authUser.Network)
+		suite.Equal("test4@localyyz.com", authUser.Email)
+		suite.Equal("test4@localyyz.com", authUser.Name)
+		suite.Equal(suite.anonUser.ID, authUser.ID)
+
+		userCountAfter, _ := data.DB.User.Find(db.Cond{}).Count()
+		suite.Equal(userCountBefore, userCountAfter)
+
+	}
+}
+
 
 func TestSessionTestSuite(t *testing.T) {
 	suite.Run(t, new(SessionTestSuite))

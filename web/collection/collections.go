@@ -104,9 +104,8 @@ func ListCollection(w http.ResponseWriter, r *http.Request) {
 	var collections []*data.Collection
 	err := data.DB.Collection.
 		Find(db.Cond{
-			"gender":    genderScope,
-			"featured":  true,
-			"lightning": false,
+			"gender":   genderScope,
+			"featured": true,
 		}).
 		OrderBy("ordering").
 		All(&collections)

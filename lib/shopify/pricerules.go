@@ -11,22 +11,23 @@ import (
 type PriceRuleService service
 
 type PriceRule struct {
-	ID                int64  `json:"id"`
-	Title             string `json:"title"`
-	ValueType         string `json:"value_type"`
-	Value             string `json:"value"`
-	CustomerSelection string `json:"customer_selection"`
-	TargetType        string `json:"target_type"`
-	TargetSelection   string `json:"target_selection"`
-	AllocationMethod  string `json:"allocation_method"`
-	OncePerCustomer   bool   `json:"once_per_customer"`
-	UsageLimit        int    `json:"usage_limit"`
+	ID                int64                    `json:"id"`
+	Title             string                   `json:"title"`
+	ValueType         PriceRuleValueType       `json:"value_type"`
+	Value             string                   `json:"value"`
+	CustomerSelection string                   `json:"customer_selection"`
+	TargetType        PriceRuleTargetType      `json:"target_type"`
+	TargetSelection   PriceRuleTargetSelection `json:"target_selection"`
+	AllocationMethod  string                   `json:"allocation_method"`
+	OncePerCustomer   bool                     `json:"once_per_customer"`
+	UsageLimit        int                      `json:"usage_limit"`
 
 	EntitledProductIds    []int64 `json:"entitled_product_ids"`
 	EntitledVariantIds    []int64 `json:"entitled_variant_ids"`
 	EntitledCollectionIds []int64 `json:"entitled_collection_ids"`
 	EntitledCountryIds    []int64 `json:"entitled_country_ids"`
 
+	// Prefreq for BUY X GET Y type deals
 	PrerequisiteSavedSearchIds []int64 `json:"prerequisite_saved_search_ids"`
 	PrerequisiteCustomerIds    []int64 `json:"prerequisite_customer_ids"`
 	PrerequisiteSubtotalRange  struct {
@@ -39,16 +40,49 @@ type PriceRule struct {
 		Gte string `json:"greater_than_or_equal_to"`
 	} `json:"prerequisite_quantity_range"`
 
+	PrerequisiteQuantityRatio struct {
+		Quantity         int `json:"prerequisite_quantity"`
+		EntitledQuantity int `json:"entitled_quantity"`
+	} `json:"prerequisite_to_entitlement_quantity_ratio"`
+
+	PrerequisiteProductIDs    []int64 `json:"prerequisite_product_ids"`
+	PrerequisiteVariantIDs    []int64 `json:"prerequisite_variant_ids"`
+	PrerequisiteCollectionIDs []int64 `json:"prerequisite_collection_ids"`
+
 	StartsAt  time.Time  `json:"starts_at"`
 	EndsAt    *time.Time `json:"ends_at"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 }
 
+type PriceRuleTargetSelection string
+type PriceRuleTargetType string
+type PriceRuleValueType string
+
+const (
+	PriceRuleTargetSelectionAll      PriceRuleTargetSelection = "all"
+	PriceRuleTargetSelectionEntitled                          = "entitled"
+
+	PriceRuleTargetTypeLineItem     PriceRuleTargetType = "line_item"     // The price rule applies to the cart's line items
+	PriceRuleTargetTypeShippingLine                     = "shipping_line" // The price rule applies to the cart's shipping lines
+
+	PriceRuleValueTypeFixedAmount PriceRuleValueType = "fixed_amount"
+	PriceRuleValueTypePercentage                     = "percentage"
+)
+
 type PriceRuleParam struct {
-	Limit     int        `json:"limit"`
-	Page      int        `json:"page"`
+	Limit int `json:"limit"`
+	Page  int `json:"page"`
+	// Show rule starting AFTER date
+	StartsAtMin *time.Time `json:"starts_at_min"`
+	// Show rule starting BEFORE date
+	StartsAtMax *time.Time `json:"starts_at_max"`
+	// Show rule ending AFTER date
 	EndsAtMin *time.Time `json:"ends_at_min"`
+	// Show rule ending BEFORE date
+	EndsAtMax *time.Time `json:"ends_at_max"`
+	SinceID   int64      `json:"since_id"`
+	TimesUsed int        `json:"times_used"`
 }
 
 func (p *PriceRuleParam) EncodeQuery() string {
@@ -70,18 +104,6 @@ func (p *PriceRuleParam) EncodeQuery() string {
 	}
 	return v.Encode()
 }
-
-type PriceRuleValueType uint32
-
-const (
-	_ PriceRuleValueType = iota
-	PriceRuleValueTypeFixedAmount
-	PriceRuleValueTypePercentage
-)
-
-var (
-	priceRuleValueTypes = []string{"-", "fixed_amount", "percentage"}
-)
 
 func (p *PriceRuleService) List(ctx context.Context, params *PriceRuleParam) ([]*PriceRule, *http.Response, error) {
 	req, err := p.client.NewRequest("GET", "/admin/price_rules.json", nil)
@@ -116,26 +138,4 @@ func (p *PriceRuleService) Get(ctx context.Context, ID int64) (*PriceRule, *http
 	}
 
 	return priceRuleWrapper.PriceRule, resp, nil
-}
-
-// String returns the string value of the status.
-func (s PriceRuleValueType) String() string {
-	return priceRuleValueTypes[s]
-}
-
-// MarshalText satisfies TextMarshaler
-func (s PriceRuleValueType) MarshalText() ([]byte, error) {
-	return []byte(s.String()), nil
-}
-
-// UnmarshalText satisfies TextUnmarshaler
-func (s *PriceRuleValueType) UnmarshalText(text []byte) error {
-	enum := string(text)
-	for i := 0; i < len(priceRuleValueTypes); i++ {
-		if enum == priceRuleValueTypes[i] {
-			*s = PriceRuleValueType(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("unknown value type %s", enum)
 }

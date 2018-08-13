@@ -24,7 +24,7 @@ type Product struct {
 
 	// price from variants
 	Price        float64    `db:"price" json:"price"`
-	DiscountPct  float64    `db:"discount_pct" json:"discount_pct"`
+	DiscountPct  float64    `db:"discount_pct" json:"discountPct"`
 	DiscountedAt *time.Time `db:"discounted_at,omitempty" json:"discountedAt"`
 
 	// external id
@@ -50,7 +50,6 @@ var productStatuses = []string{
 	"rejected",
 	"deleted",
 	"outstock",
-	"dotd",
 }
 
 type ProductStatus uint32
@@ -63,7 +62,6 @@ const (
 	ProductStatusRejected                        //4
 	ProductStatusDeleted                         //5
 	ProductStatusOutofStock                      //6
-	ProductStatusDOTD                            //7
 )
 
 type ProductGender uint32

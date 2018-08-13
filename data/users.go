@@ -83,7 +83,7 @@ func (u *User) CollectionName() string {
 }
 
 func (u *User) BeforeCreate(bond.Session) error {
-	u.InviteCode = RandString(5) // random user invite_code hash
+	u.InviteCode = RandString(6) // random user invite_code hash
 	//TODO: unlikely event of conflict, do something
 
 	return nil

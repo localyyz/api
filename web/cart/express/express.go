@@ -20,13 +20,14 @@ import (
 )
 
 type CartItemRequest struct {
+	VariantID *int64 `json:"variantId"`
 	ProductID int64  `json:"productId"`
 	Color     string `json:"color"`
 	Size      string `json:"size"`
 	Quantity  uint32 `json:"quantity"`
 }
 
-func (*CartItemRequest) Bind(r *http.Request) error {
+func (c *CartItemRequest) Bind(r *http.Request) error {
 	return nil
 }
 
@@ -52,65 +53,23 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*checking if the user is attempting to add an item from an expired deal*/
-	var deal *data.Collection
-
-	// TODO: make this better
-	err := data.DB.Select("c.*").
-		From("collections as c").
-		LeftJoin("collection_products as cp").On("c.id = cp.collection_id").
-		Where(db.Cond{
-			"c.lightning":   true,
-			"cp.product_id": payload.ProductID,
-		}).
-		One(&deal)
-	if err != nil && err != db.ErrNoMoreRows {
-		render.Respond(w, r, err)
-		return
-	}
-
-	//product is part of a lightning collection
-	if deal != nil {
-		// check if the user has already  purchased
-		userPurchased, _ := user.GetTotalCheckout(payload.ProductID)
-		if userPurchased > 0 { //user has a limit of one purchase per deal
-			render.Render(w, r, api.ErrMultiplePurchase)
-			return
+	var cond db.Cond
+	if payload.VariantID != nil {
+		cond = db.Cond{
+			"id":     *payload.VariantID,
+			"limits": db.Gte(1),
 		}
-
-		//the cron might not be in sync therefore we need to check percentage completion as well
-		totalCheckouts, _ := deal.GetCheckoutCount()
-		if int64(totalCheckouts) == deal.Cap {
-			render.Render(w, r, api.ErrLightningOutOfStock)
-			return
+	} else {
+		cond = db.Cond{
+			"product_id": payload.ProductID,
+			"limits >=":  1,
 		}
-
-		// check if user deal exists + active
-		userDeal, _ := data.DB.UserDeal.FindOne(db.Cond{
-			"deal_id": deal.ID,
-			"user_id": user.ID,
-			"status":  data.CollectionStatusActive,
-		})
-
-		// expire if:
-		// - the deal is expired and no user deal
-		// - the deal is expired and the user deal has expired
-		if (deal.Status != data.CollectionStatusActive && userDeal == nil) ||
-			(userDeal != nil && userDeal.Status != data.CollectionStatusActive) {
-			render.Render(w, r, api.ErrExpiredDeal)
-			return
+		if len(payload.Color) > 0 {
+			cond[db.Raw("lower(etc->>'color')")] = payload.Color
 		}
-	}
-
-	cond := db.Cond{
-		"product_id": payload.ProductID,
-		"limits >=":  1,
-	}
-	if len(payload.Color) > 0 {
-		cond[db.Raw("lower(etc->>'color')")] = payload.Color
-	}
-	if len(payload.Size) > 0 {
-		cond[db.Raw("lower(etc->>'size')")] = payload.Size
+		if len(payload.Size) > 0 {
+			cond[db.Raw("lower(etc->>'size')")] = payload.Size
+		}
 	}
 
 	// fetch the variant from given payload (product id, color and size)
@@ -126,7 +85,7 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 
 	toSave := &data.CartItem{
 		CartID:    cart.ID,
-		ProductID: payload.ProductID,
+		ProductID: variant.ProductID,
 		VariantID: variant.ID,
 		PlaceID:   variant.PlaceID,
 		Quantity:  uint32(payload.Quantity)}
@@ -141,13 +100,35 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 	shopifyCheckout := &shopify.Checkout{
 		LineItems: []*shopify.LineItem{{VariantID: variant.OfferID, Quantity: 1}},
 	}
-	if discount, _ := data.DB.PlaceDiscount.FindByPlaceID(toSave.PlaceID); discount != nil {
-		shopifyCheckout.DiscountCode = discount.Code
+
+	// check if this product is part of a deal?
+	var deal *data.Deal
+	data.DB.Select("d.*").
+		From("deals d").
+		LeftJoin("deal_products dp").On("dp.deal_id = d.id").
+		Where(db.Cond{"dp.product_id": variant.ProductID}).
+		One(&deal)
+
+	if deal != nil {
+		// TODO: check deal usage limit
+		// TODO: check once per customer limit
+		if deal.Status == data.DealStatusActive {
+			shopifyCheckout.DiscountCode = deal.Code
+		} else {
+			// check if user deal exists + active
+			userDeal, _ := data.DB.Deal.FindOne(db.Cond{
+				"parent_id": deal.ID,
+				"user_id":   user.ID,
+				"status":    data.DealStatusActive,
+			})
+			if userDeal != nil && userDeal.Status == data.DealStatusActive {
+				shopifyCheckout.DiscountCode = userDeal.Code
+			}
+		}
 	}
 
 	client := shopify.NewClient(nil, cred.AccessToken)
 	client.BaseURL, _ = url.Parse(cred.ApiURL)
-	//client.Debug = true
 	checkout, _, err := client.Checkout.Create(
 		ctx,
 		shopifyCheckout,
@@ -314,20 +295,12 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	// TODO: create a customer on stripe after the first
 	// tokenization so we can send stripe customer id moving forward
 
-	// upgrade user to a full user
+	// get the user email but keep the user as a shadow user so they can login
 	user := ctx.Value("session.user").(*data.User)
 	if user.Network == "shadow" {
-		// TODO: --> let's test this throughly <--
-		newUser := &data.User{
-			ID:          user.ID,
-			Username:    cart.Email,
-			Email:       cart.Email,
-			DeviceToken: &(user.Username),
-			Name:        fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName),
-			Network:     "email",
-		}
-		// TODO: how does the user login here??
-		data.DB.User.Save(newUser)
+		user.Email = cart.Email
+		user.Name = fmt.Sprintf("%s %s", payload.BillingAddress.FirstName, payload.BillingAddress.LastName)
+		data.DB.User.Save(user)
 	}
 
 	go func() {

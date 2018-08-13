@@ -20,7 +20,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/session"
 	"bitbucket.org/moodie-app/moodie-api/web/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/user"
-	"bitbucket.org/moodie-app/moodie-api/web/favourite"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -106,8 +105,6 @@ func (h *Handler) Routes() chi.Router {
 		r.Use(auth.DeviceCtx)
 		r.Mount("/carts", cart.Routes())
 		r.Mount("/users", user.Routes())
-
-		r.Get("/favourite", favourite.GetFavouriteProducts)
 	})
 
 	// Authed Routes
