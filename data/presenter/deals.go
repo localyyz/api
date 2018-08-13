@@ -19,6 +19,8 @@ type Deal struct {
 	MerchantID interface{} `json:"merchantId,omitempty"`
 	ParentID   interface{} `json:"parentId,omitempty"`
 	UserID     interface{} `json:"userId,omitempty"`
+	// Legacy + not implemented
+	Cap int32 `json:"cap"`
 
 	// pulled from products
 	Title       string `json:"title"`
@@ -47,6 +49,7 @@ func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
 		c.ImageWidth = p.Images[0].Width
 		c.ImageHeight = p.Images[0].Height
 	}
+	c.Cap = c.UsageLimit
 	return nil
 }
 
