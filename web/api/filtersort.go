@@ -267,7 +267,7 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		case "discount":
 			orderBy = "p.discount_pct DESC"
 		case "created_at":
-			orderBy = fmt.Sprintf("p.created_at %s", s.Direction)
+			orderBy = "p.created_at DESC"
 		default:
 			orderBy = "p.score DESC"
 		}
