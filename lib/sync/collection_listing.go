@@ -4,12 +4,14 @@ import (
 	"context"
 	"log"
 
+	set "gopkg.in/fatih/set.v0"
 	"upper.io/db.v3"
 
 	"fmt"
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -86,8 +88,20 @@ func ShopifyCollectionListingsUpdate(ctx context.Context) error {
 			return errors.Wrap(err, fmt.Sprintf("Error: Shopify syncer unable to find products"))
 		}
 
+		genderHint := set.New()
 		for _, product := range products {
 			AddProductToCollection(product.ID, mC.ID)
+
+			genderHint.Add(int(product.Gender))
+		}
+
+		if g := set.IntSlice(genderHint); len(g) > 0 {
+			if len(g) == 1 {
+				mC.Gender = data.ProductGender(g[0])
+			} else if len(g) > 1 {
+				mC.Gender = data.ProductGenderUnisex
+			}
+			data.DB.Collection.Save(mC)
 		}
 
 		// not concerned about removing products due to use of table as metadata
@@ -100,35 +114,38 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 	list := ctx.Value("sync.list").([]*shopify.CollectionList)
 	client := ctx.Value("shopify.client").(*shopify.Client)
 
-	for _, coll := range list {
+	for _, c := range list {
 		//validate collection does not exist
-		if exist, err := data.DB.Collection.Find(db.Cond{"external_id": coll.ID}).Exists(); exist {
+		if exist, err := data.DB.Collection.Find(db.Cond{"external_id": c.ID}).Exists(); exist {
 			return errors.Wrap(err, "Shopify collection already exists")
 		}
 
-		// the new collection to save
-		collection := data.Collection{
-			Name:        coll.Title,
-			Description: coll.BodyHTML,
-			Featured:    false,
-			MerchantID:  place.ID,
-			ExternalID:  &coll.ID,
+		// getting the product ids
+		extIDs, resp, err := client.CollectionList.ListProductIDs(ctx, c.ID)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			return errors.Wrap(err, fmt.Sprintf("Shopify could not get the product ids for collection : %d", c.ID))
 		}
 
-		if coll.Image != nil {
-			collection.ImageURL = coll.Image.Src
+		if len(extIDs) == 0 {
+			continue
+		}
+
+		// the new collection to save
+		collection := &data.Collection{
+			Name:        c.Title,
+			Description: htmlx.CaptionizeHtmlBody(c.BodyHTML, -1),
+			Featured:    false,
+			MerchantID:  place.ID,
+			ExternalID:  &c.ID,
+		}
+
+		if c.Image != nil {
+			collection.ImageURL = c.Image.Src
 		}
 
 		// saving the new collection
-		err := data.DB.Collection.Save(collection)
-		if err != nil {
+		if err := data.DB.Collection.Save(collection); err != nil {
 			return errors.Wrap(err, "Shopify collection create")
-		}
-
-		// getting the product ids
-		extIDs, resp, err := client.CollectionList.ListProductIDs(ctx, coll.ID)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			return errors.Wrap(err, fmt.Sprintf("Shopify could not get the product ids for collection : %d", collection.ID))
 		}
 
 		// finding all the products
@@ -137,13 +154,28 @@ func ShopifyCollectionListingsCreate(ctx context.Context) error {
 			return errors.Wrap(err, fmt.Sprintf("Shopify could not find product in db for collection: %d", collection.ID))
 		}
 
+		genderHint := set.New()
+
 		// add to collection_products
 		for _, p := range products {
-			cp := data.CollectionProduct{ProductID: p.ID, CollectionID: collection.ID}
+			cp := data.CollectionProduct{
+				ProductID:    p.ID,
+				CollectionID: collection.ID,
+			}
 			err = data.DB.CollectionProduct.Create(cp)
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Shopify could not save to collection_products for collection: %d", collection.ID))
 			}
+			genderHint.Add(int(p.Gender))
+		}
+
+		if g := set.IntSlice(genderHint); len(g) > 0 {
+			if len(g) == 1 {
+				collection.Gender = data.ProductGender(g[0])
+			} else if len(g) > 1 {
+				collection.Gender = data.ProductGenderUnisex
+			}
+			data.DB.Collection.Save(collection)
 		}
 	}
 	return nil

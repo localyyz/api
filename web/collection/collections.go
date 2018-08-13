@@ -14,59 +14,6 @@ import (
 	db "upper.io/db.v3"
 )
 
-func FeaturedScopeCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		// get any existing scope
-		scope, ok := ctx.Value("scope").(db.Cond)
-		if !ok {
-			scope = db.Cond{}
-		}
-		scope["collections.featured"] = true
-
-		ctx = context.WithValue(ctx, "scope", scope)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
-}
-
-func FemaleScopeCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		// get any existing scope
-		scope, ok := ctx.Value("scope").(db.Cond)
-		if !ok {
-			scope = db.Cond{}
-		}
-		scope["collections.gender"] = data.ProductGenderFemale
-		scope["collections.featured"] = false
-
-		ctx = context.WithValue(ctx, "scope", scope)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
-}
-
-func MaleScopeCtx(next http.Handler) http.Handler {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		// get any existing scope
-		scope, ok := ctx.Value("scope").(db.Cond)
-		if !ok {
-			scope = db.Cond{}
-		}
-		scope["collections.gender"] = data.ProductGenderMale
-		scope["collections.featured"] = false
-
-		ctx = context.WithValue(ctx, "scope", scope)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-	return http.HandlerFunc(handler)
-}
-
 func CollectionCtx(next http.Handler) http.Handler {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -122,5 +69,5 @@ func ListCollection(w http.ResponseWriter, r *http.Request) {
 func GetCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	collection := ctx.Value("collection").(*data.Collection)
-	render.Respond(w, r, collection)
+	render.Respond(w, r, presenter.NewCollection(ctx, collection))
 }

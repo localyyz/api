@@ -63,6 +63,7 @@ func (h *Handler) Routes() chi.Router {
 		r.Delete("/products/sync", CleanupProduct)
 
 		r.Put("/variants/sync", SyncVariants)
+		r.Post("/collections/sync", SyncCollections)
 	})
 
 	r.Post("/syncer/deal", func(w http.ResponseWriter, r *http.Request) {

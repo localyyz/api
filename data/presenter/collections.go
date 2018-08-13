@@ -6,14 +6,19 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
 type Collection struct {
 	*data.Collection
-	ProductCount uint64     `json:"productCount"`
-	Products     []*Product `json:"products"`
-	ctx          context.Context
+	Products []*Product `json:"products"`
+
+	// metadata
+	ProductCount uint64  `json:"productCount"`
+	TotalSavings float64 `json:"totalSavings"`
+
+	ctx context.Context
 }
 
 func NewCollection(ctx context.Context, collection *data.Collection) *Collection {
@@ -21,7 +26,26 @@ func NewCollection(ctx context.Context, collection *data.Collection) *Collection
 		Collection: collection,
 		ctx:        ctx,
 	}
-	c.ProductCount, _ = data.DB.CollectionProduct.Find(db.Cond{"collection_id": c.ID}).Count()
+
+	cps, _ := data.DB.CollectionProduct.FindByCollectionID(c.ID)
+	cpsIDs := make([]int64, len(cps))
+	for i, ci := range cps {
+		cpsIDs[i] = ci.ProductID
+	}
+	c.ProductCount = uint64(len(cps))
+
+	row, err := data.DB.Select(db.Raw("sum((price/(1-discount_pct))-price) as total_savings")).
+		From("products").
+		Where(db.Cond{"id": cpsIDs}).
+		QueryRow()
+	if err != nil {
+		lg.Warn(err, "query collection saving")
+		return c
+	}
+	if err := row.Scan(&c.TotalSavings); err != nil {
+		lg.Warn(err, "present collection saving")
+		return c
+	}
 
 	return c
 }
