@@ -65,32 +65,30 @@ func NewDealList(ctx context.Context, deals []*data.Deal) []render.Renderer {
 func NewDeal(ctx context.Context, deal *data.Deal) *Deal {
 	presented := &Deal{Deal: deal}
 
-	if deal.Status != data.DealStatusInactive {
-		// look up deal products by the parent deal id
-		lookupID := deal.ID
-		if deal.ParentID != nil {
-			lookupID = *deal.ParentID
-		}
-		dps, err := data.DB.DealProduct.FindByDealID(lookupID)
-		if err != nil {
-			return presented
-		}
-		var productIDs []int64
-		for _, p := range dps {
-			productIDs = append(productIDs, p.ProductID)
-		}
-
-		products, err := data.DB.Product.FindAll(db.Cond{
-			"id":     productIDs,
-			"status": data.ProductStatusApproved,
-		})
-		if err != nil {
-			return presented
-		}
-
-		// shove into context for later consumption
-		ctx = context.WithValue(ctx, DealCtxKey, deal)
-		presented.Products = newProductList(ctx, products)
+	// look up deal products by the parent deal id
+	lookupID := deal.ID
+	if deal.ParentID != nil {
+		lookupID = *deal.ParentID
 	}
+	dps, err := data.DB.DealProduct.FindByDealID(lookupID)
+	if err != nil {
+		return presented
+	}
+	var productIDs []int64
+	for _, p := range dps {
+		productIDs = append(productIDs, p.ProductID)
+	}
+	products, err := data.DB.Product.FindAll(db.Cond{
+		"id":     productIDs,
+		"status": data.ProductStatusApproved,
+	})
+	if err != nil {
+		return presented
+	}
+
+	// shove into context for later consumption
+	ctx = context.WithValue(ctx, DealCtxKey, deal)
+	presented.Products = newProductList(ctx, products)
+
 	return presented
 }
