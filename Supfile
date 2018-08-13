@@ -112,6 +112,22 @@ commands:
     stdin: true
     run: /bin/sh
 
+  deploy-scheduler:
+    desc: Deploy Scheduler service
+    local: sup -f ./scheduler/Supfile $SUP_NETWORK deploy
+
+  deploy-reporter:
+    desc: Deploy Reporter service
+    local: sup -f ./reporter/Supfile $SUP_NETWORK deploy
+
+  deploy-merchant:
+    desc: Deploy Merchant service
+    local: sup -f ./merchant/Supfile $SUP_NETWORK deploy
+
+  deploy-syncer:
+    desc: Deploy Syncer service
+    local: sup -f ./syncer/Supfile $SUP_NETWORK deploy
+
 targets:
   deploy:
     - pull
@@ -123,3 +139,18 @@ targets:
     - ps
     - logs
     - prune
+
+  deploy-all:
+    - pull
+    - config
+    - migrate
+    - stop
+    - rm
+    - run
+    - ps
+    - logs
+    - prune
+    - deploy-scheduler
+    - deploy-syncer
+    - deploy-reporter
+    - deploy-merchant
