@@ -2,7 +2,6 @@ package endtoend
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"testing"
 
@@ -135,40 +134,42 @@ func (suite *CheckoutTestSuite) TestCheckoutNotInStock() {
 	user := suite.user
 	client := user.client
 
-	{ //add to cart
-		ctx := context.Background()
-		_, _, err := client.Cart.AddItem(
-			ctx,
-			&data.CartItem{
-				VariantID: suite.variantNotInStock.ID,
-			},
-		)
-		suite.NoError(err)
+	_, _, err := client.Cart.AddItem(
+		context.Background(),
+		&data.CartItem{
+			VariantID: suite.variantNotInStock.ID,
+		},
+	)
+	require.NotNil(suite.T(), err)
 
-		fullAddress := &data.CartAddress{
-			Address:   "123 Toronto Street",
-			FirstName: "User",
-			LastName:  "Localyyz",
-			City:      "Toronto",
-			Country:   "Canada",
-			Province:  "Ontario",
-			Zip:       "M5J 1B7",
-		}
-		_, _, err = client.Cart.Put(ctx, &data.Cart{
-			ShippingAddress: fullAddress,
-			BillingAddress:  fullAddress,
-			Email:           user.Email,
-		})
-		suite.NoError(err)
-	}
+	apiErr := err.(apiclient.Err400)
+	suite.Contains(apiErr.Message, "variant is out of stock")
+}
 
-	{ // attempt to checkout
-		_, _, err := client.Cart.Checkout(context.Background())
-		apiErr, ok := err.(apiclient.Err400)
-		if !ok {
-			suite.FailNow("unknown error", "expected api error got: %+v", err)
-		}
-		suite.Contains(apiErr.Message, "item is out of stock")
+func (suite *CheckoutTestSuite) TestCheckoutNotInStockRemotely() {
+	user := suite.user
+	client := user.client
+
+	ctx := context.Background()
+	_, _, err := client.Cart.AddItem(
+		ctx,
+		&data.CartItem{
+			VariantID: suite.variantNotInStockRemotely.ID,
+		},
+	)
+	require.NoError(suite.T(), err)
+
+	_, _, err = client.Cart.Put(ctx, &data.Cart{
+		ShippingAddress: suite.validAddress,
+		BillingAddress:  suite.validAddress,
+		Email:           user.Email,
+	})
+	suite.NoError(err)
+
+	cart, _, _ := client.Cart.Checkout(context.Background())
+	if suite.NotEmpty(cart.CartItems) {
+		suite.True(cart.CartItems[0].HasError)
+		suite.Contains(cart.CartItems[0].Err, "out of stock")
 	}
 }
 
@@ -207,12 +208,9 @@ func (suite *CheckoutTestSuite) TestCheckoutInvalidAddress() {
 	}
 
 	{
-		_, _, err := client.Cart.Checkout(context.Background())
-		apiErr, ok := err.(apiclient.Err400)
-		if !ok {
-			suite.FailNow("unknown error", "expected api error got: %+v", err)
-		}
-		suite.Contains(apiErr.Message, "zip is not valid for Canada")
+		cart, _, _ := client.Cart.Checkout(context.Background())
+		require.True(suite.T(), cart.HasError)
+		suite.Contains(cart.Error, "zip is not valid for Canada")
 	}
 }
 
@@ -263,6 +261,7 @@ func (suite *CheckoutTestSuite) TestCheckoutInvalidCVC() {
 			CVC:    "123",
 		}
 		_, _, err := client.Cart.Pay(ctx, paymentCard)
+		require.NotNil(suite.T(), err)
 		apiErr, ok := err.(apiclient.Err400)
 		if !ok {
 			suite.FailNow("unknown error", "expected api error got: %+v", err)
@@ -305,14 +304,12 @@ func (suite *CheckoutTestSuite) TestCheckoutDoesNotShip() {
 		suite.NoError(err)
 	}
 
-	{ // attempt to checkout
-		_, _, err := client.Cart.Checkout(context.Background())
-		apiErr, ok := err.(apiclient.Err400)
-		if !ok {
-			suite.FailNow("unknown error", "expected api error got: %+v", err)
-		}
-		suite.Contains(apiErr.Message, "country is not supported")
-	}
+	cart, _, err := client.Cart.Checkout(context.Background())
+	require.NotNil(suite.T(), err)
+	suite.Contains(err.Error(), "country is not supported")
+
+	require.True(suite.T(), cart.HasError)
+	suite.Contains(cart.Error, "country is not supported")
 }
 
 //TEST: apply valid discount
@@ -331,18 +328,9 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 		)
 		suite.NoError(err)
 
-		fullAddress := &data.CartAddress{
-			Address:   "123 Toronto Street",
-			FirstName: "Someone",
-			LastName:  "Localyyz",
-			City:      "Toronto",
-			Country:   "Canada",
-			Province:  "Ontario",
-			Zip:       "M5J 1B7",
-		}
 		cart, _, err := client.Cart.Put(ctx, &data.Cart{
-			ShippingAddress: fullAddress,
-			BillingAddress:  fullAddress,
+			ShippingAddress: suite.validAddress,
+			BillingAddress:  suite.validAddress,
 			Email:           user.Email,
 		})
 		if suite.NoError(err) {
@@ -351,7 +339,6 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 			discountCode := "TEST_SALE_CODE"
 			ctx := context.Background()
 			checkout, _, err := client.Cart.AddDiscountCode(ctx, checkoutToValidate.ID, discountCode)
-			log.Println("fuck is error?", checkout)
 
 			suite.NoError(err)
 			// validate that discount code is saved/applied
@@ -374,9 +361,9 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountSuccess() {
 				}
 			}
 			suite.EqualValues(3136, cart.TotalDiscount)
-			suite.EqualValues(1061, cart.TotalShipping)
+			suite.EqualValues(1057, cart.TotalShipping)
 			suite.EqualValues(3669, cart.TotalTax)
-			suite.EqualValues(32954, cart.TotalPrice)
+			suite.EqualValues(32950, cart.TotalPrice)
 		}
 	}
 }
@@ -396,18 +383,9 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountFailure() {
 		)
 		suite.NoError(err)
 
-		fullAddress := &data.CartAddress{
-			Address:   "123 Toronto Street",
-			FirstName: "Someone",
-			LastName:  "Localyyz",
-			City:      "Toronto",
-			Country:   "Canada",
-			Province:  "Ontario",
-			Zip:       "M5J 1B7",
-		}
 		cart, _, err := client.Cart.Put(ctx, &data.Cart{
-			ShippingAddress: fullAddress,
-			BillingAddress:  fullAddress,
+			ShippingAddress: suite.validAddress,
+			BillingAddress:  suite.validAddress,
 			Email:           user.Email,
 		})
 		if suite.NoError(err) {

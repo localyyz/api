@@ -58,6 +58,16 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 	ctx = context.WithValue(ctx, shopper.RequestIPCtxKey, r.RemoteAddr)
 	ctx = context.WithValue(ctx, shopper.PaymentCardCtxKey, payload.Card)
 
+	// validate that all checkout are in good standing
+	for _, c := range checkouts {
+		if len(c.Token) == 0 {
+			lg.Alertf("cart (%d) payment: has one or more error.", cart.ID)
+			// some internal server error, return right away
+			render.Respond(w, r, api.ErrIncompleteCart)
+			return
+		}
+	}
+
 	var paymentErrors []error
 	for _, c := range checkouts {
 		p := shopper.NewPayment(ctx, c)

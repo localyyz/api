@@ -100,11 +100,7 @@ func (suite *DealsTestSuite) TestActivate() {
 		require.NotEmpty(suite.T(), deals)
 
 		for _, d := range deals {
-			if d.ParentID != nil &&
-				d.UserID != nil &&
-				*d.ParentID == parentDeal.ID &&
-				*d.UserID == user.ID {
-
+			if d.Products[0].ID == suite.productDealExpired.ID {
 				activeDeal = d
 				// validate deal has the right expiry
 				suite.WithinDuration(startAt.UTC(), d.StartAt.UTC(), time.Second)

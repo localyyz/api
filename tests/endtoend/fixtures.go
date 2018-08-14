@@ -31,7 +31,8 @@ type fixture struct {
 
 	// products and variants
 	productInStock, productNotInStock *data.Product
-	variantInStock, variantNotInStock *data.ProductVariant
+
+	variantInStock, variantNotInStock, variantNotInStockRemotely *data.ProductVariant
 
 	// discount
 	variantWithDiscount *data.ProductVariant
@@ -70,9 +71,9 @@ func (f *fixture) newAnonUser(t *testing.T, count string) *UserClient {
 	return &UserClient{
 		AuthUser: &auth.AuthUser{
 			User: &data.User{
-				ID: mockUser.ID,
+				ID:       mockUser.ID,
 				Username: mockDeviceId,
-				Email: mockDeviceId,
+				Email:    mockDeviceId,
 			},
 		},
 		client: client,
@@ -157,8 +158,15 @@ func (f *fixture) setupProduct(t *testing.T) {
 		ProductID: f.productNotInStock.ID,
 		PlaceID:   f.testStore.ID,
 		Price:     10,
-		Limits:    10,
+		Limits:    0,
 		OfferID:   43252300483,
+	}
+	f.variantNotInStockRemotely = &data.ProductVariant{
+		ProductID: f.productNotInStock.ID,
+		PlaceID:   f.testStore.ID,
+		Price:     10,
+		Limits:    10,
+		OfferID:   12482519760951,
 	}
 	f.variantWithDiscount = &data.ProductVariant{
 		ProductID: f.productInStock.ID,
@@ -184,6 +192,7 @@ func (f *fixture) setupProduct(t *testing.T) {
 
 	assert.NoError(t, data.DB.Save(f.variantInStock))
 	assert.NoError(t, data.DB.Save(f.variantNotInStock))
+	assert.NoError(t, data.DB.Save(f.variantNotInStockRemotely))
 	assert.NoError(t, data.DB.Save(f.variantWithDiscount))
 	assert.NoError(t, data.DB.Save(f.variantDealActive))
 	assert.NoError(t, data.DB.Save(f.variantDealExpired))

@@ -58,6 +58,7 @@ var (
 	ErrInvalidDiscountCode = &ApiError{StatusCode: http.StatusBadRequest, ErrorText: "discount code is invalid"}
 	errOutOfStockCart      = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "one or more items in your cart are out of stock"}
 	errOutOfStockAdd       = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "out-of-stock", ErrorText: "this variant is out of stock."}
+	ErrIncompleteCart      = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "incomplete", ErrorText: "there are errors in your cart"}
 
 	/* Lightning Section */
 	ErrDealActive           = &ApiError{StatusCode: http.StatusBadRequest, StatusText: "already active", ErrorText: "this deal is already active"}

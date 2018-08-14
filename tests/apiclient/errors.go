@@ -1,8 +1,10 @@
 package apiclient
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/web/api"
@@ -33,8 +35,17 @@ type ErrUnknown struct{ Err }
 
 func NewError(resp *http.Response) error {
 	var errMsg api.ApiError
-	json.NewDecoder(resp.Body).Decode(&errMsg)
-	resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &errMsg); err != nil {
+		return err
+	}
+
+	// refill the body for next reading
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 
 	req := resp.Request
 	errWrap := Err{

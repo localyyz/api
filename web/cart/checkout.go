@@ -126,8 +126,8 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 		req := shopper.NewCheckout(ctx, c)
 		if err := req.Do(nil); err != nil || req.Err != nil {
 			if err != nil {
-				lg.Alertf("checkout(%d): %v %v", c.ID, err)
 				// some internal server error, return right away
+				lg.Alertf("[internal] checkout(%d): %v", c.ID, err)
 				render.Respond(w, r, err)
 				return
 			} else {
@@ -144,6 +144,8 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 			presented.Error = e.Err.Error()
 			presented.ErrorCode = uint32(e.ErrCode)
 
+			lg.Warnf("cart(%d) err: %s", presented.ID, presented.Error)
+
 			switch e.ErrCode {
 			case shopper.CheckoutErrorCodeNoShipping, shopper.CheckoutErrorCodeShippingAddress:
 				presented.ShippingAddress.HasError = true
@@ -152,12 +154,12 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 				presented.BillingAddress.HasError = true
 				presented.BillingAddress.Error = e.Err
 			}
-
-			for _, ci := range presented.CartItems {
-				if ci.Variant.OfferID == e.ItemID {
-					lg.Warnf("found cart item (%d) error %s", ci.ID, e.Err)
-					ci.HasError = true
-					ci.Error = e.Err
+			if itemID := e.ItemID; itemID != 0 {
+				for _, ci := range presented.CartItems {
+					if ci.Variant.OfferID == itemID {
+						ci.HasError = true
+						ci.Err = e.Err.Error()
+					}
 				}
 			}
 			render.Status(r, http.StatusBadRequest)

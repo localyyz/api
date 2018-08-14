@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"reflect"
 
@@ -176,7 +175,6 @@ func findFirstError(r *ErrorResponse) error {
 
 	// find the first error, and return
 	for k, v := range rr {
-		lg.Infof("%v %v", k, reflect.TypeOf(v))
 		if k == "email" {
 			return &EmailError{
 				Message: "is invalid",
@@ -225,7 +223,6 @@ func findFirstError(r *ErrorResponse) error {
 				}
 			case "shipping_address", "billing_address":
 				for kk, vvv := range vv {
-					log.Printf("error %s field key: %s %+v", k, kk, vvv)
 					if e, ok := vvv.([]interface{}); ok && e != nil {
 						return toAddressError(k, kk, e)
 					}
@@ -243,6 +240,7 @@ func findFirstError(r *ErrorResponse) error {
 
 			}
 		} else {
+			lg.Alertf("unknown shopify error key %s, %+v, %v", k, v, reflect.TypeOf(v))
 			return fmt.Errorf("unknown shopify error key %s, %+v, %v", k, v, reflect.TypeOf(v))
 		}
 	}
