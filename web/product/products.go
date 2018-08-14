@@ -208,5 +208,30 @@ func DeleteFavouriteProduct(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		render.Respond(w, r, err)
 	}
+}
 
+func DeleteFromAllCollections(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	product := ctx.Value("product").(*data.Product)
+
+	// delete from favourite product
+	DeleteFavouriteProduct(w, r)
+
+	_, err := data.DB.Update("user_collection_products").Set("deleted_at=NOW()").Where(db.Cond{"product_id": product.ID, "deleted_at": db.IsNull()}).Exec()
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+}
+
+func DeleteProductFromCollection(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	product := ctx.Value("product").(*data.Product)
+	collection := ctx.Value("user.collection").(*data.UserCollection)
+
+	_, err := data.DB.Update("user_collection_products").Set("deleted_at=NOW()").Where(db.Cond{"collection_id": collection.ID, "product_id": product.ID, "deleted_at": db.IsNull()}).Exec()
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
 }
