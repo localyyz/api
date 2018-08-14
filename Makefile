@@ -39,7 +39,7 @@ all:
 	@echo "  db-down               - roll back dev DB to a previous version"
 	@echo "  db-migrate            - create new db migration (NAME specifies migration name)"
 	@echo "  db-status             - status of current dev DB version"
-	@echo "  db-loadprod           - downloads and loads production database locally"
+	@echo "  db-loadstaging        - downloads and loads production database locally"
 	@echo ""
 
 print-%: ; @echo $*=$($*)
