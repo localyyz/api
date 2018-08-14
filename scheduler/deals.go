@@ -27,9 +27,10 @@ func (h *Handler) ScheduleDeals() {
 	}()
 
 	// expire deals
-	h.DB.Exec(`UPDATE deals SET status = 3 WHERE NOW() at time zone 'utc' > end_at and status = 2`)
+	h.DB.Exec(`UPDATE deals SET status = 2 WHERE NOW() at time zone 'utc' > end_at and status = 3`)
+
 	// activate deals
-	h.DB.Exec(`UPDATE deals SET status = 2 WHERE NOW() at time zone 'utc' > start_at and status = 1`)
+	h.DB.Exec(`UPDATE deals SET status = 3 WHERE NOW() at time zone 'utc' > start_at and status = 1`)
 }
 
 func (h *Handler) SyncDeals() {
@@ -97,19 +98,22 @@ func (h *Handler) SyncDeals() {
 				continue
 			}
 
+			startAt := rule.StartsAt.UTC()
+
 			deal = &data.Deal{
 				ExternalID:      rule.ID,
 				Status:          data.DealStatusQueued,
 				MerchantID:      LocalyyzStoreId,
-				StartAt:         &rule.StartsAt,
-				EndAt:           rule.EndsAt,
+				StartAt:         &startAt,
 				Code:            rule.Title,
 				Value:           value,
 				UsageLimit:      int32(rule.UsageLimit),
 				OncePerCustomer: rule.OncePerCustomer,
 			}
-
-			if deal.EndAt == nil {
+			if e := rule.EndsAt; e != nil {
+				endAt := e.UTC()
+				deal.EndAt = &endAt
+			} else {
 				// if ends at is not set, update it to default
 				endAt := deal.StartAt.Add(DealDuration)
 				deal.EndAt = &endAt
