@@ -110,5 +110,5 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 		lg.Alertf("%s just completed a purchase! hoorah!", presented.ShippingAddress.FirstName)
 	}
 
-	render.Respond(w, r, presented)
+	render.Render(w, r, presented)
 }
