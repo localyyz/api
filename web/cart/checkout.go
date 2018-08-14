@@ -98,7 +98,6 @@ func UpdateCheckout(w http.ResponseWriter, r *http.Request) {
 func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cart := ctx.Value("cart").(*data.Cart)
-	user := ctx.Value("session.user").(*data.User)
 
 	if cart.Status > data.CartStatusCheckout {
 		render.Render(w, r, api.ErrInvalidRequest(ErrInvalidStatus))
@@ -112,7 +111,7 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// add to ctx
-	ctx = context.WithValue(ctx, shopper.EmailCtxKey, user.Email)
+	ctx = context.WithValue(ctx, shopper.EmailCtxKey, cart.Email)
 	ctx = context.WithValue(ctx, shopper.ShippingAddressCtxKey, cart.ShippingAddress)
 	ctx = context.WithValue(ctx, shopper.BillingAddressCtxKey, cart.BillingAddress)
 
@@ -155,8 +154,11 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 			}
 
 			for _, ci := range presented.CartItems {
-				ci.HasError = ci.Variant.OfferID == e.ItemID
-				ci.Error = e.Err
+				if ci.Variant.OfferID == e.ItemID {
+					lg.Warnf("found cart item (%d) error %s", ci.ID, e.Err)
+					ci.HasError = true
+					ci.Error = e.Err
+				}
 			}
 			render.Status(r, http.StatusBadRequest)
 		}
