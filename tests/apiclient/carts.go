@@ -62,7 +62,7 @@ func (c *CartService) Checkout(ctx context.Context) (*presenter.Cart, *http.Resp
 	cartResponse := new(presenter.Cart)
 	resp, err := c.client.Do(ctx, req, cartResponse)
 	if err != nil {
-		return nil, resp, err
+		return cartResponse, resp, err
 	}
 
 	return cartResponse, resp, nil

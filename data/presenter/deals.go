@@ -45,9 +45,11 @@ func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
 			c.Value,
 		)
 
-		c.ImageURL = p.Images[0].ImageURL
-		c.ImageWidth = p.Images[0].Width
-		c.ImageHeight = p.Images[0].Height
+		if len(p.Images) > 0 {
+			c.ImageURL = p.Images[0].ImageURL
+			c.ImageWidth = p.Images[0].Width
+			c.ImageHeight = p.Images[0].Height
+		}
 	}
 	c.Cap = c.UsageLimit
 	return nil

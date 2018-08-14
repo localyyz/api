@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"reflect"
+
+	"github.com/pressly/lg"
 )
 
 // Shopify errors usually have the form:
@@ -66,6 +67,11 @@ type AddressError struct {
 	Message string `json:"message"`
 }
 
+type EmailError struct {
+	ShopifyErrorer
+	Message string `json:"message"`
+}
+
 type ErrorResponse struct {
 	Errors interface{} `json:"errors"`
 }
@@ -97,6 +103,14 @@ func (e *AddressError) Error() string {
 
 func (e *AddressError) Type() string {
 	return e.Key
+}
+
+func (e *EmailError) Error() string {
+	return fmt.Sprintf("email %s", e.Message)
+}
+
+func (e *EmailError) Type() string {
+	return `email`
 }
 
 func (r *ErrorResponse) Error() string {
@@ -161,8 +175,11 @@ func findFirstError(r *ErrorResponse) error {
 
 	// find the first error, and return
 	for k, v := range rr {
-		log.Printf("error field key %s", k)
-
+		if k == "email" {
+			return &EmailError{
+				Message: "is invalid",
+			}
+		}
 		if vv, ok := v.(map[string]interface{}); ok {
 			switch k {
 			//TODO: shipping_line: map[id:[map[code:expired message:has expired options:map[]]]]
@@ -206,7 +223,6 @@ func findFirstError(r *ErrorResponse) error {
 				}
 			case "shipping_address", "billing_address":
 				for kk, vvv := range vv {
-					log.Printf("error %s field key: %s %+v", k, kk, vvv)
 					if e, ok := vvv.([]interface{}); ok && e != nil {
 						return toAddressError(k, kk, e)
 					}
@@ -224,6 +240,7 @@ func findFirstError(r *ErrorResponse) error {
 
 			}
 		} else {
+			lg.Alertf("unknown shopify error key %s, %+v, %v", k, v, reflect.TypeOf(v))
 			return fmt.Errorf("unknown shopify error key %s, %+v, %v", k, v, reflect.TypeOf(v))
 		}
 	}

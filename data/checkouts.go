@@ -64,10 +64,10 @@ type CheckoutTaxLine struct {
 }
 
 const (
-	_ CheckoutStatus = iota
-	CheckoutStatusPending
-	CheckoutStatusPaymentFailed
-	CheckoutStatusPaymentSuccess
+	_                            CheckoutStatus = iota // 0
+	CheckoutStatusPending                              // 1
+	CheckoutStatusPaymentFailed                        // 2
+	CheckoutStatusPaymentSuccess                       // 3
 )
 
 type CheckoutStore struct {

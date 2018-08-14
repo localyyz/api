@@ -118,11 +118,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		resp.Body.Close()
 	}()
 
+	var apiError error
 	switch resp.StatusCode {
 	case 200, 201, 204, 301, 302:
 		// do nothing, valid response.
 	default:
-		return resp, NewError(resp)
+		// parse the error and return wrapped error type
+		apiError = NewError(resp)
 	}
 
 	if v != nil {
@@ -134,13 +136,14 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 				fmt.Printf("[apiclient]: %s\n", string(b))
 			}
 			err = json.NewDecoder(resp.Body).Decode(v)
-			if err != nil && err != io.EOF {
+			// ignore this error if apiError is already set
+			if err != nil && err != io.EOF && apiError == nil {
 				return resp, err
 			}
 		}
 	}
 
-	return resp, nil
+	return resp, apiError
 }
 
 func (c *Client) AddHeader(key string, value string) {
