@@ -7,10 +7,12 @@ import (
 )
 
 type productSyncer struct {
-	product  *data.Product
-	place    *data.Place
-	variants []*data.ProductVariant
-	images   []*data.ProductImage
+	product        *data.Product
+	place          *data.Place
+	variants       []*data.ProductVariant
+	images         []*data.ProductImage
+	categoryCache  map[string]*data.Category
+	blacklistCache map[string]*data.Blacklist
 }
 
 type Syncer interface {
