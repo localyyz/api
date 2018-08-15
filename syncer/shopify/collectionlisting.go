@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	lib "bitbucket.org/moodie-app/moodie-api/lib/shopify"
-	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 )
@@ -29,11 +28,11 @@ func CollectionListingHandler(r *http.Request) (err error) {
 
 	switch lib.Topic(ctx.Value("sync.topic").(string)) {
 	case lib.TopicCollectionListingsAdd:
-		return sync.ShopifyCollectionListingsCreate(ctx)
+		//return sync.ShopifyCollectionListingsCreate(ctx)
 	case lib.TopicCollectionListingsUpdate:
-		return sync.ShopifyCollectionListingsUpdate(ctx)
+		//return sync.ShopifyCollectionListingsUpdate(ctx)
 	case lib.TopicCollectionListingsRemove:
-		return sync.ShopifyCollectionListingsRemove(ctx)
+		//return sync.ShopifyCollectionListingsRemove(ctx)
 	}
 
 	return
