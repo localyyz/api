@@ -118,7 +118,20 @@ func NewCategoryList(ctx context.Context, categoryTypes []data.CategoryType) []r
 
 	ctx = context.WithValue(ctx, "subcat", subcatMap)
 	for _, c := range categoryTypes {
-		presented := NewCategory(ctx, c)
+		var presented *Category
+		if c == data.CategorySale {
+			// TODO: make this better
+			presented = &Category{
+				Type: "sales",
+				Values: []*Category{
+					{Type: "70% OFF", ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/70.png?17957505310432019141"},
+					{Type: "50% OFF", ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/50.png?5115785919598170614"},
+					{Type: "20% OFF", ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/20.png?14969378164451378728"},
+				},
+			}
+		} else {
+			presented = NewCategory(ctx, c)
+		}
 		if len(presented.Values) > 0 {
 			list = append(list, presented)
 		}
