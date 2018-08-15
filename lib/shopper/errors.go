@@ -21,13 +21,13 @@ type CheckoutError struct {
 type CheckoutErrorCode uint32
 
 const (
-	_ CheckoutErrorCode = iota
-	CheckoutErrorCodeGeneric
-	CheckoutErrorCodeLineItem
-	CheckoutErrorCodeNoShipping
-	CheckoutErrorCodeShippingAddress
-	CheckoutErrorCodeBillingAddress
-	CheckoutErrorCodeDiscountCode
+	_                                CheckoutErrorCode = iota // 0
+	CheckoutErrorCodeGeneric                                  // 1
+	CheckoutErrorCodeLineItem                                 // 2
+	CheckoutErrorCodeNoShipping                               // 3
+	CheckoutErrorCodeShippingAddress                          // 4
+	CheckoutErrorCodeBillingAddress                           // 5
+	CheckoutErrorCodeDiscountCode                             // 6
 )
 
 func (e *CheckoutError) Error() string {

@@ -46,6 +46,7 @@ func CategoryTypeCtx(next http.Handler) http.Handler {
 
 var (
 	displayCategories = []data.CategoryType{
+		data.CategorySale, // sale
 		data.CategoryApparel,
 		data.CategoryHandbag,
 		data.CategoryShoe,
@@ -59,7 +60,8 @@ var (
 )
 
 func List(w http.ResponseWriter, r *http.Request) {
-	render.RenderList(w, r, presenter.NewCategoryList(r.Context(), displayCategories))
+	presented := presenter.NewCategoryList(r.Context(), displayCategories)
+	render.RenderList(w, r, presented)
 }
 
 func GetCategory(w http.ResponseWriter, r *http.Request) {
