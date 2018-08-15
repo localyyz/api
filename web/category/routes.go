@@ -8,11 +8,12 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.With(api.FilterSortCtx).Get("/", List)
-	r.With(api.FilterSortCtx).With(discountCtx(0.1, 1)).Get("/sales/products", ListDiscountProducts)
-	r.With(api.FilterSortCtx).With(discountCtx(0.20, 0.5)).Get("/20% OFF/products", ListDiscountProducts)
-	r.With(api.FilterSortCtx).With(discountCtx(0.50, 0.7)).Get("/50% OFF/products", ListDiscountProducts)
-	r.With(api.FilterSortCtx).With(discountCtx(0.70, 1)).Get("/70% OFF/products", ListDiscountProducts)
+	r.Use(api.FilterSortCtx)
+	r.Get("/", List)
+	r.With(discountCtx(0.1, 1)).Route("/sales/products", api.FilterRoutes(ListDiscountProducts))
+	r.With(discountCtx(0.20, 0.5)).Route("/20% OFF/products", api.FilterRoutes(ListDiscountProducts))
+	r.With(discountCtx(0.50, 0.7)).Route("/50% OFF/products", api.FilterRoutes(ListDiscountProducts))
+	r.With(discountCtx(0.70, 1)).Route("/70% OFF/products", api.FilterRoutes(ListDiscountProducts))
 
 	r.Route("/{categoryType}", func(r chi.Router) {
 		r.Use(CategoryTypeCtx)
