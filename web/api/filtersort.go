@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -151,6 +152,7 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 	q := r.URL.Query()
 	o := &FilterSort{w: w, r: r}
 	if value := q.Get(SortParam); len(value) > 0 && value != defaultSortField {
+		value, _ = url.QueryUnescape(value)
 		if strings.HasPrefix(value, "-") || strings.HasSuffix(value, "desc") {
 			o.Sort = &Sort{
 				Type:      value[1:],
@@ -165,6 +167,7 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 	}
 
 	for _, value := range q[FilterParam] {
+		value, _ = url.QueryUnescape(value)
 		f := &Filter{}
 		for _, p := range strings.Split(value, ",") {
 			if strings.HasPrefix(p, "min") {
