@@ -79,9 +79,12 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			return errors.Wrap(err, "failed to lock product for update")
 		}
 
+		listenerI := ctx.Value(SyncListenerCtxKey)
+
 		// async syncing of variants / product images
+		// NOTE: this go func should have nothing to do with the context.
 		go func() {
-			if listener, ok := ctx.Value(SyncListenerCtxKey).(Listener); ok {
+			if listener, ok := listenerI.(Listener); ok {
 				// inform caller that we're done
 				defer func() { listener <- 1 }()
 			}
@@ -141,10 +144,12 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		// pull the caches out of context.
 		categoryCache := ctx.Value("category.cache").(map[string]*data.Category)
 		blacklistCache := ctx.Value("category.blacklist").(map[string]*data.Blacklist)
+		listenerI := ctx.Value(SyncListenerCtxKey)
 
 		// async syncing of variants / product images
+		// NOTE: this go func should have nothing to do with the context.
 		go func() {
-			if listener, ok := ctx.Value(SyncListenerCtxKey).(Listener); ok {
+			if listener, ok := listenerI.(Listener); ok {
 				// inform caller that we're done
 				defer func() { listener <- 1 }()
 			}
