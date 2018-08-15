@@ -36,6 +36,10 @@ const (
 	CategoryLingerie                      // 10
 	CategorySneaker                       // 11
 	CategorySwimwear                      // 12
+
+	// Special non DB category
+	CategorySale  // 13
+	CategoryNewIn // 14
 )
 
 var (
@@ -53,6 +57,8 @@ var (
 		"lingerie",
 		"sneakers",
 		"swimwear",
+		"sales",
+		"newin",
 	}
 
 	Categories = []CategoryType{
@@ -68,6 +74,8 @@ var (
 		CategoryLingerie,
 		CategorySneaker,
 		CategorySwimwear,
+		CategorySale,
+		CategoryNewIn,
 	}
 )
 
