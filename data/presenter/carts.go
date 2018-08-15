@@ -54,11 +54,11 @@ func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 		if rates, _ := c.ctx.Value("rates").([]*data.CartShippingMethod); rates != nil {
 			c.ShippingRates = rates
 		}
-		if s := c.Etc.ShippingAddress; s != nil {
+		if s := c.Etc.ShippingAddress; s != nil && c.ShippingAddress == nil {
 			c.ShippingAddress = NewCartAddress(c.ctx, s)
 			c.ShippingAddress.IsShipping = true
 		}
-		if b := c.Etc.BillingAddress; b != nil {
+		if b := c.Etc.BillingAddress; b != nil && c.BillingAddress == nil {
 			c.BillingAddress = NewCartAddress(c.ctx, b)
 			c.BillingAddress.IsBilling = true
 		}
@@ -74,11 +74,13 @@ func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 			}
 		}
 
-		if s := c.Cart.ShippingAddress; s != nil {
+		// if not presented. present
+		if s := c.Cart.ShippingAddress; s != nil && c.ShippingAddress == nil {
 			c.ShippingAddress = NewCartAddress(c.ctx, s)
 			c.ShippingAddress.IsShipping = true
 		}
-		if b := c.Cart.BillingAddress; b != nil {
+		// if not presented. present
+		if b := c.Cart.BillingAddress; b != nil && c.BillingAddress == nil {
 			c.BillingAddress = NewCartAddress(c.ctx, b)
 			c.BillingAddress.IsBilling = true
 		}

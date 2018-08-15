@@ -10,8 +10,8 @@ import (
 type CartAddress struct {
 	*data.CartAddress
 
-	HasError bool  `json:"hasError"`
-	Error    error `json:"error"`
+	HasError bool   `json:"hasError"`
+	Error    string `json:"error"`
 
 	IsShipping bool `json:"isShipping"`
 	IsBilling  bool `json:"isBilling"`

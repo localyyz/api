@@ -78,17 +78,17 @@ func (suite *CheckoutTestSuite) TestCheckoutSuccess() {
 	require.NotEmpty(suite.T(), cart.Checkouts)
 
 	// pricing
-	suite.Equal(213.60, cart.Checkouts[0].SubtotalPrice)
-	suite.Equal(251.98, cart.Checkouts[0].TotalPrice)
+	suite.InDelta(213.60, cart.Checkouts[0].SubtotalPrice, 0.1)
+	suite.InDelta(251.98, cart.Checkouts[0].TotalPrice, 0.1)
 	suite.Equal("251.98", cart.Checkouts[0].PaymentDue)
 
 	// shipping line
 	suite.NotNil(cart.Checkouts[0].ShippingLine)
-	suite.Equal(10.61, cart.Checkouts[0].TotalShipping)
+	suite.InDelta(10.61, cart.Checkouts[0].TotalShipping, 0.1)
 
 	// tax lines
 	suite.NotNil(cart.Checkouts[0].TaxLines)
-	suite.Equal(0.13, cart.Checkouts[0].TaxLines[0].Rate)
+	suite.InDelta(0.13, cart.Checkouts[0].TaxLines[0].Rate, 0.1)
 	suite.Equal("27.77", cart.Checkouts[0].TaxLines[0].Price)
 	suite.Equal("HST", cart.Checkouts[0].TaxLines[0].Title)
 
@@ -190,7 +190,7 @@ func (suite *CheckoutTestSuite) TestCheckoutInvalidAddress() {
 		suite.NoError(err)
 
 		// update cart shipping/billing addresses
-		fullAddress := &data.CartAddress{
+		invalidAddress := &data.CartAddress{
 			Address:   "123 Toronto Street",
 			FirstName: "user",
 			LastName:  "Localyyz",
@@ -200,16 +200,19 @@ func (suite *CheckoutTestSuite) TestCheckoutInvalidAddress() {
 			Zip:       "1234",
 		}
 		_, _, err = client.Cart.Put(ctx, &data.Cart{
-			ShippingAddress: fullAddress,
-			BillingAddress:  fullAddress,
+			ShippingAddress: invalidAddress,
+			BillingAddress:  suite.validAddress,
 			Email:           user.Email,
 		})
 		suite.NoError(err)
 	}
 
 	{
-		cart, _, _ := client.Cart.Checkout(context.Background())
+		cart, _, err := client.Cart.Checkout(context.Background())
+		require.Nil(suite.T(), err, "unexpected checkout error %v", err)
 		require.True(suite.T(), cart.HasError)
+		require.True(suite.T(), cart.ShippingAddress.HasError)
+		suite.Contains(cart.ShippingAddress.Error, "zip is not valid for Canada")
 		suite.Contains(cart.Error, "zip is not valid for Canada")
 	}
 }
@@ -287,7 +290,7 @@ func (suite *CheckoutTestSuite) TestCheckoutDoesNotShip() {
 		suite.NoError(err)
 
 		// update cart shipping/billing addresses
-		fullAddress := &data.CartAddress{
+		dnsAddress := &data.CartAddress{
 			Address:   "123 London Street",
 			FirstName: "user",
 			LastName:  "Localyyz",
@@ -297,19 +300,20 @@ func (suite *CheckoutTestSuite) TestCheckoutDoesNotShip() {
 			Zip:       "W1U 8ED",
 		}
 		_, _, err = client.Cart.Put(ctx, &data.Cart{
-			ShippingAddress: fullAddress,
-			BillingAddress:  fullAddress,
+			ShippingAddress: dnsAddress,
+			BillingAddress:  suite.validAddress,
 			Email:           user.Email,
 		})
 		suite.NoError(err)
 	}
 
 	cart, _, err := client.Cart.Checkout(context.Background())
-	require.NotNil(suite.T(), err)
-	suite.Contains(err.Error(), "country is not supported")
-
+	require.Nil(suite.T(), err, "unexpected checkout error %v", err)
+	require.NotNil(suite.T(), cart)
 	require.True(suite.T(), cart.HasError)
 	suite.Contains(cart.Error, "country is not supported")
+	require.True(suite.T(), cart.ShippingAddress.HasError)
+	suite.Contains(cart.ShippingAddress.Error, "country is not supported")
 }
 
 //TEST: apply valid discount
@@ -403,12 +407,10 @@ func (suite *CheckoutTestSuite) TestCheckoutWithDiscountFailure() {
 
 	{ // checkout
 		ctx := context.Background()
-		_, _, err := client.Cart.Checkout(ctx)
-		apiErr, ok := err.(apiclient.Err400)
-		if !ok {
-			suite.FailNow("unknown error", "expected api error got: %+v", err)
-		}
-		suite.Contains(apiErr.Message, "Unable to find a valid discount matching the code entered")
+		cart, _, err := client.Cart.Checkout(ctx)
+		require.Nil(suite.T(), err, "unexpected cart error %+v", err)
+		require.NotNil(suite.T(), cart)
+		suite.Contains(cart.Error, "Unable to find a valid discount matching the code entered")
 	}
 }
 
