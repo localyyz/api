@@ -69,7 +69,9 @@ func TestProductCategory(t *testing.T) {
 		},
 	}
 
-	ctx := context.WithValue(context.Background(), cacheKey, cache) //putting it in the context
+	// load up caches it in the context
+	ctx := context.WithValue(context.Background(), cacheKey, cache)
+	ctx = context.WithValue(ctx, cacheKeyBlacklist, make(map[string]*data.Blacklist))
 
 	tests := []tagTest{
 		{
@@ -139,6 +141,7 @@ func TestProductGender(t *testing.T) {
 		"t-shirt": &data.Category{Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryApparel, Value: "t-shirt"},
 	}
 	ctx := context.WithValue(context.Background(), cacheKey, cache)
+	ctx = context.WithValue(ctx, cacheKeyBlacklist, make(map[string]*data.Blacklist))
 
 	tests := []tagTest{
 		{

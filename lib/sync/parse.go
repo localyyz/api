@@ -245,7 +245,6 @@ func searchCategoryList(ctx context.Context, inputs ...string) data.Category {
 	Returns false if not found
 */
 func SearchBlackList(ctx context.Context, inputs ...string) bool {
-
 	blackListCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
 	if blackListCache == nil {
 		//blacklist not in context generate it here
@@ -274,4 +273,52 @@ func SearchBlackList(ctx context.Context, inputs ...string) bool {
 		}
 	}
 	return false
+}
+
+type shopifyCategorySyncer struct {
+	product        *data.Product
+	place          *data.Place
+	categoryCache  map[string]*data.Category
+	blacklistCache map[string]*data.Blacklist
+}
+
+func (s *shopifyCategorySyncer) Sync(title, tags, productType string) error {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, cacheKey, s.categoryCache)
+	ctx = context.WithValue(ctx, cacheKeyBlacklist, s.blacklistCache)
+	ctx = context.WithValue(ctx, "sync.place", s.place)
+
+	// find product category + gender
+	parsedData, err := ParseProduct(ctx, title, tags, productType)
+	if err != nil {
+		// see parse product comment for logic on blacklisting product
+		// throw away the product. and continue on
+		// TODO: keep track of how many products are rejected
+
+		//  create a logic map
+		//   - x blacklist + o category -> reject
+		//   - x blacklist + x category -> pending?
+		//   - o blacklist + o category -> pending?
+		//   - o blacklist + x category -> good
+		if err == ErrBlacklisted {
+			if len(parsedData.Value) == 0 {
+				// no category and blacklisted -> return rejected
+				return err
+			}
+			// blacklisted but has category. set the product as pending
+			// and do not yet return.
+			s.product.Status = data.ProductStatusPending
+		}
+	}
+	if len(parsedData.Value) == 0 {
+		// not blacklisted but did not find category
+		s.product.Status = data.ProductStatusPending
+	}
+	s.product.Gender = parsedData.Gender
+	s.product.Category = data.ProductCategory{
+		Type:  parsedData.Type,
+		Value: parsedData.Value,
+	}
+
+	return nil
 }

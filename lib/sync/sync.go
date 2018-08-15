@@ -7,10 +7,12 @@ import (
 )
 
 type productSyncer struct {
-	product  *data.Product
-	place    *data.Place
-	variants []*data.ProductVariant
-	images   []*data.ProductImage
+	product        *data.Product
+	place          *data.Place
+	variants       []*data.ProductVariant
+	images         []*data.ProductImage
+	categoryCache  map[string]*data.Category
+	blacklistCache map[string]*data.Blacklist
 }
 
 type Syncer interface {
@@ -27,6 +29,24 @@ type Fetcher interface {
 
 // retry syncing
 func (s *productSyncer) Retry() {
+}
+
+func (s *productSyncer) SyncCategories(title, tags, productType string) error {
+	catSync := &shopifyCategorySyncer{
+		product:        s.product,
+		place:          s.place,
+		categoryCache:  s.categoryCache,
+		blacklistCache: s.blacklistCache,
+	}
+	if err := catSync.Sync(title, tags, productType); err != nil {
+		if err == ErrBlacklisted {
+			// rejected. product category is blacklisted
+			s.FinalizeStatus(data.ProductStatusRejected)
+		}
+		// TODO: if error is detected. retry?
+		return err
+	}
+	return nil
 }
 
 func (s *productSyncer) SyncVariants(variants []*shopify.ProductVariant) error {
