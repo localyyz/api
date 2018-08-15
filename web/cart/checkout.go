@@ -128,6 +128,7 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				// some internal server error, return right away
 				lg.Alertf("[internal] checkout(%d): %v", c.ID, err)
+
 				render.Respond(w, r, err)
 				return
 			} else {
@@ -162,7 +163,6 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			render.Status(r, http.StatusBadRequest)
 		}
 		break
 	}
