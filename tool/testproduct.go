@@ -34,7 +34,6 @@ func InsertTestPurchasableProduct(w http.ResponseWriter, r *http.Request) {
 	if err := data.DB.Place.Save(place); err != nil {
 		log.Fatal(err)
 	}
-	lg.Warnf("inserted pl(id=%d) name: %s", place.ID, place.Name)
 
 	// insert into shopify_credentials
 	creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
@@ -53,9 +52,6 @@ func InsertTestPurchasableProduct(w http.ResponseWriter, r *http.Request) {
 	if err := data.DB.ShopifyCred.Save(creds); err != nil {
 		log.Fatal(err)
 	}
-
-	// delete all products
-	data.DB.Product.Find(db.Cond{"place_id": place.ID}).Delete()
 
 	// insert testable product
 	product := &data.Product{
@@ -93,5 +89,6 @@ func InsertTestPurchasableProduct(w http.ResponseWriter, r *http.Request) {
 	if err := data.DB.ProductImage.Save(img); err != nil {
 		log.Fatal(err)
 	}
+	lg.Warnf("inserted pl(id=%d) name: %s", place.ID, place.Name)
 
 }
