@@ -79,12 +79,12 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			return errors.Wrap(err, "failed to lock product for update")
 		}
 
-		listenerI := ctx.Value(SyncListenerCtxKey)
+		listener, _ := ctx.Value(SyncListenerCtxKey).(Listener)
 
 		// async syncing of variants / product images
 		// NOTE: this go func should have nothing to do with the context.
 		go func() {
-			if listener, ok := listenerI.(Listener); ok {
+			if listener != nil {
 				// inform caller that we're done
 				defer func() { listener <- 1 }()
 			}
@@ -142,18 +142,17 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		// pull the caches out of context.
-		categoryCache := ctx.Value("category.cache").(map[string]*data.Category)
-		blacklistCache := ctx.Value("category.blacklist").(map[string]*data.Blacklist)
-		listenerI := ctx.Value(SyncListenerCtxKey)
+		categoryCache, _ := ctx.Value(cacheKey).(map[string]*data.Category)
+		blacklistCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
+		listener, _ := ctx.Value(SyncListenerCtxKey).(Listener)
 
 		// async syncing of variants / product images
 		// NOTE: this go func should have nothing to do with the context.
 		go func() {
-			if listener, ok := listenerI.(Listener); ok {
+			if listener != nil {
 				// inform caller that we're done
 				defer func() { listener <- 1 }()
 			}
-
 			// create syncer product scope
 			syncer := &productSyncer{
 				place:          place,
@@ -161,39 +160,10 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 				categoryCache:  categoryCache,
 				blacklistCache: blacklistCache,
 			}
-
-			// find product category + gender
-			parsedData, err := ParseProduct(ctx, p.Title, p.Tags, p.ProductType)
-			if err != nil {
-				// see parse product comment for logic on blacklisting product
-				// throw away the product. and continue on
-				// TODO: keep track of how many products are rejected
-
-				//  create a logic map
-				//   - x blacklist + o category -> reject
-				//   - x blacklist + x category -> pending?
-				//   - o blacklist + o category -> pending?
-				//   - o blacklist + x category -> good
-				if err == ErrBlacklisted {
-					if len(parsedData.Value) == 0 {
-						syncer.FinalizeStatus(data.ProductStatusRejected)
-						// no category and blacklisted -> return
-						return
-					}
-					// blacklisted but has category
-					syncer.product.Status = data.ProductStatusPending
-				}
+			if err := syncer.SyncCategories(p.Title, p.Tags, p.ProductType); err != nil {
+				lg.Warnf("shopify sync categories: %v", err)
+				return
 			}
-			if len(parsedData.Value) == 0 {
-				// not blacklisted but no category
-				syncer.product.Status = data.ProductStatusPending
-			}
-			syncer.product.Gender = parsedData.Gender
-			syncer.product.Category = data.ProductCategory{
-				Type:  parsedData.Type,
-				Value: parsedData.Value,
-			}
-
 			if err := syncer.SyncVariants(p.Variants); err != nil {
 				lg.Warnf("shopify add variant: %v", err)
 				return
