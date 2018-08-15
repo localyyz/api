@@ -23,7 +23,7 @@ func Routes() chi.Router {
 			r.Post("/favourite", AddFavouriteProduct)
 			r.Delete("/favourite", DeleteFavouriteProduct)
 
-			r.Route("/collection", func(r chi.Router) {
+			r.Route("/collections", func(r chi.Router) {
 				r.Delete("/", DeleteFromAllCollections)
 				r.Route("/{collectionID}", func(r chi.Router) {
 					r.Use(user.UserCollectionCtx)

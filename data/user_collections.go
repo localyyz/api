@@ -31,7 +31,7 @@ func (store UserCollectionStore) FindAll(cond db.Cond) ([]*UserCollection, error
 	return list, nil
 }
 
-func (store UserCollectionStore) FindByID(userID, collectionID int64) (*UserCollection, error) {
+func (store UserCollectionStore) FindByUserAndCollectionID(userID, collectionID int64) (*UserCollection, error) {
 	var userCollection *UserCollection
 	err := store.Find(db.Cond{"id": collectionID, "user_id": userID, "deleted_at": db.IsNull()}).One(&userCollection)
 	return userCollection, err

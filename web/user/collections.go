@@ -3,6 +3,7 @@ package user
 import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"context"
 	"github.com/go-chi/chi"
@@ -11,7 +12,6 @@ import (
 	"github.com/pressly/lg"
 	"net/http"
 	"strconv"
-	"time"
 	"upper.io/db.v3"
 )
 
@@ -24,10 +24,13 @@ func (c *newCollection) Bind(r *http.Request) error {
 }
 
 type newCollectionProduct struct {
-	ProductID int64 `json:"productId"`
+	ProductID *int64 `json:"productId"`
 }
 
 func (c *newCollectionProduct) Bind(r *http.Request) error {
+	if c.ProductID == nil {
+		return errors.New("Product id is nil")
+	}
 	return nil
 }
 
@@ -42,7 +45,7 @@ func UserCollectionCtx(next http.Handler) http.Handler {
 
 		ctx := r.Context()
 		user := ctx.Value("session.user").(*data.User)
-		userCollection, err := data.DB.UserCollection.FindByID(user.ID, collectionID)
+		userCollection, err := data.DB.UserCollection.FindByUserAndCollectionID(user.ID, collectionID)
 		if err != nil {
 			render.Render(w, r, api.ErrBadID)
 			return
@@ -65,30 +68,37 @@ func CreateUserCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userCollection := data.UserCollection{
+	userCollection := &data.UserCollection{
 		UserID: user.ID,
 		Title:  payload.Title,
 	}
 
-	err := data.DB.UserCollection.Create(userCollection)
+	err := data.DB.UserCollection.Save(userCollection)
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	render.Status(r, http.StatusCreated)
+	render.Render(w, r, presenter.NewUserCollection(ctx, userCollection))
 }
 
 // ListUserCollections returns a list of the user's collections
 func ListUserCollections(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
+	cursor := ctx.Value("cursor").(*api.Page)
 
-	userCollections, err := data.DB.UserCollection.FindByUserID(user.ID)
+	res := data.DB.UserCollection.Find(db.Cond{"user_id": user.ID, "deleted_at": db.IsNull()}).OrderBy("updated_at DESC")
+	paginate := cursor.UpdateQueryUpper(res)
+
+	var userCollections []*data.UserCollection
+	err := paginate.All(&userCollections)
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
+	cursor.Update(userCollections)
 
 	render.Respond(w, r, presenter.NewUserCollectionList(ctx, userCollections))
 }
@@ -103,7 +113,6 @@ func GetUserCollection(w http.ResponseWriter, r *http.Request) {
 
 // GetUserCollectionProducts returns the products from a specific collection
 func GetUserCollectionProducts(w http.ResponseWriter, r *http.Request) {
-
 	ctx := r.Context()
 	collection := ctx.Value("user.collection").(*data.UserCollection)
 	cursor := ctx.Value("cursor").(*api.Page)
@@ -124,7 +133,9 @@ func GetUserCollectionProducts(w http.ResponseWriter, r *http.Request) {
 		productIDs = append(productIDs, uP.ProductID)
 	}
 
-	products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
+	var products []*data.Product
+	res = data.DB.Product.Find(db.Cond{"id": productIDs}).OrderBy(data.MaintainOrder("id", productIDs))
+	err = res.All(&products)
 	if err != nil {
 		render.Respond(w, r, err)
 		return
@@ -145,19 +156,24 @@ func UpdateUserCollection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Title == collection.Title {
+		render.Respond(w, r, presenter.NewUserCollection(ctx, collection))
 		return
 	}
 
 	collection.Title = payload.Title
+	collection.UpdatedAt = data.GetTimeUTCPointer()
+
 	err := data.DB.UserCollection.Save(collection)
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
+
+	render.Render(w, r, presenter.NewUserCollection(ctx, collection))
 }
 
-// AddTouserCollectionProducts adds a product to an existing collection
-func AddToUserCollectionProducts(w http.ResponseWriter, r *http.Request) {
+// CreatedProductInCollection adds a product to an existing collection
+func CreateProductInCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	collection := ctx.Value("user.collection").(*data.UserCollection)
 
@@ -167,13 +183,21 @@ func AddToUserCollectionProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if exists, _ := data.DB.Product.Find(db.Cond{"id": payload.ProductID}).Exists(); !exists {
+	var product *data.Product
+	res := data.DB.Product.Find(db.Cond{"id": payload.ProductID}).Limit(1)
+	err := res.One(&product)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	if exists, _ := res.Exists(); !exists {
 		render.Respond(w, r, errors.New("Product does not exist"))
 		return
 	}
 
 	var userCollectionProduct *data.UserCollectionProduct
-	res := data.DB.UserCollectionProduct.Find(db.Cond{"collection_id": collection.ID, "product_id": payload.ProductID})
+	res = data.DB.UserCollectionProduct.Find(db.Cond{"collection_id": collection.ID, "product_id": payload.ProductID})
 	if exists, _ := res.Exists(); exists {
 		res.One(&userCollectionProduct)
 
@@ -192,7 +216,7 @@ func AddToUserCollectionProducts(w http.ResponseWriter, r *http.Request) {
 	} else {
 		c := data.UserCollectionProduct{
 			CollectionID: collection.ID,
-			ProductID:    payload.ProductID,
+			ProductID:    *payload.ProductID,
 		}
 
 		err := data.DB.UserCollectionProduct.Create(c)
@@ -200,9 +224,32 @@ func AddToUserCollectionProducts(w http.ResponseWriter, r *http.Request) {
 			render.Respond(w, r, err)
 			return
 		}
-
-		w.WriteHeader(http.StatusCreated)
 	}
+
+	collection.UpdatedAt = data.GetTimeUTCPointer()
+	err = data.DB.UserCollection.Save(collection)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	err = stash.IncrUserCollProdCount(collection.ID)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	savings := product.Price * product.DiscountPct
+	err = stash.IncrUserCollSavings(collection.ID, savings)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	toReturn := presenter.NewProduct(ctx, product)
+
+	w.WriteHeader(http.StatusCreated)
+	render.Render(w, r, toReturn)
 }
 
 func DeleteUserCollection(w http.ResponseWriter, r *http.Request) {
@@ -210,8 +257,7 @@ func DeleteUserCollection(w http.ResponseWriter, r *http.Request) {
 	collection := ctx.Value("user.collection").(*data.UserCollection)
 
 	// soft delete
-	now := time.Now()
-	collection.DeletedAt = &now
+	collection.DeletedAt = data.GetTimeUTCPointer()
 
 	err := data.DB.UserCollection.Save(collection)
 	if err != nil {

@@ -53,7 +53,7 @@ func collectionRoutes() chi.Router {
 
 		r.Route("/products", func(r chi.Router) {
 			r.Get("/", GetUserCollectionProducts)
-			r.Post("/", AddToUserCollectionProducts)
+			r.Post("/", CreateProductInCollection)
 		})
 	})
 
