@@ -11,9 +11,9 @@ import (
 
 type CollectionUser struct {
 	*data.UserCollection
-	TotalProducts int64        `json:"productCount"`
-	Savings       float64      `json:"savings"`
-	Owner         *UserPreview `json:"owner"`
+	TotalProducts int64   `json:"productCount"`
+	Savings       float64 `json:"savings"`
+	Owner         *User   `json:"owner"`
 
 	ctx context.Context
 }
@@ -30,7 +30,7 @@ func NewUserCollection(ctx context.Context, collection *data.UserCollection) *Co
 
 	// append the owner
 	user := ctx.Value("session.user").(*data.User)
-	c.Owner = NewUserPreview(ctx, user)
+	c.Owner = NewUser(ctx, user)
 
 	// get the product count and savings from redis
 	c.TotalProducts, _ = stash.GetUserCollProdCount(collection.ID)

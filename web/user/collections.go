@@ -29,7 +29,7 @@ type newCollectionProduct struct {
 
 func (c *newCollectionProduct) Bind(r *http.Request) error {
 	if c.ProductID == nil {
-		return errors.New("Product id is nil")
+		return errors.New("product id is nil")
 	}
 	return nil
 }
