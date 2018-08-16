@@ -1,7 +1,9 @@
 package product
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/render"
 
@@ -17,14 +19,46 @@ func ListRandomProduct(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
-	cursor.Limit = 20 // hard coded
-	query := data.DB.Select("p.*").
-		From("products p").
-		Where(db.Cond{
+	hardCond := db.Raw(`tsv @@ (to_tsquery($$puma$$) ||
+				to_tsquery('simple', $$puma:*$$) ||
+				to_tsquery($$puma:*$$) ||
+				to_tsquery('simple', $$puma$$) ||
+				
+				to_tsquery($$nike$$) ||
+				to_tsquery('simple', $$nike:*$$) ||
+				to_tsquery($$nike:*$$) ||
+				to_tsquery('simple', $$nike$$) ||
+
+				to_tsquery($$yeezy$$) ||
+				to_tsquery('simple', $$yeezy:*$$) ||
+				to_tsquery($$yeezy:*$$) ||
+				to_tsquery('simple', $$yeezy$$) ||
+				
+				to_tsquery($$backpacks$$) ||
+				to_tsquery('simple', $$backpacks:*$$) ||
+				to_tsquery($$backpacks:*$$) ||
+				to_tsquery('simple', $$backpacks$$) ||
+				
+				to_tsquery($$jordans$$) ||
+				to_tsquery('simple', $$jordans:*$$) ||
+				to_tsquery($$jordans:*$$) ||
+				to_tsquery('simple', $$jordans$$))
+	`)
+	cond := db.And(
+		db.Cond{
 			"status": data.ProductStatusApproved,
 			"score":  db.Gte(4),
-		}).
-		OrderBy(db.Raw("RANDOM()"))
+		},
+		hardCond,
+	)
+
+	t := time.Now().Truncate(time.Hour).Unix()
+	cursor.Limit = 20 // hard coded
+	cursor.ItemTotal = 10000
+	query := data.DB.Select("p.*").
+		From("products p").
+		Where(cond).
+		OrderBy(db.Raw(fmt.Sprintf("%d %% id", t)), "-score")
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
