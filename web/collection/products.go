@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -42,11 +41,10 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 		db.Cond{"p.status": data.ProductStatusApproved},
 	)
 
-	t := time.Now().Truncate(time.Hour).Unix()
 	query := data.DB.Select(db.Raw("distinct p.*")).
 		From("products p").
 		Where(cond).
-		OrderBy(db.Raw(fmt.Sprintf("%d %% id", t)), "-score")
+		OrderBy("p.score DESC", "p.created_at DESC")
 
 	query = filterSort.UpdateQueryBuilder(query)
 	paginate := cursor.UpdateQueryBuilder(query)

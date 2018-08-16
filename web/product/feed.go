@@ -34,10 +34,10 @@ func ListRandomProduct(w http.ResponseWriter, r *http.Request) {
 				to_tsquery($$yeezy:*$$) ||
 				to_tsquery('simple', $$yeezy$$) ||
 				
-				to_tsquery($$backpacks$$) ||
-				to_tsquery('simple', $$backpacks:*$$) ||
-				to_tsquery($$backpacks:*$$) ||
-				to_tsquery('simple', $$backpacks$$) ||
+				to_tsquery($$supreme$$) ||
+				to_tsquery('simple', $$supreme:*$$) ||
+				to_tsquery($$supreme:*$$) ||
+				to_tsquery('simple', $$supreme$$) ||
 				
 				to_tsquery($$jordans$$) ||
 				to_tsquery('simple', $$jordans:*$$) ||
