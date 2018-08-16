@@ -214,7 +214,6 @@ func ValidateSyncProducts(w http.ResponseWriter, r *http.Request) {
 			db.Cond{
 				"place_id": place.ID,
 				"status":   3,
-				"id":       db.Gt(261303),
 			},
 		).
 		OrderBy("id").

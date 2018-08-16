@@ -132,4 +132,4 @@ build:
 	GOGC=off go build -gcflags=-trimpath=${GOPATH} -asmflags=-trimpath=${GOPATH} -i -o ./bin/api ./cmd/api/main.go
 
 connect-prod:
-	@ssh -v -nNT -L 1234:localhost:5432 root@localyyz.db
+	@ssh -v -nNT -L 1234:localhost:5432 root@db

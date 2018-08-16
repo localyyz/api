@@ -19,7 +19,7 @@ func ListRandomProduct(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
-	hardCond := db.Raw(`tsv @@ (to_tsquery($$puma$$) ||
+	hardCond := db.Raw(`p.tsv @@ (to_tsquery($$puma$$) ||
 				to_tsquery('simple', $$puma:*$$) ||
 				to_tsquery($$puma:*$$) ||
 				to_tsquery('simple', $$puma$$) ||
@@ -48,8 +48,13 @@ func ListRandomProduct(w http.ResponseWriter, r *http.Request) {
 	`)
 	cond := db.And(
 		db.Cond{
-			"status": data.ProductStatusApproved,
-			"score":  db.Gte(4),
+			"p.status": data.ProductStatusApproved,
+			"p.score":  db.Gte(4),
+			db.Raw("p.category->>'type'"): []data.CategoryType{
+				data.CategoryShoe,
+				data.CategorySneaker,
+				data.CategoryApparel,
+			},
 		},
 		hardCond,
 	)
