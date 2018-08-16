@@ -15,19 +15,19 @@ import (
 	"upper.io/db.v3"
 )
 
-type newCollection struct {
+type NewUserCollection struct {
 	Title string `json:"title"`
 }
 
-func (c *newCollection) Bind(r *http.Request) error {
+func (c *NewUserCollection) Bind(r *http.Request) error {
 	return nil
 }
 
-type newCollectionProduct struct {
+type NewUserCollectionProduct struct {
 	ProductID *int64 `json:"productId"`
 }
 
-func (c *newCollectionProduct) Bind(r *http.Request) error {
+func (c *NewUserCollectionProduct) Bind(r *http.Request) error {
 	if c.ProductID == nil {
 		return errors.New("product id is nil")
 	}
@@ -62,7 +62,7 @@ func CreateUserCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
-	var payload newCollection
+	var payload NewUserCollection
 	if err := render.Bind(r, &payload); err != nil {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
@@ -149,7 +149,7 @@ func UpdateUserCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	collection := ctx.Value("user.collection").(*data.UserCollection)
 
-	var payload newCollection
+	var payload NewUserCollection
 	if err := render.Bind(r, &payload); err != nil {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
@@ -177,7 +177,7 @@ func CreateProductInCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	collection := ctx.Value("user.collection").(*data.UserCollection)
 
-	var payload newCollectionProduct
+	var payload NewUserCollectionProduct
 	if err := render.Bind(r, &payload); err != nil {
 		render.Respond(w, r, api.ErrInvalidRequest(err))
 		return
@@ -233,18 +233,10 @@ func CreateProductInCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = stash.IncrUserCollProdCount(collection.ID)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
+	stash.IncrUserCollProdCount(collection.ID)
 
 	savings := product.Price * product.DiscountPct
-	err = stash.IncrUserCollSavings(collection.ID, savings)
-	if err != nil {
-		render.Respond(w, r, err)
-		return
-	}
+	stash.IncrUserCollSavings(collection.ID, savings)
 
 	toReturn := presenter.NewProduct(ctx, product)
 

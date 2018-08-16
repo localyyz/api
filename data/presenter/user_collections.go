@@ -33,7 +33,8 @@ func NewUserCollection(ctx context.Context, collection *data.UserCollection) *Co
 	c.Owner = NewUser(ctx, user)
 
 	// get the product count and savings from redis
-	c.TotalProducts, _ = stash.GetUserCollProdCount(collection.ID)
+	total, _ := stash.GetUserCollProdCount(collection.ID)
+	c.TotalProducts = total
 
 	// rounding to 2 decimal places
 	savings, _ := stash.GetUserCollSavings(collection.ID)

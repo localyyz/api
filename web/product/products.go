@@ -280,17 +280,9 @@ func DeleteProductFromCollection(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = stash.DecrUserCollProdCount(collection.ID)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
+		stash.DecrUserCollProdCount(collection.ID)
 
 		savings := product.Price * product.DiscountPct
-		err := stash.DecrUserCollSavings(collection.ID, savings)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
+		stash.DecrUserCollSavings(collection.ID, savings)
 	}
 }
