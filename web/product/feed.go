@@ -50,10 +50,10 @@ func ListRandomProduct(w http.ResponseWriter, r *http.Request) {
 		db.Cond{
 			"p.status": data.ProductStatusApproved,
 			"p.score":  db.Gte(4),
-			db.Raw("p.category->>'type'"): []data.CategoryType{
-				data.CategoryShoe,
-				data.CategorySneaker,
-				data.CategoryApparel,
+			db.Raw("p.category->>'type'"): []string{
+				"apparel",
+				"shoes",
+				"sneakers",
 			},
 		},
 		hardCond,
