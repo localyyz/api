@@ -309,21 +309,21 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		case "size":
 			// TODO: clean this up? is there a better way?
 			sizeSelector := data.DB.
-				Select("product_id").
-				From("product_variants").
+				Select("pv.product_id").
+				From("product_variants pv").
 				Where(db.Cond{
-					db.Raw("lower(etc->>'size')"): strings.ToLower(f.Value.(string)),
+					db.Raw("lower(pv.etc->>'size')"): strings.ToLower(f.Value.(string)),
 				})
-			selector = selector.Where(db.Cond{"id IN": sizeSelector})
+			selector = selector.Where(db.Cond{"p.id IN": sizeSelector})
 		case "color":
 			// TODO: clean this up? is there a better way?
 			colorSelector := data.DB.
-				Select("product_id").
-				From("product_variants").
+				Select("pv.product_id").
+				From("product_variants pv").
 				Where(db.Cond{
-					db.Raw("lower(etc->>'color')"): strings.ToLower(f.Value.(string)),
+					db.Raw("lower(pv.etc->>'color')"): strings.ToLower(f.Value.(string)),
 				})
-			selector = selector.Where(db.Cond{"id IN": colorSelector})
+			selector = selector.Where(db.Cond{"p.id IN": colorSelector})
 		case "price":
 			if f.MinValue != nil {
 				fConds = append(fConds, db.Cond{"p.price": db.Gte(f.MinValue)})
