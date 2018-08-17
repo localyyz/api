@@ -35,6 +35,7 @@ const DealCtxKey = "presenter.deal"
 func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
 	if len(c.Products) > 0 {
 		p := c.Products[0]
+		p.Render(w, r)
 		v := p.Variants[0]
 		c.Title = p.Title
 		c.Description = fmt.Sprintf(
