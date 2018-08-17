@@ -29,13 +29,41 @@ func Routes() chi.Router {
 	return r
 }
 
+type keywordPartType uint32
+
+const (
+	_ keywordPartType = iota
+	keywordPartTypeGender
+	keywordPartTypeCategory
+)
+
 type omniSearchRequest struct {
 	Query string `json:"query,required"`
 	// Tags to filter out
 	FilterTags []string `json:"filterTags,omitempty"`
 	queryParts []string
 
+	// keyword parts used to generate queries from keywords
+	gender   *data.ProductGender
+	category *data.CategoryType
+
 	rawParts []string
+}
+
+// filter tags for genders
+func parseGender(t string) data.ProductGender {
+	switch t {
+	case "man", "male", "gentleman":
+		return data.ProductGenderMale
+	case "woman", "female", "lady":
+		return data.ProductGenderFemale
+	case "kid":
+		return data.ProductGenderUnisex
+	case "sexy":
+		// maybe female.
+		return data.ProductGenderFemale
+	}
+	return data.ProductGenderUnknown
 }
 
 func (o *omniSearchRequest) Bind(r *http.Request) error {
@@ -58,8 +86,21 @@ func (o *omniSearchRequest) Bind(r *http.Request) error {
 		if t == "" {
 			continue
 		}
+
+		// check if this term is a "keyword"
+		if v := parseGender(t); v != data.ProductGenderUnknown {
+			o.gender = &v
+			continue
+		}
+
+		if v, ok := data.CategoryLookup[t]; ok {
+			o.category = &v
+			continue
+		}
+
 		// set up for partial prefix matching
 		qSet.Add(t)
+
 	}
 	if qSet.Size() == 0 {
 		return errors.New("invalid search query")
@@ -161,6 +202,12 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 		"p.deleted_at": db.IsNull(),
 		"p.status":     data.ProductStatusApproved,
 		"p.score":      db.Gt(0),
+	}
+	if p.gender != nil {
+		cond["p.gender"] = *p.gender
+	}
+	if p.category != nil {
+		cond[db.Raw("p.category->>'type'")] = p.category.String()
 	}
 	query := data.DB.Select(
 		db.Raw("p.id"),

@@ -61,6 +61,20 @@ var (
 		"newin",
 	}
 
+	CategoryLookup = map[string]CategoryType{
+		"accessory": CategoryAccessory,
+		"apparel":   CategoryApparel,
+		"handbag":   CategoryHandbag,
+		"jewelry":   CategoryJewelry,
+		"shoe":      CategoryShoe,
+		"cosmetic":  CategoryCosmetic,
+		"fragrance": CategoryFragrance,
+		"bag":       CategoryBag,
+		"lingerie":  CategoryLingerie,
+		"sneaker":   CategorySneaker,
+		"swimwear":  CategorySwimwear,
+	}
+
 	Categories = []CategoryType{
 		CategoryAccessory,
 		CategoryApparel,
