@@ -11,16 +11,37 @@ import (
 	db "upper.io/db.v3"
 )
 
-func discountCtx(min, max float64) func(next http.Handler) http.Handler {
-	return middleware.WithValue(
-		"discountCond",
-		db.Cond{
-			"discount_pct": db.Between(min, max),
-		},
-	)
+type segmentType string
+
+const (
+	segmentTypeLuxury   = "lux"
+	segmentTypeBoutique = "bou"
+	segmentTypeSmart    = "smt"
+)
+
+func segmentCtx(v segmentType) func(next http.Handler) http.Handler {
+	var cond db.Cond
+	switch v {
+	case segmentTypeBoutique:
+		cond = db.Cond{
+			"m.collection": data.MerchantApprovalCollectionBoutique,
+			"p.price":      db.Between(30, 430),
+		}
+	case segmentTypeLuxury:
+		cond = db.Cond{
+			"m.collection": data.MerchantApprovalCollectionLuxury,
+			"p.price":      db.Gt(150),
+		}
+	case segmentTypeSmart:
+		cond = db.Cond{
+			"m.collection": data.MerchantApprovalCollectionSmart,
+			"p.price":      db.Lt(150),
+		}
+	}
+	return middleware.WithValue("segmentCond", cond)
 }
 
-func ListDiscountProducts(w http.ResponseWriter, r *http.Request) {
+func ListSegmentProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
@@ -31,12 +52,13 @@ func ListDiscountProducts(w http.ResponseWriter, r *http.Request) {
 			"p.deleted_at": nil,
 		},
 	)
-	if discountCond, ok := ctx.Value("discountCond").(db.Cond); ok {
-		cond = cond.And(discountCond)
+	if segmentCond, ok := ctx.Value("segmentCond").(db.Cond); ok {
+		cond = cond.And(segmentCond)
 	}
 
 	query := data.DB.Select("p.*").
 		From("products p").
+		LeftJoin("merchant_approvals m").On("m.place_id = p.place_id").
 		Where(cond).
 		OrderBy("p.id desc", "p.score DESC")
 	query = filterSort.UpdateQueryBuilder(query)

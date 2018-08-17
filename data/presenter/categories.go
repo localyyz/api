@@ -119,8 +119,8 @@ func NewCategoryList(ctx context.Context, categoryTypes []data.CategoryType) []r
 	ctx = context.WithValue(ctx, "subcat", subcatMap)
 	for _, c := range categoryTypes {
 		var presented *Category
-		if c == data.CategorySale {
-			// TODO: make this better
+		switch c {
+		case data.CategorySale:
 			presented = &Category{
 				Type: "sales",
 				Values: []*Category{
@@ -129,7 +129,16 @@ func NewCategoryList(ctx context.Context, categoryTypes []data.CategoryType) []r
 					{Type: "20% OFF", ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/20.png?14969378164451378728"},
 				},
 			}
-		} else {
+		case data.CategoryCollection:
+			presented = &Category{
+				Type: "collections",
+				Values: []*Category{
+					{Type: "smart", ImageURL: "https://cdn.shopify.com/s/files/1/0835/3729/products/Oversized_Hoodies_-4_eda921cf-882d-479f-8d07-ed1c070b0a0a.jpg"},
+					{Type: "boutique", ImageURL: "https://cdn.shopify.com/s/files/1/1066/9348/products/UNG85206_red_0.jpg"},
+					{Type: "designer", ImageURL: "https://cdn.shopify.com/s/files/1/0444/7969/products/mens-jackets-coats-hexagon-stitch-brother-jacket-1.jpg"},
+				},
+			}
+		default:
 			presented = NewCategory(ctx, c)
 		}
 		if len(presented.Values) > 0 {

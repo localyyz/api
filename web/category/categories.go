@@ -47,6 +47,7 @@ func CategoryTypeCtx(next http.Handler) http.Handler {
 var (
 	displayCategories = []data.CategoryType{
 		data.CategorySale, // sale
+		data.CategoryCollection,
 		data.CategoryApparel,
 		data.CategoryHandbag,
 		data.CategoryShoe,
@@ -88,7 +89,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	query := data.DB.Select("p.*").
 		From("products p").
 		Where(cond).
-		OrderBy("p.score DESC")
+		OrderBy("p.id DESC", "p.score DESC")
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product

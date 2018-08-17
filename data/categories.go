@@ -38,8 +38,9 @@ const (
 	CategorySwimwear                      // 12
 
 	// Special non DB category
-	CategorySale  // 13
-	CategoryNewIn // 14
+	CategorySale       // 13
+	CategoryNewIn      // 14
+	CategoryCollection // 15
 )
 
 var (
@@ -59,6 +60,7 @@ var (
 		"swimwear",
 		"sales",
 		"newin",
+		"collections",
 	}
 
 	CategoryLookup = map[string]CategoryType{
@@ -90,6 +92,7 @@ var (
 		CategorySwimwear,
 		CategorySale,
 		CategoryNewIn,
+		CategoryCollection,
 	}
 )
 
