@@ -15,6 +15,10 @@ func Routes() chi.Router {
 	r.With(discountCtx(0.50, 0.7)).Route("/50% OFF/products", api.FilterRoutes(ListDiscountProducts))
 	r.With(discountCtx(0.70, 1)).Route("/70% OFF/products", api.FilterRoutes(ListDiscountProducts))
 
+	r.With(segmentCtx(segmentTypeBoutique)).Route("/boutique/products", api.FilterRoutes(ListSegmentProducts))
+	r.With(segmentCtx(segmentTypeLuxury)).Route("/designer/products", api.FilterRoutes(ListSegmentProducts))
+	r.With(segmentCtx(segmentTypeSmart)).Route("/smart/products", api.FilterRoutes(ListSegmentProducts))
+
 	r.Route("/{categoryType}", func(r chi.Router) {
 		r.Use(CategoryTypeCtx)
 		r.Get("/", GetCategory)

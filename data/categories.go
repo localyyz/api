@@ -38,8 +38,9 @@ const (
 	CategorySwimwear                      // 12
 
 	// Special non DB category
-	CategorySale  // 13
-	CategoryNewIn // 14
+	CategorySale       // 13
+	CategoryNewIn      // 14
+	CategoryCollection // 15
 )
 
 var (
@@ -59,6 +60,21 @@ var (
 		"swimwear",
 		"sales",
 		"newin",
+		"collections",
+	}
+
+	CategoryLookup = map[string]CategoryType{
+		"accessory": CategoryAccessory,
+		"apparel":   CategoryApparel,
+		"handbag":   CategoryHandbag,
+		"jewelry":   CategoryJewelry,
+		"shoe":      CategoryShoe,
+		"cosmetic":  CategoryCosmetic,
+		"fragrance": CategoryFragrance,
+		"bag":       CategoryBag,
+		"lingerie":  CategoryLingerie,
+		"sneaker":   CategorySneaker,
+		"swimwear":  CategorySwimwear,
 	}
 
 	Categories = []CategoryType{
@@ -76,6 +92,7 @@ var (
 		CategorySwimwear,
 		CategorySale,
 		CategoryNewIn,
+		CategoryCollection,
 	}
 )
 
