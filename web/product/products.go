@@ -100,7 +100,7 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	u, _ := url.Parse("http://localhost:5339/trend")
+	u, _ := url.Parse("http://reporter:5339/trend")
 	u.RawQuery = cursor.URL.RawQuery
 	resp, err := http.DefaultClient.Get(u.String())
 	if err != nil {
