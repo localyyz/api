@@ -6,10 +6,12 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
+	"github.com/pressly/lg"
 )
 
 const (
 	LastDecayKey         = "_lastdecay"
+	decayTicker          = 5 * time.Minute
 	scrubFilter  float64 = 0.0001
 )
 
@@ -32,28 +34,38 @@ func NewSet(name string, lifetime time.Duration, mod int64) (*Set, error) {
 		modifier:     mod,
 		lastDecayKey: name + LastDecayKey,
 	}
+
+	// start a decay timer
+	go func() {
+		for {
+			select {
+			case <-time.After(decayTicker):
+				if err := s.decay(); err != nil {
+					lg.Warnf("%s failed to decay %v", s.Name, err)
+				}
+				if err := s.scrub(); err != nil {
+					lg.Warnf("%s failed to decay %v", s.Name, err)
+				}
+				lg.Infof("tick. %s decayed and scrubbed", s.Name)
+			}
+		}
+	}()
+
 	return s, nil
 }
 
 func (s *Set) Init() error {
 	// TODO: check errors
 	s.UpdateDecayTime()
-
 	return nil
 }
 
 func (s *Set) AllScores() (map[string]float64, error) {
-	return s.Scores(-1)
+	return s.Scores(-1, 0)
 }
 
-func (s *Set) Scores(limit int) (map[string]float64, error) {
-	if err := s.decay(); err != nil {
-		return nil, err
-	}
-	if err := s.scrub(); err != nil {
-		return nil, err
-	}
-	return s.FetchN(limit)
+func (s *Set) Scores(limit, offset int) (map[string]float64, error) {
+	return s.FetchN(limit, offset)
 }
 
 func (s *Set) decay() error {
@@ -96,15 +108,21 @@ func (s *Set) Fetch() (map[string]float64, error) {
 	conn := DefaultClient.pool.Get()
 	defer conn.Close()
 
-	return s.FetchN(-1)
+	return s.FetchN(-1, 0)
 }
 
 // Fetch retrieves the first <limit> number of scores from highest to lowest
-func (s *Set) FetchN(limit int) (map[string]float64, error) {
+func (s *Set) FetchN(limit, offset int) (map[string]float64, error) {
 	conn := DefaultClient.pool.Get()
 	defer conn.Close()
 
-	return Float64Map(conn.Do("ZREVRANGE", s.Name, 0, limit, "WITHSCORES"))
+	return Float64Map(conn.Do(
+		"ZREVRANGE",
+		s.Name,
+		offset,
+		offset+limit,
+		"WITHSCORES",
+	))
 }
 
 // Incr increments the member value by 1

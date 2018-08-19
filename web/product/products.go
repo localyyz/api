@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/go-chi/chi"
@@ -99,7 +100,9 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	resp, err := http.DefaultClient.Get("http://reporter:5339/trend")
+	u, _ := url.Parse("http://localhost:5339/trend")
+	u.RawQuery = cursor.URL.RawQuery
+	resp, err := http.DefaultClient.Get(u.String())
 	if err != nil {
 		render.Respond(w, r, []struct{}{})
 		return
@@ -116,25 +119,24 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
+	// paginate is determined by the result
+	cursor.Update(result.IDs)
 
 	query := data.DB.Select("p.*").
 		From("products p").
 		Where(db.Cond{
 			"p.status": data.ProductStatusApproved,
 			"p.id":     result.IDs,
-		}).
-		OrderBy(data.MaintainOrder("p.id", result.IDs))
+		})
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
-	if !filterSort.HasFilter() {
-		paginate := cursor.UpdateQueryBuilder(query)
-		if err := paginate.All(&products); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-		cursor.Update(products)
+	if err := query.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
 	}
+	cursor.ItemTotal = 10000
+	cursor.NextPage = true
 
 	render.RenderList(w, r, presenter.NewProductList(ctx, products))
 }

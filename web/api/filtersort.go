@@ -220,7 +220,7 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 			OrderBy(db.Raw("count(1) DESC")).
 			Limit(30).
 			Query()
-	} else {
+	} else if o.selector != nil {
 		rows, err = o.selector.
 			SetColumns(o.filterBy).
 			Where(db.Cond{
@@ -230,6 +230,8 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 			OrderBy(db.Raw("count(1) DESC")).
 			Limit(50).
 			Query()
+	} else {
+		err = errors.New("no selection query setup")
 	}
 
 	if err != nil {
