@@ -3,6 +3,7 @@ package product
 import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"bitbucket.org/moodie-app/moodie-api/web/auth"
+	"bitbucket.org/moodie-app/moodie-api/web/user"
 	"github.com/go-chi/chi"
 )
 
@@ -22,6 +23,14 @@ func Routes() chi.Router {
 			r.Use(auth.DeviceCtx)
 			r.Post("/favourite", AddFavouriteProduct)
 			r.Delete("/favourite", DeleteFavouriteProduct)
+
+			r.Route("/collections", func(r chi.Router) {
+				r.Delete("/", DeleteFromAllCollections)
+				r.Route("/{collectionID}", func(r chi.Router) {
+					r.Use(user.UserCollectionCtx)
+					r.Delete("/", DeleteProductFromCollection)
+				})
+			})
 		})
 	})
 
