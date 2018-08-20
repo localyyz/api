@@ -102,17 +102,13 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 
 	// upgrade user to a full user
 	if sessionUser.Network == "shadow" {
-		// TODO: --> let's test this throughly <--
-		newUser := &data.User{
-			ID:          sessionUser.ID,
-			Username:    cart.Email,
-			Email:       cart.Email,
-			DeviceToken: &(sessionUser.Username),
-			Name:        fmt.Sprintf("%s %s", cart.BillingAddress.FirstName, cart.BillingAddress.LastName),
-			Network:     "email",
-		}
-		// TODO: how does the user login here??
-		data.DB.User.Save(newUser)
+		sessionUser.Email = cart.Email
+		sessionUser.Name = fmt.Sprintf(
+			"%s %s",
+			cart.BillingAddress.FirstName,
+			cart.BillingAddress.LastName,
+		)
+		data.DB.User.Save(sessionUser)
 	}
 
 	// give us a nice alert
