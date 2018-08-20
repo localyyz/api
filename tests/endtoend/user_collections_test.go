@@ -1,12 +1,12 @@
 package endtoend
 
 import (
-	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/tests"
 	"context"
 	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
+	"bitbucket.org/moodie-app/moodie-api/data"
 )
 
 type UserCollTestSuite struct {
@@ -18,9 +18,8 @@ type UserCollTestSuite struct {
 
 func (suite *UserCollTestSuite) SetupSuite() {
 	suite.env = tests.SetupEnv(suite.T())
-
-	suite.TeardownData(suite.T())
 	suite.fixture = &fixture{}
+	suite.SetupData(suite.T(), suite.env.URL)
 }
 
 func (suite *UserCollTestSuite) TearDownSuite() {
@@ -28,11 +27,7 @@ func (suite *UserCollTestSuite) TearDownSuite() {
 }
 
 func (suite *UserCollTestSuite) TearDownTest() {
-	data.DB.Exec("TRUNCATE users cascade;")
-}
-
-func (suite *UserCollTestSuite) SetupTest() {
-	suite.SetupData(suite.T(), suite.env.URL)
+	data.DB.Exec("TRUNCATE user_collections cascade;")
 }
 
 // test if a new collection is created
