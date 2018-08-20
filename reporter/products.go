@@ -7,6 +7,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/data/stash"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 )
 
@@ -25,7 +26,9 @@ func (h *Handler) GetTrending(w http.ResponseWriter, r *http.Request) {
 		// always initialize so it's not null
 		IDs: []int64{},
 	}
-	scores, _ := h.trend.TopScores(50)
+	cursor := api.NewPage(r)
+	offset := cursor.Page * (cursor.Limit + 1)
+	scores, _ := h.trend.TopScores(cursor.Limit, offset)
 	for k, _ := range scores {
 		ID, _ := strconv.ParseInt(k, 10, 64)
 		result.IDs = append(result.IDs, ID)

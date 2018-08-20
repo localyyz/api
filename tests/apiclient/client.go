@@ -27,6 +27,7 @@ type Client struct {
 	Cart        *CartService
 	ExpressCart *ExpressCartService
 	User        *UserService
+	UserColl    *UserCollService
 }
 
 type service struct {
@@ -51,7 +52,7 @@ func NewClient(apiURL string) (*Client, error) {
 	c.User = (*UserService)(&c.common)
 	c.Deal = (*DealService)(&c.common)
 	c.User = (*UserService)(&c.common)
-
+	c.UserColl = (*UserCollService)(&c.common)
 	return c, nil
 }
 

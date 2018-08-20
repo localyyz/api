@@ -1,6 +1,8 @@
 package user
 
-import "github.com/go-chi/chi"
+import (
+	"github.com/go-chi/chi"
+)
 
 func Routes() chi.Router {
 	r := chi.NewRouter()
@@ -16,6 +18,8 @@ func Routes() chi.Router {
 		r.Mount("/address", addressRoutes())
 	})
 
+	r.Mount("/collections", collectionRoutes())
+
 	return r
 }
 
@@ -29,6 +33,28 @@ func addressRoutes() chi.Router {
 		r.Get("/", GetAddress)
 		r.Put("/", UpdateAddress)
 		r.Delete("/", RemoveAddress)
+	})
+
+	return r
+}
+
+func collectionRoutes() chi.Router {
+	r := chi.NewRouter()
+
+	r.Get("/", ListUserCollections)
+	r.Post("/", CreateUserCollection)
+
+	r.Route("/{collectionID}", func(r chi.Router) {
+		r.Use(UserCollectionCtx)
+
+		r.Get("/", GetUserCollection)
+		r.Put("/", UpdateUserCollection)
+		r.Delete("/", DeleteUserCollection)
+
+		r.Route("/products", func(r chi.Router) {
+			r.Get("/", GetUserCollectionProducts)
+			r.Post("/", CreateProductInCollection)
+		})
 	})
 
 	return r

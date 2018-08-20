@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/go-chi/chi"
@@ -15,6 +16,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
@@ -99,7 +101,9 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	resp, err := http.DefaultClient.Get("http://reporter:5339/trend")
+	u, _ := url.Parse("http://reporter:5339/trend")
+	u.RawQuery = cursor.URL.RawQuery
+	resp, err := http.DefaultClient.Get(u.String())
 	if err != nil {
 		render.Respond(w, r, []struct{}{})
 		return
@@ -116,25 +120,24 @@ func ListTrending(w http.ResponseWriter, r *http.Request) {
 		render.Respond(w, r, err)
 		return
 	}
+	// paginate is determined by the result
+	cursor.Update(result.IDs)
 
 	query := data.DB.Select("p.*").
 		From("products p").
 		Where(db.Cond{
 			"p.status": data.ProductStatusApproved,
 			"p.id":     result.IDs,
-		}).
-		OrderBy(data.MaintainOrder("p.id", result.IDs))
+		})
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
-	if !filterSort.HasFilter() {
-		paginate := cursor.UpdateQueryBuilder(query)
-		if err := paginate.All(&products); err != nil {
-			render.Respond(w, r, err)
-			return
-		}
-		cursor.Update(products)
+	if err := query.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
 	}
+	cursor.ItemTotal = 10000
+	cursor.NextPage = true
 
 	render.RenderList(w, r, presenter.NewProductList(ctx, products))
 }
@@ -208,5 +211,80 @@ func DeleteFavouriteProduct(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		render.Respond(w, r, err)
 	}
+}
 
+func DeleteFromAllCollections(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	product := ctx.Value("product").(*data.Product)
+	user := ctx.Value("session.user").(*data.User)
+
+	// delete from favourite product
+	DeleteFavouriteProduct(w, r)
+
+	var userColls []*data.UserCollection
+	err := data.DB.Select("uc.*").
+		From("user_collections as uc").
+		LeftJoin("user_collection_products as ucp").
+		On("ucp.collection_id = uc.id").
+		Where(db.Cond{"uc.user_id": user.ID, "ucp.product_id": product.ID}).
+		All(&userColls)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	// delete a product from all the user's collections
+	res, err := data.DB.Exec("update user_collection_products as ucp set deleted_at = NOW()"+
+		" from user_collections as uc"+
+		" where ucp.collection_id = uc.id"+
+		" and uc.user_id = $1"+
+		" and ucp.product_id = $2",
+		user.ID, product.ID)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	if affected, _ := res.RowsAffected(); affected > 0 {
+		for _, coll := range userColls {
+			stash.DecrUserCollProdCount(coll.ID)
+			saving := product.Price * product.DiscountPct
+			stash.DecrUserCollSavings(coll.ID, saving)
+		}
+	}
+}
+
+func DeleteProductFromCollection(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	product := ctx.Value("product").(*data.Product)
+	user := ctx.Value("session.user").(*data.User)
+	collection := ctx.Value("user.collection").(*data.UserCollection)
+
+	// delete a product from the user's specific collection
+	res, err := data.DB.Exec("update user_collection_products as ucp set deleted_at = NOW()"+
+		" from user_collections as uc"+
+		" where ucp.collection_id = uc.id"+
+		" and uc.user_id = $1"+
+		" and ucp.product_id = $2"+
+		" and ucp.collection_id = $3",
+		user.ID, product.ID, collection.ID)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	if affected, _ := res.RowsAffected(); affected == 1 {
+		// update the collection
+		collection.UpdatedAt = data.GetTimeUTCPointer()
+		err = data.DB.UserCollection.Save(collection)
+		if err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+
+		stash.DecrUserCollProdCount(collection.ID)
+
+		savings := product.Price * product.DiscountPct
+		stash.DecrUserCollSavings(collection.ID, savings)
+	}
 }

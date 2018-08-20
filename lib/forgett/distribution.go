@@ -48,12 +48,12 @@ func (d *Distribution) Exists() (bool, error) {
 	return redis.Bool(conn.Do("EXISTS", d.primary.Name))
 }
 
-func (d *Distribution) TopScores(limit int) (map[string]float64, error) {
-	counts, err := d.primary.Scores(limit)
+func (d *Distribution) TopScores(limit, offset int) (map[string]float64, error) {
+	counts, err := d.primary.Scores(limit, offset)
 	if err != nil {
 		return nil, err
 	}
-	norm, err := d.secondary.Scores(limit)
+	norm, err := d.secondary.Scores(limit, offset)
 	if err != nil {
 		return nil, err
 	}

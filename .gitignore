@@ -22,3 +22,5 @@ scratch/*
 tmp/
 
 ENV/
+
+dump.rdb

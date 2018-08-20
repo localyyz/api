@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/lib/forgett"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 type Handler struct {
@@ -36,6 +37,7 @@ func (h *Handler) Subscribe(config connect.NatsConfig) {
 
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
