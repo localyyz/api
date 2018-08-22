@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -92,6 +93,16 @@ type CheckoutRequest struct {
 	Checkout *Checkout `json:"checkout"`
 }
 
+// custom marshal json
+func (c *CheckoutRequest) MarshalJSON() ([]byte, error) {
+	if c != nil && c.Checkout != nil {
+		cc := *c
+		cc.Checkout.AppliedDiscount = nil
+		return json.Marshal(cc)
+	}
+	return nil, nil
+}
+
 type ShippingRateRequest struct {
 	CheckoutShipping []*CheckoutShipping `json:"shipping_rates"`
 }
@@ -173,6 +184,8 @@ func (c *CheckoutService) Create(ctx context.Context, checkout *Checkout) (*Chec
 }
 
 func (c *CheckoutService) Update(ctx context.Context, checkout *Checkout) (*Checkout, *http.Response, error) {
+	// need to re-wrap the incoming checkout with a request
+	// and pull out data that we may want to update
 	req, err := c.client.NewRequest(
 		"PUT",
 		fmt.Sprintf("/admin/checkouts/%s.json", checkout.Token),

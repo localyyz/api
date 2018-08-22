@@ -16,6 +16,7 @@ import (
 const TestShopifyID = `best-test-store-toronto`
 const TestAccessToken = `a5de53c040ee7c3f937d363d52858aeb`
 const TestVariantID = 43252300547
+const TestVariantID2 = 8434776408119
 
 func InsertTestPurchasableProduct(w http.ResponseWriter, r *http.Request) {
 	// find/create the merchant by shopify_id
@@ -76,6 +77,21 @@ func InsertTestPurchasableProduct(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	if err := data.DB.ProductVariant.Save(pv); err != nil {
+		log.Fatal(err)
+	}
+
+	pv2 := &data.ProductVariant{
+		ProductID: product.ID,
+		PlaceID:   place.ID,
+		Price:     1.0,
+		Limits:    999,
+		OfferID:   TestVariantID2,
+		Etc: data.ProductVariantEtc{
+			Size:  "test",
+			Color: "deep",
+		},
+	}
+	if err := data.DB.ProductVariant.Save(pv2); err != nil {
 		log.Fatal(err)
 	}
 
