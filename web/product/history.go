@@ -36,5 +36,6 @@ func ListHistoryProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Respond(w, r, presenter.NewProductList(r.Context(), products))
+	presented := presenter.NewProductList(r.Context(), products)
+	render.RenderList(w, r, presented)
 }

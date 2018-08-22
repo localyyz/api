@@ -49,13 +49,14 @@ func (c *Checkout) doCheckout(ctx context.Context, req *shopify.Checkout) (*shop
 		return req, err
 	}
 	// validate discount code is applied. if applicable
-	if update.AppliedDiscount != nil && update.AppliedDiscount != nil {
+	if update.AppliedDiscount != nil {
+		// TODO: need to remove the discount code if not applicable
 		if reason := update.AppliedDiscount.NonApplicableReason; len(reason) != 0 {
 			return req, errors.Wrap(ErrDiscountCode, reason)
 		}
 	}
 
-	// TODO: make proper shipping. For now, pick the cheapest one.
+	//TODO: make proper shipping. For now, pick the cheapest one.
 	rates, _, err := client.Checkout.ListShippingRates(ctx, req.Token)
 	if len(rates) == 0 {
 		// does not ship to this address
@@ -70,14 +71,24 @@ func (c *Checkout) doCheckout(ctx context.Context, req *shopify.Checkout) (*shop
 		Handle: rates[0].Handle,
 	}
 
-	// for now, pick the first rate and apply to the checkout.. TODO make this proper
-	// sync the cart shipping method
+	//for now, pick the first rate and apply to the checkout.. TODO make this proper
+	//sync the cart shipping method
+
+	// NOTE: shopify checkout update cannot update shipping_line and discount
+	// code in the same request. Or it will throw a cryptic error message about
+	// shipping line invalid
+	//
+	// remove it.
+	discountCode := req.DiscountCode
+	req.DiscountCode = ""
 	if _, _, err := client.Checkout.Update(ctx, req); err != nil {
 		return req, err
 	}
+	// put it back
+	req.DiscountCode = discountCode
 
-	// Cache delivery range. *NOTE: shopify doesn't return the delivery range
-	// when updating the shipping line.. need to pull it from the rates
+	//Cache delivery range. *NOTE: shopify doesn't return the delivery range
+	//when updating the shipping line.. need to pull it from the rates
 	req.ShippingLine.DeliveryRange = rates[0].DeliveryRange
 
 	return req, nil
@@ -190,6 +201,9 @@ func (c *Checkout) Finalize(req *shopify.Checkout) error {
 	c.AppliedDiscount = &data.CheckoutAppliedDiscount{
 		AppliedDiscount: req.AppliedDiscount,
 	}
+
+	// TODO: there is a bug here where if a discount code is applied..
+	// we do not remove it even if it's non applicable
 
 	return data.DB.Checkout.Save(c.Checkout)
 }

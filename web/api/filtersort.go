@@ -129,6 +129,7 @@ func wrapFilterRoutes(r chi.Router, handlerFn http.HandlerFunc) {
 	r.With(WithFilterBy("pv.etc->>'color'")).Get("/colors", handlerFn)
 	r.With(WithFilterBy("p.category->>'value'")).Get("/subcategories", handlerFn)
 	r.With(WithFilterBy("p.category->>'type'")).Get("/categories", handlerFn)
+	r.With(WithFilterBy("pl.name")).Get("/stores", handlerFn)
 }
 
 // TODO: turn these into middlewares?
@@ -211,7 +212,7 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 					"product_id IN (?)",
 					o.selector.
 						SetColumns("p.id").
-						OrderBy("score DESC").
+						OrderBy("p.score DESC").
 						Limit(100),
 				),
 				db.Cond{o.filterBy: db.NotEq("")},
@@ -219,6 +220,18 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 			GroupBy(o.filterBy).
 			OrderBy(db.Raw("count(1) DESC")).
 			Limit(30).
+			Query()
+	} else if strings.Contains(o.filterBy.Raw(), "pl.name") {
+		rows, err = data.DB.Select(o.filterBy).
+			From("places pl").
+			Where(
+				db.Raw(
+					"pl.id IN (?)",
+					o.selector.SetColumns(db.Raw("p.place_id")).
+						GroupBy("p.place_id").
+						OrderBy(nil),
+				),
+			).
 			Query()
 	} else if o.selector != nil {
 		rows, err = o.selector.
@@ -228,7 +241,7 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 			}).
 			GroupBy(o.filterBy).
 			OrderBy(db.Raw("count(1) DESC")).
-			Limit(50).
+			Limit(100).
 			Query()
 	} else {
 		err = errors.New("no selection query setup")
