@@ -50,6 +50,7 @@ func (c *Checkout) doCheckout(ctx context.Context, req *shopify.Checkout) (*shop
 	}
 	// validate discount code is applied. if applicable
 	if update.AppliedDiscount != nil {
+		// TODO: need to remove the discount code if not applicable
 		if reason := update.AppliedDiscount.NonApplicableReason; len(reason) != 0 {
 			return req, errors.Wrap(ErrDiscountCode, reason)
 		}
@@ -200,10 +201,9 @@ func (c *Checkout) Finalize(req *shopify.Checkout) error {
 	c.AppliedDiscount = &data.CheckoutAppliedDiscount{
 		AppliedDiscount: req.AppliedDiscount,
 	}
-	if c.AppliedDiscount != nil && !c.AppliedDiscount.Applicable {
-		// if discount code is non applicable after some change. remove it
-		c.DiscountCode = ""
-	}
+
+	// TODO: there is a bug here where if a discount code is applied..
+	// we do not remove it even if it's non applicable
 
 	return data.DB.Checkout.Save(c.Checkout)
 }
