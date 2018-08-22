@@ -86,6 +86,10 @@ func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
+	for _, ci := range c.CartItems {
+		ci.Render(w, r)
+	}
+
 	return nil
 }
 
@@ -95,18 +99,16 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 		ctx:  ctx,
 	}
 
-	resp.CartItems = make(CartItemList, 0, 0)
 	dbItems, err := data.DB.CartItem.FindByCartID(cart.ID)
 	if err != nil {
-		lg.Warn(err)
 		return resp
 	}
 
-	var cartItems CartItemList
+	resp.CartItems = make(CartItemList, 0)
 	for _, item := range dbItems {
-		cartItems = append(cartItems, NewCartItem(ctx, item))
+		ci := NewCartItem(ctx, item)
+		resp.CartItems = append(resp.CartItems, ci)
 	}
-	resp.CartItems = cartItems
 
 	resp.ShippingAddress = NewCartAddress(ctx, cart.ShippingAddress)
 	resp.ShippingAddress.IsShipping = true

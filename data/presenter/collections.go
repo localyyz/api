@@ -34,17 +34,19 @@ func NewCollection(ctx context.Context, collection *data.Collection) *Collection
 	}
 	c.ProductCount = uint64(len(cps))
 
-	row, err := data.DB.Select(db.Raw("sum((price/(1-discount_pct))-price) as total_savings")).
-		From("products").
-		Where(db.Cond{"id": cpsIDs}).
-		QueryRow()
-	if err != nil {
-		lg.Warn(err, "query collection saving")
-		return c
-	}
-	if err := row.Scan(&c.TotalSavings); err != nil {
-		lg.Warn(err, "present collection saving")
-		return c
+	if len(cpsIDs) > 0 {
+		row, err := data.DB.Select(db.Raw("sum((price/(1-discount_pct))-price) as total_savings")).
+			From("products").
+			Where(db.Cond{"id": cpsIDs}).
+			QueryRow()
+		if err != nil {
+			lg.Warn(err, "query collection saving")
+			return c
+		}
+		if err := row.Scan(&c.TotalSavings); err != nil {
+			lg.Warn(err, "present collection saving")
+			return c
+		}
 	}
 
 	return c

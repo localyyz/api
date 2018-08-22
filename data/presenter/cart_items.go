@@ -31,7 +31,6 @@ func NewCartItem(ctx context.Context, item *data.CartItem) *CartItem {
 	}
 	if product, _ := data.DB.Product.FindByID(item.ProductID); product != nil {
 		resp.Product = NewProduct(ctx, product)
-		resp.Product.Render(nil, nil)
 	}
 	if variant, _ := data.DB.ProductVariant.FindByID(item.VariantID); variant != nil {
 		resp.Variant = &ProductVariant{ProductVariant: variant}
@@ -41,6 +40,12 @@ func NewCartItem(ctx context.Context, item *data.CartItem) *CartItem {
 }
 
 func (i *CartItem) Render(w http.ResponseWriter, r *http.Request) error {
+	if i.Product != nil {
+		i.Product.Render(w, r)
+	}
+	if i.Variant != nil {
+		i.Variant.Render(w, r)
+	}
 	return nil
 }
 

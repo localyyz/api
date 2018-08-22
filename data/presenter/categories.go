@@ -12,9 +12,11 @@ import (
 )
 
 type Category struct {
-	Type     string      `json:"type"`
-	Values   []*Category `json:"values"`
-	ImageURL string      `json:"imageUrl"`
+	Type        string      `json:"type"`
+	Values      []*Category `json:"values"`
+	Title       string      `json:"title"`
+	Description string      `json:"description"`
+	ImageURL    string      `json:"imageUrl"`
 
 	ctx context.Context
 }
@@ -124,18 +126,42 @@ func NewCategoryList(ctx context.Context, categoryTypes []data.CategoryType) []r
 			presented = &Category{
 				Type: "sales",
 				Values: []*Category{
-					{Type: "70% OFF", ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/70.png?17957505310432019141"},
-					{Type: "50% OFF", ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/50.png?5115785919598170614"},
-					{Type: "20% OFF", ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/20.png?14969378164451378728"},
+					{
+						Type:     "70% OFF",
+						Title:    "70%+ OFF",
+						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/70.png?17957505310432019141",
+					},
+					{
+						Type:     "50% OFF",
+						Title:    "50%-70% OFF",
+						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/50.png?5115785919598170614",
+					},
+					{
+						Type:     "20% OFF",
+						Title:    "20%-50% OFF",
+						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/20.png?14969378164451378728",
+					},
 				},
 			}
 		case data.CategoryCollection:
 			presented = &Category{
 				Type: "collections",
 				Values: []*Category{
-					{Type: "smart", ImageURL: "https://cdn.shopify.com/s/files/1/0835/3729/products/Oversized_Hoodies_-4_eda921cf-882d-479f-8d07-ed1c070b0a0a.jpg"},
-					{Type: "boutique", ImageURL: "https://cdn.shopify.com/s/files/1/1066/9348/products/UNG85206_red_0.jpg"},
-					{Type: "designer", ImageURL: "https://cdn.shopify.com/s/files/1/0444/7969/products/mens-jackets-coats-hexagon-stitch-brother-jacket-1.jpg"},
+					{
+						Type:     "smart",
+						Title:    "Under $100",
+						ImageURL: "https://cdn.shopify.com/s/files/1/0835/3729/products/Oversized_Hoodies_-4_eda921cf-882d-479f-8d07-ed1c070b0a0a.jpg",
+					},
+					{
+						Type:     "boutique",
+						Title:    "$100 - $300",
+						ImageURL: "https://cdn.shopify.com/s/files/1/1066/9348/products/UNG85206_red_0.jpg",
+					},
+					{
+						Type:     "designer",
+						Title:    "$300 plus",
+						ImageURL: "https://cdn.shopify.com/s/files/1/0444/7969/products/mens-jackets-coats-hexagon-stitch-brother-jacket-1.jpg",
+					},
 				},
 			}
 		default:
