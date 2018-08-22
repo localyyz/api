@@ -200,6 +200,10 @@ func (c *Checkout) Finalize(req *shopify.Checkout) error {
 	c.AppliedDiscount = &data.CheckoutAppliedDiscount{
 		AppliedDiscount: req.AppliedDiscount,
 	}
+	if c.AppliedDiscount != nil && !c.AppliedDiscount.Applicable {
+		// if discount code is non applicable after some change. remove it
+		c.DiscountCode = ""
+	}
 
 	return data.DB.Checkout.Save(c.Checkout)
 }
