@@ -71,7 +71,7 @@ func ListRandomProduct(w http.ResponseWriter, r *http.Request) {
 	query := data.DB.Select("p.*").
 		From("products p").
 		Where(cond).
-		OrderBy(db.Raw(fmt.Sprintf("%d %% id", t)), "-score")
+		OrderBy(db.Raw(fmt.Sprintf("%d %% id", t)))
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product

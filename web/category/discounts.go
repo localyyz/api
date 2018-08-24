@@ -38,7 +38,7 @@ func ListDiscountProducts(w http.ResponseWriter, r *http.Request) {
 	query := data.DB.Select("p.*").
 		From("products p").
 		Where(cond).
-		OrderBy("p.id desc", "p.score DESC")
+		OrderBy("p.id desc")
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
