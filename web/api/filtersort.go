@@ -307,8 +307,6 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 			db.Raw("p.score"): db.Gte(3),
 		})
 		switch f.Type {
-		case "discount":
-			fConds = append(fConds, db.Cond{"p.discount_pct": db.Gte(f.MinValue)})
 		case "brand":
 			fConds = append(fConds, db.Cond{
 				db.Raw("lower(p.brand)"): strings.ToLower(f.Value.(string)),
@@ -348,6 +346,17 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 					db.Raw("lower(pv.etc->>'color')"): strings.ToLower(f.Value.(string)),
 				})
 			selector = selector.Where(db.Cond{"p.id IN": colorSelector})
+		case "merchant":
+			merchantSelector := data.DB.
+				Select("pl.id").
+				From("places pl").
+				Where(db.Cond{
+					db.Raw("lower(pl.name)"): strings.ToLower(f.Value.(string)),
+				})
+			selector = selector.Where(db.Cond{"p.place_id IN": merchantSelector})
+		case "discount":
+			minDiscountPct, _ := strconv.ParseFloat(f.MinValue.(string), 64)
+			fConds = append(fConds, db.Cond{"p.discount_pct": db.Gte(minDiscountPct / 100.0)})
 		case "price":
 			if f.MinValue != nil {
 				min, _ := strconv.ParseFloat(f.MinValue.(string), 64)
