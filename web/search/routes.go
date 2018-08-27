@@ -93,10 +93,10 @@ func (o *omniSearchRequest) Bind(r *http.Request) error {
 			continue
 		}
 
-		if v, ok := data.CategoryLookup[t]; ok {
-			o.category = &v
-			continue
-		}
+		//if v, ok := data.CategoryLookup[t]; ok {
+		//o.category = &v
+		//continue
+		//}
 
 		// set up for partial prefix matching
 		qSet.Add(t)

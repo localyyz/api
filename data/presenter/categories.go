@@ -149,17 +149,17 @@ func NewCategoryList(ctx context.Context, categoryTypes []data.CategoryType) []r
 				Values: []*Category{
 					{
 						Type:     "smart",
-						Title:    "Under $100",
+						Title:    "Under $50",
 						ImageURL: "https://cdn.shopify.com/s/files/1/0835/3729/products/Oversized_Hoodies_-4_eda921cf-882d-479f-8d07-ed1c070b0a0a.jpg",
 					},
 					{
 						Type:     "boutique",
-						Title:    "$100 - $300",
+						Title:    "$50 - $200",
 						ImageURL: "https://cdn.shopify.com/s/files/1/1066/9348/products/UNG85206_red_0.jpg",
 					},
 					{
 						Type:     "designer",
-						Title:    "$300 plus",
+						Title:    "$200 plus",
 						ImageURL: "https://cdn.shopify.com/s/files/1/0444/7969/products/mens-jackets-coats-hexagon-stitch-brother-jacket-1.jpg",
 					},
 				},
