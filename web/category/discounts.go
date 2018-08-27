@@ -15,7 +15,7 @@ func discountCtx(min, max float64) func(next http.Handler) http.Handler {
 	return middleware.WithValue(
 		"discountCond",
 		db.Cond{
-			"discount_pct": db.Between(min, max),
+			"p.discount_pct": db.Between(min, max),
 		},
 	)
 }
@@ -29,6 +29,10 @@ func ListDiscountProducts(w http.ResponseWriter, r *http.Request) {
 		db.Cond{
 			"p.status":     data.ProductStatusApproved,
 			"p.deleted_at": nil,
+			"m.collection": []data.MerchantApprovalCollection{
+				data.MerchantApprovalCollectionBoutique,
+				data.MerchantApprovalCollectionLuxury,
+			},
 		},
 	)
 	if discountCond, ok := ctx.Value("discountCond").(db.Cond); ok {
@@ -37,6 +41,7 @@ func ListDiscountProducts(w http.ResponseWriter, r *http.Request) {
 
 	query := data.DB.Select("p.*").
 		From("products p").
+		LeftJoin("merchant_approvals m").On("m.place_id = p.place_id").
 		Where(cond).
 		OrderBy("p.id desc", "p.score DESC")
 	query = filterSort.UpdateQueryBuilder(query)
