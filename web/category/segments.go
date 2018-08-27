@@ -22,20 +22,20 @@ const (
 func segmentCtx(v segmentType) func(next http.Handler) http.Handler {
 	var cond db.Cond
 	switch v {
+	case segmentTypeSmart:
+		cond = db.Cond{
+			"m.collection": data.MerchantApprovalCollectionSmart,
+			"p.price":      db.Lt(50),
+		}
 	case segmentTypeBoutique:
 		cond = db.Cond{
 			"m.collection": data.MerchantApprovalCollectionBoutique,
-			"p.price":      db.Between(30, 430),
+			"p.price":      db.Between(50, 200),
 		}
 	case segmentTypeLuxury:
 		cond = db.Cond{
 			"m.collection": data.MerchantApprovalCollectionLuxury,
-			"p.price":      db.Gt(150),
-		}
-	case segmentTypeSmart:
-		cond = db.Cond{
-			"m.collection": data.MerchantApprovalCollectionSmart,
-			"p.price":      db.Lt(150),
+			"p.price":      db.Gt(200),
 		}
 	}
 	return middleware.WithValue("segmentCond", cond)
