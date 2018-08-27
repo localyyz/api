@@ -145,7 +145,7 @@ func (p *Page) UpdateQueryUpper(res db.Result) db.Result {
 
 func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Paginator {
 	{
-		t := 500 * time.Millisecond
+		t := 2 * time.Second
 		ctx, cancel := context.WithTimeout(context.Background(), t)
 		defer cancel()
 

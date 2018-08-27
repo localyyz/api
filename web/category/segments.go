@@ -60,7 +60,7 @@ func ListSegmentProducts(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		LeftJoin("merchant_approvals m").On("m.place_id = p.place_id").
 		Where(cond).
-		OrderBy("p.id desc", "p.score DESC")
+		OrderBy("p.id desc")
 	query = filterSort.UpdateQueryBuilder(query)
 
 	var products []*data.Product
