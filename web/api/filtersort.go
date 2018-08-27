@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -113,7 +114,7 @@ func WithFilterBy(val interface{}) func(next http.Handler) http.Handler {
 			if !ok {
 				filterSort = NewFilterSort(w, r)
 			}
-			filterSort.filterBy = db.Raw(fmt.Sprintf("lower(%s)", val.(string)))
+			filterSort.filterBy = db.Raw(val.(string))
 			ctx = context.WithValue(ctx, FilterSortCtxKey, filterSort)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
@@ -124,12 +125,13 @@ func WithFilterBy(val interface{}) func(next http.Handler) http.Handler {
 func wrapFilterRoutes(r chi.Router, handlerFn http.HandlerFunc) {
 	r.Use(FilterSortHijacksCtx)
 	r.Get("/", handlerFn)
-	r.With(WithFilterBy("p.brand")).Get("/brands", handlerFn)
-	r.With(WithFilterBy("pv.etc->>'size'")).Get("/sizes", handlerFn)
-	r.With(WithFilterBy("pv.etc->>'color'")).Get("/colors", handlerFn)
-	r.With(WithFilterBy("p.category->>'value'")).Get("/subcategories", handlerFn)
-	r.With(WithFilterBy("p.category->>'type'")).Get("/categories", handlerFn)
-	r.With(WithFilterBy("pl.name")).Get("/stores", handlerFn)
+	r.With(WithFilterBy("lower(p.brand)")).Get("/brands", handlerFn)
+	r.With(WithFilterBy("lower(pv.etc->>'size')")).Get("/sizes", handlerFn)
+	r.With(WithFilterBy("lower(pv.etc->>'color')")).Get("/colors", handlerFn)
+	r.With(WithFilterBy("lower(p.category->>'value')")).Get("/subcategories", handlerFn)
+	r.With(WithFilterBy("lower(p.category->>'type')")).Get("/categories", handlerFn)
+	r.With(WithFilterBy("to_char(round(p.price, -1), '999')")).Get("/prices", handlerFn)
+	r.With(WithFilterBy("lower(pl.name)")).Get("/stores", handlerFn)
 }
 
 // TODO: turn these into middlewares?
@@ -233,6 +235,8 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 				),
 			).
 			Query()
+	} else if o.filterBy.Raw() == "p.price" {
+		//
 	} else if o.selector != nil {
 		rows, err = o.selector.
 			SetColumns(o.filterBy).
@@ -258,7 +262,7 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 		if err != nil {
 			break
 		}
-		values = append(values, v)
+		values = append(values, strings.TrimSpace(v))
 	}
 	rows.Close()
 
@@ -287,19 +291,22 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		case "created_at":
 			orderBy = "p.created_at DESC"
 		default:
-			orderBy = "p.score DESC"
+			orderBy = ""
 		}
 		selector = selector.OrderBy(
 			db.Raw(orderBy),
-			"p.score desc",
 			"p.id desc",
 		)
 	}
 	for _, f := range o.Filters {
 		var fConds []db.Compound
+		// by default. let's filter out score greater equal to 3
+		// NOTE: this is to increase query performance. sorting by multiple
+		// values will dramatically slow down the query
+		fConds = append(fConds, db.Cond{
+			db.Raw("p.score"): db.Gte(3),
+		})
 		switch f.Type {
-		case "discount":
-			fConds = append(fConds, db.Cond{"p.discount_pct": db.Gte(f.MinValue)})
 		case "brand":
 			fConds = append(fConds, db.Cond{
 				db.Raw("lower(p.brand)"): strings.ToLower(f.Value.(string)),
@@ -339,15 +346,25 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 					db.Raw("lower(pv.etc->>'color')"): strings.ToLower(f.Value.(string)),
 				})
 			selector = selector.Where(db.Cond{"p.id IN": colorSelector})
+		case "merchant":
+			merchantSelector := data.DB.
+				Select("pl.id").
+				From("places pl").
+				Where(db.Cond{
+					db.Raw("lower(pl.name)"): strings.ToLower(f.Value.(string)),
+				})
+			selector = selector.Where(db.Cond{"p.place_id IN": merchantSelector})
+		case "discount":
+			minDiscountPct, _ := strconv.ParseFloat(f.MinValue.(string), 64)
+			fConds = append(fConds, db.Cond{"p.discount_pct": db.Gte(minDiscountPct / 100.0)})
 		case "price":
 			if f.MinValue != nil {
-				fConds = append(fConds, db.Cond{"p.price": db.Gte(f.MinValue)})
+				min, _ := strconv.ParseFloat(f.MinValue.(string), 64)
+				fConds = append(fConds, db.Cond{"p.price": db.Gte(min)})
 			}
 			if f.MaxValue != nil {
-				//the frontend can only return 300 as the max so anything above that there should be no Lte
-				if f.MaxValue != MaxPrice {
-					fConds = append(fConds, db.Cond{"p.price": db.Lte(f.MaxValue)})
-				}
+				max, _ := strconv.ParseFloat(f.MaxValue.(string), 64)
+				fConds = append(fConds, db.Cond{"p.price": db.Lte(max)})
 			}
 		}
 		selector = selector.Where(db.And(fConds...))
