@@ -79,33 +79,10 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			return errors.Wrap(err, "failed to lock product for update")
 		}
 
-		listener, _ := ctx.Value(SyncListenerCtxKey).(Listener)
-
-		// async syncing of variants / product images
-		// NOTE: this go func should have nothing to do with the context.
-		go func() {
-			if listener != nil {
-				// inform caller that we're done
-				defer func() { listener <- 1 }()
-			}
-			syncer := &productSyncer{
-				place:   place,
-				product: product,
-			}
-			if err := syncer.SyncVariants(p.Variants); err != nil {
-				lg.Warnf("shopify add variant: %v", err)
-				return
-			}
-			if err := syncer.SyncImages(p.Images); err != nil {
-				lg.Warnf("shopify add images: %v", err)
-				return
-			}
-			if err := syncer.SyncScore(); err != nil {
-				lg.Warnf("shopify score: %v", err)
-				return
-			}
-			syncer.Finalize()
-		}()
+		sync, _ := NewSyncer(ctx, product, place)
+		if err := sync.Sync(p); err != nil {
+			lg.Warnf("err: %+v", err)
+		}
 	}
 
 	return nil
@@ -141,43 +118,10 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
-		// pull the caches out of context.
-		categoryCache, _ := ctx.Value(cacheKey).(map[string]*data.Category)
-		blacklistCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
-		listener, _ := ctx.Value(SyncListenerCtxKey).(Listener)
-
-		// async syncing of variants / product images
-		// NOTE: this go func should have nothing to do with the context.
-		go func() {
-			if listener != nil {
-				// inform caller that we're done
-				defer func() { listener <- 1 }()
-			}
-			// create syncer product scope
-			syncer := &productSyncer{
-				place:          place,
-				product:        product,
-				categoryCache:  categoryCache,
-				blacklistCache: blacklistCache,
-			}
-			if err := syncer.SyncCategories(p.Title, p.Tags, p.ProductType); err != nil {
-				lg.Warnf("shopify sync categories: %v", err)
-				return
-			}
-			if err := syncer.SyncVariants(p.Variants); err != nil {
-				lg.Warnf("shopify add variant: %v", err)
-				return
-			}
-			if err := syncer.SyncImages(p.Images); err != nil {
-				lg.Warnf("shopify add images: %v", err)
-				return
-			}
-			if err := syncer.SyncScore(); err != nil {
-				lg.Warnf("shopify score%v", err)
-				return
-			}
-			syncer.Finalize()
-		}()
+		sync, _ := NewSyncer(ctx, product, place)
+		if err := sync.Sync(p); err != nil {
+			lg.Warnf("cause: %+v", err)
+		}
 	}
 	return nil
 }

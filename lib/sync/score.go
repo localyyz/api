@@ -42,5 +42,10 @@ func (s *shopifyProductScorer) GetScore() (int64, error) {
 		score += ScoreCurrencyPenalty
 	}
 
+	// normalize
+	if score < 0 {
+		score = 0
+	}
+
 	return score, nil
 }

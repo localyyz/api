@@ -1,8 +1,11 @@
 package sync
 
 import (
+	"context"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
@@ -13,6 +16,8 @@ type productSyncer struct {
 	images         []*data.ProductImage
 	categoryCache  map[string]*data.Category
 	blacklistCache map[string]*data.Blacklist
+
+	listener Listener
 }
 
 type Syncer interface {
@@ -25,6 +30,53 @@ type Finalizer interface {
 
 type Fetcher interface {
 	Fetch(db.Cond, interface{}) error
+}
+
+func NewSyncer(ctx context.Context, product *data.Product, place *data.Place) (*productSyncer, error) {
+	// TODO: make opts
+	listener, _ := ctx.Value(SyncListenerCtxKey).(Listener)
+	categoryCache, _ := ctx.Value(cacheKey).(map[string]*data.Category)
+	blacklistCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
+	syncer := &productSyncer{
+		product: product,
+		place:   place,
+
+		categoryCache:  categoryCache,
+		blacklistCache: blacklistCache,
+
+		listener: listener,
+	}
+	return syncer, nil
+}
+
+func (s *productSyncer) Sync(sy *shopify.ProductList) error {
+	go func() {
+		if s.listener != nil {
+			// inform caller that we're done
+			defer func() { s.listener <- 1 }()
+		}
+		if err := s.SyncCategories(sy.Title, sy.Tags, sy.ProductType); err != nil {
+			lg.Warnf("shopify sync categories: %v", err)
+			return
+		}
+		if err := s.SyncVariants(sy.Variants); err != nil {
+			lg.Warnf("shopify add variant: %v", err)
+			return
+		}
+		if err := s.SyncImages(sy.Images); err != nil {
+			lg.Warnf("shopify add images: %v", err)
+			return
+		}
+		if err := s.SyncScore(); err != nil {
+			lg.Warnf("shopify shopify score: %v", err)
+			return
+		}
+		if err := s.Finalize(); err != nil {
+			lg.Warnf("shopify finalize: %v", err)
+			return
+		}
+	}()
+	return nil
 }
 
 // retry syncing
@@ -41,7 +93,9 @@ func (s *productSyncer) SyncCategories(title, tags, productType string) error {
 	if err := catSync.Sync(title, tags, productType); err != nil {
 		if err == ErrBlacklisted {
 			// rejected. product category is blacklisted
-			s.FinalizeStatus(data.ProductStatusRejected)
+			if err := s.FinalizeStatus(data.ProductStatusRejected); err != nil {
+				return err
+			}
 		}
 		// TODO: if error is detected. retry?
 		return err
@@ -53,7 +107,9 @@ func (s *productSyncer) SyncVariants(variants []*shopify.ProductVariant) error {
 	if err := (&shopifyVariantSyncer{product: s.product}).Sync(variants); err != nil {
 		if err == ErrProductUnavailable {
 			// rejected. no inventory quantity
-			s.FinalizeStatus(data.ProductStatusOutofStock)
+			if err := s.FinalizeStatus(data.ProductStatusOutofStock); err != nil {
+				return err
+			}
 		}
 		// TODO: if error is detected. retry?
 		return err
@@ -65,7 +121,9 @@ func (s *productSyncer) SyncImages(images []*shopify.ProductImage) error {
 	if err := (&shopifyImageSyncer{Product: s.product}).Sync(images); err != nil {
 		if err == ErrInvalidImage {
 			// rejected. one or more images are invalid
-			s.FinalizeStatus(data.ProductStatusRejected)
+			if err := s.FinalizeStatus(data.ProductStatusRejected); err != nil {
+				return err
+			}
 		}
 		// TODO: if error is detected. retry?
 		return err
@@ -92,6 +150,5 @@ func (s *productSyncer) Finalize() error {
 	if s.product.Status == data.ProductStatusProcessing {
 		s.product.Status = data.ProductStatusApproved
 	}
-	data.DB.Product.Save(s.product)
-	return nil
+	return data.DB.Product.Save(s.product)
 }

@@ -10,6 +10,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	s "bitbucket.org/moodie-app/moodie-api/lib/sync"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	set "gopkg.in/fatih/set.v0"
@@ -139,6 +140,7 @@ func SyncProduct(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !p.Available {
+			log.Println("unavailable")
 			return
 		}
 		ctx := context.WithValue(context.Background(), "sync.list", []*shopify.ProductList{p})
@@ -153,6 +155,8 @@ func SyncProduct(w http.ResponseWriter, r *http.Request) {
 func SyncProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
+
+	cursor := api.NewPage(r)
 
 	categoryCache := make(map[string]*data.Category)
 	categories, err := data.DB.Category.FindAll(nil)
@@ -174,31 +178,32 @@ func SyncProducts(w http.ResponseWriter, r *http.Request) {
 
 	// Create or update depending on PUT or POST
 
-	for i := 1; i <= 34; i++ {
-		log.Printf("fetching page %d", i+1)
+	page := cursor.Page
+	for {
+		log.Printf("fetching page %d", page)
 
 		productList, _, _ := client.ProductList.Get(
 			ctx,
 			&shopify.ProductListParam{
-				Limit: 200,
-				Page:  i,
+				Limit: cursor.Limit,
+				Page:  page,
 			},
 		)
 		if len(productList) == 0 {
-			log.Printf("no more pages at %d", i)
+			log.Printf("no more pages at %d", page)
 			break
 		}
-		log.Printf("found %d to create for page %d", len(productList), i+1)
+		page += 1
+		log.Printf("found %d to create for page %d", len(productList), page)
 
 		for _, p := range productList {
-			if !p.Available {
-				continue
-			}
 			ctx := context.WithValue(context.Background(), "sync.list", []*shopify.ProductList{p})
 			ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
 			ctx = context.WithValue(ctx, "category.cache", categoryCache)
 			ctx = context.WithValue(ctx, "sync.place", place)
-			s.ShopifyProductListingsUpdate(ctx)
+			if err := s.ShopifyProductListingsUpdate(ctx); err != nil {
+				log.Println("%v", err)
+			}
 		}
 	}
 
