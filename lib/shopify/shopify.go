@@ -38,6 +38,8 @@ type Client struct {
 	CustomCollection *CustomCollectionService
 	PriceRule        *PriceRuleService
 	DiscountCode     *DiscountCodeService
+	Policy           *PolicyService
+	ShippingZone     *ShippingZoneService
 }
 
 type service struct {
@@ -68,6 +70,8 @@ func NewClient(httpClient *http.Client, token string) *Client {
 	c.CustomCollection = (*CustomCollectionService)(&c.common)
 	c.PriceRule = (*PriceRuleService)(&c.common)
 	c.DiscountCode = (*DiscountCodeService)(&c.common)
+	c.Policy = (*PolicyService)(&c.common)
+	c.ShippingZone = (*ShippingZoneService)(&c.common)
 	return c
 }
 

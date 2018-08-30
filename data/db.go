@@ -28,6 +28,7 @@ type Database struct {
 	PlaceBilling     PlaceBillingStore
 	PlaceCharge      PlaceChargeStore
 	PlaceDiscount    PlaceDiscountStore
+	ShippingZone     ShippingZoneStore
 	PriorityMerchant PriorityMerchantStore
 
 	MerchantApproval MerchantApprovalStore
@@ -54,7 +55,7 @@ type Database struct {
 
 	FavouriteProduct FavouriteProductStore
 
-	UserCollection UserCollectionStore
+	UserCollection        UserCollectionStore
 	UserCollectionProduct UserCollectionProductStore
 }
 
@@ -110,6 +111,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.PlaceBilling = PlaceBillingStore{db.Store(&PlaceBilling{})}
 	db.PlaceCharge = PlaceChargeStore{db.Store(&PlaceCharge{})}
 	db.PlaceDiscount = PlaceDiscountStore{db.Store(&PlaceDiscount{})}
+	db.ShippingZone = ShippingZoneStore{db.Store(&ShippingZone{})}
 	db.PriorityMerchant = PriorityMerchantStore{db.Store(&PriorityMerchant{})}
 
 	db.MerchantApproval = MerchantApprovalStore{db.Store(&MerchantApproval{})}

@@ -128,6 +128,44 @@ func TestProductCategory(t *testing.T) {
 	}
 }
 
+func TestMixedCategoryHints(t *testing.T) {
+	t.Parallel()
+	cache := map[string]*data.Category{
+		"jean": &data.Category{
+			Type:    data.CategoryApparel,
+			Value:   "jean",
+			Mapping: "jeans",
+		},
+		"shorts": &data.Category{
+			Type:    data.CategoryApparel,
+			Value:   "shorts",
+			Mapping: "shorts",
+		},
+	}
+
+	ctx := context.WithValue(context.Background(), cacheKey, cache)
+	ctx = context.WithValue(ctx, cacheKeyBlacklist, make(map[string]*data.Blacklist))
+	ctx = context.WithValue(ctx, "sync.place", &data.Place{})
+
+	tests := []tagTest{
+		{
+			name: "Lace shorts by Jean Paul Gauthier",
+			inputs: []string{
+				"La Perla by Jean Paul Gaultier Blue Lace Shorts",
+				"APPAREL, blue, DESIGNERS, friday, gaultier, jean, Jean Paul Gaultier, lace, LINGERIE, lingerie apparel valentines black, paul, perla, shorts, WOMEN SALE",
+			},
+			expected: cache["shorts"],
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, _ := ParseProduct(ctx, tt.inputs...)
+			tt.compare(t, actual)
+		})
+	}
+}
+
 func TestProductGender(t *testing.T) {
 	t.Parallel()
 	cache := map[string]*data.Category{

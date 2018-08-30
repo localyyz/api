@@ -14,7 +14,17 @@ func Routes() chi.Router {
 		r.Use(PlaceCtx)
 		r.Get("/", GetPlace)
 		r.Route("/products", api.FilterRoutes(ListProducts))
+		r.Mount("/shipping", shippingZoneRoutes())
 	})
+
+	return r
+}
+
+func shippingZoneRoutes() chi.Router {
+	r := chi.NewRouter()
+
+	r.Get("/", ListShippingZone)
+	r.Post("/", SearchShippingZone)
 
 	return r
 }

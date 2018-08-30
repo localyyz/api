@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	db "upper.io/db.v3"
@@ -37,6 +38,7 @@ type Shopify struct {
 var (
 	SH     *Shopify
 	Scopes = []string{
+		"read_content",
 		"read_products",
 		"read_product_listings",
 		"read_collection_listings",
@@ -110,6 +112,85 @@ func (s *Shopify) RegisterWebhooks(ctx context.Context, place *data.Place) {
 		}
 	}
 	lg.Warnf("registered webhooks for place(%d)", place.ID)
+}
+
+func (s *Shopify) RegisterReturnPolicy(ctx context.Context, place *data.Place) {
+	client, err := GetShopifyClient(place.ID)
+	if err != nil {
+		lg.Warnf("failed to fetch client for place(%d): %v", place.ID, err)
+		return
+	}
+
+	policies, _, err := client.Policy.List(ctx)
+	if err != nil {
+		lg.Alertf("connect %s (id: %v): failed to fetch policy %+v", place.Name, place.ID, err)
+		return
+	}
+	for _, p := range policies {
+		if p.Title == shopify.PolicyRefund {
+			place.ReturnPolicy.Description = p.Body
+			place.ReturnPolicy.URL = p.URL
+		}
+	}
+	err = data.DB.Place.Save(place)
+	if err != nil {
+		lg.Warnf("failed to save return policy place(%d): %v", place.ID, err)
+		return
+	}
+	lg.Warnf("registered return policy for place(%d)", place.ID)
+}
+
+func (s *Shopify) RegisterShippingPolicy(ctx context.Context, place *data.Place) {
+	client, err := GetShopifyClient(place.ID)
+	if err != nil {
+		lg.Warnf("failed to fetch client for place(%d): %v", place.ID, err)
+		return
+	}
+
+	// fetch shipping policies
+	zones, _, _ := client.ShippingZone.List(ctx)
+	for _, z := range zones {
+		for _, c := range z.Countries {
+			if c.Code != "US" && c.Code != "CA" {
+				continue
+			}
+			sz := data.ShippingZone{
+				PlaceID:    place.ID,
+				Name:       z.Name,
+				ExternalID: z.ID,
+				Country:    strings.ToLower(c.Name),
+			}
+			for _, r := range c.Provinces {
+				sz.Regions = append(sz.Regions, data.Region{
+					Region:     r.Name,
+					RegionCode: r.Code,
+				})
+			}
+
+			for _, wz := range z.WeightBasedShippingRates {
+				wpz := sz
+				wpz.Type = data.ShippingZoneTypeByWeight
+				wpz.Description = wz.Name
+				wpz.WeightLow = wz.WeightLow
+				wpz.WeightHigh = wz.WeightHigh
+				wpz.Price, _ = strconv.ParseFloat(wz.Price, 64)
+				data.DB.ShippingZone.Save(&wpz)
+			}
+
+			for _, pz := range z.PriceBasedShippingRates {
+				ppz := sz
+				ppz.Type = data.ShippingZoneTypeByPrice
+				ppz.Description = pz.Name
+				ppz.SubtotalLow, _ = strconv.ParseFloat(pz.MinOrderSubtotal, 64)
+				ppz.SubtotalHigh, _ = strconv.ParseFloat(pz.MaxOrderSubtotal, 64)
+				ppz.Price, _ = strconv.ParseFloat(pz.Price, 64)
+				data.DB.ShippingZone.Save(&ppz)
+			}
+		}
+
+	}
+
+	lg.Warnf("registered return policy for place(%d)", place.ID)
 }
 
 func (s *Shopify) AuthCodeURL(ctx context.Context) string {
@@ -280,6 +361,11 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 	SL.Notify("store", msg)
 	return nil
+}
+
+// this is called internally by the approval tool
+func (s *Shopify) Finalize(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func (s *Shopify) Exchange(shopID string, r *http.Request) (*oauth2.Token, error) {

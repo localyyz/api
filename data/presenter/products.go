@@ -34,7 +34,8 @@ type Product struct {
 	PurchaseCount int64 `json:"purchased"`
 	LiveViewCount int64 `json:"liveViews"`
 
-	IsFavourite bool `json:"isFavourite"`
+	IsFavourite     bool `json:"isFavourite"`
+	HasFreeShipping bool `json:"hasFreeShipping,omitempty"`
 
 	CreateAt  interface{} `json:"createdAt,omitempty"`
 	UpdatedAt interface{} `json:"updatedAt,omitempty"`
@@ -63,6 +64,7 @@ type VariantImageCache map[int64]int64
 type PlaceCache map[int64]*data.Place
 type ImageCache map[int64][]*data.ProductImage
 type FavoriteCache map[int64]bool
+type ShippingZoneCache map[int64]bool
 
 const PlaceCacheCtxKey = "place.cache"
 
@@ -92,6 +94,17 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 		}
 	}
 	ctx = context.WithValue(ctx, PlaceCacheCtxKey, placeCache)
+
+	// fetch free shipping zones on merchant
+	zones, _ := data.DB.ShippingZone.FindAll(db.Cond{
+		"place_id": set.IntSlice(placeIDset),
+		"type":     data.ShippingZoneTypeByPrice,
+		"price":    db.Eq(0),
+	})
+	zoneCache := make(ShippingZoneCache)
+	for _, n := range zones {
+		zoneCache[n.PlaceID] = true
+	}
 
 	// fetch product variants
 	variants, _ := data.DB.ProductVariant.FindAll(db.Cond{
@@ -142,6 +155,7 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	ctx = context.WithValue(ctx, "variant.image.cache", variantImageCache)
 	ctx = context.WithValue(ctx, "image.cache", imageCache)
 	ctx = context.WithValue(ctx, "favourite.cache", favouriteCache)
+	ctx = context.WithValue(ctx, "shippingzone.cache", zoneCache)
 
 	for _, product := range products {
 		list = append(list, NewProduct(ctx, product))
@@ -243,6 +257,16 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 				"user_id":    user.ID,
 			}).Exists()
 		}
+	}
+
+	if cache, _ := ctx.Value("shippingzone.cache").(ShippingZoneCache); cache != nil {
+		p.HasFreeShipping, _ = cache[p.PlaceID]
+	} else {
+		p.HasFreeShipping, _ = data.DB.ShippingZone.Find(db.Cond{
+			"place_id": p.PlaceID,
+			"type":     data.ShippingZoneTypeByPrice,
+			"price":    db.Eq(0),
+		}).Exists()
 	}
 
 	p.ViewCount, _ = stash.GetProductViews(p.ID)
