@@ -31,6 +31,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/places/permissions", ListPermissions)
 	r.Get("/places/social", GetSocialMedia)
 	r.Get("/places/pricerules", ListPriceRules)
+	r.Get("/places/policies", GetPolicies)
 	r.Route("/places/{placeID}", func(r chi.Router) {
 		r.Use(place.PlaceCtx)
 		r.Use(func(next http.Handler) http.Handler {

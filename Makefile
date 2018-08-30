@@ -133,3 +133,6 @@ build:
 
 connect-prod:
 	@ssh -v -nNT -L 1234:localhost:5432 root@db
+
+connect-staging:
+	@ssh -v -nNT -L 1234:localhost:5432 root@staging

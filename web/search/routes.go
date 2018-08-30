@@ -244,9 +244,6 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		"p.status":     data.ProductStatusApproved,
 		"p.score":      db.Gt(0),
 	})
-	if p.gender != nil {
-		cond = cond.And(db.Cond{"p.gender": *p.gender})
-	}
 	if p.category != nil {
 		cond = cond.And(db.Cond{"p.category->>'type'": p.category.String()})
 	}
