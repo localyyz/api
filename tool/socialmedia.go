@@ -1,12 +1,16 @@
 package tool
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
@@ -27,8 +31,14 @@ import (
 	//db "upper.io/db.v3"
 )
 
+type metatyper interface {
+	GetURL() string
+	GetType() metaType
+	GetPlace() *data.Place
+}
+
 type social struct {
-	Type  socialType
+	Type  metaType
 	Match string
 
 	// generated
@@ -38,73 +48,89 @@ type social struct {
 	InstaRating *instaRating
 }
 
-type socialType uint32
+type metaType uint32
 
-func (s socialType) String() string {
-	return socialTypes[s]
+func (s metaType) String() string {
+	return metaTypes[s]
+}
+
+func (u social) GetPlace() *data.Place {
+	return u.Place
+}
+
+func (u social) GetType() metaType {
+	return u.Type
+}
+
+func (u social) GetURL() string {
+	return u.URL
 }
 
 const (
-	_ socialType = iota
+	_ metaType = iota
 	socialTypeFacebook
 	socialTypeInstagram
+	policyTypeReturns
+	policyTypeShipping
 )
 
-var socialTypes = []string{"-", "facebook", "instagram"}
+var metaTypes = []string{"-", "facebook", "instagram", "return", "shipping"}
 
 var socials = []social{
 	{Type: socialTypeFacebook, Match: "facebook.com"},
 	{Type: socialTypeInstagram, Match: "instagram.com"},
 }
 
-func fetchPlaceSocialURL(place *data.Place, socialChann chan social) error {
-	//lg.Infof("fetching %s", place.Website)
+func fetchURL(place *data.Place, chnn chan metatyper) error {
+	lg.Infof("fetching %s", place.Website)
 
-	//resp, err := http.Get(place.Website)
-	//if err != nil {
-	//return errors.Wrapf(err, "req: place(%d)", place.ID)
-	//}
+	resp, err := http.Get(place.Website)
+	if err != nil {
+		return errors.Wrapf(err, "req: place(%d)", place.ID)
+	}
 
-	//if resp.StatusCode != 200 {
-	//return fmt.Errorf("status: place(%d) with %s", place.ID, resp.Status)
-	//}
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("status: place(%d) with %s", place.ID, resp.Status)
+	}
 
-	//doc, err := goquery.NewDocumentFromReader(resp.Body)
-	//if err != nil {
-	//return errors.Wrapf(err, "doc: place(%d)", place.ID)
-	//}
+	//reader, _ := os.Open("tmp/daytonboots.html")
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "doc: place(%d)", place.ID)
+	}
 
-	//doc.Find("a").Each(func(i int, s *goquery.Selection) {
-	//// For each item found, get the band and title
-	//if val, found := s.Attr("href"); found {
-	//for _, sc := range socials {
-	//if strings.Contains(val, sc.Match) {
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		// For each item found, get the links
+		if val, found := s.Attr("href"); found {
+			for _, sc := range socials {
+				if strings.Contains(val, sc.Match) {
 
-	//// pass on sharer links
-	//if strings.Contains(val, "share") {
-	//continue
-	//}
+					// pass on sharer links
+					if strings.Contains(val, "share") {
+						continue
+					}
 
-	//// do some cleaning up and make sure it's a
-	//// valid url
-	//u, err := url.Parse(val)
-	//if err != nil {
-	//log.Printf("%s: place(%d) url parse with %v", sc.Type, place.ID, err)
-	//continue
-	//}
-	//if u.Scheme != "https" {
-	//u.Scheme = "https"
-	//}
+					// do some cleaning up and make sure it's a valid url
+					u, err := url.Parse(val)
+					if err != nil {
+						log.Printf("%s: place(%d) url parse with %v", sc.Type, place.ID, err)
+						continue
+					}
+					if u.Scheme != "https" {
+						u.Scheme = "https"
+					}
+					soc := sc
+					soc.Place = place
+					soc.URL = u.String()
 
-	//soc := sc
-	//soc.Place = place
-	//soc.URL = u.String()
+					chnn <- metatyper(soc)
+				}
+			}
+		}
+	})
 
-	//socialChann <- soc
-	//}
-	//}
-	//}
-	//})
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+	})
 
 	return nil
 }
@@ -169,88 +195,83 @@ func fetchInstagramMeta(URL string) (*instaRating, error) {
 
 func GetSocialMedia(w http.ResponseWriter, r *http.Request) {
 	placeChann := make(chan *data.Place, 20)
-	socialChann := make(chan social)
+	chann := make(chan metatyper)
 
 	var sg sync.WaitGroup
 	for i := 0; i < 20; i++ {
 		go func(placeChann chan *data.Place) {
 			sg.Add(1)
 			for place := range placeChann {
-				//if err := fetchPlaceSocialURL(place, socialChann); err != nil {
-				//log.Println(err)
+				if err := fetchURL(place, chann); err != nil {
+					log.Println(err)
+					continue
+				}
+
+				//if place.InstagramURL != "" {
+				//rating, err := fetchInstagramMeta(place.InstagramURL)
+				//if err != nil {
+				//lg.Warnf("fetch insta error: %v", err)
 				//continue
 				//}
-
-				// fetch facebook data
-				//if place.FacebookURL != "" {
-				//if err := fetchFacebookMeta(place, socialChann); err != nil {
-				//lg.Warn(err)
+				//socialChann <- social{
+				//InstaRating: rating,
+				//Place: place,
+				//Type:  socialTypeInstagram,
 				//}
 				//}
-
-				if place.InstagramURL != "" {
-					rating, err := fetchInstagramMeta(place.InstagramURL)
-					if err != nil {
-						lg.Warnf("fetch insta error: %v", err)
-						continue
-					}
-					socialChann <- social{
-						InstaRating: rating,
-						Place:       place,
-						Type:        socialTypeInstagram,
-					}
-				}
 			}
 			sg.Done()
 		}(placeChann)
 	}
 
-	go func(socialChann chan social) {
-		for soc := range socialChann {
+	go func(chnn chan metatyper) {
+		for soc := range chnn {
 			//consume social
-			switch soc.Type {
+			place := soc.GetPlace()
+			log.Printf("got %s for %s: %s", soc.GetType(), place.Name, soc.GetURL())
+			switch soc.GetType() {
 			case socialTypeFacebook:
-				if soc.FBRating != nil {
-					log.Printf("got %s rating for place(%d)\n", socialTypes[soc.Type], soc.Place.ID)
-					soc.Place.Ratings.Rating = soc.FBRating.StarRating
-					soc.Place.Ratings.Count = soc.FBRating.RatingCount
-					soc.Place.Ratings.FBFans = soc.FBRating.FanCount
-				}
-				if soc.Place.FacebookURL == "" && soc.URL != "" {
-					log.Printf("got %s url for place(%d)\n", socialTypes[soc.Type], soc.Place.ID)
-					soc.Place.FacebookURL = soc.URL
+				//if soc.FBRating != nil {
+				//log.Printf("got %s rating for place(%d)\n", socialTypes[soc.Type], soc.Place.ID)
+				//soc.Place.Ratings.Rating = soc.FBRating.StarRating
+				//soc.Place.Ratings.Count = soc.FBRating.RatingCount
+				//soc.Place.Ratings.FBFans = soc.FBRating.FanCount
+				//}
+				if place.FacebookURL == "" && soc.GetURL() != "" {
+					log.Printf("got fb url for place(%d)", place.ID)
+					place.FacebookURL = soc.GetURL()
 				}
 			case socialTypeInstagram:
-				if rating := soc.InstaRating; rating != nil {
-					log.Printf("got %s rating for place(%d): %+v \n", socialTypes[soc.Type], soc.Place.ID, rating)
-					soc.Place.Ratings.InstFollowers = rating.Graphql.User.EdgeFollowedBy.Count
-				}
-				if soc.Place.InstagramURL == "" {
-					soc.Place.InstagramURL = soc.URL
+				//if rating := soc.InstaRating; rating != nil {
+				//log.Printf("got %s rating for place(%d): %+v \n", socialTypes[soc.Type], soc.Place.ID, rating)
+				//soc.Place.Ratings.InstFollowers = rating.Graphql.User.EdgeFollowedBy.Count
+				//}
+				if place.InstagramURL == "" {
+					place.InstagramURL = soc.GetURL()
 				}
 			}
-			if err := data.DB.Place.Save(soc.Place); err != nil {
-				log.Printf("place: id %d with err %v", soc.Place.ID, err)
+
+			if err := data.DB.Place.Save(place); err != nil {
+				log.Printf("place: with err %v", err)
 			}
 		}
-	}(socialChann)
+	}(chann)
 
 	// producer
 	var places []*data.Place
 	err := data.DB.Place.Find(
 		db.Cond{
-			"status":        data.PlaceStatusActive,
-			"created_at":    db.Gt("2018-04-15"),
-			"instagram_url": db.NotEq(""),
+			"status": data.PlaceStatusActive,
+			db.Raw("shipping_policy->>'desc'"): db.Eq(""),
 		},
-	).Limit(1).OrderBy("-id").All(&places)
+	).All(&places)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	for _, p := range places {
 		placeChann <- p
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(5 * time.Second)
 	}
 	close(placeChann)
 

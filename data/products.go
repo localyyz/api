@@ -74,10 +74,15 @@ const (
 )
 
 const (
-	ProductQueryWeight       = `ts_rank_cd(tsv, to_tsquery($$?$$), 32) + (p.score / (4+p.score::float)) as _rank`
-	ProductQueryWeightWithID = `ts_rank_cd(tsv, to_tsquery($$?$$), 32) + (ln(p.id)+p.score) / (4+ln(p.id)+p.score::float) as _rank`
-	ProductFuzzyWeight       = `CASE WHEN category != '{}' THEN 1 ELSE 0 END + ts_rank_cd(tsv, to_tsquery(?), 16) + (p.score / (4+p.score::float)) as _rank`
-	ProductFuzzyWeightWithID = `CASE WHEN category != '{}' THEN 1 ELSE 0 END + ts_rank_cd(tsv, to_tsquery(?), 16) + ((ln(p.id)+p.score) / (4+ln(p.id)+p.score::float)) as _rank`
+	// NOTE on magic numbers
+	//
+	// ranking type 32 => normalizes the rank with `x / (1+x)` where x is the original rank
+	// modifier 4 => is the top 70th (another magical number) of our merchant
+	//      weights greater than 0
+	ProductQueryWeight       = `ts_rank_cd(tsv, to_tsquery($$?$$), 32) + (p.score / (4+p.score::float))`
+	ProductQueryWeightWithID = `ts_rank_cd(tsv, to_tsquery($$?$$), 32) + (ln(p.id)+p.score) / (4+ln(p.id)+p.score::float)`
+	ProductFuzzyWeight       = `CASE WHEN category != '{}' THEN 1 ELSE 0 END + ts_rank_cd(tsv, to_tsquery(?), 16) + (p.score / (4+p.score::float))`
+	ProductFuzzyWeightWithID = `CASE WHEN category != '{}' THEN 1 ELSE 0 END + ts_rank_cd(tsv, to_tsquery(?), 16) + ((ln(p.id)+p.score) / (4+ln(p.id)+p.score::float))`
 )
 
 type ProductStore struct {

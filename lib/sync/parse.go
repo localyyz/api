@@ -56,6 +56,7 @@ var (
 		"lace-up",
 		"slip-on",
 		"lexi-noel",
+		"sport-coat",
 	}
 )
 

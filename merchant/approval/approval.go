@@ -3,13 +3,10 @@ package approval
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
-	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/flosch/pongo2"
 	"github.com/go-chi/chi"
@@ -125,52 +122,21 @@ func Approve(w http.ResponseWriter, r *http.Request) {
 	place := ctx.Value("place").(*data.Place)
 	approval := ctx.Value("approval").(*data.MerchantApproval)
 
-	place.Status = data.PlaceStatusActive
-	place.ApprovedAt = data.GetTimeUTCPointer()
 	approval.ApprovedAt = place.ApprovedAt
-
-	data.DB.Place.Save(place)
 	data.DB.MerchantApproval.Save(approval)
 
+	place.Status = data.PlaceStatusActive
+	place.ApprovedAt = data.GetTimeUTCPointer()
+
+	data.DB.Place.Save(place)
+
 	go func() {
-		creds, err := data.DB.ShopifyCred.FindOne(
-			db.Cond{
-				"place_id": place.ID,
-				"status":   data.ShopifyCredStatusActive,
-			},
-		)
-		if err != nil {
-			lg.Alertf("merchant approval: credential invalid %+v", err)
-			return
-		}
-		// Run this in a separate go func so it doesn't block
-		// returning to slack
-
-		// check if the merchant has already published item to us. and
-		// if they have. pull and create the products on our side
-		ctx := context.WithValue(r.Context(), "sync.place", place)
-		cl := shopify.NewClient(nil, creds.AccessToken)
-		cl.BaseURL, _ = url.Parse(creds.ApiURL)
-
-		if count, _, _ := cl.ProductList.Count(ctx); count > 0 {
-			page := 1
-			for {
-				productList, _, _ := cl.ProductList.Get(
-					ctx,
-					&shopify.ProductListParam{Limit: 50, Page: page},
-				)
-				if len(productList) == 0 {
-					break
-				}
-				ctx = context.WithValue(ctx, "sync.list", productList)
-				sync.ShopifyProductListingsCreate(ctx)
-				page += 1
-			}
-		}
+		// TODO: this should be some job some where initialized
+		// by some signal
+		connect.SH.RegisterWebhooks(context.Background(), place)
+		connect.SH.RegisterReturnPolicy(context.Background(), place)
+		connect.SH.RegisterShippingPolicy(context.Background(), place)
 	}()
-
-	// register the webhooks
-	connect.SH.RegisterWebhooks(r.Context(), place)
 
 	render.Respond(w, r, approval)
 }
