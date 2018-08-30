@@ -122,19 +122,29 @@ func WithFilterBy(val interface{}) func(next http.Handler) http.Handler {
 	}
 }
 
+// wrapFilterRoutes injects filter value routes into the mux
+// along with the origional handler function
+// usage:
+//
+//   r.Route("/products", api.FilterRoutes(ListProduct))
+//
 func wrapFilterRoutes(r chi.Router, handlerFn http.HandlerFunc) {
 	r.Use(FilterSortHijacksCtx)
-	r.Get("/", handlerFn)
-	r.With(WithFilterBy("lower(p.brand)")).Get("/brands", handlerFn)
-	r.With(WithFilterBy("lower(pv.etc->>'size')")).Get("/sizes", handlerFn)
-	r.With(WithFilterBy("lower(pv.etc->>'color')")).Get("/colors", handlerFn)
-	r.With(WithFilterBy("lower(p.category->>'value')")).Get("/subcategories", handlerFn)
-	r.With(WithFilterBy("lower(p.category->>'type')")).Get("/categories", handlerFn)
-	r.With(WithFilterBy("to_char(round(p.price, -1), '999')")).Get("/prices", handlerFn)
-	r.With(WithFilterBy("lower(pl.name)")).Get("/stores", handlerFn)
+	r.Handle("/", handlerFn)
+	r.With(WithFilterBy("lower(p.brand)")).Handle("/brands", handlerFn)
+	r.With(WithFilterBy("lower(pv.etc->>'size')")).Handle("/sizes", handlerFn)
+	r.With(WithFilterBy("lower(pv.etc->>'color')")).Handle("/colors", handlerFn)
+	r.With(WithFilterBy("lower(p.category->>'value')")).Handle("/subcategories", handlerFn)
+	r.With(WithFilterBy("lower(p.category->>'type')")).Handle("/categories", handlerFn)
+	r.With(WithFilterBy("to_char(round(p.price, -1), '999')")).Handle("/prices", handlerFn)
+	r.With(WithFilterBy("lower(pl.name)")).Handle("/stores", handlerFn)
 }
 
-// TODO: turn these into middlewares?
+// FilterRoutes wraps an http handlerfunc with filter routes
+// usage:
+//
+//   r.Route("/products", api.FilterRoutes(ListProduct))
+//
 func FilterRoutes(handlerFn http.HandlerFunc) func(r chi.Router) {
 	return func(r chi.Router) {
 		wrapFilterRoutes(r, handlerFn)

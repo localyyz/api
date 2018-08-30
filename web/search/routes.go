@@ -1,7 +1,6 @@
 package search
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,13 +16,13 @@ import (
 	"github.com/pressly/lg"
 	set "gopkg.in/fatih/set.v0"
 	db "upper.io/db.v3"
-	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 func Routes() chi.Router {
+
 	r := chi.NewRouter()
-	r.Use(api.FilterSortCtx)
-	r.Post("/", OmniSearch)
+	r.Route("/", api.FilterRoutes(Search))
+	r.Post("/similar", SimilarSearch)
 	r.Post("/related", RelatedTags)
 
 	return r
@@ -35,6 +34,10 @@ const (
 	_ keywordPartType = iota
 	keywordPartTypeGender
 	keywordPartTypeCategory
+)
+
+var (
+	ErrNoSearchResult = errors.New("no search results")
 )
 
 type omniSearchRequest struct {
@@ -110,16 +113,25 @@ func (o *omniSearchRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func fuzzySearch(ctx context.Context, rawParts ...string) (sqlbuilder.Selector, error) {
+func SimilarSearch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
+
+	var p omniSearchRequest
+	if err := render.Bind(r, &p); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
 	// find best matched spellings for each word in the query
 	// NOTE: make sure to fuzzy search with raw and unparsed query
 	//
 	// for example: `addidas` shouldn't be inflected to `addida`
-	fuzzyWords, _ := data.DB.SearchWord.FindSimilar(rawParts...)
-
+	fuzzyWords, _ := data.DB.SearchWord.FindSimilar(p.rawParts...)
 	// if we didn't find any fuzzyWords, return
 	if len(fuzzyWords) == 0 {
-		return nil, errors.New("no fuzzy words found")
+		render.Respond(w, r, ErrNoSearchResult)
 	}
 	// for search queries, we have the default weighting vector of {0.1, 0.2, 0.4, 1.0}
 	// which we can use to specify the importance of each terms in a query.
@@ -161,7 +173,7 @@ func fuzzySearch(ctx context.Context, rawParts ...string) (sqlbuilder.Selector, 
 	}
 
 	term := fmt.Sprintf("%s | %s", orTerm, andTerm)
-	return data.DB.Select(
+	query := data.DB.Select(
 		db.Raw("distinct p.id"),
 		db.Raw(data.ProductFuzzyWeight, term)).
 		From("products p").
@@ -169,78 +181,13 @@ func fuzzySearch(ctx context.Context, rawParts ...string) (sqlbuilder.Selector, 
 		Where(
 			db.And(db.Raw(`tsv @@ to_tsquery(?)`, term), cond),
 		).
-		OrderBy("_rank DESC"), nil
-
-}
-
-// OmniSearch catch all search endpoint and returns categorized
-// json search results
-func OmniSearch(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	cursor := ctx.Value("cursor").(*api.Page)
-	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
-
-	var p omniSearchRequest
-	if err := render.Bind(r, &p); err != nil {
-		render.Render(w, r, api.ErrInvalidRequest(err))
-		return
-	}
-
-	// log the search query
-	lg.SetEntryField(ctx, "query", p.Query)
-
-	// join query parts back to one string
-	qraw := db.Raw(strings.Join(p.queryParts, ":* &"))
-	qrawNoSpace := strings.Join(p.queryParts, "")
-
-	// NOTE on magic numbers
-	//
-	// ranking type 32 => normalizes the rank with `x / (1+x)` where x is the original rank
-	// modifier 4 => is the top 70th (another magical number) of our merchant
-	//      weights greater than 0
-	cond := db.Cond{
-		"p.deleted_at": db.IsNull(),
-		"p.status":     data.ProductStatusApproved,
-		"p.score":      db.Gt(0),
-	}
-	if p.gender != nil {
-		cond["p.gender"] = *p.gender
-	}
-	if p.category != nil {
-		cond[db.Raw("p.category->>'type'")] = p.category.String()
-	}
-	query := data.DB.Select(
-		db.Raw("p.id"),
-		db.Raw(data.ProductQueryWeight, qraw)).
-		From("products p").
-		Where(db.And(
-			cond,
-			db.Raw(`tsv @@ (
-				to_tsquery($$?$$) ||
-				to_tsquery('simple', $$?:*$$) ||
-				to_tsquery($$?:*$$) ||
-				to_tsquery('simple', $$?$$)
-			)`, qraw, qraw, qraw, db.Raw(qrawNoSpace)),
-		)).
-		OrderBy("_rank DESC", "id DESC")
-		// NOTE need to anchor on an unique (id) field or same result would be returned
-
+		OrderBy("_rank DESC")
 	query = filterSort.UpdateQueryBuilder(query)
 	paginate := cursor.UpdateQueryBuilder(query)
-	var err error
-
-	if cursor.ItemTotal == 0 {
-		// fuzzy
-		query, err = fuzzySearch(ctx, p.rawParts...)
-		if err != nil {
-			render.Respond(w, r, []struct{}{})
-			return
-		}
-		paginate = cursor.UpdateQueryBuilder(query)
-	}
 
 	rows, err := paginate.QueryContext(ctx)
 	if err != nil {
+		lg.Warnf("search: failed with %v", err)
 		render.Respond(w, r, err)
 		return
 	}
@@ -273,5 +220,63 @@ func OmniSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	cursor.Update(products)
 
+	render.RenderList(w, r, presenter.NewProductList(ctx, products))
+}
+
+// OmniSearch catch all search endpoint and returns categorized
+// json search results
+func Search(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
+
+	var p omniSearchRequest
+	if err := render.Bind(r, &p); err != nil {
+		render.Render(w, r, api.ErrInvalidRequest(err))
+		return
+	}
+
+	// log the search query
+	lg.SetEntryField(ctx, "query", p.Query)
+
+	cond := db.And(db.Cond{
+		"p.deleted_at": db.IsNull(),
+		"p.status":     data.ProductStatusApproved,
+		"p.score":      db.Gt(0),
+	})
+	if p.gender != nil {
+		cond = cond.And(db.Cond{"p.gender": *p.gender})
+	}
+	if p.category != nil {
+		cond = cond.And(db.Cond{"p.category->>'type'": p.category.String()})
+	}
+	// join query parts back to one string
+	qraw := db.Raw(strings.Join(p.queryParts, ":* &"))
+	qrawNoSpace := strings.Join(p.queryParts, "")
+	cond = cond.And(db.Raw(`
+		tsv @@ (
+			to_tsquery($$?$$) ||
+			to_tsquery('simple', $$?:*$$) ||
+			to_tsquery($$?:*$$) ||
+			to_tsquery('simple', $$?$$)
+		)`, qraw, qraw, qraw, db.Raw(qrawNoSpace)))
+
+	query := data.DB.Select("p.*").
+		From("products p").
+		Where(cond).
+		OrderBy(
+			// NOTE. for now. who cares about relevance.
+			// db.Raw(data.ProductQueryWeight, qraw),
+			"id DESC",
+		)
+	query = filterSort.UpdateQueryBuilder(query)
+
+	var products []*data.Product
+	paginate := cursor.UpdateQueryBuilder(query)
+	if err := paginate.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	cursor.Update(products)
 	render.RenderList(w, r, presenter.NewProductList(ctx, products))
 }
