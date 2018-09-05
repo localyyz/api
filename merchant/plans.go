@@ -238,13 +238,14 @@ func CreatePlan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create a recurring billing for transaction and commission charges
+	prc := fmt.Sprintf("%.2f", defaultPlan.RecurringPrice)
 	billing := &shopify.Billing{
 		Type:         shopify.BillingTypeRecurring,
 		Name:         defaultPlan.Name,
 		Terms:        defaultPlan.Terms,
 		ReturnUrl:    "https://merchant.localyyz.com/plan/cb",
-		Price:        "0",
-		CappedAmount: "10000",
+		Price:        prc,
+		CappedAmount: prc,
 	}
 	if debug := ctx.Value("debug").(bool); debug {
 		billing.Test = true

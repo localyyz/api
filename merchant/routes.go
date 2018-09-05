@@ -111,6 +111,13 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		billing, _ := data.DB.PlaceBilling.FindOne(
 			db.Cond{
 				"place_id": place.ID,
+				"status": db.In(
+					[]data.BillingStatus{
+						data.BillingStatusPending,
+						data.BillingStatusAccepted,
+						data.BillingStatusActive,
+					},
+				),
 			},
 		)
 		if billing != nil {
