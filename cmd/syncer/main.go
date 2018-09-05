@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/config"
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/syncer"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
@@ -46,6 +47,11 @@ func main() {
 	// new web handler
 	h := syncer.New(db)
 	h.Debug = (conf.Environment == "development")
+
+	// cache
+	if err := sync.SetupCache(); err != nil {
+		lg.Fatal(err)
+	}
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.

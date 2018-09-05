@@ -7,12 +7,10 @@ import (
 )
 
 type productSyncer struct {
-	product        *data.Product
-	place          *data.Place
-	variants       []*data.ProductVariant
-	images         []*data.ProductImage
-	categoryCache  map[string]*data.Category
-	blacklistCache map[string]*data.Blacklist
+	product  *data.Product
+	place    *data.Place
+	variants []*data.ProductVariant
+	images   []*data.ProductImage
 }
 
 type Syncer interface {
@@ -33,10 +31,8 @@ func (s *productSyncer) Retry() {
 
 func (s *productSyncer) SyncCategories(title, tags, productType string) error {
 	catSync := &shopifyCategorySyncer{
-		product:        s.product,
-		place:          s.place,
-		categoryCache:  s.categoryCache,
-		blacklistCache: s.blacklistCache,
+		product: s.product,
+		place:   s.place,
 	}
 	if err := catSync.Sync(title, tags, productType); err != nil {
 		if err == ErrBlacklisted {

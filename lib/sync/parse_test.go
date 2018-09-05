@@ -12,7 +12,7 @@ type tagTest struct {
 	name     string
 	inputs   []string
 	place    *data.Place
-	expected *data.Category
+	expected data.Whitelist
 }
 
 var (
@@ -21,146 +21,113 @@ var (
 	placeUnisex = &data.Place{Gender: data.PlaceGenderUnisex}
 )
 
-func TestProductCategory(t *testing.T) {
+func TestWhitelist(t *testing.T) {
 	t.Parallel()
 
-	cache := map[string]*data.Category{
-		"dress": &data.Category{
-			Gender:  data.ProductGenderFemale,
-			Type:    data.CategoryApparel,
-			Value:   "dress",
-			Mapping: "dresses",
+	cache := whitelist{
+		"dress": {
+			data.Whitelist{
+				Gender: data.ProductGenderFemale,
+				Type:   data.CategoryApparel,
+				Value:  "dress",
+				Weight: 1,
+			},
 		},
-		"eau-de-parfum": &data.Category{
-			Gender:  data.ProductGenderUnisex,
-			Type:    data.CategoryFragrance,
-			Value:   "eau-de-parfum",
-			Mapping: "perfume",
+		"bag": {
+			data.Whitelist{
+				Gender: data.ProductGenderUnisex,
+				Type:   data.CategoryBag,
+				Value:  "bag",
+				Weight: 0,
+			},
 		},
-		"bag": &data.Category{
-			Gender:  data.ProductGenderUnisex,
-			Type:    data.CategoryBag,
-			Value:   "bag",
-			Mapping: "",
+		"backpack": {
+			data.Whitelist{
+				Gender: data.ProductGenderFemale,
+				Type:   data.CategoryBag,
+				Value:  "backpack",
+				Weight: 2,
+			},
+			data.Whitelist{
+				Gender: data.ProductGenderMale,
+				Type:   data.CategoryBag,
+				Value:  "backpack",
+				Weight: 2,
+			},
 		},
-		"sunglass": &data.Category{
-			Gender:  data.ProductGenderUnisex,
-			Type:    data.CategoryAccessory,
-			Value:   "sunglass",
-			Mapping: "sunglasses",
+		"jean": {
+			data.Whitelist{
+				Gender: data.ProductGenderFemale,
+				Type:   data.CategoryApparel,
+				Value:  "jean",
+				Weight: 2,
+			},
+			data.Whitelist{
+				Gender: data.ProductGenderMale,
+				Type:   data.CategoryApparel,
+				Value:  "jean",
+				Weight: 2,
+			},
 		},
-		"v-neck": &data.Category{
-			Gender:  data.ProductGenderUnisex,
-			Type:    data.CategoryApparel,
-			Value:   "v-neck",
-			Mapping: "",
-		},
-		"face-mask": &data.Category{
-			Gender:  data.ProductGenderUnisex,
-			Type:    data.CategoryCosmetic,
-			Value:   "face-mask",
-			Mapping: "face mask",
-		},
-		"eau-de-toilette": &data.Category{
-			Gender:  data.ProductGenderMale,
-			Type:    data.CategoryFragrance,
-			Value:   "eau-de-toilette",
-			Mapping: "cologne",
+		"jean-paul": {
+			data.Whitelist{
+				Gender:   data.ProductGenderUnisex,
+				Type:     data.CategoryApparel,
+				Value:    "jean-paul",
+				IsIgnore: true,
+			},
 		},
 	}
 
-	// load up caches it in the context
-	ctx := context.WithValue(context.Background(), cacheKey, cache)
-	ctx = context.WithValue(ctx, cacheKeyBlacklist, make(map[string]*data.Blacklist))
-
 	tests := []tagTest{
 		{
-			name:     "Dress",
+			name:     "dress",
 			inputs:   []string{"Basic Dress in Light Gray Stine Ladefoged Basic Dress - LGHTGREY"},
 			place:    placeUnisex,
-			expected: cache["dress"],
+			expected: cache["dress"][0],
 		},
 		{
-			name:     "Perfume",
-			inputs:   []string{"1 Million Prive Eau De Parfum Spray By Paco Rabanne"},
-			place:    placeUnisex,
-			expected: cache["eau-de-parfum"],
-		},
-		{
-			name:     "Bag",
-			inputs:   []string{"new 2017 hot sale fashion men bags, men famous brand design leather messenger bag, high quality man brand bag, wholesale price"},
-			place:    placeMale,
-			expected: &data.Category{Gender: data.ProductGenderMale, Type: data.CategoryBag, Value: "bag", Mapping: ""},
-		},
-		{
-			name:     "Sunglass",
-			inputs:   []string{"Lacoste L829S Brown  Sunglasses RRP £102"},
-			place:    placeUnisex,
-			expected: cache["sunglass"],
-		},
-		//{ TODO: undeterministic could be vneck or dress
-		//name:     "V-neck dress",
-		//inputs:   []string{"Fashion Maternity V-neck Short Sleeve Cotton Pregnancy Dress Elastic Waist Dresses"},
-		//place:    placeFemale,
-		//expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryApparel, Value: "dress", Mapping: ""},
-		//},
-		{
-			name:     "Face mask",
-			inputs:   []string{"Apple, Aloe & Avocado Face Mask"},
-			place:    placeFemale,
-			expected: &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryCosmetic, Value: "face-mask", Mapping: "face mask"},
-		},
-
-		{
-			name:     "Eau De Toillet",
-			inputs:   []string{"Burberry Sport Ice by Burberry Eau De Toilette Spray 2.5 oz"},
-			place:    placeUnisex,
-			expected: cache["eau-de-toilette"],
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx = context.WithValue(ctx, "sync.place", tt.place)
-			actual, _ := ParseProduct(ctx, tt.inputs...)
-			tt.compare(t, actual)
-		})
-	}
-}
-
-func TestMixedCategoryHints(t *testing.T) {
-	t.Parallel()
-	cache := map[string]*data.Category{
-		"jean": &data.Category{
-			Type:    data.CategoryApparel,
-			Value:   "jean",
-			Mapping: "jeans",
-		},
-		"shorts": &data.Category{
-			Type:    data.CategoryApparel,
-			Value:   "shorts",
-			Mapping: "shorts",
-		},
-	}
-
-	ctx := context.WithValue(context.Background(), cacheKey, cache)
-	ctx = context.WithValue(ctx, cacheKeyBlacklist, make(map[string]*data.Blacklist))
-	ctx = context.WithValue(ctx, "sync.place", &data.Place{})
-
-	tests := []tagTest{
-		{
-			name: "Lace shorts by Jean Paul Gauthier",
-			inputs: []string{
-				"La Perla by Jean Paul Gaultier Blue Lace Shorts",
-				"APPAREL, blue, DESIGNERS, friday, gaultier, jean, Jean Paul Gaultier, lace, LINGERIE, lingerie apparel valentines black, paul, perla, shorts, WOMEN SALE",
+			name:   "backpack",
+			inputs: []string{"Original NIKE Training Backpacks Sports Bags"},
+			place:  placeUnisex,
+			expected: data.Whitelist{
+				Gender: data.ProductGenderUnisex,
+				Type:   data.CategoryBag,
+				Value:  "backpack",
 			},
-			expected: cache["shorts"],
 		},
+		{
+			name:     "womens backpack",
+			inputs:   []string{"Original NIKE 'womens' Training Backpacks Sports Bags"},
+			place:    placeUnisex,
+			expected: cache["backpack"][0],
+		},
+		{
+			name:     "mens backpack",
+			inputs:   []string{"Original NIKE 'mens' Training Backpacks Sports Bags"},
+			place:    placeUnisex,
+			expected: cache["backpack"][1],
+		},
+		{
+			name:     "mens backpack",
+			inputs:   []string{"Original NIKE 'mens' Training Backpacks Sports Bags"},
+			place:    placeUnisex,
+			expected: cache["backpack"][1],
+		},
+		//{
+		//name:     "jean paul",
+		//inputs:   []string{"JEAN PAUL GAULTIER Size L Burgundy Sheer Opaque Tatto Print Mini Dress"},
+		//place:    placeUnisex,
+		//expected: cache["dress"][0],
+		//},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, _ := ParseProduct(ctx, tt.inputs...)
+			p := newParser(context.WithValue(context.Background(), "sync.place", tt.place))
+			p.whitelist = cache
+
+			actual := p.searchWhiteList(tt.inputs...)
 			tt.compare(t, actual)
 		})
 	}
@@ -168,135 +135,133 @@ func TestMixedCategoryHints(t *testing.T) {
 
 func TestProductGender(t *testing.T) {
 	t.Parallel()
-	cache := map[string]*data.Category{
-		"drake":       &data.Category{Gender: data.ProductGenderMale, Type: data.CategoryApparel, Value: "drake"},
-		"beyonce":     &data.Category{Gender: data.ProductGenderFemale, Type: data.CategoryHandbag, Value: "beyonce"},
-		"brucejenner": &data.Category{Gender: data.ProductGenderUnisex, Type: data.CategoryAccessory, Value: "brucejenner"},
-		"shoe":        &data.Category{Gender: data.ProductGenderUnisex, Type: data.CategoryShoe, Value: "shoe"},
-		"lace-up":     &data.Category{Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryShoe, Value: "lace-up"},
+	cache := whitelist{
+		"lovedrake": {
+			data.Whitelist{Gender: data.ProductGenderMale, Type: data.CategoryApparel, Value: "lovedrake"},
+			data.Whitelist{Gender: data.ProductGenderFemale, Type: data.CategoryApparel, Value: "lovedrake"},
+		},
+		"eminem":      {data.Whitelist{Gender: data.ProductGenderMale, Type: data.CategoryApparel, Value: "eminem"}},
+		"beyonce":     {data.Whitelist{Gender: data.ProductGenderFemale, Type: data.CategoryHandbag, Value: "beyonce"}},
+		"brucejenner": {data.Whitelist{Gender: data.ProductGenderUnisex, Type: data.CategoryAccessory, Value: "brucejenner"}},
+		"shoe":        {data.Whitelist{Gender: data.ProductGenderUnisex, Type: data.CategoryShoe, Value: "shoe"}},
+		"lace-up":     {data.Whitelist{Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryShoe, Value: "lace-up"}},
 
-		"shirt":   &data.Category{Weight: 1, Gender: data.ProductGenderMale, Type: data.CategoryApparel, Value: "shirt"},
-		"t-shirt": &data.Category{Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryApparel, Value: "t-shirt"},
+		"shirt":   {data.Whitelist{Weight: 1, Gender: data.ProductGenderMale, Type: data.CategoryApparel, Value: "shirt"}},
+		"t-shirt": {data.Whitelist{Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryApparel, Value: "t-shirt"}},
 	}
-	ctx := context.WithValue(context.Background(), cacheKey, cache)
-	ctx = context.WithValue(ctx, cacheKeyBlacklist, make(map[string]*data.Blacklist))
 
 	tests := []tagTest{
 		{
 			name:     "male category with gender keyword male",
 			place:    placeUnisex,
-			inputs:   []string{"Drake is best man singer"},
-			expected: &data.Category{Value: "drake", Type: data.CategoryApparel, Gender: data.ProductGenderMale},
+			inputs:   []string{"eminem is best man singer"},
+			expected: data.Whitelist{Value: "eminem", Type: data.CategoryApparel, Gender: data.ProductGenderMale},
 		},
 		{
 			name:     "male category with gender keyword female",
 			place:    placeUnisex,
-			inputs:   []string{"females love drake"},
-			expected: &data.Category{Value: "drake", Type: data.CategoryApparel, Gender: data.ProductGenderFemale},
+			inputs:   []string{"females lovedrake"},
+			expected: data.Whitelist{Value: "lovedrake", Type: data.CategoryApparel, Gender: data.ProductGenderFemale},
 		},
 		{
 			name:     "male category with no gender keyword",
 			place:    placeUnisex,
-			inputs:   []string{"I love Drake"},
-			expected: &data.Category{Value: "drake", Type: data.CategoryApparel, Gender: data.ProductGenderMale},
+			inputs:   []string{"I love EMINEM"},
+			expected: data.Whitelist{Value: "eminem", Type: data.CategoryApparel, Gender: data.ProductGenderMale},
 		},
 		{
 			name:     "female category with gender keyword female",
 			place:    placeUnisex,
 			inputs:   []string{"beyonce is the greatest woman singer of all time"},
-			expected: &data.Category{Value: "beyonce", Type: data.CategoryHandbag, Gender: data.ProductGenderFemale},
-		},
-		{
-			name:     "female category with gender keyword male",
-			place:    placeUnisex,
-			inputs:   []string{"all men should listen to at least one beyonce song"},
-			expected: &data.Category{Value: "beyonce", Type: data.CategoryHandbag, Gender: data.ProductGenderMale},
+			expected: data.Whitelist{Value: "beyonce", Type: data.CategoryHandbag, Gender: data.ProductGenderFemale},
 		},
 		{
 			name:     "female category with no gender keyword",
 			place:    placeUnisex,
 			inputs:   []string{"I love beyonce"},
-			expected: &data.Category{Value: "beyonce", Type: data.CategoryHandbag, Gender: data.ProductGenderFemale},
+			expected: data.Whitelist{Value: "beyonce", Type: data.CategoryHandbag, Gender: data.ProductGenderFemale},
 		},
 		{
 			name:     "unisex category with gender keyword male",
 			place:    placeUnisex,
 			inputs:   []string{"brucejenner was a man"},
-			expected: &data.Category{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderMale},
+			expected: data.Whitelist{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderMale},
 		},
 		{
 			name:     "unisex category with gender keyword female",
 			place:    placeUnisex,
 			inputs:   []string{"brucejenner became a woman"},
-			expected: &data.Category{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderFemale},
+			expected: data.Whitelist{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderFemale},
 		},
 		{
 			name:     "unisex category with no gender keyword",
 			place:    placeUnisex,
 			inputs:   []string{"brucejenner was on vanity fair cover"},
-			expected: &data.Category{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderUnisex},
+			expected: data.Whitelist{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderUnisex},
 		},
-		// place gender
 		{
 			name:     "unisex category with place gender male",
 			place:    placeMale,
 			inputs:   []string{"brucejenner was an olympian"},
-			expected: &data.Category{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderMale},
+			expected: data.Whitelist{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderMale},
 		},
 		{
 			name:     "male category with place gender male",
 			place:    placeMale,
-			inputs:   []string{"drake is from forest hill"},
-			expected: &data.Category{Value: "drake", Type: data.CategoryApparel, Gender: data.ProductGenderMale},
+			inputs:   []string{"eminem is rap god"},
+			expected: data.Whitelist{Value: "eminem", Type: data.CategoryApparel, Gender: data.ProductGenderMale},
 		},
 		{
 			name:     "unisex category with place gender female",
 			place:    placeFemale,
 			inputs:   []string{"brucejenner was an athelete"},
-			expected: &data.Category{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderFemale},
+			expected: data.Whitelist{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderFemale},
 		},
 		{
 			name:     "unisex category with place gender unisex",
 			place:    placeUnisex,
 			inputs:   []string{"brucejenner is kylies dad"},
-			expected: &data.Category{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderUnisex},
+			expected: data.Whitelist{Value: "brucejenner", Type: data.CategoryAccessory, Gender: data.ProductGenderUnisex},
 		},
 		{
 			name:     "hyphonated compound category",
 			place:    placeUnisex,
 			inputs:   []string{"mens cool t-shirt"},
-			expected: &data.Category{Value: "t-shirt", Type: data.CategoryApparel, Gender: data.ProductGenderMale},
+			expected: data.Whitelist{Value: "t-shirt", Type: data.CategoryApparel, Gender: data.ProductGenderMale},
 		},
 		{
 			name:     "hyphonated compound category with female gender hint and higher weighted category",
 			place:    placeUnisex,
 			inputs:   []string{"Lace-up Warm Cotton Shoes Female"},
-			expected: &data.Category{Value: "lace-up", Type: data.CategoryShoe, Gender: data.ProductGenderFemale},
+			expected: data.Whitelist{Value: "lace-up", Type: data.CategoryShoe, Gender: data.ProductGenderFemale},
 		},
 		{
 			name:     "gender hint sexy is female. only if nothing else is detected",
 			place:    placeUnisex,
 			inputs:   []string{"something something sexy"},
-			expected: &data.Category{Gender: data.ProductGenderFemale},
+			expected: data.Whitelist{Gender: data.ProductGenderFemale},
 		},
 		{
 			name:     "gender men with 'sexy'",
 			place:    placeUnisex,
 			inputs:   []string{"mens sexy something"},
-			expected: &data.Category{Gender: data.ProductGenderMale},
+			expected: data.Whitelist{Gender: data.ProductGenderMale},
 		},
 		{
 			name:     "mixed signals",
 			place:    placeFemale,
 			inputs:   []string{"Fashion Shirt Dress Black Lapel Long Sleeve Belted A Line Dress Elegant Floral Long Dress"},
-			expected: &data.Category{Gender: data.ProductGenderFemale},
+			expected: data.Whitelist{Gender: data.ProductGenderFemale},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx = context.WithValue(ctx, "sync.place", tt.place)
-			actual, _ := ParseProduct(ctx, tt.inputs...)
+			ctx := context.WithValue(context.Background(), "sync.place", tt.place)
+			p := newParser(ctx)
+			p.whitelist = cache
+
+			actual := p.searchWhiteList(tt.inputs...)
 			tt.compare(t, actual)
 		})
 	}
@@ -305,26 +270,25 @@ func TestProductGender(t *testing.T) {
 func TestProductBlacklist(t *testing.T) {
 	t.Parallel()
 
-	cache := map[string]*data.Blacklist{
-		"iphone":    &data.Blacklist{Word: "iphone"},
-		"phone":     &data.Blacklist{Word: "phone"},
-		"lcd":       &data.Blacklist{Word: "lcd"},
-		"diy":       &data.Blacklist{Word: "diy"},
-		"electric":  &data.Blacklist{Word: "electric"},
-		"car":       &data.Blacklist{Word: "car"},
-		"equipment": &data.Blacklist{Word: "equipment"},
-		"hdd":       &data.Blacklist{Word: "hdd"},
-		"canon":     &data.Blacklist{Word: "canon"},
-		"tray":      &data.Blacklist{Word: "tray"},
-		"3d":        &data.Blacklist{Word: "3d"},
-		"bicycle":   &data.Blacklist{Word: "bicycle"},
-		"mug":       &data.Blacklist{Word: "mug"},
-		"passport":  &data.Blacklist{Word: "passport"},
-		"card":      &data.Blacklist{Word: "card"},
-		"brush":     &data.Blacklist{Word: "brush"},
-		"book":      &data.Blacklist{Word: "book"},
+	cache := map[string]data.Blacklist{
+		"iphone":    data.Blacklist{Word: "iphone"},
+		"phone":     data.Blacklist{Word: "phone"},
+		"lcd":       data.Blacklist{Word: "lcd"},
+		"diy":       data.Blacklist{Word: "diy"},
+		"electric":  data.Blacklist{Word: "electric"},
+		"car":       data.Blacklist{Word: "car"},
+		"equipment": data.Blacklist{Word: "equipment"},
+		"hdd":       data.Blacklist{Word: "hdd"},
+		"canon":     data.Blacklist{Word: "canon"},
+		"tray":      data.Blacklist{Word: "tray"},
+		"3d":        data.Blacklist{Word: "3d"},
+		"bicycle":   data.Blacklist{Word: "bicycle"},
+		"mug":       data.Blacklist{Word: "mug"},
+		"passport":  data.Blacklist{Word: "passport"},
+		"card":      data.Blacklist{Word: "card"},
+		"brush":     data.Blacklist{Word: "brush"},
+		"book":      data.Blacklist{Word: "book"},
 	}
-	ctx := context.WithValue(context.Background(), cacheKeyBlacklist, cache)
 
 	/* all values from db */
 	var products = []string{
@@ -352,7 +316,8 @@ func TestProductBlacklist(t *testing.T) {
 
 	for i, tt := range products {
 		t.Run(fmt.Sprintf("blacklist %d", i), func(t *testing.T) {
-			blacklisted := SearchBlackList(ctx, tt)
+			p := &parser{blacklist: cache}
+			blacklisted := p.searchBlackList(tt)
 			if !blacklisted {
 				t.Error("Fail: ", tt)
 			}
@@ -360,7 +325,7 @@ func TestProductBlacklist(t *testing.T) {
 	}
 }
 
-func (tt tagTest) compare(t *testing.T, actual data.Category) {
+func (tt tagTest) compare(t *testing.T, actual data.Whitelist) {
 	if actual.Gender != tt.expected.Gender {
 		t.Errorf("test '%s': expected gender '%v', got '%v'", tt.name, tt.expected.Gender, actual.Gender)
 	}
@@ -368,6 +333,6 @@ func (tt tagTest) compare(t *testing.T, actual data.Category) {
 		t.Errorf("test '%s': expected type '%s', got '%s'", tt.name, tt.expected.Type, actual.Type)
 	}
 	if tt.expected.Value != "" && actual.Value != tt.expected.Value {
-		t.Errorf("test '%s': expected category '%s', got '%s'", tt.name, tt.expected.Value, actual.Value)
+		t.Errorf("test '%s': expected value '%s', got '%s'", tt.name, tt.expected.Value, actual.Value)
 	}
 }

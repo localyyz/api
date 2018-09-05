@@ -7,9 +7,7 @@ import (
 )
 
 var (
-	storeCache     map[string]*data.Place
-	categoryCache  map[string]*data.Category
-	blacklistCache map[string]*data.Blacklist
+	storeCache map[string]*data.Place
 )
 
 func SetupShopCache(places ...*data.Place) {
@@ -18,22 +16,6 @@ func SetupShopCache(places ...*data.Place) {
 		storeCache[p.ShopifyID] = p
 	}
 	lg.Infof("store cache: keys(%d)", len(storeCache))
-}
-
-func SetupCategoryCache(categories ...*data.Category) {
-	categoryCache = make(map[string]*data.Category)
-	for _, c := range categories {
-		categoryCache[c.Value] = c
-	}
-	lg.Infof("category cache: keys(%d)", len(categoryCache))
-}
-
-func SetupCategoryBlacklistCache(keywords ...*data.Blacklist) {
-	blacklistCache := make(map[string]*data.Blacklist)
-	for _, word := range keywords {
-		blacklistCache[word.Word] = word
-	}
-	lg.Infof("blacklist cache: keys(%d)", len(blacklistCache))
 }
 
 func storeGet(key string) (*data.Place, error) {
