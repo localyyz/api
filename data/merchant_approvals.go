@@ -114,6 +114,7 @@ var (
 	merchantApprovalRejectionReasons = []string{
 		"unknown",
 		"product_quality",
+		"vertical",
 		"reputation",
 		"returns",
 		"website",
