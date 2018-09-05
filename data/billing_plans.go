@@ -33,6 +33,11 @@ const (
 	BillingPlanTypeEssential                        // 2
 	BillingPlanTypePriority                         // 3
 	BillingPlanTypeCustom                           // 4
+
+	// monthly recurring subsription plans
+	BillingSubscriptionBasic    // 5
+	BillingSubscriptionStandard // 6
+	BillingSubscriptionAdvanced // 7
 )
 
 const (
@@ -42,7 +47,16 @@ const (
 	BillingTypeMonthly                     // 3
 )
 
-var billingPlanTypes = []string{"-", "standard", "essential", "priority", "custom"}
+var billingPlanTypes = []string{
+	"-",
+	"standard",
+	"essential",
+	"priority",
+	"custom",
+	"localyyz-basic",
+	"localyyz",
+	"localyyz-advanced",
+}
 var billingTypes = []string{"-", "annual", "quaterly", "monthly"}
 
 func (b *BillingPlan) CollectionName() string {
