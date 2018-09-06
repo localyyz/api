@@ -47,9 +47,13 @@ func ShopifyShopCtx(next http.Handler) http.Handler {
 			return
 		}
 
+		// shopify credential is nil or errored out
 		creds, err := data.DB.ShopifyCred.FindByPlaceID(place.ID)
-		if err != nil {
-			next.ServeHTTP(w, r)
+		if err != nil || creds != nil && creds.Status != data.ShopifyCredStatusActive {
+			// redirect to api to trigger oauth
+			apiURL := ctx.Value("api.url").(string)
+			redirectURL := fmt.Sprintf("%s/connect?shop=%s", apiURL, shopDomain)
+			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 			return
 		}
 		client := shopify.NewClient(nil, creds.AccessToken)
