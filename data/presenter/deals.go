@@ -39,11 +39,10 @@ func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
 		v := p.Variants[0]
 		c.Title = p.Title
 		c.Description = fmt.Sprintf(
-			"Retail price $%.2f. Deal price $%.2f -> %.f%% (or $%.2f) OFF!",
+			"Retail price $%.2f. Deal price $%.2f -> %.f%% OFF!",
 			v.PrevPrice,
 			v.Price,
 			100.0-(v.Price*100/v.PrevPrice),
-			c.Value,
 		)
 
 		if len(p.Images) > 0 {
