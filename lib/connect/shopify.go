@@ -301,15 +301,6 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 	}
 
 	var merchantApproval *data.MerchantApproval
-	// if currency is not CAD / USD. reject with reason international currency
-	if place.Currency != "CAD" && place.Currency != "USD" {
-		place.Status = data.PlaceStatusInActive
-		// inject an approval row for this merchant
-		merchantApproval = &data.MerchantApproval{
-			RejectionReason: data.MerchantApprovalRejectionInternational,
-			RejectedAt:      data.GetTimeUTCPointer(),
-		}
-	}
 
 	// save the place!
 	if err := data.DB.Place.Save(place); err != nil {
