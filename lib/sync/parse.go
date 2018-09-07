@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -14,50 +15,8 @@ import (
 	set "gopkg.in/fatih/set.v0"
 )
 
-const cacheKey = `category.cache`
-const cacheKeyBlacklist = `category.blacklist`
-
 var (
 	tagRegex = regexp.MustCompile("[^a-zA-Z0-9-]+")
-	// TODO: load up tag specials from product categories
-	tagSpecial = []string{
-		"bomber-jacket",
-		"boxer-brief",
-		"boxer-trunk",
-		"eau-de-toilette",
-		"eau-de-parfum",
-		"eau-de-cologne",
-		"face-mask",
-		"after-shave",
-		"face-wash",
-		"beard-kit",
-		"face-cream",
-		"night-cream",
-		"cleansing-gel",
-		"bath-bomb",
-		"nail-polish",
-		"lip-gloss",
-		"body-cream",
-		"body-wash",
-		"bath-salt",
-		"bath-oil",
-		"body-butter",
-		"eye-liner",
-		"eye-shadow",
-		"foot-cream",
-		"toe-separator",
-		"pocket-square",
-		"shoulder-bag",
-		"sleeping-bag",
-		"t-shirt",
-		"track-pant",
-		"v-neck",
-		"air-jordan",
-		"lace-up",
-		"slip-on",
-		"lexi-noel",
-		"sport-coat",
-	}
 )
 
 var (
@@ -65,7 +24,11 @@ var (
 	ErrNoCategory  = errors.New("no category")
 )
 
-type aggregateCategory []*data.Category
+var (
+	genderMatchScore = 2
+)
+
+type aggregateCategory []data.Whitelist
 
 func (s aggregateCategory) Len() int {
 	return len(s)
@@ -76,7 +39,7 @@ func (s aggregateCategory) Swap(i, j int) {
 }
 
 func (s aggregateCategory) Less(i, j int) bool {
-	return s[i].Weight > s[j].Weight
+	return (s[i].Weight > s[j].Weight)
 }
 
 func hasNoLetter(s string) bool {
@@ -88,15 +51,16 @@ func hasNoLetter(s string) bool {
 	return true
 }
 
-func tokenize(tagStr string, optTags ...string) []string {
+func (p *parser) tokenize(tagStr string, optTags ...string) []string {
 	tagStr = strings.ToLower(tagStr)
 	tt := tagRegex.Split(tagStr, -1)
 	tagSet := set.New()
 
+	// word tags
 	slugTagStr := slug.Make(strings.Join(tt, " "))
-	for _, t := range tagSpecial {
-		if strings.Index(slugTagStr, t) != -1 {
-			tagSet.Add(t)
+	for k, v := range p.whitelist {
+		if v[0].IsSpecial && strings.Index(slugTagStr, k) != -1 {
+			tagSet.Add(k)
 		}
 	}
 
@@ -125,30 +89,68 @@ func tokenize(tagStr string, optTags ...string) []string {
 	return set.StringSlice(tagSet)
 }
 
+type parser struct {
+	gender     data.ProductGender
+	categories map[string]data.Whitelist
+
+	whitelist whitelist
+	blacklist blacklist
+}
+
 // filter tags for categories
-func parseCategory(ctx context.Context, tokens []string) []string {
-	categoryCache := ctx.Value(cacheKey).(map[string]*data.Category)
-	var categories []string
+func (p *parser) parseCategory(tokens []string) {
 	for _, t := range tokens {
-		if _, found := categoryCache[t]; found {
-			categories = append(categories, t)
+		if w, found := p.whitelist[t]; found {
+			if len(w) == 2 {
+				// if the gender is ambigious... add a unisex category
+				key := fmt.Sprintf("%s-%s", data.ProductGenderUnisex, w[0].Value) // use value + gender as the key
+				if _, ok := p.categories[key]; !ok {
+					p.categories[key] = data.Whitelist{
+						Type:   w[0].Type,
+						Value:  w[0].Value,
+						Weight: w[0].Weight,
+						Gender: data.ProductGenderUnisex,
+					}
+				}
+			}
+			// iterate over the genders
+			for _, x := range w {
+				key := fmt.Sprintf("%s-%s", x.Gender, x.Value) // use value + gender as the key
+				y, ok := p.categories[key]                     // check if already exists
+				if !ok {
+					y = data.Whitelist{
+						Type:       x.Type,
+						Value:      x.Value,
+						Gender:     x.Gender,
+						CategoryID: x.CategoryID,
+					}
+				}
+				// either way, increment the weighting
+				y.Weight += x.Weight
+				p.categories[key] = y
+			}
 		}
 	}
-	return categories
 }
 
 // filter tags for genders
-func parseGender(ctx context.Context, tokens []string) data.ProductGender {
+func (p *parser) parseGender(tokens []string) {
+	if p.gender != data.ProductGenderUnisex {
+		return
+	}
+
 	var maybeGender data.ProductGender
 	for _, t := range tokens {
 		switch t {
 		case "man", "male", "gentleman":
-			return data.ProductGenderMale
+			p.gender = data.ProductGenderMale
+			return
 		case "woman", "female", "lady":
-			maybeGender = data.ProductGenderFemale
-			return data.ProductGenderFemale
+			p.gender = data.ProductGenderFemale
+			return
 		case "kid":
-			return data.ProductGenderUnisex
+			p.gender = data.ProductGenderUnisex
+			return
 		case "sexy":
 			// maybe female.
 			if maybeGender == data.ProductGenderUnknown {
@@ -158,13 +160,27 @@ func parseGender(ctx context.Context, tokens []string) data.ProductGender {
 	}
 
 	if maybeGender != data.ProductGenderUnknown {
-		return maybeGender
+		p.gender = maybeGender
+		return
 	}
 
-	return data.ProductGenderUnisex
+	p.gender = data.ProductGenderUnisex
 }
 
-func ParseProduct(ctx context.Context, inputs ...string) (data.Category, error) {
+func newParser(ctx context.Context) *parser {
+	place := ctx.Value("sync.place").(*data.Place)
+	return &parser{
+		// assuming place Gender is (at least) Unisex
+		gender:     data.ProductGender(place.Gender),
+		categories: map[string]data.Whitelist{},
+		whitelist:  whitelistCache,
+		blacklist:  blacklistCache,
+	}
+}
+
+func ParseProduct(ctx context.Context, inputs ...string) (data.Whitelist, error) {
+	p := newParser(ctx)
+
 	// search blacklist first.  if blacklisted, just return
 	// NOTE:
 	//  of course. this is pretty aggressive. ie. if we catch anything inside of
@@ -178,60 +194,51 @@ func ParseProduct(ctx context.Context, inputs ...string) (data.Category, error) 
 	//   - o blacklist + o category -> pending?
 	//   - o blacklist + x category -> good
 	var err error
-	if SearchBlackList(ctx, inputs...) {
+	if p.searchBlackList(inputs...) {
 		err = ErrBlacklisted
 	}
-	return searchCategoryList(ctx, inputs...), err
+	return p.searchWhiteList(inputs...), err
 }
 
-func searchCategoryList(ctx context.Context, inputs ...string) data.Category {
-	categoryCache, _ := ctx.Value(cacheKey).(map[string]*data.Category)
-	if categoryCache == nil {
-		// if by chance category cache is not given, generate it here
-		if categories, _ := data.DB.Category.FindAll(nil); categories != nil {
-			categoryCache = make(map[string]*data.Category, len(categories))
-			for _, c := range categories {
-				categoryCache[c.Value] = c
-			}
-		}
-		ctx = context.WithValue(ctx, cacheKey, categoryCache)
-	}
-	place := ctx.Value("sync.place").(*data.Place)
-
-	var (
-		parsed = data.Category{
-			// NOTE assuming place Gender is (at least) Unisex
-			// which may not be true. it can be "unknown"
-			Gender: data.ProductGender(place.Gender),
-		}
-		categories    = set.New()
-		categoryCount = map[string]int{}
-	)
+func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 	for _, s := range inputs {
-		tokens := tokenize(s)
-		// parse tokens for gender hint
-		if parsed.Gender == data.ProductGenderUnisex {
-			parsed.Gender = parseGender(ctx, tokens)
-		}
-		for _, c := range parseCategory(ctx, tokens) {
-			categories.Add(c)
-			categoryCount[c]++
-		}
+		tokens := p.tokenize(s)
+		p.parseGender(tokens)
+		p.parseCategory(tokens)
 	}
 
-	aggregates := make(aggregateCategory, categories.Size())
-	for i, s := range set.StringSlice(categories) {
-		c := *categoryCache[s]
-		aggregates[i] = &c
-		aggregates[i].Weight += int32(categoryCount[s])
+	var aggregates aggregateCategory
+	for _, w := range p.categories {
+		if p.gender != data.ProductGenderUnisex &&
+			w.Gender != p.gender && w.Gender != data.ProductGenderUnisex {
+			// skip the matched whitelist entry if the
+			// product gender and the whitelist gender
+			// do not match up
+
+			// for example, if parsed gender is "male",
+			// skip the "female" categories. but do not skip the "unisex"
+			// categories
+			continue
+		}
+		// if the category matches the product gender, boost the weight
+		if p.gender == w.Gender {
+			w.Weight += int32(genderMatchScore)
+		}
+		aggregates = append(aggregates, w)
 	}
 	// sort categories by weight
 	sort.Sort(aggregates)
+
+	parsed := data.Whitelist{
+		// inherit from the parser
+		Gender: p.gender,
+	}
 
 	if len(aggregates) > 0 {
 		// use the parsed out category (sorted with the highest weighting) and insert as value
 		parsed.Value = aggregates[0].Value
 		parsed.Type = aggregates[0].Type
+		parsed.CategoryID = aggregates[0].CategoryID
 		// if gender is still unspecified, choose it here
 		if parsed.Gender == data.ProductGenderUnisex {
 			parsed.Gender = aggregates[0].Gender
@@ -245,29 +252,13 @@ func searchCategoryList(ctx context.Context, inputs ...string) data.Category {
 	Returns true if found
 	Returns false if not found
 */
-func SearchBlackList(ctx context.Context, inputs ...string) bool {
-	blackListCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
-	if blackListCache == nil {
-		//blacklist not in context generate it here
-		blacklist, _ := data.DB.Blacklist.FindAll(nil)
-		if blacklist != nil {
-			blackListWordMap := make(map[string]*data.Blacklist, len(blacklist))
-			for _, word := range blacklist {
-				blackListWordMap[word.Word] = word
-			}
-			blackListCache = blackListWordMap
-		} else {
-			return false
-		}
-		ctx = context.WithValue(ctx, cacheKeyBlacklist, blackListCache)
-	}
-
+func (p *parser) searchBlackList(inputs ...string) bool {
 	// iterating over each input
 	for _, s := range inputs {
-		tokens := tokenize(s)
+		tokens := p.tokenize(s)
 		// searching if any of the tokens is in the blacklist
 		for _, token := range tokens {
-			if _, found := blackListCache[token]; found {
+			if _, found := p.blacklist[token]; found {
 				return true
 				break
 			}
@@ -277,16 +268,12 @@ func SearchBlackList(ctx context.Context, inputs ...string) bool {
 }
 
 type shopifyCategorySyncer struct {
-	product        *data.Product
-	place          *data.Place
-	categoryCache  map[string]*data.Category
-	blacklistCache map[string]*data.Blacklist
+	product *data.Product
+	place   *data.Place
 }
 
 func (s *shopifyCategorySyncer) Sync(title, tags, productType string) error {
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, cacheKey, s.categoryCache)
-	ctx = context.WithValue(ctx, cacheKeyBlacklist, s.blacklistCache)
 	ctx = context.WithValue(ctx, "sync.place", s.place)
 
 	// find product category + gender
@@ -320,6 +307,7 @@ func (s *shopifyCategorySyncer) Sync(title, tags, productType string) error {
 		Type:  parsedData.Type,
 		Value: parsedData.Value,
 	}
+	s.product.CategoryID = parsedData.CategoryID
 
 	return nil
 }

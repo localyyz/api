@@ -206,6 +206,15 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 	return o
 }
 
+func (o *FilterSort) Gender() *Filter {
+	for _, f := range o.Filters {
+		if f.Type == "gender" {
+			return f
+		}
+	}
+	return nil
+}
+
 func (o *FilterSort) HasFilter() bool {
 	return o.filterBy != nil && !o.filterBy.Empty()
 }

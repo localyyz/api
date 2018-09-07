@@ -142,8 +142,6 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 		lg.SetEntryField(ctx, "product_id", product.ID)
 
 		// pull the caches out of context.
-		categoryCache, _ := ctx.Value(cacheKey).(map[string]*data.Category)
-		blacklistCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
 		listener, _ := ctx.Value(SyncListenerCtxKey).(Listener)
 
 		// async syncing of variants / product images
@@ -155,10 +153,8 @@ func ShopifyProductListingsCreate(ctx context.Context) error {
 			}
 			// create syncer product scope
 			syncer := &productSyncer{
-				place:          place,
-				product:        product,
-				categoryCache:  categoryCache,
-				blacklistCache: blacklistCache,
+				place:   place,
+				product: product,
 			}
 			if err := syncer.SyncCategories(p.Title, p.Tags, p.ProductType); err != nil {
 				lg.Warnf("shopify sync categories: %v", err)
