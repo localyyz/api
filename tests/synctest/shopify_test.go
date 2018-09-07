@@ -11,6 +11,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/sync"
 	"bitbucket.org/moodie-app/moodie-api/tests"
 	"github.com/pressly/lg"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	db "upper.io/db.v3"
 )
@@ -26,6 +27,8 @@ func (suite *SyncTestSuite) SetupSuite() {
 	suite.env = tests.SetupEnv(suite.T())
 	suite.fixture = &fixture{}
 	suite.SetupData(suite.T())
+
+	require.NoError(suite.T(), sync.SetupCache())
 }
 
 func (suite *SyncTestSuite) TearDownSuite() {

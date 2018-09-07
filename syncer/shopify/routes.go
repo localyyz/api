@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"net/url"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	lib "bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
@@ -13,7 +15,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
 	"upper.io/db.v3"
-	"net/url"
 )
 
 func ShopifyStoreWhCtx(next http.Handler) http.Handler {
@@ -67,10 +68,7 @@ func ShopifyStoreWhCtx(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, "place", place)
 		ctx = context.WithValue(ctx, "sync.place", place)
 		ctx = context.WithValue(ctx, "sync.topic", topic)
-		ctx = context.WithValue(ctx, "category.cache", categoryCache)
-		ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
 		ctx = context.WithValue(ctx, "shopify.client", client)
-
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}

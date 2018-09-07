@@ -98,13 +98,33 @@ func (f *fixture) SetupData(t *testing.T) {
 	}
 	assert.NoError(t, data.DB.Save(f.testStore))
 
+	malePants := &data.Category{
+		ID:    1001,
+		Label: "Pants",
+		Value: "pants",
+	}
+	femalePants := &data.Category{
+		ID:    2001,
+		Label: "Pants",
+		Value: "pants",
+	}
+	assert.NoError(t, data.DB.Category.Create(malePants))
+	assert.NoError(t, data.DB.Category.Create(femalePants))
+
 	// setup category
-	assert.NoError(t, data.DB.Category.Create(data.Category{
-		Type:    data.CategoryApparel,
-		Value:   "pants",
-		Mapping: "pants",
-		Gender:  data.ProductGenderUnisex,
-		Weight:  1,
+	assert.NoError(t, data.DB.Whitelist.Create(data.Whitelist{
+		Type:       data.CategoryApparel,
+		Value:      "pants",
+		Gender:     data.ProductGenderMale,
+		Weight:     1,
+		CategoryID: &(malePants.ID),
+	}))
+	assert.NoError(t, data.DB.Whitelist.Create(data.Whitelist{
+		Type:       data.CategoryApparel,
+		Value:      "pants",
+		Gender:     data.ProductGenderFemale,
+		Weight:     1,
+		CategoryID: &(femalePants.ID),
 	}))
 
 	f.setupProduct(t)
@@ -115,4 +135,6 @@ func (f *fixture) TeardownData(t *testing.T) {
 	data.DB.Exec("TRUNCATE users cascade;")
 	data.DB.Exec("TRUNCATE places cascade;")
 	data.DB.Exec("TRUNCATE collections cascade;")
+	data.DB.Exec("TRUNCATE categories cascade;")
+	data.DB.Exec("TRUNCATE whitelist cascade;")
 }

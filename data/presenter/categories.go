@@ -3,182 +3,115 @@ package presenter
 import (
 	"context"
 	"net/http"
+	"sort"
+	"strconv"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
-	"github.com/pressly/lg"
-	db "upper.io/db.v3"
 )
 
-type Category struct {
-	Type        string      `json:"type"`
-	Values      []*Category `json:"values"`
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	ImageURL    string      `json:"imageUrl"`
+type Node struct {
+	*data.Category
+	Values []*Node `json:"values"`
 
-	ctx context.Context
+	// parent node
+	parent *Node
+
+	// backwards compatible fields below
+	Type  string `json:"type"`
+	Title string `json:"title"`
 }
 
-type subCatCache map[string][]*data.Category
+type sortedCategory []*Node
 
-func fetchSubcategory(ctx context.Context, categoryTypes ...data.CategoryType) []*data.Category {
-	cond := db.Cond{
-		// for now, just fetch the 2ndary categories
-		"mapping": db.NotEq(""),
-		"type":    categoryTypes,
+func (a sortedCategory) Len() int           { return len(a) }
+func (a sortedCategory) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a sortedCategory) Less(i, j int) bool { return a[i].ID < a[j].ID }
+
+func (n *Node) Render(w http.ResponseWriter, r *http.Request) error {
+	if len(n.Type) == 0 {
+		n.Type = strconv.FormatInt(n.ID, 10)
 	}
-
-	if filterSort, ok := ctx.Value(api.FilterSortCtxKey).(*api.FilterSort); ok {
-		// TODO: pull this out into the filtersort api
-		for _, f := range filterSort.Filters {
-			if f.Type == "gender" {
-				v := new(data.ProductGender)
-				if err := v.UnmarshalText([]byte(f.Value.(string))); err == nil {
-					cond["gender"] = []data.ProductGender{
-						*v,
-						data.ProductGenderUnisex,
-					}
-				}
-				break
-			}
-		}
+	if len(n.Title) == 0 {
+		n.Title = n.Label
 	}
-
-	// bulk fetch product categories
-	// this is the 2nd level mapping
-	//
-	// category type -> mapping -> category values
-	rows, err := data.DB.
-		Select(db.Raw("distinct mapping"), "type", "image_url").
-		From("product_categories").
-		Where(cond).
-		OrderBy("mapping").
-		Query()
-	if err != nil {
-		lg.Warn(err)
-		return nil
+	if n.Values == nil {
+		n.Values = make([]*Node, 0)
 	}
-
-	var subcategories []*data.Category
-	for rows.Next() {
-		var mapping string
-		var typ data.CategoryType
-		var imgUrl string
-		if err := rows.Scan(&mapping, &typ, &imgUrl); err != nil {
-			break
-		}
-		subcategories = append(
-			subcategories,
-			&data.Category{
-				Type:     typ,
-				Mapping:  mapping,
-				ImageURL: imgUrl,
-			},
-		)
+	for _, v := range n.Values {
+		v.Render(w, r)
 	}
-
-	return subcategories
-}
-
-func NewCategory(ctx context.Context, categoryType data.CategoryType) *Category {
-	category := &Category{
-		Type: categoryType.String(),
-		ctx:  ctx,
-	}
-	var values []*data.Category
-	if subcats, ok := ctx.Value("subcat").(subCatCache); ok {
-		values = subcats[categoryType.String()]
-	} else {
-		values = fetchSubcategory(ctx, categoryType)
-	}
-
-	for _, v := range values {
-		category.Values = append(category.Values, &Category{
-			Type:     v.Mapping,
-			ImageURL: v.ImageURL,
-		})
-	}
-	return category
-}
-
-func (c *Category) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-type CategoryList []*Category
+func NewCategory(ctx context.Context, category *data.Category) *Node {
+	c := &Node{
+		Category: category,
+	}
+	descendents, err := data.DB.Category.FindDescendants(category.ID)
+	if err != nil {
+		return c
+	}
+	c.Values = newCategoryList(descendents)
+	return c
+}
 
-func NewCategoryList(ctx context.Context, categoryTypes []data.CategoryType) []render.Renderer {
-	list := []render.Renderer{}
+// organize a list of categories into a category tree
+func newCategoryList(categories []*data.Category) []*Node {
+	list := []*Node{}
 
-	// bulk fetch subcategories
-	subcatMap := make(subCatCache)
-	for _, c := range fetchSubcategory(ctx, categoryTypes...) {
-		subcatMap[c.Type.String()] = append(subcatMap[c.Type.String()], c)
+	cache := map[int64]*Node{}
+	for _, c := range categories {
+		cache[c.ID] = &Node{Category: c}
 	}
 
-	ctx = context.WithValue(ctx, "subcat", subcatMap)
-	for _, c := range categoryTypes {
-		var presented *Category
-		switch c {
-		case data.CategorySale:
-			presented = &Category{
-				Type: "sales",
-				Values: []*Category{
-					{
-						Type:     "70% OFF",
-						Title:    "70%+ OFF",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/70.png?17957505310432019141",
-					},
-					{
-						Type:     "50% OFF",
-						Title:    "50%-70% OFF",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/50.png?5115785919598170614",
-					},
-					{
-						Type:     "20% OFF",
-						Title:    "20%-50% OFF",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/20.png?14969378164451378728",
-					},
-				},
+	for _, c := range categories {
+		// if there's an key in the cache that's >less< than the current
+		// id and that their keyed left and right values covers the id.
+		//
+		// ie-> id is BETWEEN cache[key].Left AND cache[key].Right then
+		// it is a >child< of said cache[key]
+		//
+		var parent *Node
+		for _, v := range cache {
+			// check if v could be 'a' parent
+			if v.Left < c.ID && v.Right > c.ID {
+				if parent == nil {
+					// starting value is the first valid value
+					parent = v
+				} else if parent.Left < v.ID && parent.Right > v.ID {
+					// check if this is the nearest parent found
+					parent = v
+				}
 			}
-		case data.CategoryCollection:
-			presented = &Category{
-				Type: "collections",
-				Values: []*Category{
-					{
-						Type:     "smart",
-						Title:    "Under $50",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0835/3729/products/Oversized_Hoodies_-4_eda921cf-882d-479f-8d07-ed1c070b0a0a.jpg",
-					},
-					{
-						Type:     "boutique",
-						Title:    "$50 - $200",
-						ImageURL: "https://cdn.shopify.com/s/files/1/1066/9348/products/UNG85206_red_0.jpg",
-					},
-					{
-						Type:     "designer",
-						Title:    "$200 plus",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0444/7969/products/mens-jackets-coats-hexagon-stitch-brother-jacket-1.jpg",
-					},
-				},
-			}
-		default:
-			presented = NewCategory(ctx, c)
 		}
-		if len(presented.Values) > 0 {
-			list = append(list, presented)
+		if parent != nil {
+			// if the code is not a root node, append it to the nearest
+			// parent values, and set its parent to such
+			parent.Values = append(parent.Values, cache[c.ID])
+			cache[c.ID].parent = parent
 		}
 	}
+
+	for _, v := range cache {
+		// throw away the leaf nodes because they should be contained under
+		// the parent values
+		if v.parent == nil {
+			list = append(list, v)
+		}
+	}
+	sort.Sort(sortedCategory(list))
+
 	return list
 }
 
-func (l CategoryList) Render(w http.ResponseWriter, r *http.Request) error {
-	for _, v := range l {
-		if err := v.Render(w, r); err != nil {
-			return err
-		}
+func NewCategoryList(ctx context.Context, categories []*data.Category) []render.Renderer {
+	list := newCategoryList(categories)
+
+	presented := make([]render.Renderer, len(list))
+	for i, v := range list {
+		presented[i] = v
 	}
-	return nil
+
+	return presented
 }

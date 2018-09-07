@@ -3,6 +3,9 @@ package syncer
 import (
 	"net/http"
 
+	// import to initialize cache etc
+	_ "bitbucket.org/moodie-app/moodie-api/lib/sync"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/syncer/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
@@ -20,12 +23,6 @@ type Handler struct {
 func New(DB *data.Database) *Handler {
 	if places, _ := DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive}); places != nil {
 		shopify.SetupShopCache(places...)
-	}
-	if categories, _ := DB.Category.FindAll(nil); categories != nil {
-		shopify.SetupCategoryCache(categories...)
-	}
-	if blacklist, _ := DB.Blacklist.FindAll(nil); blacklist != nil {
-		shopify.SetupCategoryBlacklistCache(blacklist...)
 	}
 	return &Handler{DB: DB}
 }

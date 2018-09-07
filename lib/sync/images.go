@@ -155,8 +155,6 @@ func (s *shopifyImageSyncer) Sync(imgs []*shopify.ProductImage) error {
 
 		imgUrl, _ := url.Parse(img.Src)
 		imgUrl.Scheme = "https"
-		// remove any query params
-		imgUrl.RawQuery = ""
 
 		s.toSaves = append(s.toSaves, &data.ProductImage{
 			ProductID:  s.Product.ID,

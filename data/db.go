@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"upper.io/bond"
 	"upper.io/db.v3"
 	"upper.io/db.v3/postgresql"
@@ -11,6 +12,8 @@ import (
 
 var (
 	DB *Database
+
+	ErrUnconfigured = errors.New("data DB not configured")
 )
 
 type Database struct {
@@ -44,6 +47,7 @@ type Database struct {
 	ShopifyCred    ShopifyCredStore
 	Category       CategoryStore
 	Blacklist      BlacklistStore
+	Whitelist      WhitelistStore
 	FeatureProduct FeatureProductStore
 	Webhook        WebhookStore
 
@@ -127,6 +131,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.ShopifyCred = ShopifyCredStore{db.Store(&ShopifyCred{})}
 	db.Category = CategoryStore{db.Store(&Category{})}
 	db.Blacklist = BlacklistStore{db.Store(&Blacklist{})}
+	db.Whitelist = WhitelistStore{db.Store(&Whitelist{})}
 	db.FeatureProduct = FeatureProductStore{db.Store(&FeatureProduct{})}
 	db.Webhook = WebhookStore{db.Store(&Webhook{})}
 

@@ -10,12 +10,10 @@ import (
 )
 
 type productSyncer struct {
-	product        *data.Product
-	place          *data.Place
-	variants       []*data.ProductVariant
-	images         []*data.ProductImage
-	categoryCache  map[string]*data.Category
-	blacklistCache map[string]*data.Blacklist
+	product  *data.Product
+	place    *data.Place
+	variants []*data.ProductVariant
+	images   []*data.ProductImage
 
 	listener Listener
 }
@@ -35,15 +33,9 @@ type Fetcher interface {
 func NewSyncer(ctx context.Context, product *data.Product, place *data.Place) (*productSyncer, error) {
 	// TODO: make opts
 	listener, _ := ctx.Value(SyncListenerCtxKey).(Listener)
-	categoryCache, _ := ctx.Value(cacheKey).(map[string]*data.Category)
-	blacklistCache, _ := ctx.Value(cacheKeyBlacklist).(map[string]*data.Blacklist)
 	syncer := &productSyncer{
-		product: product,
-		place:   place,
-
-		categoryCache:  categoryCache,
-		blacklistCache: blacklistCache,
-
+		product:  product,
+		place:    place,
 		listener: listener,
 	}
 	return syncer, nil
@@ -85,10 +77,8 @@ func (s *productSyncer) Retry() {
 
 func (s *productSyncer) SyncCategories(title, tags, productType string) error {
 	catSync := &shopifyCategorySyncer{
-		product:        s.product,
-		place:          s.place,
-		categoryCache:  s.categoryCache,
-		blacklistCache: s.blacklistCache,
+		product: s.product,
+		place:   s.place,
 	}
 	if err := catSync.Sync(title, tags, productType); err != nil {
 		if err == ErrBlacklisted {

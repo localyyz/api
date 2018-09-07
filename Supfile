@@ -139,6 +139,7 @@ targets:
     - ps
     - logs
     - prune
+    - clean-tags
 
   deploy-all:
     - pull

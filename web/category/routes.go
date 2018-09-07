@@ -8,19 +8,19 @@ import (
 func Routes() chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(api.FilterSortCtx)
-	r.Get("/", List)
-	r.With(discountCtx(0.1, 1)).Route("/sales/products", api.FilterRoutes(ListDiscountProducts))
-	r.With(discountCtx(0.20, 0.49)).Route("/20% OFF/products", api.FilterRoutes(ListDiscountProducts))
-	r.With(discountCtx(0.50, 0.69)).Route("/50% OFF/products", api.FilterRoutes(ListDiscountProducts))
-	r.With(discountCtx(0.70, 1)).Route("/70% OFF/products", api.FilterRoutes(ListDiscountProducts))
+	// parse gender context
+	r.With(api.FilterSortCtx).With(CategoryRootCtx).Get("/", List)
+	r.With(discountCtx(0.1, 1)).Route("/10/products", api.FilterRoutes(ListDiscountProducts))
+	r.With(discountCtx(0.20, 0.49)).Route("/11/products", api.FilterRoutes(ListDiscountProducts))
+	r.With(discountCtx(0.50, 0.69)).Route("/12/products", api.FilterRoutes(ListDiscountProducts))
+	r.With(discountCtx(0.70, 1)).Route("/13/products", api.FilterRoutes(ListDiscountProducts))
 
-	r.With(segmentCtx(segmentTypeBoutique)).Route("/boutique/products", api.FilterRoutes(ListSegmentProducts))
-	r.With(segmentCtx(segmentTypeLuxury)).Route("/designer/products", api.FilterRoutes(ListSegmentProducts))
-	r.With(segmentCtx(segmentTypeSmart)).Route("/smart/products", api.FilterRoutes(ListSegmentProducts))
+	r.With(segmentCtx(segmentTypeLuxury)).Route("/23/products", api.FilterRoutes(ListSegmentProducts))
+	r.With(segmentCtx(segmentTypeBoutique)).Route("/22/products", api.FilterRoutes(ListSegmentProducts))
+	r.With(segmentCtx(segmentTypeSmart)).Route("/21/products", api.FilterRoutes(ListSegmentProducts))
 
-	r.Route("/{categoryType}", func(r chi.Router) {
-		r.Use(CategoryTypeCtx)
+	r.Route("/{categoryID}", func(r chi.Router) {
+		r.Use(CategoryCtx)
 		r.Get("/", GetCategory)
 		r.Route("/products", api.FilterRoutes(ListProducts))
 	})

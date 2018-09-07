@@ -48,7 +48,7 @@ type omniSearchRequest struct {
 
 	// keyword parts used to generate queries from keywords
 	gender   *data.ProductGender
-	category *data.CategoryType
+	category *data.ProductCategoryType
 
 	rawParts []string
 }
@@ -244,9 +244,9 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		"p.status":     data.ProductStatusApproved,
 		"p.score":      db.Gt(0),
 	})
-	if p.category != nil {
-		cond = cond.And(db.Cond{"p.category->>'type'": p.category.String()})
-	}
+	//if p.category != nil {
+	//cond = cond.And(db.Cond{"p.category->>'type'": p.category.String()})
+	//}
 	// join query parts back to one string
 	qraw := db.Raw(strings.Join(p.queryParts, ":* &"))
 	qrawNoSpace := strings.Join(p.queryParts, "")
