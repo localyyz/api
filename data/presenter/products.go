@@ -14,6 +14,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/lib/apparelsorter"
 	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
+	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 )
 
 type Product struct {
@@ -59,6 +60,7 @@ type ProductTrend struct {
 	IDs []int64 `json:"IDs"`
 }
 
+type ProductCache map[int64]*data.Product
 type VariantCache map[int64][]*ProductVariant
 type VariantImageCache map[int64]int64
 type PlaceCache map[int64]*data.Place
@@ -71,11 +73,13 @@ const PlaceCacheCtxKey = "place.cache"
 func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	list := []*Product{}
 
+	productCache := make(ProductCache)
 	productIDSet := set.New()
 	placeIDset := set.New()
 	for _, product := range products {
 		productIDSet.Add(int(product.ID))
 		placeIDset.Add(int(product.PlaceID))
+		productCache[product.ID] = product
 	}
 
 	if productIDSet.Size() == 0 {
@@ -113,9 +117,12 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	variantCache := make(VariantCache)
 	variantIDSet := set.New()
 	for _, v := range variants {
+		vv := NewProductVariant(ctx, v)
+		vv.Product = productCache[v.ProductID]
+		vv.Place = placeCache[vv.Product.PlaceID]
 		variantCache[v.ProductID] = append(
 			variantCache[v.ProductID],
-			NewProductVariant(ctx, v),
+			vv,
 		)
 		variantIDSet.Add(int(v.ID))
 	}
@@ -178,16 +185,6 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		ctx:     ctx,
 	}
 
-	if cache, _ := ctx.Value("variant.cache").(VariantCache); cache != nil {
-		p.Variants = cache[p.ID]
-	} else {
-		if vv, _ := data.DB.ProductVariant.FindByProductID(product.ID); vv != nil {
-			for _, v := range vv {
-				p.Variants = append(p.Variants, NewProductVariant(ctx, v))
-			}
-		}
-	}
-
 	sizeSet := set.New()
 	colorSet := set.New()
 	for _, v := range p.Variants {
@@ -248,6 +245,19 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		}
 	}
 
+	if cache, _ := ctx.Value("variant.cache").(VariantCache); cache != nil {
+		p.Variants = cache[p.ID]
+	} else {
+		if variants, _ := data.DB.ProductVariant.FindByProductID(product.ID); variants != nil {
+			for _, v := range variants {
+				vv := NewProductVariant(ctx, v)
+				vv.Product = p.Product
+				vv.Place = p.Place.Place
+				p.Variants = append(p.Variants, vv)
+			}
+		}
+	}
+
 	if cache, _ := ctx.Value("favourite.cache").(FavoriteCache); cache != nil {
 		p.IsFavourite = cache[p.ID]
 	} else {
@@ -285,6 +295,16 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 func (p *Product) Render(w http.ResponseWriter, r *http.Request) error {
 	p.HtmlDescription = htmlx.CaptionizeHtmlBody(p.Product.Description, -1)
 	p.NoTagDescription = htmlx.StripTags(p.Product.Description)
+
+	for _, v := range p.Variants {
+		v.Render(w, r)
+	}
+
+	// conver to usd if applicable
+	if p.Place != nil && p.Place.Currency != "USD" {
+		p.Price = xchange.ToUSD(p.Price, p.Place.Place.Currency)
+	}
+	p.Place.Currency = "USD" // NOTE: change it up to USD
 
 	return nil
 }

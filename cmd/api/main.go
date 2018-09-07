@@ -14,6 +14,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/pusher"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
+	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 	"bitbucket.org/moodie-app/moodie-api/web"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
@@ -60,6 +61,15 @@ func main() {
 
 	//[connect]
 	connect.Configure(conf.Connect)
+
+	//[rates]
+	go func() {
+		xchange, err := xchange.New()
+		if err != nil {
+			lg.Fatalf("failed to load currency rates: %v", err)
+		}
+		lg.Infof("xchanger: loaded %d rates", len(xchange.Rates))
+	}()
 
 	//[jwt]
 	token.SetupJWTAuth(conf.Jwt.Secret)
