@@ -289,33 +289,55 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		}
 	}
 
-	// upgrade place status to "waiting for agreement"
-	place.Status = data.PlaceStatusWaitAgreement
-	place.Gender = data.PlaceGender(data.ProductGenderUnisex)
+	// check place status, if already active, skip the rest
+	if place.Status != data.PlaceStatusActive {
+		// upgrade place status to "waiting for agreement"
+		place.Status = data.PlaceStatusWaitAgreement
+		place.Gender = data.PlaceGender(data.ProductGenderUnisex)
 
-	// create a place holder checkout for the account id
-	place.PaymentMethods = []*data.PaymentMethod{}
-	if checkout, _, _ := sh.Checkout.Create(ctx, nil); checkout != nil && len(checkout.ShopifyPaymentAccountID) != 0 {
-		// NOTE: for now the id returned on checkout is stripe specific
-		place.PaymentMethods = append(place.PaymentMethods, &data.PaymentMethod{Type: "stripe", ID: checkout.ShopifyPaymentAccountID})
-	}
-
-	var merchantApproval *data.MerchantApproval
-
-	// save the place!
-	if err := data.DB.Place.Save(place); err != nil {
-		return errors.Wrap(err, "failed to save place")
-	}
-
-	// if merchant approval is not nil, save
-	if merchantApproval != nil {
-		merchantApproval.PlaceID = place.ID
-		data.DB.MerchantApproval.Save(merchantApproval)
+		// create a place holder checkout for the account id
+		place.PaymentMethods = []*data.PaymentMethod{}
+		if checkout, _, _ := sh.Checkout.Create(ctx, nil); checkout != nil && len(checkout.ShopifyPaymentAccountID) != 0 {
+			// NOTE: for now the id returned on checkout is stripe specific
+			place.PaymentMethods = append(place.PaymentMethods, &data.PaymentMethod{Type: "stripe", ID: checkout.ShopifyPaymentAccountID})
+		}
+		var merchantApproval *data.MerchantApproval
+		// save the place!
+		if err := data.DB.Place.Save(place); err != nil {
+			return errors.Wrap(err, "failed to save place")
+		}
+		// if merchant approval is not nil, save
+		if merchantApproval != nil {
+			merchantApproval.PlaceID = place.ID
+			data.DB.MerchantApproval.Save(merchantApproval)
+		}
+		// create the webhook
+		wh, _, err := sh.Webhook.Create(
+			ctx,
+			&shopify.WebhookRequest{
+				&shopify.Webhook{
+					Topic:   shopify.TopicAppUninstalled,
+					Address: s.webhookURL,
+					Format:  "json",
+				},
+			})
+		if err != nil {
+			lg.Warnf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
+			return nil
+		}
+		err = data.DB.Webhook.Save(&data.Webhook{
+			PlaceID:    place.ID,
+			Topic:      string(shopify.TopicAppUninstalled),
+			ExternalID: int64(wh.ID),
+		})
+		if err != nil {
+			lg.Warnf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
+		}
 	}
 
 	// save authorization
 	creds.PlaceID = place.ID
-	// check if creds already exists, and fill the id
+	// check if creds already exists, and fill the id and make update
 	if dbCreds, _ := data.DB.ShopifyCred.FindByPlaceID(place.ID); dbCreds != nil {
 		creds.ID = dbCreds.ID
 	}
@@ -323,34 +345,7 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 		return errors.Wrap(err, "failed to save cred")
 	}
 
-	// create the webhook
-	wh, _, err := sh.Webhook.Create(
-		ctx,
-		&shopify.WebhookRequest{
-			&shopify.Webhook{
-				Topic:   shopify.TopicAppUninstalled,
-				Address: s.webhookURL,
-				Format:  "json",
-			},
-		})
-	if err != nil {
-		lg.Warnf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
-		return nil
-	}
-	err = data.DB.Webhook.Save(&data.Webhook{
-		PlaceID:    place.ID,
-		Topic:      string(shopify.TopicAppUninstalled),
-		ExternalID: int64(wh.ID),
-	})
-	if err != nil {
-		lg.Warnf("connect %s (id: %v): webhook AppUninstall with %+v", place.Name, place.ID, err)
-	}
-
-	msg := fmt.Sprintf("%s (id: %d - %s) just connected!", place.Name, place.ID, place.Plan)
-	if place.Status == data.PlaceStatusInActive && merchantApproval != nil {
-		msg = fmt.Sprintf("%s. But automatically marked as inactive. Reason: %s", msg, merchantApproval.RejectionReason)
-	}
-	SL.Notify("store", msg)
+	SL.Notify("store", fmt.Sprintf("%s (id: %d - %s) just connected!", place.Name, place.ID, place.Plan))
 	return nil
 }
 
