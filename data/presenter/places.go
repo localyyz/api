@@ -15,7 +15,8 @@ type Place struct {
 	Products     []render.Renderer `json:"products"`
 	Following    bool              `json:"following"`
 
-	IsFeatured bool `json:"isFeatured"`
+	IsFeatured bool   `json:"isFeatured"`
+	Currency   string `json:"currency"`
 
 	Billing     interface{} `json:"billing,omitempty"`
 	TOSAgreedAt interface{} `json:"tosAgreedAt,omitempty"`
@@ -26,8 +27,9 @@ type Place struct {
 
 func NewPlace(ctx context.Context, place *data.Place) *Place {
 	p := &Place{
-		Place: place,
-		ctx:   ctx,
+		Place:    place,
+		Currency: place.Currency,
+		ctx:      ctx,
 	}
 	p.ProductCount, _ = data.DB.Product.Find(db.Cond{"place_id": p.ID}).Count()
 

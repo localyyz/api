@@ -94,7 +94,7 @@ func (s *productSyncer) SyncCategories(title, tags, productType string) error {
 }
 
 func (s *productSyncer) SyncVariants(variants []*shopify.ProductVariant) error {
-	if err := (&shopifyVariantSyncer{product: s.product}).Sync(variants); err != nil {
+	if err := (&shopifyVariantSyncer{product: s.product, place: s.place}).Sync(variants); err != nil {
 		if err == ErrProductUnavailable {
 			// rejected. no inventory quantity
 			if err := s.FinalizeStatus(data.ProductStatusOutofStock); err != nil {

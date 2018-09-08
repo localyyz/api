@@ -5,13 +5,14 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 	"github.com/go-chi/render"
 )
 
 type ProductVariant struct {
 	*data.ProductVariant
-	Place   *Place        `json:"place,omitempty"`
-	Product *data.Product `json:"product,omitempty"`
+	Place   *data.Place   `json:"-"`
+	Product *data.Product `json:"-"`
 	ImageID int64         `json:"imageId,omitempty"`
 	Price   float64       `json:"price,omitempty"`
 
@@ -33,7 +34,6 @@ func NewProductVariant(ctx context.Context, variant *data.ProductVariant) *Produ
 		Price:          variant.Price,
 		ctx:            ctx,
 	}
-
 	// modify product price if deal is active
 	if deal, ok := ctx.Value(DealCtxKey).(*data.Deal); ok {
 		// NOTE: deal value here is negative because the type is fixed amount only for now
@@ -53,5 +53,9 @@ func NewProductVariantList(ctx context.Context, variants []*data.ProductVariant)
 
 // ProductVariant implements render.Renderer interface
 func (p *ProductVariant) Render(w http.ResponseWriter, r *http.Request) error {
+	if p.Place != nil && p.Place.Currency != "USD" {
+		p.Price = xchange.ToUSD(p.Price, p.Place.Currency)
+		p.PrevPrice = xchange.ToUSD(p.PrevPrice, p.Place.Currency)
+	}
 	return nil
 }
