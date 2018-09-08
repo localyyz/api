@@ -9,6 +9,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
+	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 	"github.com/pkg/errors"
 	set "gopkg.in/fatih/set.v0"
 )
@@ -19,6 +20,7 @@ var (
 
 type shopifyVariantSyncer struct {
 	product   *data.Product
+	place     *data.Place
 	toSaves   []*data.ProductVariant
 	toRemoves []*data.ProductVariant
 }
@@ -77,7 +79,7 @@ func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 		)
 
 		if i == 0 {
-			s.product.Price = price
+			s.product.Price = xchange.ToUSD(price, s.place.Currency)
 			if price > 0 && prevPrice > price {
 				s.product.DiscountPct = pctRound(price/prevPrice, 1)
 				// if discounted_at is not set. set it.

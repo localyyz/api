@@ -13,7 +13,7 @@ type CartItem struct {
 	*data.CartItem
 
 	Cart    *Cart           `json:"cart,omitempty"`
-	Place   *Place          `json:"place,omitempty"`
+	Place   *Place          `json:"-"`
 	Product *Product        `json:"product,omitempty"`
 	Variant *ProductVariant `json:"variant,omitempty"`
 
@@ -29,12 +29,12 @@ func NewCartItem(ctx context.Context, item *data.CartItem) *CartItem {
 		CartItem: item,
 		ctx:      ctx,
 	}
+	if variant, _ := data.DB.ProductVariant.FindByID(item.VariantID); variant != nil {
+		resp.Variant = NewProductVariant(ctx, variant)
+	}
 	if product, _ := data.DB.Product.FindByID(item.ProductID); product != nil {
 		resp.Product = NewProduct(ctx, product)
-	}
-	if variant, _ := data.DB.ProductVariant.FindByID(item.VariantID); variant != nil {
-		resp.Variant = &ProductVariant{ProductVariant: variant}
-		resp.Price = variant.Price
+		resp.Variant.Place = resp.Product.Place.Place
 	}
 	return resp
 }
@@ -45,6 +45,7 @@ func (i *CartItem) Render(w http.ResponseWriter, r *http.Request) error {
 	}
 	if i.Variant != nil {
 		i.Variant.Render(w, r)
+		i.Price = i.Variant.Price
 	}
 	return nil
 }

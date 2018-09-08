@@ -9,6 +9,7 @@ import (
 	"github.com/pressly/lg"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 )
 
 type Cart struct {
@@ -65,9 +66,9 @@ func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 	} else {
 		// NEW CHECKOUT
 		for _, ch := range c.Checkouts {
-			c.TotalShipping += round(ch.TotalShipping)
-			c.TotalTax += round(ch.TotalTax)
-			c.TotalPrice += round(ch.TotalPrice)
+			c.TotalShipping += round(xchange.ToUSD(ch.TotalShipping, ch.Currency))
+			c.TotalTax += round(xchange.ToUSD(ch.TotalTax, ch.Currency))
+			c.TotalPrice += round(xchange.ToUSD(ch.TotalPrice, ch.Currency))
 
 			if ch.AppliedDiscount.AppliedDiscount != nil {
 				c.TotalDiscount += atoi(ch.AppliedDiscount.Amount)

@@ -12,6 +12,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/sync"
+	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 	"bitbucket.org/moodie-app/moodie-api/syncer"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
@@ -52,6 +53,15 @@ func main() {
 	if err := sync.SetupCache(); err != nil {
 		lg.Fatal(err)
 	}
+
+	//[rates]
+	go func() {
+		xchange, err := xchange.New()
+		if err != nil {
+			lg.Fatalf("failed to load currency rates: %v", err)
+		}
+		lg.Infof("xchanger: loaded %d rates", len(xchange.Rates))
+	}()
 
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
