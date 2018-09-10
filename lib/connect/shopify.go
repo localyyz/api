@@ -190,7 +190,7 @@ func (s *Shopify) RegisterShippingPolicy(ctx context.Context, place *data.Place)
 
 	}
 
-	lg.Warnf("registered return policy for place(%d)", place.ID)
+	lg.Warnf("registered shipping policy for place(%d)", place.ID)
 }
 
 func (s *Shopify) AuthCodeURL(ctx context.Context) string {
