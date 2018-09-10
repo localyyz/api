@@ -185,6 +185,16 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		ctx:     ctx,
 	}
 
+	if cache, _ := ctx.Value("variant.cache").(VariantCache); cache != nil {
+		p.Variants = cache[p.ID]
+	} else {
+		if vv, _ := data.DB.ProductVariant.FindByProductID(product.ID); vv != nil {
+			for _, v := range vv {
+				p.Variants = append(p.Variants, NewProductVariant(ctx, v))
+			}
+		}
+	}
+
 	sizeSet := set.New()
 	colorSet := set.New()
 	for _, v := range p.Variants {
