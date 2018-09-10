@@ -62,6 +62,11 @@ func (h *Handler) Start() {
 			spec: "@midnight",
 			fn:   h.SyncDeals,
 		},
+		{
+			name: "abandoned_cart",
+			spec: "@midnight",
+			fn:   h.AbandonCartHandler,
+		},
 	}
 
 	for _, s := range h.jobs {

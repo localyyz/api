@@ -19,6 +19,7 @@ const (
 type Client struct {
 	client  *http.Client
 	BaseURL *url.URL
+	AppID   string
 	AppKey  string
 
 	common service
@@ -48,7 +49,7 @@ func (e *ErrorResponse) Error() string {
 }
 
 // NewClient returns a new OneSignal API client.
-func NewClient(httpClient *http.Client, appKey string) *Client {
+func NewClient(httpClient *http.Client, appID, appKey string) *Client {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
@@ -58,7 +59,12 @@ func NewClient(httpClient *http.Client, appKey string) *Client {
 		log.Fatal(err)
 	}
 
-	c := &Client{BaseURL: baseURL, client: httpClient, AppKey: appKey}
+	c := &Client{
+		BaseURL: baseURL,
+		client:  httpClient,
+		AppID:   appID,
+		AppKey:  appKey,
+	}
 	c.common.client = c
 
 	c.Players = (*PlayersService)(&c.common)

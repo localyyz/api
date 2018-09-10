@@ -203,6 +203,9 @@ func (s *NotificationsService) Create(opt *NotificationRequest) (*NotificationCr
 		return nil, nil, err
 	}
 
+	// fill in the app id
+	opt.AppID = s.client.AppID
+
 	// create the request
 	req, err := s.client.NewRequest("POST", u.String(), opt)
 	if err != nil {

@@ -42,6 +42,9 @@ func main() {
 	// [connect]
 	connect.SetupSlack(conf.Connect.Slack)
 
+	// [onesignal]
+	connect.SetupOneSignal(conf.Connect.OneSignal)
+
 	// new scheduler handler
 	h := scheduler.New(db)
 	h.Environment = conf.Environment

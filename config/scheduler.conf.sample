@@ -8,3 +8,7 @@ username          = "localyyz"
 password          = ""
 debug_queries     = true
 application_name  = "scheduler"
+
+[connect.onesignal]
+app_id            = "e6079043-71d2-4180-84d4-eaef47683cf1"
+app_secret        = "OTI1NGNkN2QtNzYzYy00NmM2LThlYTktNTFiOTlhZTE2MTJi"

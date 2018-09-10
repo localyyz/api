@@ -9,6 +9,6 @@ var (
 )
 
 func SetupOneSignal(conf Config) *onesignal.Client {
-	ON = onesignal.NewClient(nil, conf.AppSecret)
+	ON = onesignal.NewClient(nil, conf.AppId, conf.AppSecret)
 	return ON
 }
