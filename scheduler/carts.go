@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/onesignal"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
@@ -14,7 +12,8 @@ import (
 const (
 	AbandonVariantLimit     = 5
 	AbandonPushTemplateID   = "6e76a7eb-3090-4579-bf05-bf53fbc9675c"
-	AbandonPushContent      = "Hey {{ name | default: 'there'}}! %s is selling out fast, only %d left! Get yours before it goes out of stock.⏰"
+	AbandonPushOOSContent   = "Hey {{ name | default: 'there'}}! %s is selling out fast, only %d left! Get yours before it goes out of stock.⏰"
+	AbandonPushContent      = "Hey {{ name | default: 'there'}}! %s is selling out fast, Get yours before it goes out of stock.⏰"
 	AbandonTouchIntervalMax = "48 hour"
 	AbandonTouchIntervalMin = 4 * time.Hour
 )
@@ -31,7 +30,7 @@ func (h *Handler) AbandonCartHandler() {
 
 	// abandon cart handler pushes abandoned cart users.
 	var carts []*data.Cart
-	err := data.DB.Select(db.Raw("c.*")).
+	err := data.DB.Select(db.Raw("distinct on (c.id) c.*")).
 		From("carts c").
 		LeftJoin("cart_items ci").On("ci.cart_id = c.id").
 		LeftJoin("cart_notifications n").On("n.cart_id = c.id").
@@ -43,6 +42,7 @@ func (h *Handler) AbandonCartHandler() {
 				}, // cart has not completed yet
 				"ci.created_at": db.Between(db.Raw("now() - interval '4 hour'"), db.Raw("now()")), // cart item created within min interval.
 				"ci.id":         db.IsNotNull(),                                                   // have at least one cart item
+				"c.is_express":  false,
 			},
 			db.Or(
 				db.Cond{"n.scheduled_at": db.Lt(db.Raw("now() - interval '48 hour'"))}, // have not touched in last 48h.
@@ -78,11 +78,12 @@ func (h *Handler) AbandonCartHandler() {
 				continue
 			}
 
+			// either chose the very first
 			if i == 0 {
 				selected = variant
 			}
 
-			// find a variant that's almost out of stock
+			// or find a variant that's almost out of stock
 			if variant.Limits <= AbandonVariantLimit {
 				selected = variant
 				break
@@ -96,34 +97,40 @@ func (h *Handler) AbandonCartHandler() {
 			continue
 		}
 
-		toSend = append(toSend, data.CartNotification{
+		ntf := data.CartNotification{
 			CartID:    cart.ID,
 			UserID:    cart.UserID,
 			ProductID: selected.ProductID,
 			VariantID: selected.ID,
-			Heading:   "Almost 🚀 gone!",
-			Content:   fmt.Sprintf(AbandonPushContent, product.Title, selected.Limits),
-		})
+		}
+		if selected.Limits <= AbandonVariantLimit {
+			ntf.Heading = "Almost 🚀 gone!"
+			ntf.Content = fmt.Sprintf(AbandonPushOOSContent, product.Title, selected.Limits)
+		} else {
+			ntf.Heading = "Hurry before its 🚀 gone!"
+			ntf.Content = fmt.Sprintf(AbandonPushContent, product.Title)
+		}
+		toSend = append(toSend, ntf)
 	}
 
 	// for each cart, send notf (playerID -> content)
 	for _, notf := range toSend {
-		user, err := data.DB.User.FindByID(notf.UserID)
-		if err != nil {
-			lg.Warnf("failed to fetch user(%d): %v", notf.UserID, err)
-			continue
-		}
-		req := onesignal.NotificationRequest{
-			Headings:         map[string]string{"en": notf.Heading},
-			Contents:         map[string]string{"en": notf.Content},
-			IncludePlayerIDs: []string{user.Etc.OSPlayerID},
-		}
-		resp, _, err := connect.ON.Notifications.Create(&req)
-		if err != nil {
-			lg.Warnf("failed to schedule notification: %v", err)
-		}
+		//user, err := data.DB.User.FindByID(notf.UserID)
+		//if err != nil {
+		//lg.Warnf("failed to fetch user(%d): %v", notf.UserID, err)
+		//continue
+		//}
+		//req := onesignal.NotificationRequest{
+		//Headings:         map[string]string{"en": notf.Heading},
+		//Contents:         map[string]string{"en": notf.Content},
+		//IncludePlayerIDs: []string{user.Etc.OSPlayerID},
+		//}
+		//resp, _, err := connect.ON.Notifications.Create(&req)
+		//if err != nil {
+		//lg.Warnf("failed to schedule notification: %v", err)
+		//}
 
-		notf.ExternalID = resp.ID
+		//notf.ExternalID = resp.ID
 		if err := data.DB.CartNotification.Save(&notf); err != nil {
 			lg.Warnf("failed to save notification to db: %v", err)
 		}
