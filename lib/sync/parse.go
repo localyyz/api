@@ -3,7 +3,6 @@ package sync
 import (
 	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -212,9 +211,6 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 		tokens := p.tokenize(s)
 		p.parseGender(tokens)
 		p.parseCategory(tokens)
-
-		log.Println(tokens)
-		log.Println(p.gender)
 	}
 
 	var aggregates aggregateCategory
@@ -246,7 +242,6 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 		// if the category matches the product gender, boost the weight
 		if p.gender == a.Gender {
 			a.Weight += int32(genderMatchScore)
-			log.Printf("match: adding %d to %s => %d", genderMatchScore, a.Value, a.Weight)
 		}
 		aggregates = append(aggregates, &a)
 	}
@@ -256,7 +251,6 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 	if p.gender == data.ProductGenderUnisex {
 		for _, a := range aggregates {
 			a.Weight += genderCount[a.Gender]
-			log.Printf("gender: adding %d to %s => %d", genderCount[a.Gender], a.Value, a.Weight)
 		}
 	}
 
@@ -265,16 +259,11 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 	if len(typeCount) > 1 {
 		for _, a := range aggregates {
 			a.Weight += typeCount[a.Type]
-			log.Printf("type: adding %d to %s => %d", typeCount[a.Type], a.Value, a.Weight)
 		}
 	}
 
 	// sort categories by weight
 	sort.Sort(aggregates)
-
-	for _, a := range aggregates {
-		log.Printf("aggregate: %v", a)
-	}
 
 	parsed := data.Whitelist{
 		// inherit from the parser
