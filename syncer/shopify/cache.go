@@ -1,13 +1,17 @@
 package shopify
 
 import (
+	"errors"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
 var (
-	storeCache map[string]*data.Place
+	storeCache       map[string]*data.Place
+	ErrPlaceInactive = errors.New("place inactive")
+	ErrPlaceNotFound = errors.New("place not found")
 )
 
 func SetupShopCache(places ...*data.Place) {
@@ -23,15 +27,21 @@ func storeGet(key string) (*data.Place, error) {
 	if !ok {
 		var err error
 		place, err = data.DB.Place.FindOne(
-			db.Cond{
-				"shopify_id": key,
-				"status":     data.PlaceStatusActive,
-			},
+			db.Cond{"shopify_id": key},
 		)
 		if err != nil {
 			return nil, err
 		}
 		storeCache[place.ShopifyID] = place
 	}
+
+	if place != nil && place.Status != data.PlaceStatusActive {
+		return nil, ErrPlaceInactive
+	}
+
+	if place == nil {
+		return nil, ErrPlaceNotFound
+	}
+
 	return place, nil
 }
