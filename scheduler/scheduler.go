@@ -22,9 +22,10 @@ type Handler struct {
 }
 
 type FuncJob struct {
-	name string
-	spec string
-	fn   func()
+	name           string
+	spec           string
+	fn             func()
+	runImmediately bool
 }
 
 func (f FuncJob) Run() {
@@ -62,16 +63,25 @@ func (h *Handler) Start() {
 			spec: "@midnight",
 			fn:   h.SyncDeals,
 		},
+		{
+			name:           "abandoned_cart",
+			spec:           "@every 4h",
+			fn:             h.AbandonCartHandler,
+			runImmediately: true,
+		},
 	}
 
 	for _, s := range h.jobs {
 		h.cron.AddJob(s.spec, s)
+		if s.runImmediately {
+			s.fn()
+		}
 	}
 	h.cron.Start()
 
 	for _, e := range h.cron.Entries() {
 		f := e.Job.(FuncJob)
-		lg.Infof("job: %s scheduled next run: %s", f.name, e.Next)
+		lg.Infof("job: %s scheduled next run: %s", f.name, e.Schedule.Next(time.Now()))
 	}
 }
 
