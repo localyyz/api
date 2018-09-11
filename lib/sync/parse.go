@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -28,7 +29,7 @@ var (
 	genderMatchScore = 2
 )
 
-type aggregateCategory []data.Whitelist
+type aggregateCategory []*data.Whitelist
 
 func (s aggregateCategory) Len() int {
 	return len(s)
@@ -55,6 +56,12 @@ func (p *parser) tokenize(tagStr string, optTags ...string) []string {
 	tagStr = strings.ToLower(tagStr)
 	tt := tagRegex.Split(tagStr, -1)
 	tagSet := set.New()
+
+	// if the passed in string is a product handle
+	// parse it by spliting it up by dashes
+	if len(tt) == 1 && strings.Count(tagStr, "-") > 1 {
+		tt = strings.Split(tagStr, "-")
+	}
 
 	// word tags
 	slugTagStr := slug.Make(strings.Join(tt, " "))
@@ -126,7 +133,7 @@ func (p *parser) parseCategory(tokens []string) {
 					}
 				}
 				// either way, increment the weighting
-				y.Weight += x.Weight
+				y.Weight = x.Weight
 				p.categories[key] = y
 			}
 		}
@@ -142,14 +149,14 @@ func (p *parser) parseGender(tokens []string) {
 	var maybeGender data.ProductGender
 	for _, t := range tokens {
 		switch t {
-		case "man", "male", "gentleman":
+		case "man", "male", "gentleman", "guy", "boy":
 			p.gender = data.ProductGenderMale
 			return
-		case "woman", "female", "lady":
+		case "woman", "female", "lady", "gal", "girl":
 			p.gender = data.ProductGenderFemale
 			return
 		case "kid":
-			p.gender = data.ProductGenderUnisex
+			p.gender = data.ProductGenderKid
 			return
 		case "sexy":
 			// maybe female.
@@ -205,12 +212,28 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 		tokens := p.tokenize(s)
 		p.parseGender(tokens)
 		p.parseCategory(tokens)
+
+		log.Println(tokens)
+		log.Println(p.gender)
 	}
 
 	var aggregates aggregateCategory
+	// increase category weight for more gender occurences
+	genderCount := map[data.ProductGender]int32{}
+	typeCount := map[data.ProductCategoryType]int32{}
 	for _, w := range p.categories {
+		// copy incase the scope leaks
+		a := w
+
+		// keep track number of times gender category popedup
+		genderCount[a.Gender] += int32(1)
+		// don't over count unisex categories
+		if a.Gender != data.ProductGenderUnisex {
+			typeCount[a.Type] += int32(1)
+		}
+
 		if p.gender != data.ProductGenderUnisex &&
-			w.Gender != p.gender && w.Gender != data.ProductGenderUnisex {
+			a.Gender != p.gender && a.Gender != data.ProductGenderUnisex {
 			// skip the matched whitelist entry if the
 			// product gender and the whitelist gender
 			// do not match up
@@ -221,13 +244,37 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 			continue
 		}
 		// if the category matches the product gender, boost the weight
-		if p.gender == w.Gender {
-			w.Weight += int32(genderMatchScore)
+		if p.gender == a.Gender {
+			a.Weight += int32(genderMatchScore)
+			log.Printf("match: adding %d to %s => %d", genderMatchScore, a.Value, a.Weight)
 		}
-		aggregates = append(aggregates, w)
+		aggregates = append(aggregates, &a)
 	}
+
+	// if the gender is not determined. increase the
+	// category weight based on # of occurences
+	if p.gender == data.ProductGenderUnisex {
+		for _, a := range aggregates {
+			a.Weight += genderCount[a.Gender]
+			log.Printf("gender: adding %d to %s => %d", genderCount[a.Gender], a.Value, a.Weight)
+		}
+	}
+
+	// if there are multiple detect product types (ie.. apparel vs shoes)
+	// add weight to the highest occuring ones
+	if len(typeCount) > 1 {
+		for _, a := range aggregates {
+			a.Weight += typeCount[a.Type]
+			log.Printf("type: adding %d to %s => %d", typeCount[a.Type], a.Value, a.Weight)
+		}
+	}
+
 	// sort categories by weight
 	sort.Sort(aggregates)
+
+	for _, a := range aggregates {
+		log.Printf("aggregate: %v", a)
+	}
 
 	parsed := data.Whitelist{
 		// inherit from the parser
@@ -272,12 +319,12 @@ type shopifyCategorySyncer struct {
 	place   *data.Place
 }
 
-func (s *shopifyCategorySyncer) Sync(title, tags, productType string) error {
+func (s *shopifyCategorySyncer) Sync(inputs ...string) error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "sync.place", s.place)
 
 	// find product category + gender
-	parsedData, err := ParseProduct(ctx, title, tags, productType)
+	parsedData, err := ParseProduct(ctx, inputs...)
 	if err != nil {
 		// see parse product comment for logic on blacklisting product
 		// throw away the product. and continue on

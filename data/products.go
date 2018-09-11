@@ -72,7 +72,16 @@ const (
 	ProductGenderMale
 	ProductGenderFemale
 	ProductGenderUnisex
+	ProductGenderKid
 )
+
+var productGenders = []string{
+	"-",
+	"man",
+	"woman",
+	"unisex",
+	"kid",
+}
 
 const (
 	// NOTE on magic numbers
@@ -201,8 +210,6 @@ type FeatureProductStore struct {
 func (FeatureProduct) CollectionName() string {
 	return `feature_products`
 }
-
-var productGenders = []string{"-", "man", "woman", "unisex"}
 
 // String returns the string value of the status.
 func (s ProductGender) String() string {

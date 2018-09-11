@@ -52,6 +52,7 @@ var (
 		"slip-on",
 		"lexi-noel",
 		"sport-coat",
+		"crop-top",
 	}
 )
 

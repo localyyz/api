@@ -67,11 +67,11 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			}
 			return errors.Wrap(err, "failed to fetch product")
 		}
-		// TODO: put this back in in the future. for now, sync everytime
-		//if product.Status == data.ProductStatusRejected {
-		//return ErrProductRejected
-		//}
 		lg.SetEntryField(ctx, "product_id", product.ID)
+		// if the product is rejected, keep is as rejected
+		if product.Status == data.ProductStatusRejected {
+			return ErrProductRejected
+		}
 
 		product.Status = data.ProductStatusProcessing
 		// lock product in as processing

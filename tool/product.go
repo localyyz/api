@@ -101,79 +101,34 @@ func CleanupProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func SyncProduct(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	place := ctx.Value("place").(*data.Place)
+	place := r.Context().Value("place").(*data.Place)
+	client := r.Context().Value("shopify.client").(*shopify.Client)
 
-	categoryCache := make(map[string]*data.Category)
-	categories, err := data.DB.Category.FindAll(nil)
+	externalID, err := strconv.ParseInt(chi.URLParam(r, "externalID"), 10, 64)
 	if err != nil {
-		log.Print(err)
+		log.Println("invalid param")
 		return
 	}
-	for _, c := range categories {
-		categoryCache[c.Value] = c
+
+	// Create or update depending on PUT or POST
+	p, _, _ := client.ProductList.GetProduct(
+		context.Background(),
+		externalID,
+	)
+	if p == nil {
+		log.Println("product not found")
+		return
 	}
 
-	blacklistCache := make(map[string]*data.Blacklist)
-	if blacklist, _ := data.DB.Blacklist.FindAll(nil); blacklist != nil {
-		for _, word := range blacklist {
-			blacklistCache[word.Word] = word
-		}
-	}
-	client := ctx.Value("shopify.client").(*shopify.Client)
-
-	{
-		externalID, err := strconv.ParseInt(chi.URLParam(r, "externalID"), 10, 64)
-		if err != nil {
-			log.Println("invalid param")
-			return
-		}
-
-		// Create or update depending on PUT or POST
-		p, _, _ := client.ProductList.GetProduct(
-			ctx,
-			externalID,
-		)
-		if p == nil {
-			log.Println("not found")
-			return
-		}
-
-		if !p.Available {
-			log.Println("unavailable")
-			return
-		}
-		ctx := context.WithValue(context.Background(), "sync.list", []*shopify.ProductList{p})
-		ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
-		ctx = context.WithValue(ctx, "category.cache", categoryCache)
-		ctx = context.WithValue(ctx, "sync.place", place)
-		s.ShopifyProductListingsUpdate(ctx)
-	}
-
+	ctx := context.WithValue(context.Background(), "sync.list", []*shopify.ProductList{p})
+	ctx = context.WithValue(ctx, "sync.place", place)
+	s.ShopifyProductListingsUpdate(ctx)
 }
 
 func SyncProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	place := ctx.Value("place").(*data.Place)
-
 	cursor := api.NewPage(r)
-
-	categoryCache := make(map[string]*data.Category)
-	categories, err := data.DB.Category.FindAll(nil)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	for _, c := range categories {
-		categoryCache[c.Value] = c
-	}
-
-	blacklistCache := make(map[string]*data.Blacklist)
-	if blacklist, _ := data.DB.Blacklist.FindAll(nil); blacklist != nil {
-		for _, word := range blacklist {
-			blacklistCache[word.Word] = word
-		}
-	}
 	client := ctx.Value("shopify.client").(*shopify.Client)
 
 	// Create or update depending on PUT or POST
@@ -193,13 +148,11 @@ func SyncProducts(w http.ResponseWriter, r *http.Request) {
 			log.Printf("no more pages at %d", page)
 			break
 		}
-		page += 1
 		log.Printf("found %d to create for page %d", len(productList), page)
+		page += 1
 
 		for _, p := range productList {
 			ctx := context.WithValue(context.Background(), "sync.list", []*shopify.ProductList{p})
-			ctx = context.WithValue(ctx, "category.blacklist", blacklistCache)
-			ctx = context.WithValue(ctx, "category.cache", categoryCache)
 			ctx = context.WithValue(ctx, "sync.place", place)
 			if err := s.ShopifyProductListingsUpdate(ctx); err != nil {
 				log.Println("%v", err)
