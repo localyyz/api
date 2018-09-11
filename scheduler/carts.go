@@ -114,7 +114,6 @@ func (h *Handler) AbandonCartHandler() {
 			Headings:         map[string]string{"en": notf.Heading},
 			Contents:         map[string]string{"en": notf.Content},
 			IncludePlayerIDs: []string{user.Etc.OSPlayerID},
-			DelayedOption:    "last-active",
 		}
 		resp, _, err := connect.ON.Notifications.Create(&req)
 		if err != nil {
