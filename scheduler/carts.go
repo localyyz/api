@@ -30,22 +30,25 @@ func (h *Handler) AbandonCartHandler() {
 	}()
 
 	// abandon cart handler pushes abandoned cart users.
-	endAt := time.Now()
-	startAt := endAt.Add(-1 * AbandonTouchIntervalMin)
 	var carts []*data.Cart
 	err := data.DB.Select(db.Raw("c.*")).
 		From("carts c").
 		LeftJoin("cart_items ci").On("ci.cart_id = c.id").
 		LeftJoin("cart_notifications n").On("n.cart_id = c.id").
-		Where(db.Cond{
-			"c.status": []data.CartStatus{
-				data.CartStatusInProgress,
-				data.CartStatusCheckout,
-			}, // cart has not completed yet
-			"n.scheduled_at": db.Lt(db.Raw("now() - interval '?'", AbandonTouchIntervalMax)), // have not touched in last 48h.
-			"ci.created_at":  db.Between(startAt, endAt),                                     // cart item created within min interval.
-			"ci.id":          db.IsNot(nil),
-		}).
+		Where(db.And(
+			db.Cond{
+				"c.status": []data.CartStatus{
+					data.CartStatusInProgress,
+					data.CartStatusCheckout,
+				}, // cart has not completed yet
+				"ci.created_at": db.Between(db.Raw("now() - interval '4 hour'"), db.Raw("now()")), // cart item created within min interval.
+				"ci.id":         db.IsNotNull(),                                                   // have at least one cart item
+			},
+			db.Or(
+				db.Cond{"n.scheduled_at": db.Lt(db.Raw("now() - interval '48 hour'"))}, // have not touched in last 48h.
+				db.Cond{"n.id": db.IsNull()},                                           // or never touched before
+			),
+		)).
 		All(&carts)
 	if err != nil {
 		lg.Alertf("failed to schedule abandon cart push: %v", err)
