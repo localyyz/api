@@ -16,10 +16,17 @@ func Routes() chi.Router {
 
 		r.Put("/", UpdateUser)
 		r.Mount("/address", addressRoutes())
+		r.Mount("/orders", orderRoutes())
 	})
 
 	r.Mount("/collections", collectionRoutes())
 
+	return r
+}
+
+func orderRoutes() chi.Router {
+	r := chi.NewRouter()
+	r.Get("/", ListOrders)
 	return r
 }
 
