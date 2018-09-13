@@ -103,6 +103,10 @@
                                 <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
                                   In Review
                                 </span>
+                                {% elif (place.Status == 6) %}
+                                <span class="Polaris-Badge Polaris-Badge--progressPartiallyComplete">
+                                  Select Plan
+                                </span>
                                 {% endif %}
                               </span>
                             </div>
@@ -130,12 +134,14 @@
                     and <a class="Polaris-Link" target="_blank" href="https://business.localyyz.com/services-subscription-agreement.html" data-polaris-unstyled="true">Services Subscription</a>.
                     {% elif (place.Status == 2) %}
                     Estimated date of approval: <span class="Polaris-Badge Polaris-Badge--statusInfo">Next 2 business days.</span>
-                    {% if(approvalWait > 10) %}
-                    <div class="Polaris-Banner__Content" id="Banner5Content">
-                      <p>(We're experiencing an unusual high amount of applications, your approval process may take a bit longer! Please contact us if you have any questions. Thank you for your patience.)</p>
-                      <p> - Localyyz Team
-                    </div>
-                    {% endif %}
+                      {% if(approvalWait > 10) %}
+                      <div class="Polaris-Banner__Content" id="Banner5Content">
+                        <p>(We're experiencing an unusual high amount of applications, your approval process may take a bit longer! Please contact us if you have any questions. Thank you for your patience.)</p>
+                        <p> - Localyyz Team
+                      </div>
+                      {% endif %}
+                    {% elif (place.Status == 6) %}
+                    <a href="mailto:support@localyyz.com?subject={{name}}: plan selection question" target="_blank">Email Team Localyyz for help.</a>
                     {% endif %}
                     </p>
                   </div>
@@ -147,8 +153,8 @@
 
         <div class="Polaris-Layout__AnnotatedSection">
           <div class="Polaris-Layout__AnnotationWrapper">
-        {% if (place.PlanEnabled && place.Status == 3) %}
-          {% if (plan == nil) %}
+        {% if (place.Status == 3 or place.Status == 6) %}
+          {% if (plan == nil or place.Status == 6) %}
             {% if (!isMobile) %}
             <div class="Polaris-Card" style="width: 100%;">
               <div class="Polaris-Card__Header">
@@ -425,7 +431,10 @@
           },
           success: function(result) {
             location.reload();
-          }
+          },
+          error: function(XMLHttpRequest, textStatus, errorThrown) {
+            console.log("what", textStatus, errorThrown)
+          },
         });
         return false;
       });

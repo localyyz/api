@@ -125,7 +125,7 @@ func Approve(w http.ResponseWriter, r *http.Request) {
 	approval.ApprovedAt = place.ApprovedAt
 	data.DB.MerchantApproval.Save(approval)
 
-	place.Status = data.PlaceStatusActive
+	place.Status = data.PlaceStatusSelectPlan
 	place.ApprovedAt = data.GetTimeUTCPointer()
 
 	data.DB.Place.Save(place)

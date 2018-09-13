@@ -78,13 +78,12 @@ const (
 	PlaceStatusWaitApproval                     // 2
 	PlaceStatusActive                           // 3
 	PlaceStatusInActive                         // 4
-
-	// started review process
-	PlaceStatusReviewing // 5
-
-	// featured merchant cutoff
-	PlaceFeatureWeightCutoff = 5
+	PlaceStatusReviewing                        // 5, started review process
+	PlaceStatusSelectPlan                       // 6
 )
+
+// featured merchant cutoff
+const PlaceFeatureWeightCutoff = 5
 
 var _ interface {
 	bond.HasBeforeCreate
@@ -106,6 +105,7 @@ var (
 		"active",
 		"notApproved",
 		"reviewing",
+		"selectplan",
 	}
 	planWeighting = map[string]int32{
 		"":         0,
