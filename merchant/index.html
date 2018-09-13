@@ -420,7 +420,7 @@
   <script type="text/javascript">
     "use strict"
     $(document).ready(function() {
-      {% if (place.PlanEnabled == place.Status == 3) %}
+      {% if (place.Status == 3 or place.Status == 6) %}
       $("button#sub-basic").click(function() {
         $.ajax({
           type: "POST",
