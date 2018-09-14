@@ -124,16 +124,20 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 	var checkoutErrors []error
 	for _, c := range checkouts {
 		req := shopper.NewCheckout(ctx, c)
-		if err := req.Do(nil); err != nil || req.Err != nil {
-			if err != nil {
-				// some internal server error, return right away
-				lg.Alertf("[internal] checkout(%d): %v", c.ID, err)
-
-				render.Respond(w, r, err)
-				return
-			} else {
-				checkoutErrors = append(checkoutErrors, req.Err)
+		if err := req.Do(nil); err != nil {
+			if err == shopper.ErrEmptyCheckout {
+				// some how we were left with a checkout
+				// that was missing items..alert and continue onwards
+				lg.Alertf("[internal] checkout(id: %d) was empty", c.ID)
+				continue
 			}
+			lg.Alertf("[internal] checkout(%d): %v", c.ID, err)
+			render.Respond(w, r, err)
+			return
+		}
+		if req.Err != nil {
+			lg.Alertf("checkout(id: %d) %v", c.ID, err)
+			checkoutErrors = append(checkoutErrors, req.Err)
 		}
 	}
 
