@@ -319,11 +319,11 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 	}
 	for _, f := range o.Filters {
 		var fConds []db.Compound
-		// by default. let's filter out score greater equal to 3
+		// by default. let's filter out score greater equal to 1
 		// NOTE: this is to increase query performance. sorting by multiple
 		// values will dramatically slow down the query
 		fConds = append(fConds, db.Cond{
-			db.Raw("p.score"): db.Gte(3),
+			db.Raw("p.score"): db.Gte(1),
 		})
 		switch f.Type {
 		case "brand":
