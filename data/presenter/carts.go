@@ -119,7 +119,6 @@ func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 				}
 			}
 		}
-		lg.Warn(discounts)
 		for _, item := range c.CartItems {
 			if v, ok := discounts[item.ProductID]; ok {
 				item.Price += v
