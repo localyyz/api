@@ -61,7 +61,7 @@ func (h *Handler) AbandonCartHandler() {
 		// for each cart, check if need to send.
 		alreadySent, err := data.DB.CartNotification.Find(db.Cond{
 			"cart_id":      cart.ID,
-			"scheduled_at": db.Lt(db.Raw("now() - interval '48 hour'")), // have not touched in last 48h.
+			"scheduled_at": db.Gt(db.Raw("now() - interval '48 hour'")), // have not touched in last 48h.
 		}).Exists()
 		if err != nil {
 			lg.Infof("skipping cart(%d) exist errored %v. being safe this iteration", cart.ID, err)
