@@ -130,6 +130,7 @@ func (h *Handler) AbandonCartHandler() {
 		resp, _, err := connect.ON.Notifications.Create(&req)
 		if err != nil {
 			lg.Warnf("failed to schedule notification: %v", err)
+			continue
 		}
 
 		notf.ExternalID = resp.ID

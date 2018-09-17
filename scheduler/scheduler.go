@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/chi"
 	"github.com/pressly/lg"
 	"github.com/robfig/cron"
@@ -87,6 +88,7 @@ func (h *Handler) Start() {
 
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
+	r.Use(NewStructuredLogger())
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -94,4 +96,8 @@ func (h *Handler) Routes() chi.Router {
 	})
 
 	return r
+}
+
+func NewStructuredLogger() func(next http.Handler) http.Handler {
+	return api.RequestLogger(lg.DefaultLogger)
 }

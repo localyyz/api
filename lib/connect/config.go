@@ -21,13 +21,19 @@ type NatsConfig struct {
 	Subscribers map[string]NatsSubject `toml:"subscribers"`
 }
 
+type ReporterConfig struct {
+	ServerURL string `toml:"server_url"`
+	AppName   string `toml:"app_name"`
+}
+
 type Configs struct {
-	Facebook  Config      `toml:"facebook"`
-	Shopify   Config      `toml:"shopify"`
-	Stripe    Config      `toml:"stripe"`
-	OneSignal Config      `toml:"onesignal"`
-	Slack     SlackConfig `toml:"slack"`
-	Nats      NatsConfig  `toml:"nats"`
+	Facebook  Config         `toml:"facebook"`
+	Shopify   Config         `toml:"shopify"`
+	Stripe    Config         `toml:"stripe"`
+	OneSignal Config         `toml:"onesignal"`
+	Slack     SlackConfig    `toml:"slack"`
+	Nats      NatsConfig     `toml:"nats"`
+	Reporter  ReporterConfig `toml:"reporter"`
 }
 
 // Configure loads the connect configs from config file
@@ -38,4 +44,5 @@ func Configure(confs Configs) {
 	SetupSlack(confs.Slack)
 	SetupNatsStream(confs.Nats)
 	SetupOneSignal(confs.OneSignal)
+	SetupReporter(confs.Reporter)
 }

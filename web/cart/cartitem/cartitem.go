@@ -7,6 +7,8 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
@@ -120,6 +122,15 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	lg.SetEntryField(ctx, "variant_id", variant.ID)
+
+	// emit event
+	connect.NATS.Emit(
+		events.EvProductAddedToCart,
+		presenter.ProductEvent{
+			Product:  &data.Product{ID: variant.ProductID},
+			ViewerID: cart.UserID,
+		},
+	)
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, presenter.NewCartItem(ctx, newItem))

@@ -22,3 +22,11 @@ durable           = true
     [connect.nats.subscribers.product_purchases]
     durable_name      = "product_purchases"
     subject           = "data.product.purchased"
+
+    [connect.nats.subscribers.product_favourites]
+    durable_name      = "product_favourites"
+    subject           = "data.product.favourited"
+
+    [connect.nats.subscribers.product_add_to_carts]
+    durable_name      = "product_add_to_carts"
+    subject           = "data.product.addedtocart"

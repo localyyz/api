@@ -8,9 +8,11 @@ var evtMap map[string]Event
 var evtLock sync.Mutex
 
 const (
-	EvProduct          = "data.product"
-	EvProductViewed    = "data.product.viewed"
-	EvProductPurchased = "data.product.purchased"
+	EvProduct            = "data.product"
+	EvProductViewed      = "data.product.viewed"
+	EvProductPurchased   = "data.product.purchased"
+	EvProductAddedToCart = "data.product.addedtocart"
+	EvProductFavourited  = "data.product.favourited"
 )
 
 func init() {
@@ -18,6 +20,8 @@ func init() {
 
 	RegisterEvent(string(EvProductViewed), EvProductViewed)
 	RegisterEvent(string(EvProductPurchased), EvProductPurchased)
+	RegisterEvent(string(EvProductFavourited), EvProductFavourited)
+	RegisterEvent(string(EvProductAddedToCart), EvProductAddedToCart)
 }
 
 // EventForType will return the registered Event for the evtType.

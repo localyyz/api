@@ -8,11 +8,14 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopper"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
+	db "upper.io/db.v3"
 )
 
 type cartPaymentRequest struct {
@@ -110,6 +113,24 @@ func CreatePayments(w http.ResponseWriter, r *http.Request) {
 		)
 		data.DB.User.Save(sessionUser)
 	}
+
+	// nats events on success
+	go func() {
+		cartItems, err := data.DB.CartItem.FindAll(
+			db.Cond{
+				"cart_id": cart.ID,
+			},
+		)
+		if err != nil {
+			return
+		}
+		for _, ci := range cartItems {
+			connect.NATS.Emit(events.EvProductPurchased, &presenter.ProductEvent{
+				Product: &data.Product{ID: ci.ProductID},
+				BuyerID: sessionUser.ID,
+			})
+		}
+	}()
 
 	// give us a nice alert
 	if !presented.HasError && cart.Status == data.CartStatusComplete {

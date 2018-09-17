@@ -11,7 +11,7 @@ func Routes() chi.Router {
 
 	r := api.WithFilterRoutes(ListProducts)
 	r.Route("/feed", api.FilterRoutes(ListRandomProduct))
-	r.Route("/trend", api.FilterRoutes(ListTrending))
+	r.Get("/trend", ListTrending)
 	r.Get("/history", ListHistoryProduct)
 	r.With(auth.DeviceCtx).Route("/favourite", api.FilterRoutes(ListFavourite))
 	r.Route("/{productID}", func(r chi.Router) {
