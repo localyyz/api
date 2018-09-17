@@ -29,18 +29,28 @@ type ProductVariant struct {
 }
 
 func NewProductVariant(ctx context.Context, variant *data.ProductVariant) *ProductVariant {
-	p := &ProductVariant{
+	pv := &ProductVariant{
 		ProductVariant: variant,
 		Price:          variant.Price,
 		ctx:            ctx,
 	}
+
 	// modify product price if deal is active
-	if deal, ok := ctx.Value(DealCtxKey).(*data.Deal); ok {
+	if deal, ok := ctx.Value(DealCtxKey).(*Deal); ok {
 		// NOTE: deal value here is negative because the type is fixed amount only for now
-		p.Price += deal.Value
+		if len(deal.Products) == 0 {
+			// auto apply to all
+			pv.Price += deal.Value
+		} else {
+			for _, dp := range deal.Products {
+				if pv.ProductID == dp.ID {
+					pv.Price += deal.Value
+				}
+			}
+		}
 	}
 
-	return p
+	return pv
 }
 
 func NewProductVariantList(ctx context.Context, variants []*data.ProductVariant) []render.Renderer {

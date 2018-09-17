@@ -290,9 +290,18 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	p.PurchaseCount, _ = stash.GetProductPurchases(p.ID)
 
 	// modify product price if deal is active
-	if deal, ok := ctx.Value(DealCtxKey).(*data.Deal); ok {
+	if deal, ok := ctx.Value(DealCtxKey).(*Deal); ok {
 		// NOTE: deal value here is negative because the type is fixed amount only for now
-		p.Price += deal.Value
+		if len(deal.Products) == 0 {
+			// auto apply to all
+			p.Price += deal.Value
+		} else {
+			for _, dp := range deal.Products {
+				if p.ID == dp.ID {
+					p.Price += deal.Value
+				}
+			}
+		}
 	}
 
 	return p

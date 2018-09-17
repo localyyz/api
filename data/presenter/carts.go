@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/pressly/lg"
+	db "upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
@@ -43,17 +44,20 @@ func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 			c.StripeAccountID = d.ShopifyPaymentAccountID
 			c.Currency = d.Currency
 			if s, ok := c.Etc.ShippingMethods[k]; ok && s != nil {
-				c.TotalShipping += s.Price
+				c.TotalShipping += round(xchange.ToUSD(float64(s.Price/100.00), d.Currency))
 			}
-			c.TotalTax = d.TotalTax
-			c.TotalPrice = d.TotalPrice
+			c.TotalTax = round(xchange.ToUSD(float64(d.TotalTax/100.00), d.Currency))
+			c.TotalPrice = round(xchange.ToUSD(float64(d.TotalPrice/100.00), d.Currency))
 			if d.Discount != nil {
 				c.TotalDiscount += atoi(d.Discount.Amount)
 			}
 			break
 		}
 		if rates, _ := c.ctx.Value("rates").([]*data.CartShippingMethod); rates != nil {
-			c.ShippingRates = rates
+			for _, r := range rates {
+				r.Price = round(xchange.ToUSD(float64(r.Price/100.00), c.Currency))
+				c.ShippingRates = append(c.ShippingRates, r)
+			}
 		}
 		if s := c.Etc.ShippingAddress; s != nil && c.ShippingAddress == nil {
 			c.ShippingAddress = NewCartAddress(c.ctx, s)
@@ -69,7 +73,6 @@ func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 			c.TotalShipping += round(xchange.ToUSD(ch.TotalShipping, ch.Currency))
 			c.TotalTax += round(xchange.ToUSD(ch.TotalTax, ch.Currency))
 			c.TotalPrice += round(xchange.ToUSD(ch.TotalPrice, ch.Currency))
-
 			if ch.AppliedDiscount.AppliedDiscount != nil {
 				c.TotalDiscount += atoi(ch.AppliedDiscount.Amount)
 			}
@@ -91,6 +94,39 @@ func (c *Cart) Render(w http.ResponseWriter, r *http.Request) error {
 		ci.Render(w, r)
 	}
 
+	// NOTE MAKE THIS BETTER ... check deal price on cart items
+	if !c.IsExpress && c.Status == data.CartStatusInProgress && len(c.Checkouts) > 0 {
+		// find appliable discounts... productID -> value
+		discounts := map[int64]float64{}
+		for _, ch := range c.Checkouts {
+			if ch.AppliedDiscount != nil && ch.AppliedDiscount.AppliedDiscount != nil {
+				// NOTE: this is dirty as fuck. make this better
+				deals, _ := data.DB.Deal.FindAll(db.Cond{
+					"merchant_id": ch.PlaceID,
+					"code":        ch.AppliedDiscount.AppliedDiscount.Title,
+					"status":      data.DealStatusActive,
+				})
+				place, err := data.DB.Place.FindByID(ch.PlaceID)
+				if err != nil {
+					lg.Alert("failed to fetch place(%d) for checkout discount code: %v", place.ID, err)
+					continue
+				}
+				for _, d := range deals {
+					prs, _ := data.DB.DealProduct.FindByDealID(d.ID)
+					for _, p := range prs {
+						discounts[p.ProductID] = xchange.ToUSD(d.Value, place.Currency)
+					}
+				}
+			}
+		}
+		lg.Warn(discounts)
+		for _, item := range c.CartItems {
+			if v, ok := discounts[item.ProductID]; ok {
+				item.Price += v
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -104,13 +140,6 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 	if err != nil {
 		return resp
 	}
-
-	resp.CartItems = make(CartItemList, 0)
-	for _, item := range dbItems {
-		ci := NewCartItem(ctx, item)
-		resp.CartItems = append(resp.CartItems, ci)
-	}
-
 	resp.ShippingAddress = NewCartAddress(ctx, cart.ShippingAddress)
 	resp.ShippingAddress.IsShipping = true
 
@@ -121,6 +150,12 @@ func NewCart(ctx context.Context, cart *data.Cart) *Cart {
 		for _, c := range checkouts {
 			resp.Checkouts = append(resp.Checkouts, NewCheckout(ctx, c))
 		}
+	}
+
+	resp.CartItems = make(CartItemList, 0)
+	for _, item := range dbItems {
+		ci := NewCartItem(ctx, item)
+		resp.CartItems = append(resp.CartItems, ci)
 	}
 
 	return resp

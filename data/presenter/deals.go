@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 	"github.com/go-chi/render"
 	db "upper.io/db.v3"
 )
@@ -36,13 +37,17 @@ func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
 	if len(c.Products) > 0 {
 		p := c.Products[0]
 		p.Render(w, r)
+		// product iterates and renders variants
+
 		v := p.Variants[0]
 		c.Title = p.Title
+
+		oPrice := xchange.ToUSD(v.ProductVariant.Price, p.Place.Place.Currency)
 		c.Description = fmt.Sprintf(
 			"Retail price $%.2f. Deal price $%.2f -> %.f%% OFF!",
-			v.ProductVariant.Price,
+			oPrice,
 			v.Price,
-			100.0-(v.Price*100/v.ProductVariant.Price),
+			100.0-(v.Price*100/oPrice),
 		)
 
 		if len(p.Images) > 0 {
@@ -89,7 +94,7 @@ func NewDeal(ctx context.Context, deal *data.Deal) *Deal {
 	}
 
 	// shove into context for later consumption
-	ctx = context.WithValue(ctx, DealCtxKey, deal)
+	ctx = context.WithValue(ctx, DealCtxKey, presented)
 	presented.Products = newProductList(ctx, products)
 
 	return presented

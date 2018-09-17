@@ -1,6 +1,7 @@
 package cartitem
 
 import (
+	"fmt"
 	"net/http"
 
 	db "upper.io/db.v3"
@@ -9,6 +10,7 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/events"
+	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
@@ -104,6 +106,47 @@ func CreateCartItem(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
+			render.Respond(w, r, err)
+			return
+		}
+	}
+
+	// check if this product is part of a deal?
+	var deal *data.Deal
+	data.DB.Select("d.*").
+		From("deals d").
+		LeftJoin("deal_products dp").On("dp.deal_id = d.id").
+		Where(db.Cond{"dp.product_id": variant.ProductID}).
+		One(&deal)
+	if deal != nil {
+		// TODO: check deal usage limit
+		// TODO: check once per customer limit
+		if deal.Status == data.DealStatusActive {
+			checkout.DiscountCode = deal.Code
+			checkout.AppliedDiscount = &data.CheckoutAppliedDiscount{
+				AppliedDiscount: &shopify.AppliedDiscount{
+					Title:  deal.Code,
+					Amount: fmt.Sprintf("%.2f", deal.Value),
+				},
+			}
+		} else {
+			// check if user deal exists + active
+			userDeal, _ := data.DB.Deal.FindOne(db.Cond{
+				"parent_id": deal.ID,
+				"user_id":   cart.UserID,
+				"status":    data.DealStatusActive,
+			})
+			if userDeal != nil && userDeal.Status == data.DealStatusActive {
+				checkout.DiscountCode = userDeal.Code
+				checkout.AppliedDiscount = &data.CheckoutAppliedDiscount{
+					AppliedDiscount: &shopify.AppliedDiscount{
+						Title:  deal.Code,
+						Amount: fmt.Sprintf("%.2f", userDeal.Value),
+					},
+				}
+			}
+		}
+		if err := data.DB.Checkout.Save(checkout); err != nil {
 			render.Respond(w, r, err)
 			return
 		}
