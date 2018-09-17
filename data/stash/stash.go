@@ -44,6 +44,14 @@ func NewPool(dial func() (redis.Conn, error)) *redis.Pool {
 
 func NewStash(host string) (*Stash, error) {
 	pool := NewPool(NewDialer(host))
+
+	conn := pool.Get()
+	defer conn.Close()
+
+	if _, err := conn.Do("PING"); err != nil {
+		return nil, err
+	}
+
 	s := &Stash{
 		pool: pool,
 	}

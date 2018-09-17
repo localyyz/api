@@ -7,9 +7,6 @@ import (
 	"net/url"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/google/uuid"
@@ -116,34 +113,10 @@ func (p *Payment) Finalize(req *shopify.Payment) error {
 	} else {
 		p.checkout.SuccessPaymentID = req.Transaction.ID
 		p.checkout.Status = data.CheckoutStatusPaymentSuccess
-
-		// nats events on success
-		go func() {
-			cartItems, err := data.DB.CartItem.FindAll(db.Cond{"checkout_id": p.checkout.ID})
-			if err != nil {
-				return
-			}
-			var productIDs []int64
-			for _, c := range cartItems {
-				productIDs = append(productIDs, c.ProductID)
-			}
-			products, err := data.DB.Product.FindAll(db.Cond{"id": productIDs})
-			if err != nil {
-				return
-			}
-			for _, pr := range products {
-				connect.NATS.Emit(events.EvProductPurchased, &presenter.ProductEvent{
-					Product: pr,
-					BuyerID: p.payer.ID,
-				})
-			}
-		}()
-
 	}
 	if err := data.DB.Checkout.Save(p.checkout); err != nil {
 		return err
 	}
-
 	return p.Err
 }
 

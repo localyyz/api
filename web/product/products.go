@@ -2,10 +2,7 @@ package product
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/go-chi/chi"
@@ -37,6 +34,15 @@ func ProductCtx(next http.Handler) http.Handler {
 		}
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "product", product)
+
+		{ // publish product view event
+			evt := presenter.ProductEvent{Product: product}
+			if sessionUser, ok := ctx.Value("session.user").(*data.User); ok {
+				evt.ViewerID = sessionUser.ID
+			}
+			connect.NATS.Emit(events.EvProductViewed, evt)
+		}
+
 		lg.SetEntryField(ctx, "product_id", product.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -84,53 +90,25 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 func GetProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
-
-	{
-		evt := presenter.ProductEvent{Product: product}
-		if sessionUser, ok := ctx.Value("session.user").(*data.User); ok {
-			evt.ViewerID = sessionUser.ID
-		}
-		connect.NATS.Emit(events.EvProductViewed, evt)
-	}
-
 	render.Render(w, r, presenter.NewProduct(ctx, product))
 }
 
 func ListTrending(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 	cursor := ctx.Value("cursor").(*api.Page)
 
-	u, _ := url.Parse("http://reporter:5339/trend")
-	u.RawQuery = cursor.URL.RawQuery
-	resp, err := http.DefaultClient.Get(u.String())
-	if err != nil {
-		render.Respond(w, r, []struct{}{})
-		return
-	}
-
-	b, err := ioutil.ReadAll(resp.Body)
+	productIDs, err := connect.GetTrendingIDs(cursor.URL.Query())
 	if err != nil {
 		render.Respond(w, r, err)
 		return
 	}
-
-	var result presenter.ProductTrend
-	if err := json.Unmarshal(b, &result); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	// paginate is determined by the result
-	cursor.Update(result.IDs)
 
 	query := data.DB.Select("p.*").
 		From("products p").
 		Where(db.Cond{
 			"p.status": data.ProductStatusApproved,
-			"p.id":     result.IDs,
+			"p.id":     productIDs,
 		})
-	query = filterSort.UpdateQueryBuilder(query)
-
 	var products []*data.Product
 	if err := query.All(&products); err != nil {
 		render.Respond(w, r, err)
@@ -185,32 +163,6 @@ func GetVariant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Respond(w, r, variant)
-}
-
-func AddFavouriteProduct(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	user := ctx.Value("session.user").(*data.User)
-	product := ctx.Value("product").(*data.Product)
-
-	favProd := data.FavouriteProduct{ProductID: product.ID, UserID: user.ID}
-
-	err := data.DB.FavouriteProduct.Create(favProd)
-	if err != nil {
-		render.Respond(w, r, err)
-	}
-}
-
-func DeleteFavouriteProduct(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	user := ctx.Value("session.user").(*data.User)
-	product := ctx.Value("product").(*data.Product)
-
-	err := data.DB.FavouriteProduct.Find(db.Cond{"user_id": user.ID, "product_id": product.ID}).Delete()
-	if err != nil {
-		render.Respond(w, r, err)
-	}
 }
 
 func DeleteFromAllCollections(w http.ResponseWriter, r *http.Request) {

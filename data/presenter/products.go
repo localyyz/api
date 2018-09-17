@@ -56,10 +56,6 @@ type ProductEvent struct {
 	BuyerID  int64 `json:"buyerId"`
 }
 
-type ProductTrend struct {
-	IDs []int64 `json:"IDs"`
-}
-
 type ProductCache map[int64]*data.Product
 type VariantCache map[int64][]*ProductVariant
 type VariantImageCache map[int64]int64

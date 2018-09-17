@@ -12,6 +12,10 @@ application_name  = "api"
 [jwt]
 secret            = "secret"
 
+[connect.reporter]
+server_url        = "localhost:5339"
+app_name          = "api"
+
 [pusher]
 topic             = "org.moodie.toronto"
 

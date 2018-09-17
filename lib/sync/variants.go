@@ -5,9 +5,6 @@ import (
 	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
-	"bitbucket.org/moodie-app/moodie-api/data/presenter"
-	"bitbucket.org/moodie-app/moodie-api/lib/connect"
-	"bitbucket.org/moodie-app/moodie-api/lib/events"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 	"github.com/pkg/errors"
@@ -123,13 +120,6 @@ func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 			editV.ID = dbV.ID
 			if reflect.DeepEqual(editV, dbV) {
 				continue
-			}
-
-			// stats: check if a product variant quantity has decreased
-			// if it has decreased, send out a nats product purchase event
-			// TODO: send through the difference as a value
-			if dbV.Limits > editV.Limits {
-				connect.NATS.Emit(events.EvProductPurchased, &presenter.ProductEvent{Product: s.product})
 			}
 		}
 

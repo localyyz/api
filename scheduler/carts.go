@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/onesignal"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
@@ -115,22 +117,23 @@ func (h *Handler) AbandonCartHandler() {
 
 	// for each cart, send notf (playerID -> content)
 	for _, notf := range toSend {
-		//user, err := data.DB.User.FindByID(notf.UserID)
-		//if err != nil {
-		//lg.Warnf("failed to fetch user(%d): %v", notf.UserID, err)
-		//continue
-		//}
-		//req := onesignal.NotificationRequest{
-		//Headings:         map[string]string{"en": notf.Heading},
-		//Contents:         map[string]string{"en": notf.Content},
-		//IncludePlayerIDs: []string{user.Etc.OSPlayerID},
-		//}
-		//resp, _, err := connect.ON.Notifications.Create(&req)
-		//if err != nil {
-		//lg.Warnf("failed to schedule notification: %v", err)
-		//}
+		user, err := data.DB.User.FindByID(notf.UserID)
+		if err != nil {
+			lg.Warnf("failed to fetch user(%d): %v", notf.UserID, err)
+			continue
+		}
+		req := onesignal.NotificationRequest{
+			Headings:         map[string]string{"en": notf.Heading},
+			Contents:         map[string]string{"en": notf.Content},
+			IncludePlayerIDs: []string{user.Etc.OSPlayerID},
+		}
+		resp, _, err := connect.ON.Notifications.Create(&req)
+		if err != nil {
+			lg.Warnf("failed to schedule notification: %v", err)
+			continue
+		}
 
-		//notf.ExternalID = resp.ID
+		notf.ExternalID = resp.ID
 		if err := data.DB.CartNotification.Save(&notf); err != nil {
 			lg.Warnf("failed to save notification to db: %v", err)
 		}

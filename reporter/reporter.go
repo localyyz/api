@@ -33,6 +33,8 @@ func New(nats *connect.Nats) *Handler {
 func (h *Handler) Subscribe(config connect.NatsConfig) {
 	h.nats.Subscribe(events.EvProductViewed, h.HandleProductViewed)
 	h.nats.Subscribe(events.EvProductPurchased, h.HandleProductPurchased)
+	h.nats.Subscribe(events.EvProductFavourited, h.HandleProductFavourited)
+	h.nats.Subscribe(events.EvProductAddedToCart, h.HandleProductAddedToCart)
 }
 
 func (h *Handler) Routes() chi.Router {
