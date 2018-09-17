@@ -35,22 +35,15 @@ func (h *Handler) AbandonCartHandler() {
 	err := data.DB.Select(db.Raw("distinct on (c.id) c.*")).
 		From("carts c").
 		LeftJoin("cart_items ci").On("ci.cart_id = c.id").
-		LeftJoin("cart_notifications n").On("n.cart_id = c.id").
-		Where(db.And(
-			db.Cond{
-				"c.status": []data.CartStatus{
-					data.CartStatusInProgress,
-					data.CartStatusCheckout,
-				}, // cart has not completed yet
-				"ci.created_at": db.Between(db.Raw("now() - interval '4 hour'"), db.Raw("now()")), // cart item created within min interval.
-				"ci.id":         db.IsNotNull(),                                                   // have at least one cart item
-				"c.is_express":  false,
-			},
-			db.Or(
-				db.Cond{"n.scheduled_at": db.Lt(db.Raw("now() - interval '48 hour'"))}, // have not touched in last 48h.
-				db.Cond{"n.id": db.IsNull()},                                           // or never touched before
-			),
-		)).
+		Where(db.Cond{
+			"c.status": []data.CartStatus{
+				data.CartStatusInProgress,
+				data.CartStatusCheckout,
+			}, // cart has not completed yet
+			"ci.created_at": db.Between(db.Raw("now() - interval '4 hour'"), db.Raw("now()")), // cart item created within min interval.
+			"ci.id":         db.IsNotNull(),                                                   // have at least one cart item
+			"c.is_express":  false,
+		}).
 		All(&carts)
 	if err != nil {
 		lg.Alertf("failed to schedule abandon cart push: %v", err)
@@ -65,8 +58,21 @@ func (h *Handler) AbandonCartHandler() {
 	// map of user_id [content]
 	var toSend []data.CartNotification
 	for _, cart := range carts {
-		var selected *data.ProductVariant
+		// for each cart, check if need to send.
+		alreadySent, err := data.DB.CartNotification.Find(db.Cond{
+			"cart_id":      cart.ID,
+			"scheduled_at": db.Lt(db.Raw("now() - interval '48 hour'")), // have not touched in last 48h.
+		}).Exists()
+		if err != nil {
+			lg.Infof("skipping cart(%d) exist errored %v. being safe this iteration", cart.ID, err)
+			continue
+		}
+		if alreadySent {
+			lg.Infof("skipping cart(%d) already touched within 48h", cart.ID)
+			continue
+		}
 
+		var selected *data.ProductVariant
 		cartItems, err := data.DB.CartItem.FindByCartID(cart.ID)
 		if err != nil {
 			lg.Warnf("failed to fetch cartItem on cart(%d): %v", cart.ID, err)
