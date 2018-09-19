@@ -102,6 +102,15 @@ func (p *PriceRuleParam) EncodeQuery() string {
 	if p.EndsAtMin != nil {
 		v.Add("ends_at_min", p.EndsAtMin.Format(timeFormat))
 	}
+	if p.EndsAtMax != nil {
+		v.Add("ends_at_max", p.EndsAtMax.Format(timeFormat))
+	}
+	if p.StartsAtMin != nil {
+		v.Add("starts_at_min", p.StartsAtMin.Format(timeFormat))
+	}
+	if p.StartsAtMax != nil {
+		v.Add("starts_at_max", p.StartsAtMax.Format(timeFormat))
+	}
 	return v.Encode()
 }
 

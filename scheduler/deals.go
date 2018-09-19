@@ -60,7 +60,7 @@ func (h *Handler) SyncDeals() {
 	}
 
 	startAt := time.Now().UTC().Truncate(time.Hour)
-	endAt := time.Now().Add(24 * time.Hour)
+	endAt := startAt.Add(24 * time.Hour)
 	params := &shopify.PriceRuleParam{
 		StartsAtMin: &startAt,
 		EndsAtMax:   &endAt,
