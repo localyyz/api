@@ -155,7 +155,7 @@ func SyncProducts(w http.ResponseWriter, r *http.Request) {
 			ctx := context.WithValue(context.Background(), "sync.list", []*shopify.ProductList{p})
 			ctx = context.WithValue(ctx, "sync.place", place)
 			if err := s.ShopifyProductListingsUpdate(ctx); err != nil {
-				log.Println("%v", err)
+				log.Printf("err: %v", err)
 			}
 		}
 	}

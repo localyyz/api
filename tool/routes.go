@@ -4,19 +4,51 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/scheduler"
-	"bitbucket.org/moodie-app/moodie-api/web/place"
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
 type Handler struct {
 	DB    *data.Database
 	Debug bool
+}
+
+func PlaceCtx(next http.Handler) http.Handler {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		placeID, err := strconv.ParseInt(chi.URLParam(r, "placeID"), 10, 64)
+		if err != nil {
+			render.Render(w, r, api.ErrBadID)
+			return
+		}
+
+		var place *data.Place
+		err = data.DB.Place.Find(
+			db.Cond{
+				"id": placeID,
+				"status": []data.PlaceStatus{
+					data.PlaceStatusSelectPlan,
+					data.PlaceStatusActive,
+				},
+			},
+		).One(&place)
+		if err != nil {
+			render.Respond(w, r, err)
+			return
+		}
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "place", place)
+		lg.SetEntryField(ctx, "place_id", place.ID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+	return http.HandlerFunc(handler)
 }
 
 func (h *Handler) Routes() chi.Router {
@@ -33,7 +65,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/places/pricerules", ListPriceRules)
 	r.Get("/places/policies", GetPolicies)
 	r.Route("/places/{placeID}", func(r chi.Router) {
-		r.Use(place.PlaceCtx)
+		r.Use(PlaceCtx)
 		r.Use(func(next http.Handler) http.Handler {
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				ctx := r.Context()

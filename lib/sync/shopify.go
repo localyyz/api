@@ -68,10 +68,10 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 			return errors.Wrap(err, "failed to fetch product")
 		}
 		lg.SetEntryField(ctx, "product_id", product.ID)
-		// if the product is rejected, keep is as rejected
-		if product.Status == data.ProductStatusRejected {
-			return ErrProductRejected
-		}
+		//TODO: need to keep rejection reason.. if blacklist. reject perminently
+		//if product.Status == data.ProductStatusRejected && time.Since(*product.CreatedAt) > 24*time.Hour {
+		//return ErrProductRejected
+		//}
 
 		product.Status = data.ProductStatusProcessing
 		// lock product in as processing
