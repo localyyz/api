@@ -51,12 +51,12 @@ type Database struct {
 	FeatureProduct FeatureProductStore
 	Webhook        WebhookStore
 
-	Cart             CartStore
-	CartItem         CartItemStore
-	Checkout         CheckoutStore
-	CartNotification CartNotificationStore
+	Cart     CartStore
+	CartItem CartItemStore
+	Checkout CheckoutStore
 
-	SearchWord SearchWordStore
+	Notification NotificationStore
+	SearchWord   SearchWordStore
 
 	FavouriteProduct FavouriteProductStore
 
@@ -139,7 +139,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.Cart = CartStore{db.Store(&Cart{})}
 	db.CartItem = CartItemStore{db.Store(&CartItem{})}
 	db.Checkout = CheckoutStore{db.Store(&Checkout{})}
-	db.CartNotification = CartNotificationStore{db.Store(&CartNotification{})}
+	db.Notification = NotificationStore{db.Store(&Notification{})}
 
 	db.SearchWord = SearchWordStore{db.Store(&SearchWord{})}
 

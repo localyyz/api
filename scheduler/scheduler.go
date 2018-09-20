@@ -70,6 +70,12 @@ func (h *Handler) Start() {
 			fn:             h.AbandonCartHandler,
 			runImmediately: true,
 		},
+		{
+			name:           "favourite_product",
+			spec:           "@every 4h",
+			fn:             h.FavouriteProductHandler,
+			runImmediately: true,
+		},
 	}
 
 	for _, s := range h.jobs {

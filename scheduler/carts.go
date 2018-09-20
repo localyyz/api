@@ -12,11 +12,12 @@ import (
 )
 
 const (
-	AbandonVariantLimit     = 5
-	AbandonPushTemplateID   = "6e76a7eb-3090-4579-bf05-bf53fbc9675c"
-	AbandonPushOOSContent   = "Hey {{ name | default: 'there'}}! %s is selling out fast, only %d left! Get yours before it goes out of stock.⏰"
-	AbandonPushContent      = "Hey {{ name | default: 'there'}}! %s is selling out fast, Get yours before it goes out of stock.⏰"
-	AbandonTouchIntervalMax = "48 hour"
+	AbandonVariantLimit   = 5
+	AbandonPushTemplateID = "6e76a7eb-3090-4579-bf05-bf53fbc9675c"
+	AbandonPushOOSContent = "Hey {{ name | default: 'there'}}! %s is selling out fast, only %d left! Get yours before it goes out of stock.⏰"
+	AbandonPushContent    = "Hey {{ name | default: 'there'}}! %s is selling out fast, Get yours before it goes out of stock.⏰"
+
+	TouchIntervalMax        = "48 hour"
 	AbandonTouchIntervalMin = 4 * time.Hour
 )
 
@@ -55,11 +56,10 @@ func (h *Handler) AbandonCartHandler() {
 		return
 	}
 
-	// map of user_id [content]
-	var toSend []data.CartNotification
+	var toSend []data.Notification
 	for _, cart := range carts {
 		// for each cart, check if need to send.
-		alreadySent, err := data.DB.CartNotification.Find(db.Cond{
+		alreadySent, err := data.DB.Notification.Find(db.Cond{
 			"cart_id":      cart.ID,
 			"scheduled_at": db.Gt(db.Raw("now() - interval '48 hour'")), // have not touched in last 48h.
 		}).Exists()
@@ -105,11 +105,11 @@ func (h *Handler) AbandonCartHandler() {
 			continue
 		}
 
-		ntf := data.CartNotification{
-			CartID:    cart.ID,
+		ntf := data.Notification{
+			CartID:    &(cart.ID),
 			UserID:    cart.UserID,
 			ProductID: selected.ProductID,
-			VariantID: selected.ID,
+			VariantID: &(selected.ID),
 		}
 		if selected.Limits <= AbandonVariantLimit {
 			ntf.Heading = "Almost 🚀 gone!"
@@ -140,7 +140,7 @@ func (h *Handler) AbandonCartHandler() {
 		}
 
 		notf.ExternalID = resp.ID
-		if err := data.DB.CartNotification.Save(&notf); err != nil {
+		if err := data.DB.Notification.Save(&notf); err != nil {
 			lg.Warnf("failed to save notification to db: %v", err)
 		}
 	}
