@@ -19,10 +19,12 @@ func Routes() chi.Router {
 	r.With(segmentCtx(segmentTypeBoutique)).Route("/22/products", api.FilterRoutes(ListSegmentProducts))
 	r.With(segmentCtx(segmentTypeSmart)).Route("/21/products", api.FilterRoutes(ListSegmentProducts))
 
+	r.Post("/merchants", ListMerchants)
 	r.Route("/{categoryID}", func(r chi.Router) {
 		r.Use(CategoryCtx)
 		r.Get("/", GetCategory)
 		r.Route("/products", api.FilterRoutes(ListProducts))
+		r.Get("/merchants", ListMerchants)
 	})
 	return r
 }

@@ -54,8 +54,9 @@ const (
 )
 
 type UserEtc struct {
-	FirstName string     `json:"firstName"`
-	Gender    UserGender `json:"gender"`
+	FirstName   string     `json:"firstName"`
+	Gender      UserGender `json:"gender"`
+	CategoryIDs []int64    `json:"catId"`
 	// OneSignal player id
 	OSPlayerID string `json:"osId"`
 	InvitedBy  int64  `json:"invitedBy"`

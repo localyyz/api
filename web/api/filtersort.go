@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -182,7 +183,7 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 	for _, value := range q[FilterParam] {
 		value, _ = url.QueryUnescape(value)
 		f := &Filter{}
-		for _, p := range strings.Split(value, ",") {
+		for _, p := range strings.SplitN(value, ",", 2) {
 			if strings.HasPrefix(p, "min") {
 				f.MinValue = p[4:]
 			} else if strings.HasPrefix(p, "max") {
@@ -322,9 +323,6 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		// by default. let's filter out score greater equal to 1
 		// NOTE: this is to increase query performance. sorting by multiple
 		// values will dramatically slow down the query
-		fConds = append(fConds, db.Cond{
-			db.Raw("p.score"): db.Gte(1),
-		})
 		switch f.Type {
 		case "brand":
 			fConds = append(fConds, db.Cond{
@@ -335,7 +333,6 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		case "gender":
 			v := new(data.ProductGender)
 			if err := v.UnmarshalText([]byte(f.Value.(string))); err != nil {
-				lg.Warn(err)
 				continue
 			}
 			fConds = append(fConds, db.Cond{"p.gender": *v})
@@ -347,6 +344,21 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 			fConds = append(fConds, db.Cond{
 				db.Raw("lower(p.category->>'value')"): strings.ToLower(f.Value.(string)),
 			})
+		case "categories":
+			var ancIDs []int64
+			if err := json.Unmarshal([]byte(f.Value.(string)), &ancIDs); err == nil {
+				if len(ancIDs) > 0 {
+					var catIDs []int64
+					for _, ID := range ancIDs {
+						descIDs, _ := data.DB.Category.FindDescendantIDs(ID)
+						catIDs = append(catIDs, ID)
+						catIDs = append(catIDs, descIDs...)
+					}
+					fConds = append(fConds, db.Cond{
+						db.Raw("p.category_id"): catIDs,
+					})
+				}
+			}
 		case "size":
 			// TODO: clean this up? is there a better way?
 			sizeSelector := data.DB.
@@ -384,6 +396,11 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 			if f.MaxValue != nil {
 				max, _ := strconv.ParseFloat(f.MaxValue.(string), 64)
 				fConds = append(fConds, db.Cond{"p.price": db.Lte(max)})
+			}
+		case "score":
+			if f.MinValue != nil {
+				min, _ := strconv.Atoi(f.MinValue.(string))
+				fConds = append(fConds, db.Cond{"p.score": db.Gte(min)})
 			}
 		}
 		selector = selector.Where(db.And(fConds...))

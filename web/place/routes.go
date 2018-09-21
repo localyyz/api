@@ -15,6 +15,9 @@ func Routes() chi.Router {
 		r.Get("/", GetPlace)
 		r.Route("/products", api.FilterRoutes(ListProducts))
 		r.Mount("/shipping", shippingZoneRoutes())
+
+		r.Post("/favourite", AddFavourite)
+		r.Delete("/favourite", DeleteFavourite)
 	})
 
 	return r
