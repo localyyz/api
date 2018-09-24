@@ -59,6 +59,7 @@ type Database struct {
 	SearchWord   SearchWordStore
 
 	FavouriteProduct FavouriteProductStore
+	FavouritePlace   FavouritePlaceStore
 
 	UserCollection        UserCollectionStore
 	UserCollectionProduct UserCollectionProductStore
@@ -147,6 +148,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.SetMaxOpenConns(conf.MaxConnection)
 
 	db.FavouriteProduct = FavouriteProductStore{db.Store(&FavouriteProduct{})}
+	db.FavouritePlace = FavouritePlaceStore{db.Store(&FavouritePlace{})}
 
 	db.UserCollection = UserCollectionStore{db.Store(&UserCollection{})}
 	db.UserCollectionProduct = UserCollectionProductStore{db.Store(&UserCollectionProduct{})}

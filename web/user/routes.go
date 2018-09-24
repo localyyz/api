@@ -14,6 +14,7 @@ func Routes() chi.Router {
 		// Pong.
 		r.Get("/ping", Ping)
 
+		r.Put("/categories", UpdateCategories)
 		r.Put("/", UpdateUser)
 		r.Mount("/address", addressRoutes())
 		r.Mount("/orders", orderRoutes())

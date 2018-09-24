@@ -14,6 +14,55 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 )
 
+func ListFeedProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
+
+	// favourite places
+
+	favs, err := data.DB.FavouritePlace.FindByUserID(user.ID)
+	if err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	if len(favs) == 0 {
+		render.Respond(w, r, []struct{}{})
+		return
+	}
+
+	placeIDs := make([]int64, len(favs))
+	for i, f := range favs {
+		placeIDs[i] = f.PlaceID
+	}
+
+	query := data.DB.Select(db.Raw("p.*")).
+		From("products p").
+		LeftJoin("places pl").On("pl.id = p.place_id").
+		Where(db.Cond{
+			"p.category_id": user.Etc.CategoryIDs,
+			"p.status":      data.ProductStatusApproved,
+			"p.place_id":    placeIDs,
+			"pl.status":     data.PlaceStatusActive,
+		}).OrderBy("-p.id")
+	query = filterSort.UpdateQueryBuilder(query)
+
+	var products []*data.Product
+	paginate := cursor.UpdateQueryBuilder(query)
+	if err := paginate.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	cursor.Update(products)
+
+	presented := presenter.NewProductList(ctx, products)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+	}
+}
+
 func ListRandomProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cursor := ctx.Value("cursor").(*api.Page)
