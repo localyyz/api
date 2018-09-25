@@ -31,6 +31,7 @@ type Database struct {
 	PlaceBilling     PlaceBillingStore
 	PlaceCharge      PlaceChargeStore
 	PlaceDiscount    PlaceDiscountStore
+	PlaceMeta        PlaceMetaStore
 	ShippingZone     ShippingZoneStore
 	PriorityMerchant PriorityMerchantStore
 
@@ -117,6 +118,7 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.PlaceBilling = PlaceBillingStore{db.Store(&PlaceBilling{})}
 	db.PlaceCharge = PlaceChargeStore{db.Store(&PlaceCharge{})}
 	db.PlaceDiscount = PlaceDiscountStore{db.Store(&PlaceDiscount{})}
+	db.PlaceMeta = PlaceMetaStore{db.Store(&PlaceMeta{})}
 	db.ShippingZone = ShippingZoneStore{db.Store(&ShippingZone{})}
 	db.PriorityMerchant = PriorityMerchantStore{db.Store(&PriorityMerchant{})}
 

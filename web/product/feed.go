@@ -20,8 +20,6 @@ func ListFeedProduct(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
-	// favourite places
-
 	favs, err := data.DB.FavouritePlace.FindByUserID(user.ID)
 	if err != nil {
 		render.Respond(w, r, err)
@@ -42,10 +40,11 @@ func ListFeedProduct(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		LeftJoin("places pl").On("pl.id = p.place_id").
 		Where(db.Cond{
-			"p.category_id": user.Etc.CategoryIDs,
-			"p.status":      data.ProductStatusApproved,
-			"p.place_id":    placeIDs,
-			"pl.status":     data.PlaceStatusActive,
+			//"p.category_id": categoryIDs,
+			// p.gender
+			"p.status":   data.ProductStatusApproved,
+			"p.place_id": placeIDs,
+			"pl.status":  data.PlaceStatusActive,
 		}).OrderBy("-p.id")
 	query = filterSort.UpdateQueryBuilder(query)
 

@@ -32,8 +32,9 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 		ctx:      ctx,
 	}
 	p.ProductCount, _ = data.DB.Product.Find(db.Cond{"place_id": p.ID}).Count()
-	user := ctx.Value("session.user").(*data.User)
-	p.IsFavourite, _ = data.DB.FavouritePlace.Find(db.Cond{"place_id": p.ID, "user_id": user.ID}).Exists()
+	if user, _ := ctx.Value("session.user").(*data.User); user != nil {
+		p.IsFavourite, _ = data.DB.FavouritePlace.Find(db.Cond{"place_id": p.ID, "user_id": user.ID}).Exists()
+	}
 
 	if withPreview, ok := ctx.Value("with.preview").(bool); withPreview && ok {
 		cond := db.Cond{"place_id": p.ID}
