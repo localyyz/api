@@ -231,6 +231,9 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 				Zip:       payload.BillingAddress.Zip,
 			},
 			Email: payload.Email,
+			ShippingLine: &shopify.ShippingLine{
+				Handle: cart.Etc.ShippingMethods[placeID].Handle,
+			},
 		},
 	)
 	if err != nil {
@@ -252,6 +255,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 4. send payment to shopify
+	client.Debug = true
 	p, _, err := client.Checkout.Payment(ctx, shopifyData.Token, payment)
 	if err != nil {
 		lg.Alertf("payment fail: cart(%d) place(%d) with err %+v", cart.ID, placeID, err)
