@@ -8,7 +8,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
-	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
 
@@ -50,9 +49,10 @@ func ListMerchants(w http.ResponseWriter, r *http.Request) {
 	if catRequest.Gender[0] == "man" {
 		styleCol = "style_male"
 	}
-	iter := data.DB.Select("place_id").
-		From("place_meta").
-		Where(
+
+	var placeMeta []data.PlaceMeta
+	err := data.DB.PlaceMeta.
+		Find(
 			db.And(
 				db.Or(
 					db.Cond{"gender": catRequest.Gender},
@@ -64,21 +64,15 @@ func ListMerchants(w http.ResponseWriter, r *http.Request) {
 				},
 			),
 		).
-		OrderBy("-place_id").
-		Iterator()
-
-	var placeIDs []int64
-	for iter.Next() {
-		var ID int64
-		if err := iter.Scan(&ID); err != nil {
-			lg.Warn(err)
-			continue
-		}
-		placeIDs = append(placeIDs, ID)
-	}
-	if err := iter.Err(); err != nil {
+		All(&placeMeta)
+	if err != nil {
 		render.Respond(w, r, err)
 		return
+	}
+
+	var placeIDs []int64
+	for _, p := range placeMeta {
+		placeIDs = append(placeIDs, p.PlaceID)
 	}
 
 	query := data.DB.Place.Find(

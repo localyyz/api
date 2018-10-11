@@ -335,7 +335,7 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 			if err := v.UnmarshalText([]byte(f.Value.(string))); err != nil {
 				continue
 			}
-			fConds = append(fConds, db.Cond{"p.gender": *v})
+			fConds = append(fConds, db.Cond{"p.gender": []data.ProductGender{*v, data.ProductGenderUnisex}})
 		case "categoryType":
 			fConds = append(fConds, db.Cond{
 				db.Raw("lower(p.category->>'type')"): strings.ToLower(f.Value.(string)),

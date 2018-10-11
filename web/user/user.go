@@ -56,7 +56,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		me.Name = payload.Name
 	}
 	if payload.Preference != nil {
-		me.Preference = *payload.Preference
+		me.Preference = payload.Preference
 	}
 	if err := data.DB.User.Save(me); err != nil {
 		render.Respond(w, r, err)
