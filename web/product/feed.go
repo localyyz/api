@@ -27,7 +27,8 @@ func ListFeedProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	feedCond := db.Cond{
-		"p.status": data.ProductStatusApproved,
+		"p.status":      data.ProductStatusApproved,
+		"p.category_id": db.IsNotNull(),
 	}
 	if len(favs) > 0 {
 		placeIDs := make([]int64, len(favs))
