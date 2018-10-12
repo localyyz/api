@@ -52,23 +52,42 @@ func ListFavourite(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
-	res := data.DB.FavouriteProduct.Find(
+	fpQuery := data.DB.FavouriteProduct.Find(
 		db.Cond{
 			"user_id": user.ID,
 		},
 	).OrderBy("created_at DESC")
-	paginate := cursor.UpdateQueryUpper(res)
+	fpQuery = cursor.UpdateQueryUpper(fpQuery)
 
 	var favProducts []*data.FavouriteProduct
-	err := paginate.All(&favProducts)
-	if err != nil && err != db.ErrNoMoreRows {
+	if err := fpQuery.All(&favProducts); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 	cursor.Update(favProducts)
 
-	presented := presenter.FavouriteProductList(ctx, favProducts)
+	productIDs := make([]int64, len(favProducts))
+	for i, fp := range favProducts {
+		productIDs[i] = fp.ProductID
+	}
+
+	query := data.DB.Select("p.*").
+		From("products p").
+		Where(db.Cond{
+			"id":     productIDs,
+			"status": data.ProductStatusApproved,
+		})
+	query = filterSort.UpdateQueryBuilder(query)
+
+	var products []*data.Product
+	if err := query.All(&products); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+
+	presented := presenter.NewProductList(ctx, products)
 	if err := render.RenderList(w, r, presented); err != nil {
 		render.Respond(w, r, err)
 	}
