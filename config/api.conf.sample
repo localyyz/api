@@ -13,7 +13,7 @@ application_name  = "api"
 secret            = "secret"
 
 [connect.reporter]
-server_url        = "localhost:5339"
+server_url        = "http://localhost:5339"
 app_name          = "api"
 
 [pusher]

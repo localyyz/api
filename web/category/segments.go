@@ -25,17 +25,14 @@ func segmentCtx(v segmentType) func(next http.Handler) http.Handler {
 	case segmentTypeSmart:
 		cond = db.Cond{
 			"m.collection": data.MerchantApprovalCollectionSmart,
-			"p.price":      db.Lt(50),
 		}
 	case segmentTypeBoutique:
 		cond = db.Cond{
 			"m.collection": data.MerchantApprovalCollectionBoutique,
-			"p.price":      db.Between(50, 200),
 		}
 	case segmentTypeLuxury:
 		cond = db.Cond{
 			"m.collection": data.MerchantApprovalCollectionLuxury,
-			"p.price":      db.Gt(200),
 		}
 	}
 	return middleware.WithValue("segmentCond", cond)
@@ -72,4 +69,28 @@ func ListSegmentProducts(w http.ResponseWriter, r *http.Request) {
 	cursor.Update(products)
 
 	render.RenderList(w, r, presenter.NewProductList(ctx, products))
+}
+
+func ListSegmentMerchants(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	cursor := ctx.Value("cursor").(*api.Page)
+
+	cond := ctx.Value("segmentCond").(db.Cond)
+	cond["pl.status"] = data.PlaceStatusActive
+
+	query := data.DB.Select("pl.*").
+		From("places pl").
+		LeftJoin("merchant_approvals m").On("m.place_id = pl.id").
+		Where(cond).
+		OrderBy("pl.weight desc", "pl.id desc")
+
+	var places []*data.Place
+	paginate := cursor.UpdateQueryBuilder(query)
+	if err := paginate.All(&places); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	cursor.Update(places)
+
+	render.RenderList(w, r, presenter.NewPlaceList(ctx, places))
 }

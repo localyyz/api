@@ -23,14 +23,15 @@ type User struct {
 	FirstName string `db:"-" json:"-" facebook:"first_name"`
 	Gender    string `db:"-" json:"-" facebook:"gender"`
 
-	AccessToken  string     `db:"access_token" json:"-"`
-	PasswordHash string     `db:"password_hash,omitempty" json:"-"`
-	DeviceToken  *string    `db:"device_token,omitempty" json:"-"`
-	InviteCode   string     `db:"invite_code" json:"inviteCode"` // Auto generated invite hash
-	Network      string     `db:"network" json:"network"`
-	LoggedIn     bool       `db:"logged_in" json:"-"`
-	LastLogInAt  *time.Time `db:"last_login_at" json:"lastLoginAt"`
-	Etc          UserEtc    `db:"etc" json:"etc"`
+	AccessToken  string          `db:"access_token" json:"-"`
+	PasswordHash string          `db:"password_hash,omitempty" json:"-"`
+	DeviceToken  *string         `db:"device_token,omitempty" json:"-"`
+	InviteCode   string          `db:"invite_code,omitempty" json:"inviteCode,omitempty"` // Auto generated invite hash
+	Network      string          `db:"network,omitempty" json:"network,omitempty"`
+	LoggedIn     bool            `db:"logged_in" json:"-"`
+	LastLogInAt  *time.Time      `db:"last_login_at" json:"lastLoginAt"`
+	Etc          UserEtc         `db:"etc,omitempty" json:"etc,omitempty"`
+	Preference   *UserPreference `db:"prf,omitempty" json:"prf,omitempty"`
 
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt,omitempty"`
@@ -52,6 +53,15 @@ const (
 	UserGenderMale
 	UserGenderFemale
 )
+
+type UserPreference struct {
+	Pricings []string `json:"pricing,omitempty"`
+	Styles   []string `json:"style,omitempty"`
+	Sorts    []string `json:"sort,omitempty"`
+	Gender   []string `json:"gender,omitempty"`
+
+	*postgresql.JSONBConverter
+}
 
 type UserEtc struct {
 	FirstName string     `json:"firstName"`

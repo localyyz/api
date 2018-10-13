@@ -13,7 +13,7 @@ type Place struct {
 	*data.Place
 	ProductCount uint64            `json:"productCount"`
 	Products     []render.Renderer `json:"products"`
-	Following    bool              `json:"following"`
+	IsFavourite  bool              `json:"isFavourite"`
 
 	IsFeatured bool   `json:"isFeatured"`
 	Currency   string `json:"currency"`
@@ -31,7 +31,13 @@ func NewPlace(ctx context.Context, place *data.Place) *Place {
 		Currency: place.Currency,
 		ctx:      ctx,
 	}
-	p.ProductCount, _ = data.DB.Product.Find(db.Cond{"place_id": p.ID}).Count()
+	p.ProductCount, _ = data.DB.Product.Find(db.Cond{
+		"place_id": p.ID,
+		"status":   data.ProductStatusApproved,
+	}).Count()
+	if user, _ := ctx.Value("session.user").(*data.User); user != nil {
+		p.IsFavourite, _ = data.DB.FavouritePlace.Find(db.Cond{"place_id": p.ID, "user_id": user.ID}).Exists()
+	}
 
 	if withPreview, ok := ctx.Value("with.preview").(bool); withPreview && ok {
 		cond := db.Cond{"place_id": p.ID}

@@ -15,14 +15,30 @@ func Routes() chi.Router {
 	r.With(discountCtx(0.50, 0.69)).Route("/12/products", api.FilterRoutes(ListDiscountProducts))
 	r.With(discountCtx(0.70, 1)).Route("/13/products", api.FilterRoutes(ListDiscountProducts))
 
-	r.With(segmentCtx(segmentTypeLuxury)).Route("/23/products", api.FilterRoutes(ListSegmentProducts))
-	r.With(segmentCtx(segmentTypeBoutique)).Route("/22/products", api.FilterRoutes(ListSegmentProducts))
-	r.With(segmentCtx(segmentTypeSmart)).Route("/21/products", api.FilterRoutes(ListSegmentProducts))
+	r.With(segmentCtx(segmentTypeSmart)).Mount("/21", segmentRoutes())
+	r.With(segmentCtx(segmentTypeBoutique)).Mount("/22", segmentRoutes())
+	r.With(segmentCtx(segmentTypeLuxury)).Mount("/23", segmentRoutes())
 
-	r.Route("/{categoryID}", func(r chi.Router) {
-		r.Use(CategoryCtx)
-		r.Get("/", GetCategory)
-		r.Route("/products", api.FilterRoutes(ListProducts))
-	})
+	r.Post("/styles", ListStyles)
+	r.Post("/merchants", ListMerchants)
+	r.Mount("/{categoryID}", categoryRoutes())
+	return r
+}
+
+func segmentRoutes() chi.Router {
+	r := chi.NewRouter()
+	r.Route("/products", api.FilterRoutes(ListSegmentProducts))
+	r.Get("/merchants", ListSegmentMerchants)
+	return r
+}
+
+func categoryRoutes() chi.Router {
+	r := chi.NewRouter()
+
+	r.Use(CategoryCtx)
+	r.Get("/", GetCategory)
+	r.Route("/products", api.FilterRoutes(ListProducts))
+	r.Get("/merchants", ListMerchants)
+
 	return r
 }

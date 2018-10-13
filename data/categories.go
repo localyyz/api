@@ -38,6 +38,18 @@ func (store CategoryStore) FindAncestors(ID int64) ([]*Category, error) {
 	return categories, err
 }
 
+func (store CategoryStore) FindDescendantIDs(ID int64) ([]int64, error) {
+	descendants, err := store.FindDescendants(ID)
+	if err != nil {
+		return nil, err
+	}
+	IDs := make([]int64, len(descendants))
+	for i, d := range descendants {
+		IDs[i] = d.ID
+	}
+	return IDs, nil
+}
+
 func (store CategoryStore) FindDescendants(ID int64) ([]*Category, error) {
 	var categories []*Category
 	err := DB.Select("cc.*").
