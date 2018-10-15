@@ -1,9 +1,7 @@
 package collection
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -18,26 +16,8 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
-	productCond := db.Or(
-		db.Raw("p.id IN (SELECT product_id FROM collection_products WHERE collection_id = ?)", collection.ID),
-	)
-	if collection.PlaceIDs != nil {
-		placeIDs := make([]int64, len(*collection.PlaceIDs))
-		for i, v := range *collection.PlaceIDs {
-			placeIDs[i] = int64(v)
-		}
-		productCond = productCond.Or(db.Cond{"p.place_id IN": placeIDs})
-	}
-	if collection.Categories != nil {
-		args := make([]string, len(*collection.Categories))
-		for i, v := range *collection.Categories {
-			args[i] = fmt.Sprintf(`'{"value":"%s"}'`, v)
-		}
-		//NOTE syntax: category @> any (ARRAY ['{"value":"bikini"}', '{"value":"swimwear"}']::jsonb[]);
-		productCond = productCond.Or(db.Raw(fmt.Sprintf("category @> any (ARRAY [%s]::jsonb[])", strings.Join(args, ","))))
-	}
 	cond := db.And(
-		productCond,
+		db.Raw("p.id IN (SELECT product_id FROM collection_products WHERE collection_id = ?)", collection.ID),
 		db.Cond{"p.status": data.ProductStatusApproved},
 	)
 
