@@ -18,8 +18,9 @@ type Collection struct {
 	Gender      ProductGender `db:"gender" json:"gender"`
 	Featured    bool          `db:"featured" json:"featured"`
 
-	PlaceIDs   *postgresql.Int64Array  `db:"place_ids" json:"-"`
-	Categories *postgresql.StringArray `db:"categories" json:"-"`
+	OwnerID    *int64                  `db:"owner_id,omitempty" json:"-"`
+	PlaceIDs   *postgresql.Int64Array  `db:"place_ids,omitempty" json:"-"`
+	Categories *postgresql.StringArray `db:"categories,omitempty" json:"-"`
 
 	Ordering   int32      `db:"ordering" json:"ordering"`
 	CreatedAt  *time.Time `db:"created_at,omitempty" json:"createdAt,omitempty"`
