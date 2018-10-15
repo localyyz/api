@@ -131,9 +131,9 @@ func UserRefresh(next http.Handler) http.Handler {
 				if user.UpdatedAt == nil || time.Since(*user.UpdatedAt) > 20*24*time.Hour {
 					if err := connect.FacebookLogin.GetUser(user); err != nil {
 						lg.Warn(errors.Wrap(err, "unable to refresh user"))
-						return
+					} else {
+						data.DB.User.Save(user)
 					}
-					data.DB.User.Save(user)
 				}
 			}
 		}
