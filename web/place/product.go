@@ -27,7 +27,6 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 				"p.status":     data.ProductStatusApproved,
 			},
 		).
-		GroupBy("p.id").
 		OrderBy("p.score DESC", "p.created_at DESC")
 	query = filterSort.UpdateQueryBuilder(query)
 

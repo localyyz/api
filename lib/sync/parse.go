@@ -51,7 +51,7 @@ func hasNoLetter(s string) bool {
 	return true
 }
 
-func (p *parser) tokenize(tagStr string, optTags ...string) []string {
+func (p *parser) tokenize(tagStr string) []string {
 	tagStr = strings.ToLower(tagStr)
 	tt := tagRegex.Split(tagStr, -1)
 	tagSet := set.New()
@@ -65,10 +65,25 @@ func (p *parser) tokenize(tagStr string, optTags ...string) []string {
 	// word tags
 	slugTagStr := slug.Make(strings.Join(tt, " "))
 	for k, v := range p.whitelist {
-		if v[0].IsSpecial && strings.Index(slugTagStr, k) != -1 {
-			tagSet.Add(k)
+		if v[0].IsSpecial {
+			// if special whitelisted keyword
+			// check if substring of slugified token string
+			idx := strings.Index(slugTagStr, k)
+			if idx != -1 {
+				// if the value is less than zero.
+				// this is a NON-MATCHING special tag
+				// for example: proper-nouns like 'versace-jeans'
+				if v[0].Weight != -1 {
+					tagSet.Add(k)
+				}
+				// trim substring of said token
+				slugTagStr = slugTagStr[0:idx] + slugTagStr[idx+len(k):len(slugTagStr)]
+			}
 		}
 	}
+
+	// split the cleaned up slugTagStr
+	tt = strings.Split(slugTagStr, "-")
 
 	for _, t := range tt {
 		if hasNoLetter(t) {
@@ -88,9 +103,6 @@ func (p *parser) tokenize(tagStr string, optTags ...string) []string {
 		}
 		tagSet.Add(t)
 	}
-	for _, t := range optTags {
-		tagSet.Add(t)
-	}
 
 	return set.StringSlice(tagSet)
 }
@@ -107,22 +119,32 @@ type parser struct {
 func (p *parser) parseCategory(tokens []string) {
 	for _, t := range tokens {
 		if w, found := p.whitelist[t]; found {
-			if len(w) == 2 {
-				// if the gender is ambigious... add a unisex category
-				key := fmt.Sprintf("%s-%s", data.ProductGenderUnisex, w[0].Value) // use value + gender as the key
-				if _, ok := p.categories[key]; !ok {
-					p.categories[key] = data.Whitelist{
-						Type:   w[0].Type,
-						Value:  w[0].Value,
-						Weight: w[0].Weight,
-						Gender: data.ProductGenderUnisex,
+			if len(w) >= 2 {
+				// check if the categories have mixed genders
+				genderSet := set.New()
+				for _, ww := range w {
+					genderSet.Add(ww.Gender)
+				}
+				if genderSet.Size() == 2 {
+					// -> the gender is ambigious... add a unisex category
+					key := fmt.Sprintf("%s-%s", data.ProductGenderUnisex, w[0].Value) // use value + gender as the key
+					if _, ok := p.categories[key]; !ok {
+						p.categories[key] = data.Whitelist{
+							Type:   w[0].Type,
+							Value:  w[0].Value,
+							Weight: w[0].Weight,
+							Gender: data.ProductGenderUnisex,
+						}
 					}
 				}
+				// else: not unisex, just multiple categories associated
+				// with the whitelist keyword.
+				// NOTE: take a look at "oxford" it can be both shirts and shoes
 			}
-			// iterate over the genders
+			// iterate over the categories
 			for _, x := range w {
-				key := fmt.Sprintf("%s-%s", x.Gender, x.Value) // use value + gender as the key
-				y, ok := p.categories[key]                     // check if already exists
+				key := fmt.Sprintf("%s-%d-%s", x.Gender, x.Type, x.Value) // use value + gender as the key
+				y, ok := p.categories[key]                                // check if already exists
 				if !ok {
 					y = data.Whitelist{
 						Type:       x.Type,

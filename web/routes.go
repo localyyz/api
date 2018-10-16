@@ -12,7 +12,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/web/category"
 	"bitbucket.org/moodie-app/moodie-api/web/collection"
 	"bitbucket.org/moodie-app/moodie-api/web/deals"
-	"bitbucket.org/moodie-app/moodie-api/web/designer"
 	"bitbucket.org/moodie-app/moodie-api/web/ping"
 	"bitbucket.org/moodie-app/moodie-api/web/place"
 	"bitbucket.org/moodie-app/moodie-api/web/product"
@@ -93,7 +92,6 @@ func (h *Handler) Routes() chi.Router {
 		r.Mount("/search", search.Routes())
 		r.Mount("/collections", collection.Routes())
 		r.Mount("/categories", category.Routes())
-		r.Mount("/designers", designer.Routes())
 		r.Mount("/places", place.Routes())
 		r.Mount("/products", product.Routes())
 		r.Mount("/deals", deals.Routes())
