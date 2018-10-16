@@ -8,9 +8,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
-	"time"
 
-	"github.com/pressly/lg"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -144,37 +142,9 @@ func (p *Page) UpdateQueryUpper(res db.Result) db.Result {
 }
 
 func (p *Page) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Paginator {
-	{
-		t := 2 * time.Second
-		ctx, cancel := context.WithTimeout(context.Background(), t)
-		defer cancel()
-
-		done := make(chan int, 1)
-
-		func() {
-			//go func() {
-			row, _ := selector.
-				SetColumns(db.Raw("count(1)")).
-				GroupBy(db.Raw("")).
-				OrderBy(nil).
-				QueryRowContext(ctx)
-			var count uint64
-			if err := row.Scan(&count); err != nil {
-				lg.Println(err)
-			}
-			p.ItemTotal = int(count)
-			done <- 1
-		}()
-		select {
-		case <-done:
-			// done!
-		case <-time.After(t):
-			fmt.Println("hard timeout")
-		case <-ctx.Done():
-			fmt.Println(ctx.Err()) // prints "context deadline exceeded"
-		}
-	}
 	paginator := selector.Paginate(uint(p.Limit))
+	count, _ := paginator.TotalEntries()
+	p.ItemTotal = int(count)
 	if p.Page > 1 {
 		return paginator.Page(uint(p.Page))
 	}
