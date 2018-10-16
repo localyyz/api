@@ -3,7 +3,6 @@ package sync
 import (
 	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -241,7 +240,6 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 	genderCount := map[data.ProductGender]int32{}
 	typeCount := map[data.ProductCategoryType]int32{}
 	for _, w := range p.categories {
-		log.Println(w)
 		// copy incase the scope leaks
 		a := w
 

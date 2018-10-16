@@ -422,10 +422,14 @@ func TestProductGender(t *testing.T) {
 		"beyonce":     {data.Whitelist{Gender: data.ProductGenderFemale, Type: data.CategoryHandbag, Value: "beyonce"}},
 		"brucejenner": {data.Whitelist{Gender: data.ProductGenderUnisex, Type: data.CategoryAccessory, Value: "brucejenner"}},
 		"shoe":        {data.Whitelist{Gender: data.ProductGenderUnisex, Type: data.CategoryShoe, Value: "shoe"}},
-		"lace-up":     {data.Whitelist{Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryShoe, Value: "lace-up"}},
+		"lace-up":     {data.Whitelist{IsSpecial: true, Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryShoe, Value: "lace-up"}},
 
-		"shirt":   {data.Whitelist{Weight: 1, Gender: data.ProductGenderMale, Type: data.CategoryApparel, Value: "shirt"}},
-		"t-shirt": {data.Whitelist{Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryApparel, Value: "t-shirt"}},
+		"shirt": {data.Whitelist{Weight: 1, Gender: data.ProductGenderMale, Type: data.CategoryApparel, Value: "shirt"}},
+		"t-shirt": {
+			data.Whitelist{IsSpecial: true, Weight: 1, Gender: data.ProductGenderUnisex, Type: data.CategoryApparel, Value: "t-shirt"},
+			data.Whitelist{IsSpecial: true, Weight: 1, Gender: data.ProductGenderMale, Type: data.CategoryApparel, Value: "t-shirt"},
+			data.Whitelist{IsSpecial: true, Weight: 1, Gender: data.ProductGenderFemale, Type: data.CategoryApparel, Value: "t-shirt"},
+		},
 	}
 
 	tests := []tagTest{

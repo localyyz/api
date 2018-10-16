@@ -16,45 +16,6 @@ type (
 var (
 	whitelistCache whitelist
 	blacklistCache blacklist
-
-	tagSpecial = []string{
-		"bomber-jacket",
-		"boxer-brief",
-		"boxer-trunk",
-		"eau-de-toilette",
-		"eau-de-parfum",
-		"eau-de-cologne",
-		"face-mask",
-		"after-shave",
-		"face-wash",
-		"beard-kit",
-		"face-cream",
-		"night-cream",
-		"cleansing-gel",
-		"bath-bomb",
-		"nail-polish",
-		"lip-gloss",
-		"body-cream",
-		"body-wash",
-		"bath-salt",
-		"bath-oil",
-		"body-butter",
-		"eye-liner",
-		"eye-shadow",
-		"foot-cream",
-		"toe-separator",
-		"pocket-square",
-		"shoulder-bag",
-		"sleeping-bag",
-		"t-shirt",
-		"track-pant",
-		"v-neck",
-		"air-jordan",
-		"lace-up",
-		"slip-on",
-		"lexi-noel",
-		"sport-coat",
-	}
 )
 
 func SetupWhitelistCache() error {
@@ -72,19 +33,6 @@ func SetupWhitelistCache() error {
 			c.Weight += 1
 		}
 		whitelistCache[c.Value] = append(whitelistCache[c.Value], *c)
-	}
-
-	// load up predefined special tag list (not in db)
-	// TODO: migrate to db
-	for _, t := range tagSpecial {
-		w, ok := whitelistCache[t]
-		if !ok {
-			w = []data.Whitelist{
-				{Value: t, Gender: data.ProductGenderUnisex, IsSpecial: true},
-			}
-			w[0].IsSpecial = true
-			w[0].Weight += 1 // extra weighting to special keywords
-		}
 	}
 	lg.Infof("whitelist cache: keys(%d)", len(whitelistCache))
 
