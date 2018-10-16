@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"strings"
+
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/pkg/errors"
 	"github.com/pressly/lg"
@@ -52,7 +54,6 @@ var (
 		"slip-on",
 		"lexi-noel",
 		"sport-coat",
-		"crop-top",
 	}
 )
 
@@ -66,6 +67,10 @@ func SetupWhitelistCache() error {
 	// for both male and female gender
 	whitelistCache = make(map[string][]data.Whitelist)
 	for _, c := range keywords {
+		if strings.Contains(c.Value, "-") {
+			c.IsSpecial = true
+			c.Weight += 1
+		}
 		whitelistCache[c.Value] = append(whitelistCache[c.Value], *c)
 	}
 
@@ -77,8 +82,9 @@ func SetupWhitelistCache() error {
 			w = []data.Whitelist{
 				{Value: t, Gender: data.ProductGenderUnisex, IsSpecial: true},
 			}
+			w[0].IsSpecial = true
+			w[0].Weight += 1 // extra weighting to special keywords
 		}
-		w[0].IsSpecial = true
 	}
 	lg.Infof("whitelist cache: keys(%d)", len(whitelistCache))
 

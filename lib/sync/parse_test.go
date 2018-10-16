@@ -3,6 +3,8 @@ package sync
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"sort"
 	"testing"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
@@ -20,6 +22,282 @@ var (
 	placeFemale = &data.Place{Gender: data.PlaceGenderFemale}
 	placeUnisex = &data.Place{Gender: data.PlaceGenderUnisex}
 )
+
+func TestTokenizeSpecial(t *testing.T) {
+	t.Parallel()
+
+	cache := whitelist{
+		"jeans": {
+			data.Whitelist{
+				Value: "jeans",
+			},
+		},
+		"jean": {
+			data.Whitelist{
+				Value: "jean",
+			},
+		},
+		"jean-paul-gaultier": {
+			data.Whitelist{
+				Value:     "jean-paul-gaultier",
+				IsSpecial: true,
+				Weight:    -1,
+			},
+		},
+		"versace-jeans": {
+			data.Whitelist{
+				Value:     "versace-jeans",
+				IsSpecial: true,
+				Weight:    -1,
+			},
+		},
+		"carrera-jeans": {
+			data.Whitelist{
+				Value:     "carrera-jeans",
+				IsSpecial: true,
+				Weight:    -1,
+			},
+		},
+		"ankle-boot": {
+			data.Whitelist{
+				Value:     "ankle-boot",
+				IsSpecial: true,
+			},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "versace jeans",
+			input:    "versace jeans women grey crossbody bags",
+			expected: []string{"woman", "grey", "crossbody", "bag"},
+		},
+		{
+			name:     "carrera jeans ankle boot",
+			input:    "carrera jeans tennesse men brown ankle boots",
+			expected: []string{"tennesse", "man", "brown", "ankle-boot"},
+		},
+		{
+			name:     "jean paul gaultier",
+			input:    "jean paul gaultier pencil skirt",
+			expected: []string{"pencil", "skirt"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newParser(context.WithValue(context.Background(), "sync.place", &data.Place{}))
+			p.whitelist = cache
+
+			a := p.tokenize(tt.input)
+			e := tt.expected
+
+			// sort
+			sort.Strings(a)
+			sort.Strings(e)
+
+			if !reflect.DeepEqual(a, e) {
+				t.Fatalf("test '%s' tokenize not equal. e: %v got %v", tt.name, e, a)
+			}
+		})
+	}
+}
+
+func TestWhitelistSpecial(t *testing.T) {
+	t.Parallel()
+
+	cache := whitelist{
+		"jeans": {
+			data.Whitelist{
+				Gender: data.ProductGenderMale,
+				Type:   data.CategoryApparel,
+				Value:  "jeans",
+				Weight: 1,
+			},
+			data.Whitelist{
+				Gender: data.ProductGenderFemale,
+				Type:   data.CategoryApparel,
+				Value:  "jeans",
+				Weight: 1,
+			},
+		},
+		"jean-paul": {
+			data.Whitelist{
+				Weight:    -1,
+				Value:     "jean-paul",
+				IsSpecial: true,
+			},
+		},
+		"versace-jeans": {
+			data.Whitelist{
+				Weight:    -1,
+				Value:     "versace-jeans",
+				IsSpecial: true,
+			},
+		},
+		"carrera-jeans": {
+			data.Whitelist{
+				Weight:    -1,
+				Value:     "carrera-jeans",
+				IsSpecial: true,
+			},
+		},
+		"ankle-boot": {
+			data.Whitelist{
+				Weight:    2,
+				Value:     "ankle-boot",
+				Gender:    data.ProductGenderFemale,
+				Type:      data.CategoryShoe,
+				IsSpecial: true,
+			},
+			data.Whitelist{
+				Weight:    2,
+				Value:     "ankle-boot",
+				Gender:    data.ProductGenderMale,
+				Type:      data.CategoryShoe,
+				IsSpecial: true,
+			},
+		},
+	}
+
+	tests := []tagTest{
+		{
+			name:   "versace jeans",
+			inputs: []string{"versace jeans women grey crossbody bags"},
+			place:  placeUnisex,
+		},
+		{
+			name:     "carrera jeans",
+			inputs:   []string{"carrera jeans tennesse men brown ankle boots"},
+			place:    placeUnisex,
+			expected: cache["ankle-boot"][1],
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newParser(context.WithValue(context.Background(), "sync.place", tt.place))
+			p.whitelist = cache
+
+			actual := p.searchWhiteList(tt.inputs...)
+			if actual.Value == "jeans" {
+				t.Errorf("test '%s' unexpectedly categorized as 'jeans'", tt.name)
+			}
+			if tt.expected.Value != "" {
+				tt.compare(t, actual)
+			}
+		})
+	}
+}
+
+func TestWhitelistOxfordShoe(t *testing.T) {
+	t.Parallel()
+
+	cache := whitelist{
+		"oxford": {
+			data.Whitelist{
+				Gender: data.ProductGenderMale,
+				Type:   data.CategoryShoe,
+				Value:  "oxford",
+				Weight: 2,
+			},
+			data.Whitelist{
+				Gender: data.ProductGenderMale,
+				Type:   data.CategoryApparel,
+				Value:  "oxford",
+				Weight: 2,
+			},
+		},
+		"shirt": {
+			data.Whitelist{
+				Gender: data.ProductGenderMale,
+				Type:   data.CategoryApparel,
+				Value:  "shirt",
+				Weight: 1,
+			},
+		},
+		"shoe": {
+			data.Whitelist{
+				Gender: data.ProductGenderMale,
+				Type:   data.CategoryShoe,
+				Value:  "shoe",
+				Weight: 0,
+			},
+		},
+	}
+
+	tests := []tagTest{
+		{
+			name:     "oxford shirt",
+			inputs:   []string{"j lindeberg daniel stretch oxford shirt (grey)"},
+			place:    placeUnisex,
+			expected: cache["oxford"][1],
+		},
+		{
+			name:     "oxford shoes",
+			inputs:   []string{"whole cut plain oxford dress shoes"},
+			place:    placeUnisex,
+			expected: cache["oxford"][0],
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newParser(context.WithValue(context.Background(), "sync.place", tt.place))
+			p.whitelist = cache
+
+			actual := p.searchWhiteList(tt.inputs...)
+			tt.compare(t, actual)
+		})
+	}
+}
+
+func TestWhitelistBathingSuit(t *testing.T) {
+	t.Parallel()
+
+	cache := whitelist{
+		"suit": {
+			data.Whitelist{
+				Gender: data.ProductGenderMale,
+				Type:   data.CategoryApparel,
+				Value:  "suit",
+				Weight: 2,
+			},
+		},
+		"bathing-suit": {
+			data.Whitelist{
+				Gender:    data.ProductGenderFemale,
+				Type:      data.CategoryApparel,
+				Value:     "bathing-suit",
+				Weight:    2 + 1,
+				IsSpecial: true,
+			},
+		},
+	}
+
+	tests := []tagTest{
+		{
+			name:     "bathing suit",
+			inputs:   []string{"High Cut Summer Bathing Suit"},
+			place:    placeUnisex,
+			expected: cache["bathing-suit"][0],
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newParser(context.WithValue(context.Background(), "sync.place", tt.place))
+			p.whitelist = cache
+
+			actual := p.searchWhiteList(tt.inputs...)
+			tt.compare(t, actual)
+		})
+	}
+}
 
 func TestWhitelist(t *testing.T) {
 	t.Parallel()
