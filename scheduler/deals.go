@@ -45,7 +45,11 @@ func (h *Handler) SyncDiscountCodes() {
 	}()
 
 	// get all active merchants which may have discounts
-	places, err := data.DB.Place.FindAll(db.Cond{"status": data.PlaceStatusActive})
+	places, err := data.DB.Place.FindAll(
+		db.Cond{
+			"status": data.PlaceStatusActive,
+		},
+	)
 	if err != nil {
 		lg.Warn("Get Price Rules: Failed to get merchant list")
 		return
@@ -53,30 +57,34 @@ func (h *Handler) SyncDiscountCodes() {
 
 	var wg sync.WaitGroup
 	for _, place := range places {
-		p := place
 		wg.Add(1)
-		go parseDeals(context.Background(), p, wg)
+
+		p := place
+		go parseDeals(context.Background(), p, &wg)
 	}
 
+	lg.Info("finishing up scheduler job")
 	wg.Wait()
 }
 
-func parseDeals(ctx context.Context, place *data.Place, wg sync.WaitGroup) {
-	defer wg.Done()
+func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
+	defer func() {
+		lg.Infof("finished for merchant(%s)", place.Name)
+		wg.Done()
+	}()
 
 	count, _ := data.DB.Product.Find(db.Cond{
 		"place_id": place.ID,
 		"status":   data.ProductStatusApproved,
 	}).Count()
 
-	lg.Infof("starting deal schedule for merchant(%s)", place.Name)
 	if count == 0 {
 		// skip the entire process. because we have no products
 		return
 	}
 
 	page := 1
-	createdAt := time.Now().Add(-24 * time.Hour).UTC()
+	createdAt := time.Now().Add(24 * time.Hour).UTC()
 
 	client, err := connect.GetShopifyClient(place.ID)
 	if err != nil {
@@ -87,6 +95,7 @@ func parseDeals(ctx context.Context, place *data.Place, wg sync.WaitGroup) {
 	for {
 		// find all price rules created in the past 24 hours.
 		params := &shopify.PriceRuleParam{
+			Limit:        50,
 			CreatedAtMin: &createdAt,
 			Page:         page,
 		}
