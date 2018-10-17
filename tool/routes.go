@@ -99,9 +99,9 @@ func (h *Handler) Routes() chi.Router {
 		r.Post("/collections/sync", SyncCollections)
 	})
 
-	r.Post("/syncer/deal", func(w http.ResponseWriter, r *http.Request) {
+	r.Post("/syncer/deals", func(w http.ResponseWriter, r *http.Request) {
 		z := scheduler.New(h.DB)
-		z.SyncDeals()
+		z.SyncDiscountCodes()
 	})
 
 	return r
