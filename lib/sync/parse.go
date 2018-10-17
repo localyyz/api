@@ -244,9 +244,9 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 		a := w
 
 		// keep track number of times gender category popedup
-		genderCount[a.Gender] += int32(1)
 		// don't over count unisex categories
 		if a.Gender != data.ProductGenderUnisex {
+			genderCount[a.Gender] += int32(1)
 			typeCount[a.Type] += int32(1)
 		}
 
@@ -272,6 +272,7 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 	// category weight based on # of occurences
 	if p.gender == data.ProductGenderUnisex {
 		for _, a := range aggregates {
+			// only increase if category has gender
 			a.Weight += genderCount[a.Gender]
 		}
 	}
