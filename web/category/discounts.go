@@ -46,6 +46,11 @@ func ListDiscountProducts(w http.ResponseWriter, r *http.Request) {
 		OrderBy("p.id desc")
 	query = filterSort.UpdateQueryBuilder(query)
 
+	if filterSort.HasFilter() {
+		w.Write([]byte{})
+		return
+	}
+
 	var products []*data.Product
 	paginate := cursor.UpdateQueryBuilder(query)
 	if err := paginate.All(&products); err != nil {

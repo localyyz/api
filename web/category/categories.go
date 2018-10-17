@@ -191,7 +191,13 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		Where(cond).
 		OrderBy("p.id DESC")
+
 	query = filterSort.UpdateQueryBuilder(query)
+
+	if filterSort.HasFilter() {
+		w.Write([]byte{})
+		return
+	}
 
 	var products []*data.Product
 	paginate := cursor.UpdateQueryBuilder(query)

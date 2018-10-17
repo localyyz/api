@@ -3,11 +3,10 @@ package place
 import (
 	"net/http"
 
-	"github.com/go-chi/render"
-
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
+	"github.com/go-chi/render"
 	"upper.io/db.v3"
 )
 
@@ -29,6 +28,11 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 		).
 		OrderBy("p.score DESC", "p.created_at DESC")
 	query = filterSort.UpdateQueryBuilder(query)
+
+	if filterSort.HasFilter() {
+		w.Write([]byte{})
+		return
+	}
 
 	var products []*data.Product
 	paginate := cursor.UpdateQueryBuilder(query)
