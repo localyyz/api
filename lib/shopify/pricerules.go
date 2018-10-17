@@ -37,7 +37,7 @@ type PriceRule struct {
 		Lte string `json:"less_than_or_equal_to"`
 	} `json:"prerequisite_shipping_price_range"`
 	PrerequisiteQuantityRange struct {
-		Gte string `json:"greater_than_or_equal_to"`
+		Gte int `json:"greater_than_or_equal_to"`
 	} `json:"prerequisite_quantity_range"`
 
 	PrerequisiteQuantityRatio struct {
@@ -48,6 +48,8 @@ type PriceRule struct {
 	PrerequisiteProductIDs    []int64 `json:"prerequisite_product_ids"`
 	PrerequisiteVariantIDs    []int64 `json:"prerequisite_variant_ids"`
 	PrerequisiteCollectionIDs []int64 `json:"prerequisite_collection_ids"`
+
+	AllocationLimit int `json:"allocation_limit"`
 
 	StartsAt  time.Time  `json:"starts_at"`
 	EndsAt    *time.Time `json:"ends_at"`
@@ -81,8 +83,10 @@ type PriceRuleParam struct {
 	EndsAtMin *time.Time `json:"ends_at_min"`
 	// Show rule ending BEFORE date
 	EndsAtMax *time.Time `json:"ends_at_max"`
-	SinceID   int64      `json:"since_id"`
-	TimesUsed int        `json:"times_used"`
+	//Show rule created AFTER date
+	CreatedAtMin *time.Time `json:"created_at_min"`
+	SinceID      int64      `json:"since_id"`
+	TimesUsed    int        `json:"times_used"`
 }
 
 func (p *PriceRuleParam) EncodeQuery() string {
@@ -98,6 +102,9 @@ func (p *PriceRuleParam) EncodeQuery() string {
 	}
 	if p.Page > 0 {
 		v.Add("page", fmt.Sprintf("%d", p.Page))
+	}
+	if p.CreatedAtMin != nil {
+		v.Add("created_at_min", p.CreatedAtMin.Format(timeFormat))
 	}
 	if p.EndsAtMin != nil {
 		v.Add("ends_at_min", p.EndsAtMin.Format(timeFormat))
@@ -147,4 +154,21 @@ func (p *PriceRuleService) Get(ctx context.Context, ID int64) (*PriceRule, *http
 	}
 
 	return priceRuleWrapper.PriceRule, resp, nil
+}
+
+func (p *PriceRuleService) ListDiscountCodes(ctx context.Context, ID int64) ([]*DiscountCode, *http.Response, error) {
+	req, err := p.client.NewRequest("GET", fmt.Sprintf("/admin/price_rules/%d/discount_codes.json", ID), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var discountCodeWrapper struct {
+		DiscountCodes []*DiscountCode `json:"discount_codes"`
+	}
+	resp, err := p.client.Do(ctx, req, &discountCodeWrapper)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return discountCodeWrapper.DiscountCodes, resp, nil
 }

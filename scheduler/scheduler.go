@@ -48,6 +48,7 @@ func (h *Handler) Wait() {
 }
 
 func (h *Handler) Start() {
+
 	duration := time.Second
 	if h.Environment != "production" {
 		duration = 1 * time.Hour
@@ -55,14 +56,16 @@ func (h *Handler) Start() {
 
 	h.jobs = []FuncJob{
 		{
-			name: "job_schedule_deals",
-			spec: fmt.Sprintf("@every %s", duration),
-			fn:   h.ScheduleDeals,
+			name:           "job_schedule_deals",
+			spec:           fmt.Sprintf("@every %s", duration),
+			fn:             h.ScheduleDeals,
+			runImmediately: true,
 		},
 		{
-			name: "job_sync_deals",
-			spec: "@midnight",
-			fn:   h.SyncDeals,
+			name:           "job_get_merchant_deals",
+			spec:           fmt.Sprintf("@every %s", 1*time.Hour),
+			fn:             h.SyncDiscountCodes,
+			runImmediately: true,
 		},
 		{
 			name:           "abandoned_cart",

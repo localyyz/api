@@ -76,4 +76,5 @@ func ActivateDeal(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, presenter.NewDeal(ctx, userDeal))
+
 }

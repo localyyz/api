@@ -78,7 +78,7 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 
 	if len(payload.DiscountCode) != 0 {
 		// find all the merchant that this discount code applies to
-		discount, err := data.DB.PlaceDiscount.FindByCode(payload.DiscountCode)
+		discount, err := data.DB.Deal.FindOne(db.Cond{"code": payload.DiscountCode})
 		if err != nil {
 			render.Respond(w, r, api.ErrInvalidDiscountCode)
 			return
@@ -87,7 +87,7 @@ func UpdateCart(w http.ResponseWriter, r *http.Request) {
 		checkout, err := data.DB.Checkout.FindOne(
 			db.Cond{
 				"cart_id":  cart.ID,
-				"place_id": discount.PlaceID,
+				"place_id": discount.MerchantID,
 			},
 		)
 		if err != nil {
