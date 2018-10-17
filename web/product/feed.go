@@ -56,7 +56,13 @@ func ListFeedProduct(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		Where(feedCond).
 		OrderBy("-p.id")
+
 	query = filterSort.UpdateQueryBuilder(query)
+
+	if filterSort.HasFilter() {
+		w.Write([]byte{})
+		return
+	}
 
 	var products []*data.Product
 	paginate := cursor.UpdateQueryBuilder(query)
@@ -131,6 +137,11 @@ func ListRandomProduct(w http.ResponseWriter, r *http.Request) {
 		Where(cond).
 		OrderBy(db.Raw(fmt.Sprintf("%d %% id", t)))
 	query = filterSort.UpdateQueryBuilder(query)
+
+	if filterSort.HasFilter() {
+		w.Write([]byte{})
+		return
+	}
 
 	var products []*data.Product
 	if !filterSort.HasFilter() {

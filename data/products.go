@@ -83,6 +83,16 @@ var productGenders = []string{
 	"kid",
 }
 
+var productGendersMap = map[string]ProductGender{
+	"-":      ProductGenderUnknown,
+	"man":    ProductGenderMale,
+	"male":   ProductGenderMale,
+	"woman":  ProductGenderFemale,
+	"female": ProductGenderFemale,
+	"unisex": ProductGenderUnisex,
+	"kid":    ProductGenderKid,
+}
+
 const (
 	// NOTE on magic numbers
 	//
@@ -224,11 +234,9 @@ func (s ProductGender) MarshalText() ([]byte, error) {
 // UnmarshalText satisfies TextUnmarshaler
 func (s *ProductGender) UnmarshalText(text []byte) error {
 	enum := string(text)
-	for i := 0; i < len(productGenders); i++ {
-		if enum == productGenders[i] {
-			*s = ProductGender(i)
-			return nil
-		}
+	if gender, ok := productGendersMap[enum]; ok {
+		*s = gender
+		return nil
 	}
 	return fmt.Errorf("unknown product gender %s", enum)
 }
