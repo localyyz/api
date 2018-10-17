@@ -79,61 +79,70 @@ func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (c *Deal) RenderDealTypePercentage(w http.ResponseWriter, r *http.Request) error {
-	if len(c.Products) > 1 {
-		p := c.Products[0]
-		p.Render(w, r)
-		c.Title = "Discounted Products"
-		c.Description = fmt.Sprintf(
-			"%d%% Off Select Products",
-			int(math.Abs(c.Value)))
-		c.ProductList = c.Products
-	} else if len(c.Products) == 1 {
-		p := c.Products[0]
-		p.Render(w, r)
-		c.Title = fmt.Sprintf(
-			"%s",
-			p.Title)
-		c.Description = fmt.Sprintf(
-			"%d%% Off %s",
-			int(math.Abs(c.Value)),
-			p.Title)
-		c.ProductList = c.Products
-	} else {
+	if c.ProductListType == data.ProductListTypeMerch {
 		c.Title = c.Merchant
 		c.Description = fmt.Sprintf(
 			"%d%% Off Storewide",
 			int(math.Abs(c.Value)))
 		c.ProductList = c.MerchantProducts
+	} else {
+		if len(c.Products) > 1 {
+			p := c.Products[0]
+			p.Render(w, r)
+			c.Title = "Discounted Products"
+			c.Description = fmt.Sprintf(
+				"%d%% Off Select Products",
+				int(math.Abs(c.Value)))
+			c.ProductList = c.Products
+		} else if len(c.Products) == 1 {
+			p := c.Products[0]
+			p.Render(w, r)
+			c.Title = fmt.Sprintf(
+				"%s",
+				p.Title)
+			c.Description = fmt.Sprintf(
+				"%d%% Off %s",
+				int(math.Abs(c.Value)),
+				p.Title)
+			c.ProductList = c.Products
+		} else {
+			// something is wrong here. ie. associated product is not active
+			// NOTE/TODO: what happens when a deal with associated product
+			// is sold out / deleted. need scheduler to find and deactivate deals
+		}
 	}
 	return nil
 }
 
 func (c *Deal) RenderDealTypeAmount(w http.ResponseWriter, r *http.Request) error {
-	if len(c.Products) > 1 {
-		p := c.Products[0]
-		p.Render(w, r)
-		c.Title = "Discounted Products"
-		c.Description = fmt.Sprintf(
-			"$%d Off Select Products",
-			int(math.Abs(c.Value)))
-		c.ProductList = c.Products
-	} else if len(c.Products) == 1 {
-		p := c.Products[0]
-		p.Render(w, r)
-		c.Title = fmt.Sprintf(
-			"%s",
-			p.Title)
-		c.Description = fmt.Sprintf(
-			"$%d Off %s",
-			int(math.Abs(c.Value)),
-			p.Title)
-		c.ProductList = c.Products
-	} else {
+	if c.ProductListType == data.ProductListTypeMerch {
 		c.Title = c.Merchant
 		c.Description = fmt.Sprintf(
 			"$%d Off Storewide",
 			int(math.Abs(c.Value)))
 		c.ProductList = c.MerchantProducts
+	} else {
+		if len(c.Products) > 1 {
+			p := c.Products[0]
+			p.Render(w, r)
+			c.Title = "Discounted Products"
+			c.Description = fmt.Sprintf(
+				"$%d Off Select Products",
+				int(math.Abs(c.Value)))
+			c.ProductList = c.Products
+		} else if len(c.Products) == 1 {
+			p := c.Products[0]
+			p.Render(w, r)
+			c.Title = fmt.Sprintf(
+				"%s",
+				p.Title)
+			c.Description = fmt.Sprintf(
+				"$%d Off %s",
+				int(math.Abs(c.Value)),
+				p.Title)
+			c.ProductList = c.Products
+		} else {
+		}
 	}
 	return nil
 }
@@ -181,7 +190,11 @@ func NewDealList(ctx context.Context, deals []*data.Deal) []render.Renderer {
 	list := []render.Renderer{}
 	for _, c := range deals {
 		//append to the final list to return
-		list = append(list, NewDeal(ctx, c))
+		d := NewDeal(ctx, c)
+		if d.ProductListType != data.ProductListTypeMerch && len(d.Products) == 0 {
+			continue
+		}
+		list = append(list, d)
 	}
 	return list
 }

@@ -66,7 +66,7 @@ func ListUpcomingDeal(w http.ResponseWriter, r *http.Request) {
 	orderBy := "start_at ASC"
 
 	dealCond := db.Cond{
-		"status": data.DealStatusQueued,
+		"status":   data.DealStatusQueued,
 		"featured": false,
 	}
 
@@ -96,8 +96,8 @@ func ListOngoingDeal(w http.ResponseWriter, r *http.Request) {
 	orderBy := "start_at ASC"
 
 	dealCond := db.Cond{
-		"status": data.DealStatusActive,
-		"timed":  false,
+		"status":   data.DealStatusActive,
+		"timed":    false,
 		"featured": false,
 	}
 
@@ -128,8 +128,8 @@ func ListTimedDeal(w http.ResponseWriter, r *http.Request) {
 	orderBy := "end_at ASC"
 
 	dealCond := db.Cond{
-		"status": data.DealStatusActive,
-		"timed":  true,
+		"status":   data.DealStatusActive,
+		"timed":    true,
 		"featured": false,
 	}
 
@@ -160,8 +160,8 @@ func ListFeaturedDeal(w http.ResponseWriter, r *http.Request) {
 	orderBy := "value ASC"
 
 	dealCond := db.Cond{
-		"status": data.DealStatusActive,
-		"featured":  true,
+		"status":   data.DealStatusActive,
+		"featured": true,
 	}
 
 	var featuredDeals []*data.Deal
@@ -204,6 +204,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	if deal.ProductListType == data.ProductListTypeAssociated {
 		cond := db.Cond{
 			"d.deal_id": deal.ID,
+			"p.status":  data.ProductStatusApproved,
 		}
 		query = data.DB.Select("p.*").
 			From("deal_products d").
