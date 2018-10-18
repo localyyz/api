@@ -2,6 +2,7 @@ package data
 
 import (
 	"time"
+
 	"upper.io/db.v3/postgresql"
 
 	"github.com/pkg/errors"
@@ -14,7 +15,7 @@ type Deal struct {
 	Status     DealStatus `db:"status" json:"status"`
 	ExternalID int64      `db:"external_id" json:"externalId"`
 	MerchantID int64      `db:"merchant_id" json:"merchantId"`
-	ImageURL   string  `db:"image_url" json:"imageUrl"`
+	ImageURL   string     `db:"image_url" json:"imageUrl"`
 
 	// parent deal id in which this deal inherits from
 	// used in conjunction with userID to specify an
@@ -29,7 +30,7 @@ type Deal struct {
 	UsageLimit       int32                `db:"use_limit" json:"useLimit"`
 	OncePerCustomer  bool                 `db:"use_once" json:"useOnce"`
 	Timed            bool                 `db:"timed" json:"timed"`
-	Featured		 bool				  `db:"featured" json:"featured"`
+	Featured         bool                 `db:"featured" json:"featured"`
 	Prerequisite     DealPrerequisite     `db:"prerequisite" json"prerequisite"`
 	BXGYPrerequisite BXGYDealPrerequisite `db:"bxgy" json"bxgy"`
 
@@ -50,6 +51,7 @@ const (
 	DealStatusQueued                     // 1
 	DealStatusInactive                   // 2
 	DealStatusActive                     // 3
+	DealStatusPending                    // 4
 )
 
 const (

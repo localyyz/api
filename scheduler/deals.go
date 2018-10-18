@@ -268,6 +268,19 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 				continue
 			}
 
+			// NOTE:
+			// if: the deal is $$ off (amount off)
+			// and:
+			// - no product associated (store wide deal)
+			// - no prereq. (ie. min subtotal spend, min quantity buy)
+			// then: mark status as "pending for approval"
+			if deal.ProductListType == data.ProductListTypeMerch &&
+				deal.Type == data.DealTypeAmountOff &&
+				deal.Prerequisite.SubtotalRange == 0 &&
+				deal.Prerequisite.QuantityRange == 0 {
+				deal.Status = data.DealStatusPending
+			}
+
 			// save the deal.
 			if err := data.DB.Deal.Save(deal); err != nil {
 				lg.Warnf("failed to save deal with err %+v", err)
