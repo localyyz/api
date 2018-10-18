@@ -74,6 +74,9 @@ func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
 	if c.OncePerCustomer == true {
 		c.Info = fmt.Sprintf(c.Info + "One use per customer per order. ")
 	}
+
+	c.Info = fmt.Sprintf(c.Info + "Conditions may apply.")
+
 	c.Cap = c.UsageLimit
 	return nil
 }
