@@ -17,6 +17,8 @@ func Routes() chi.Router {
 	r := chi.NewRouter()
 
 	r.Post("/activate", ActivateDeal)
+
+	// TODO remove + backwards compat
 	r.With(StatusCtx(data.DealStatusQueued)).Get("/upcoming", ListDeal)
 	r.With(StatusCtx(data.DealStatusInactive)).Get("/history", ListDeal)
 	r.Route("/active", func(r chi.Router) {
@@ -26,6 +28,16 @@ func Routes() chi.Router {
 			r.Use(DealCtx)
 			r.Get("/", GetDeal)
 		})
+	})
+
+	r.Get("/ongoing", ListOngoingDeal)
+	r.Get("/timed", ListTimedDeal)
+	r.Get("/comingsoon", ListUpcomingDeal)
+	r.Get("/featured", ListFeaturedDeal)
+	r.Route("/{dealID}", func(r chi.Router) {
+		r.Use(DealCtx)
+		r.Get("/", GetDeal)
+		r.Route("/products", api.FilterRoutes(ListProducts))
 	})
 
 	return r
@@ -53,8 +65,7 @@ func DealCtx(next http.Handler) http.Handler {
 		}
 		deal, err := data.DB.Deal.FindOne(
 			db.Cond{
-				"id":     dealID,
-				"status": data.DealStatusActive,
+				"id": dealID,
 			},
 		)
 		if err != nil {

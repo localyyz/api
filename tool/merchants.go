@@ -114,7 +114,7 @@ type priceRule struct {
 		Lte string `json:"less_than_or_equal_to"`
 	} `json:"prerequisite_shipping_price_range"`
 	PrerequisiteQuantityRange struct {
-		Gte string `json:"greater_than_or_equal_to"`
+		Gte int `json:"greater_than_or_equal_to"`
 	} `json:"prerequisite_quantity_range"`
 	StartsAt time.Time  `json:"starts_at"`
 	EndsAt   *time.Time `json:"ends_at"`
