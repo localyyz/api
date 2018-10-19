@@ -38,11 +38,11 @@ func NewProductVariant(ctx context.Context, variant *data.ProductVariant) *Produ
 	// modify product price if deal is active
 	if deal, ok := ctx.Value(DealCtxKey).(*Deal); ok {
 		// NOTE: deal value here is negative because the type is fixed amount only for now
-		if len(deal.Products) == 0 {
+		if len(deal.products) == 0 {
 			// auto apply to all
 			pv.Price += deal.Value
 		} else {
-			for _, dp := range deal.Products {
+			for _, dp := range deal.products {
 				if pv.ProductID == dp.ID {
 					pv.Price += deal.Value
 				}

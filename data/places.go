@@ -176,3 +176,23 @@ func (s *PlaceStatus) UnmarshalText(text []byte) error {
 	}
 	return fmt.Errorf("unknown place status %s", enum)
 }
+
+// String returns the string value of the status.
+func (s PlaceGender) String() string {
+	return productGenders[s]
+}
+
+// MarshalText satisfies TextMarshaler
+func (s PlaceGender) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+// UnmarshalText satisfies TextUnmarshaler
+func (s *PlaceGender) UnmarshalText(text []byte) error {
+	enum := string(text)
+	if gender, ok := productGendersMap[enum]; ok {
+		*s = PlaceGender(gender)
+		return nil
+	}
+	return fmt.Errorf("unknown place gender %s", enum)
+}
