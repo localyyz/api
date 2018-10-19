@@ -3,6 +3,7 @@ package shopify
 import (
 	"context"
 	"fmt"
+	"github.com/pressly/lg"
 	"net/http"
 	"net/url"
 	"time"
@@ -11,50 +12,50 @@ import (
 type PriceRuleService service
 
 type PriceRule struct {
-	ID                int64                    `json:"id"`
-	Title             string                   `json:"title"`
-	ValueType         PriceRuleValueType       `json:"value_type"`
-	Value             string                   `json:"value"`
-	CustomerSelection string                   `json:"customer_selection"`
-	TargetType        PriceRuleTargetType      `json:"target_type"`
-	TargetSelection   PriceRuleTargetSelection `json:"target_selection"`
-	AllocationMethod  string                   `json:"allocation_method"`
-	OncePerCustomer   bool                     `json:"once_per_customer"`
-	UsageLimit        int                      `json:"usage_limit"`
+	ID                int64                    `json:"id,omitempty"`
+	Title             string                   `json:"title,omitempty"`
+	ValueType         PriceRuleValueType       `json:"value_type,omitempty"`
+	Value             string                   `json:"value,omitempty"`
+	CustomerSelection string                   `json:"customer_selection,omitempty"`
+	TargetType        PriceRuleTargetType      `json:"target_type,omitempty"`
+	TargetSelection   PriceRuleTargetSelection `json:"target_selection,omitempty"`
+	AllocationMethod  string                   `json:"allocation_method,omitempty"`
+	OncePerCustomer   bool                     `json:"once_per_customer,omitempty"`
+	UsageLimit        int                      `json:"usage_limit,omitempty"`
 
-	EntitledProductIds    []int64 `json:"entitled_product_ids"`
-	EntitledVariantIds    []int64 `json:"entitled_variant_ids"`
-	EntitledCollectionIds []int64 `json:"entitled_collection_ids"`
-	EntitledCountryIds    []int64 `json:"entitled_country_ids"`
+	EntitledProductIds    []int64 `json:"entitled_product_ids,omitempty"`
+	EntitledVariantIds    []int64 `json:"entitled_variant_ids,omitempty"`
+	EntitledCollectionIds []int64 `json:"entitled_collection_ids,omitempty"`
+	EntitledCountryIds    []int64 `json:"entitled_country_ids,omitempty"`
 
 	// Prefreq for BUY X GET Y type deals
-	PrerequisiteSavedSearchIds []int64 `json:"prerequisite_saved_search_ids"`
-	PrerequisiteCustomerIds    []int64 `json:"prerequisite_customer_ids"`
+	PrerequisiteSavedSearchIds []int64 `json:"prerequisite_saved_search_ids,omitempty"`
+	PrerequisiteCustomerIds    []int64 `json:"prerequisite_customer_ids,omitempty"`
 	PrerequisiteSubtotalRange  struct {
-		Gte string `json:"greater_than_or_equal_to"`
-	} `json:"prerequisite_subtotal_range"`
+		Gte string `json:"greater_than_or_equal_to,omitempty"`
+	} `json:"prerequisite_subtotal_range,omitempty"`
 	PrerequisiteShippingPriceRange struct {
-		Lte string `json:"less_than_or_equal_to"`
-	} `json:"prerequisite_shipping_price_range"`
+		Lte string `json:"less_than_or_equal_to,omitempty"`
+	} `json:"prerequisite_shipping_price_range,omitempty"`
 	PrerequisiteQuantityRange struct {
-		Gte int `json:"greater_than_or_equal_to"`
-	} `json:"prerequisite_quantity_range"`
+		Gte int `json:"greater_than_or_equal_to,omitempty"`
+	} `json:"prerequisite_quantity_range,omitempty"`
 
 	PrerequisiteQuantityRatio struct {
-		Quantity         int `json:"prerequisite_quantity"`
-		EntitledQuantity int `json:"entitled_quantity"`
-	} `json:"prerequisite_to_entitlement_quantity_ratio"`
+		Quantity         int `json:"prerequisite_quantity,omitempty"`
+		EntitledQuantity int `json:"entitled_quantity,omitempty"`
+	} `json:"prerequisite_to_entitlement_quantity_ratio,omitempty"`
 
-	PrerequisiteProductIDs    []int64 `json:"prerequisite_product_ids"`
-	PrerequisiteVariantIDs    []int64 `json:"prerequisite_variant_ids"`
-	PrerequisiteCollectionIDs []int64 `json:"prerequisite_collection_ids"`
+	PrerequisiteProductIDs    []int64 `json:"prerequisite_product_ids,omitempty"`
+	PrerequisiteVariantIDs    []int64 `json:"prerequisite_variant_ids,omitempty"`
+	PrerequisiteCollectionIDs []int64 `json:"prerequisite_collection_ids,omitempty"`
 
-	AllocationLimit int `json:"allocation_limit"`
+	AllocationLimit int `json:"allocation_limit,omitempty"`
 
-	StartsAt  time.Time  `json:"starts_at"`
-	EndsAt    *time.Time `json:"ends_at"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	StartsAt  time.Time  `json:"starts_at,omitempty"`
+	EndsAt    *time.Time `json:"ends_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at,omitempty"`
+	UpdatedAt time.Time  `json:"updated_at,omitempty"`
 }
 
 type PriceRuleTargetSelection string
@@ -154,6 +155,57 @@ func (p *PriceRuleService) Get(ctx context.Context, ID int64) (*PriceRule, *http
 	}
 
 	return priceRuleWrapper.PriceRule, resp, nil
+}
+
+func (p *PriceRuleService) CreatePriceRule(ctx context.Context, rule *PriceRule) (*PriceRule, *http.Response, error) {
+
+	priceRuleWrapper := struct {
+		PriceRule *PriceRule `json:"price_rule"`
+	}{
+		PriceRule: rule,
+	}
+
+	req, err := p.client.NewRequest("POST", "/admin/price_rules.json", priceRuleWrapper)
+	if err != nil {
+		lg.Print("DOTD ERROR1")
+		return nil, nil, err
+	}
+
+
+	resp, err := p.client.Do(ctx, req, &priceRuleWrapper)
+	if err != nil {
+		lg.Print("DOTD ERROR2")
+		lg.Print(err)
+		return nil, resp, err
+	}
+
+
+	lg.Printf("Created Price Rule %s", priceRuleWrapper.PriceRule.ID)
+
+	p.CreateDiscount(ctx, priceRuleWrapper.PriceRule)
+
+	return priceRuleWrapper.PriceRule, resp, nil
+}
+
+func (p *PriceRuleService) CreateDiscount(ctx context.Context, rule *PriceRule) ( *http.Response, error) {
+
+	discountCodeWrapper := struct {
+		DiscountCode *DiscountCode `json:"discount_code"`
+	}{
+		DiscountCode: &DiscountCode{Code: rule.Title},
+	}
+
+	req, err := p.client.NewRequest("POST", fmt.Sprintf("/admin/price_rules/%d/discount_codes.json", rule.ID), discountCodeWrapper)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := p.client.Do(ctx, req, &discountCodeWrapper)
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }
 
 func (p *PriceRuleService) ListDiscountCodes(ctx context.Context, ID int64) ([]*DiscountCode, *http.Response, error) {

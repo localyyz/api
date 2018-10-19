@@ -34,6 +34,80 @@ func (h *Handler) ScheduleDeals() {
 	h.DB.Exec(`UPDATE deals SET status = 3 WHERE NOW() at time zone 'utc' > start_at and status = 1`)
 }
 
+func (h *Handler) CreateDealOfTheDay() {
+	h.wg.Add(1)
+	defer h.wg.Done()
+
+	s := time.Now()
+	lg.Info("job_create_deal_of_day running...")
+	defer func() {
+		lg.Infof("job_create_deal_of_day finished in %s", time.Since(s))
+	}()
+
+	client, err := connect.GetShopifyClient(2260)
+	client.Debug = true
+	if err != nil {
+		lg.Warnf("Get Price Rules: Failed to instantiate Shopify client for merchant %s", LocalyyzStoreId)
+		return
+	}
+
+	products, err := data.DB.Product.FindAll(
+		db.Cond{
+			"place_id": 2260,
+			"status": data.ProductStatusApproved,
+		})
+	if err != nil {
+		lg.Warn("Failed to get Localyyz products")
+	}
+
+	dealProduct := chooseDealProduct(products)
+
+	lg.Print(dealProduct.ExternalID)
+
+	var discount string
+
+	if dealProduct.Price >= 100 {
+		discount = "-70"
+	} else {
+		discount = "-40"
+	}
+
+
+	start := time.Now().Add(8 * time.Hour).UTC()
+	end := start.Add(1*time.Hour)
+
+	priceRule := &shopify.PriceRule{
+		Title: fmt.Sprintf("DOTD-%s", time.Now().Format("02-Jan-2006")),
+		TargetType: shopify.PriceRuleTargetTypeLineItem,
+		TargetSelection: shopify.PriceRuleTargetSelectionAll,
+		ValueType: shopify.PriceRuleValueTypeFixedAmount,
+		Value: discount,
+		AllocationMethod: "each",
+		CustomerSelection: "all",
+		EntitledProductIds: []int64 {*dealProduct.ExternalID},
+		StartsAt: start,
+		EndsAt: &end,
+		AllocationLimit: 1,
+		OncePerCustomer: true,
+		//UsageLimit: stock available
+	}
+
+	DealMetrics()
+
+	lg.Print(priceRule)
+
+	client.PriceRule.CreatePriceRule(context.Background(), priceRule)
+
+}
+
+func chooseDealProduct(productList []*data.Product) (*data.Product) {
+	return productList[40]
+}
+
+func DealMetrics() {
+
+}
+
 func (h *Handler) SyncDiscountCodes() {
 	h.wg.Add(1)
 	defer h.wg.Done()

@@ -59,24 +59,31 @@ func (h *Handler) Start() {
 			name:           "job_schedule_deals",
 			spec:           fmt.Sprintf("@every %s", duration),
 			fn:             h.ScheduleDeals,
-			runImmediately: true,
+			//runImmediately: true,
 		},
 		{
 			name:           "abandoned_cart",
 			spec:           "@every 4h",
 			fn:             h.AbandonCartHandler,
-			runImmediately: true,
+			//runImmediately: true,
 		},
 		{
 			name:           "favourite_product",
 			spec:           "@every 4h",
 			fn:             h.FavouriteProductHandler,
-			runImmediately: true,
+			//runImmediately: true,
 		},
 		{
 			name: "job_get_merchant_deals",
 			spec: fmt.Sprintf("@every %s", 1*time.Hour),
 			fn:   h.SyncDiscountCodes,
+			//runImmediately: true,
+		},
+		{
+			name: "job_create_deal_of_day",
+			spec: fmt.Sprintf("@every %s", 24*time.Hour),
+			fn: h.CreateDealOfTheDay,
+			runImmediately: true,
 		},
 	}
 
