@@ -30,6 +30,8 @@ type FilterSort struct {
 	selector sqlbuilder.Selector
 	r        *http.Request
 	w        http.ResponseWriter
+
+	ctx context.Context
 }
 
 var (
@@ -163,8 +165,9 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 		return &FilterSort{w: w, r: r}
 	}
 
+	ctx := r.Context()
 	q := r.URL.Query()
-	o := &FilterSort{w: w, r: r}
+	o := &FilterSort{w: w, r: r, ctx: ctx}
 	if value := q.Get(SortParam); len(value) > 0 && value != defaultSortField {
 		value, _ = url.QueryUnescape(value)
 		if strings.HasPrefix(value, "-") || strings.HasSuffix(value, "desc") {
@@ -402,7 +405,32 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 				min, _ := strconv.Atoi(f.MinValue.(string))
 				fConds = append(fConds, db.Cond{"p.score": db.Gte(min)})
 			}
+		case "personalize":
+			prf := &data.UserPreference{}
+			if err := json.Unmarshal([]byte(f.Value.(string)), prf); err != nil {
+				continue
+			}
+			user, ok := o.ctx.Value("session.user").(*data.User)
+			if !ok {
+				continue
+			}
+			userPref := *user.Preference
+			if len(prf.Styles) > 0 {
+				userPref.Styles = prf.Styles
+			}
+			if len(prf.Pricings) > 0 {
+				userPref.Pricings = prf.Pricings
+			}
+			if len(prf.Gender) > 0 {
+				userPref.Gender = prf.Gender
+			}
+			placeIDs, err := data.DB.PlaceMeta.GetPlacesFromPreference(&userPref)
+			if err != nil {
+				continue
+			}
+			fConds = append(fConds, db.Cond{"p.place_id": placeIDs})
 		}
+
 		selector = selector.Where(db.And(fConds...))
 	}
 

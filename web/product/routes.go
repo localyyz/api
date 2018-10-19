@@ -12,6 +12,13 @@ func Routes() chi.Router {
 	r := api.WithFilterRoutes(ListProducts)
 	r.Route("/feed", api.FilterRoutes(ListRandomProduct))
 	r.Route("/feedv2", api.FilterRoutes(ListFeedProduct))
+	r.Route("/feedv3", func(r chi.Router) {
+		r.Use(api.FilterSortCtx)
+		r.Get("/", ListFeedV3)
+		r.Get("/onsale", ListFeedV3Onsale)
+		r.Get("/products", ListFeedV3Products)
+	})
+
 	r.Get("/trend", ListTrending)
 	r.Get("/history", ListHistoryProduct)
 	r.With(auth.DeviceCtx).Route("/favourite", api.FilterRoutes(ListFavourite))
@@ -19,7 +26,7 @@ func Routes() chi.Router {
 		r.Use(ProductCtx)
 		r.Get("/", GetProduct)
 		r.Get("/variant", GetVariant)
-		r.Get("/related", ListRelatedProduct)
+		r.Route("/related", api.FilterRoutes(ListRelatedProduct))
 		r.Group(func(r chi.Router) {
 			r.Use(auth.DeviceCtx)
 			r.Post("/favourite", AddFavouriteProduct)

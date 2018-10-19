@@ -1,14 +1,15 @@
 package data
 
 import (
+	"time"
+
 	"upper.io/bond"
 	"upper.io/db.v3"
-	"time"
 )
 
 type FavouriteProduct struct {
-	UserID    int64 `db:"user_id" json:"userID"`
-	ProductID int64 `db:"product_id" json:"productID"`
+	UserID    int64      `db:"user_id" json:"userID"`
+	ProductID int64      `db:"product_id" json:"productID"`
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 }
 
@@ -30,6 +31,18 @@ func (store FavouriteProductStore) FindAll(cond db.Cond) ([]*FavouriteProduct, e
 
 func (store FavouriteProductStore) FindByUserID(userID int64) ([]*FavouriteProduct, error) {
 	return store.FindAll(db.Cond{"user_id": userID})
+}
+
+func (store FavouriteProductStore) GetProductIDsFromUser(userID int64) ([]int64, error) {
+	favs, err := store.FindByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	productIDs := make([]int64, len(favs))
+	for i, f := range favs {
+		productIDs[i] = f.ProductID
+	}
+	return productIDs, nil
 }
 
 func (store FavouriteProductStore) FindByProductID(productID int64) ([]*FavouriteProduct, error) {
