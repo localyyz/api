@@ -31,8 +31,8 @@ type Deal struct {
 	OncePerCustomer  bool                 `db:"use_once" json:"useOnce"`
 	Timed            bool                 `db:"timed" json:"timed"`
 	Featured         bool                 `db:"featured" json:"featured"`
-	Prerequisite     DealPrerequisite     `db:"prerequisite" json"prerequisite"`
-	BXGYPrerequisite BXGYDealPrerequisite `db:"bxgy" json"bxgy"`
+	Prerequisite     DealPrerequisite     `db:"prerequisite" json:"prerequisite"`
+	BXGYPrerequisite BXGYDealPrerequisite `db:"bxgy" json:"bxgy"`
 
 	StartAt *time.Time `db:"start_at,omitempty" json:"startAt"`
 	EndAt   *time.Time `db:"end_at,omitempty" json:"endAt"`
