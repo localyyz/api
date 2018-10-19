@@ -1,9 +1,8 @@
 package deals
 
 import (
-	"net/http"
-
 	"bitbucket.org/moodie-app/moodie-api/web/api"
+	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -68,6 +67,7 @@ func ListUpcomingDeal(w http.ResponseWriter, r *http.Request) {
 	dealCond := db.Cond{
 		"status":   data.DealStatusQueued,
 		"featured": false,
+		"start_at": db.Lte(db.Raw("NOW()::date + 7")),
 	}
 
 	var upcomingDeals []*data.Deal

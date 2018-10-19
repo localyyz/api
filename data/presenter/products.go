@@ -6,15 +6,15 @@ import (
 	"sort"
 
 	"github.com/go-chi/render"
-	set "gopkg.in/fatih/set.v0"
+	"gopkg.in/fatih/set.v0"
 
-	db "upper.io/db.v3"
+	"upper.io/db.v3"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/stash"
 	"bitbucket.org/moodie-app/moodie-api/lib/apparelsorter"
 	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
-	xchange "bitbucket.org/moodie-app/moodie-api/lib/xchanger"
+	"bitbucket.org/moodie-app/moodie-api/lib/xchanger"
 )
 
 type Product struct {
@@ -290,17 +290,10 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	p.PurchaseCount, _ = stash.GetProductPurchases(p.ID)
 
 	// modify product price if deal is active
-	if deal, ok := ctx.Value(DealCtxKey).(*Deal); ok {
+	if deal, ok := ctx.Value("deal").(*data.Deal); ok {
 		// NOTE: deal value here is negative because the type is fixed amount only for now
-		if len(deal.products) == 0 {
-			// auto apply to all
+		if deal.Featured && deal.ProductListType == data.ProductListTypeAssociated {
 			p.Price += deal.Value
-		} else {
-			for _, dp := range deal.products {
-				if p.ID == dp.ID {
-					p.Price += deal.Value
-				}
-			}
 		}
 	}
 
