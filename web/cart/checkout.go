@@ -136,7 +136,7 @@ func CreateCheckouts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if req.Err != nil {
-			lg.Alertf("checkout(id: %d) %v", c.ID, err)
+			lg.Alertf("checkout(id: %d) %v", c.ID, req.Err)
 			checkoutErrors = append(checkoutErrors, req.Err)
 		}
 	}
