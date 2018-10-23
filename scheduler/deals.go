@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/onesignal"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/pressly/lg"
 	"upper.io/db.v3"
@@ -51,60 +53,118 @@ func (h *Handler) CreateDealOfTheDay() {
 		return
 	}
 
-	products, err := data.DB.Product.FindAll(
+	productsFemale, err := data.DB.Product.FindAll(
 		db.Cond{
 			"place_id": 2260,
 			"status": data.ProductStatusApproved,
+			"gender": data.ProductGenderFemale,
 		})
 	if err != nil {
 		lg.Warn("Failed to get Localyyz products")
 	}
 
-	dealProduct := chooseDealProduct(products)
-
-	lg.Print(dealProduct.ExternalID)
-
-	var discount string
-
-	if dealProduct.Price >= 100 {
-		discount = "-70"
-	} else {
-		discount = "-40"
+	productsMale, err := data.DB.Product.FindAll(
+		db.Cond{
+			"place_id": 2260,
+			"status": data.ProductStatusApproved,
+			"gender": data.ProductGenderMale,
+		})
+	if err != nil {
+		lg.Warn("Failed to get Localyyz products")
 	}
 
+	dealProducts := []*data.Product{chooseDealProduct(productsFemale), chooseDealProduct(productsMale)}
 
-	start := time.Now().Add(8 * time.Hour).UTC()
-	end := start.Add(1*time.Hour)
+	var hour = []int {16,19,22}
+	i := rand.Intn(2)
 
-	priceRule := &shopify.PriceRule{
-		Title: fmt.Sprintf("DOTD-%s", time.Now().Format("02-Jan-2006")),
-		TargetType: shopify.PriceRuleTargetTypeLineItem,
-		TargetSelection: shopify.PriceRuleTargetSelectionAll,
-		ValueType: shopify.PriceRuleValueTypeFixedAmount,
-		Value: discount,
-		AllocationMethod: "each",
-		CustomerSelection: "all",
-		EntitledProductIds: []int64 {*dealProduct.ExternalID},
-		StartsAt: start,
-		EndsAt: &end,
-		AllocationLimit: 1,
-		OncePerCustomer: true,
-		//UsageLimit: stock available
+	for _, product := range dealProducts {
+
+		var discount string
+
+		if product.Price >= 100 {
+			discount = "-70"
+		} else {
+			discount = "-40"
+		}
+
+		//setting the start and end time for the deals
+		t := time.Now()
+		start := time.Date(t.Year(), t.Month(), t.Day(), hour[i], 0,0,0, t.Location())
+		end := start.Add(1 * time.Hour)
+
+		//creating the price rule for the deal
+		priceRule := &shopify.PriceRule{
+			Title:              fmt.Sprintf("DOTD-%s", time.Now().Format("02-Jan-2006")),
+			TargetType:         shopify.PriceRuleTargetTypeLineItem,
+			TargetSelection:    shopify.PriceRuleTargetSelectionEntitled,
+			ValueType:          shopify.PriceRuleValueTypeFixedAmount,
+			Value:              discount,
+			AllocationMethod:   "each",
+			CustomerSelection:  "all",
+			EntitledProductIds: []int64{*product.ExternalID},
+			StartsAt:           start,
+			EndsAt:             &end,
+			AllocationLimit:    1,
+			OncePerCustomer:    true,
+			//UsageLimit: stock available
+		}
+
+		_, _, err := client.PriceRule.CreatePriceRule(context.Background(), priceRule)
+		if err != nil {
+			lg.Warn("Failed to create price rule")
+		}
 	}
 
-	DealMetrics()
-
-	lg.Print(priceRule)
-
-	client.PriceRule.CreatePriceRule(context.Background(), priceRule)
+	createPush(dealProducts)
 
 }
 
 func chooseDealProduct(productList []*data.Product) (*data.Product) {
-	return productList[40]
+	product := productList[1]
+
+	//choosing a random product from the list that has not yet been chosen for dotd
+	for {
+		index := rand.Intn(len(productList))
+		product = productList[index]
+
+		found, _ := data.DB.DealProduct.Find(db.Cond{
+			"product_id": product.ID,
+		}).Exists()
+
+		if !found {
+			break
+		}
+	}
+	return product
 }
 
-func DealMetrics() {
+func createPush(products []*data.Product) {
+
+	heading := "⚡️ Deals of the Day! ⚡️"
+
+	ntf := data.Notification{
+		ProductID: products[0].ID,
+		Heading: heading,
+	}
+
+	ntf.Content = "Hurry in now to save up to $70 on great products 🤩. Deals end in one hour!"
+
+	req := onesignal.NotificationRequest{
+		Headings: map[string]string{"en": ntf.Heading},
+		Contents: map[string]string{"en": ntf.Content},
+		IncludePlayerIDs: []string {"87c93490-6d40-418f-9196-1d0517143bd9"},
+	}
+	
+	resp, _, err := connect.ON.Notifications.Create(&req)
+	if err != nil {
+		lg.Warnf("failed to schedule notification: %v", err)
+	}
+
+	ntf.ExternalID = resp.ID
+	if err := data.DB.Notification.Save(&ntf); err != nil {
+		lg.Warnf("failed to save notification to db: %v", err)
+	}
 
 }
 
