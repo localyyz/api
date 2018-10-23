@@ -3,7 +3,6 @@ package shopify
 import (
 	"context"
 	"fmt"
-	"github.com/pressly/lg"
 	"net/http"
 	"net/url"
 	"time"
@@ -167,45 +166,15 @@ func (p *PriceRuleService) CreatePriceRule(ctx context.Context, rule *PriceRule)
 
 	req, err := p.client.NewRequest("POST", "/admin/price_rules.json", priceRuleWrapper)
 	if err != nil {
-		lg.Print("DOTD ERROR1")
 		return nil, nil, err
 	}
 
-
 	resp, err := p.client.Do(ctx, req, &priceRuleWrapper)
 	if err != nil {
-		lg.Print("DOTD ERROR2")
-		lg.Print(err)
 		return nil, resp, err
 	}
 
-
-	lg.Printf("Created Price Rule %s", priceRuleWrapper.PriceRule.ID)
-
-	p.CreateDiscount(ctx, priceRuleWrapper.PriceRule)
-
 	return priceRuleWrapper.PriceRule, resp, nil
-}
-
-func (p *PriceRuleService) CreateDiscount(ctx context.Context, rule *PriceRule) ( *http.Response, error) {
-
-	discountCodeWrapper := struct {
-		DiscountCode *DiscountCode `json:"discount_code"`
-	}{
-		DiscountCode: &DiscountCode{Code: rule.Title},
-	}
-
-	req, err := p.client.NewRequest("POST", fmt.Sprintf("/admin/price_rules/%d/discount_codes.json", rule.ID), discountCodeWrapper)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := p.client.Do(ctx, req, &discountCodeWrapper)
-	if err != nil {
-		return resp, err
-	}
-
-	return resp, nil
 }
 
 func (p *PriceRuleService) ListDiscountCodes(ctx context.Context, ID int64) ([]*DiscountCode, *http.Response, error) {
