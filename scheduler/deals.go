@@ -62,7 +62,8 @@ func (h *Handler) CreateDealOfTheDay() {
 			db.Raw("random()"): db.Lt(0.5),
 		})
 	if err != nil {
-		lg.Warn("Failed to get Localyyz products")
+		lg.Alert("Failed to get female product for automated deal of the day")
+		return
 	}
 
 	productMale, err := data.DB.Product.FindOne(
@@ -74,7 +75,8 @@ func (h *Handler) CreateDealOfTheDay() {
 			db.Raw("random()"): db.Lt(0.5),
 		})
 	if err != nil {
-		lg.Warn("Failed to get Localyyz products")
+		lg.Alert("Failed to get male product for automated deal of the day")
+		return
 	}
 
 	dealProducts := []*data.Product{productFemale, productMale}
@@ -83,7 +85,7 @@ func (h *Handler) CreateDealOfTheDay() {
 	i := rand.Intn(len(hour))
 
 	//setting the start and end time for the deals
-	start := time.Now().Truncate(24 * time.Hour).Add(24 * time.Hour).Add(hour[i])
+	start := time.Now().UTC().Truncate(24 * time.Hour).Add(24 * time.Hour).Add(hour[i])
 	end := start.Add(1 * time.Hour)
 
 	var toSend []data.Notification
@@ -94,7 +96,7 @@ func (h *Handler) CreateDealOfTheDay() {
 
 		//creating the price rule for the deal
 		priceRule := &shopify.PriceRule{
-			Title:              fmt.Sprintf("DOTD-%s", time.Now().Format("02-Jan-2006")),
+			Title:              fmt.Sprintf("DOTD-%s-%s", time.Now().Format("02-Jan-2006"), product.Gender),
 			TargetType:         shopify.PriceRuleTargetTypeLineItem,
 			TargetSelection:    shopify.PriceRuleTargetSelectionEntitled,
 			ValueType:          shopify.PriceRuleValueTypeFixedAmount,
