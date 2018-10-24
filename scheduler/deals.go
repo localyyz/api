@@ -96,7 +96,7 @@ func (h *Handler) CreateDealOfTheDay() {
 
 		//creating the price rule for the deal
 		priceRule := &shopify.PriceRule{
-			Title:              fmt.Sprintf("DOTD-%s-%s", time.Now().Format("02-Jan-2006"), product.Gender),
+			Title:              fmt.Sprintf("DOTD-%s-%s", time.Now().Add(24*time.Hour).Format("02-Jan-2006"), product.Gender),
 			TargetType:         shopify.PriceRuleTargetTypeLineItem,
 			TargetSelection:    shopify.PriceRuleTargetSelectionEntitled,
 			ValueType:          shopify.PriceRuleValueTypeFixedAmount,
@@ -345,7 +345,7 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 			//  - equal or betteer value
 			//  - same type of deal (value off, pct off etc)
 			//  - status: either queued or active
-			if len(rule.EntitledProductIds) == 0  {
+			if len(rule.EntitledProductIds) == 0 {
 				similarOrBetter, _ := data.DB.Deal.Find(db.Cond{
 					"value":       db.Gte(deal.Value),
 					"type":        deal.Type,
@@ -419,19 +419,23 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 			}
 
 			// set deals of the day from localyyz store as featured and attach the product image
-			if place.ID == LocalyyzStoreId && deal.ProductListType == data.ProductListTypeAssociated {
+			if place.ID == LocalyyzStoreId && deal.ProductListType == data.ProductListTypeAssociated && len(rule.EntitledProductIds) > 0 {
 				deal.Featured = true
 
-				product, err := data.DB.Product.FindOne(db.Cond{"external_id": rule.EntitledProductIds})
+				product, err := data.DB.Product.FindByExternalID(rule.EntitledProductIds[0])
 				if err != nil {
-					lg.Warnf("failed to fetch deal products for imageURL with err %+v", err)
+					lg.Warnf("failed to fetch deal product for deal of the day with err %+v", err)
+					continue
 				}
-				image, err := data.DB.ProductImage.FindOne(db.Cond{"product_id": product.ID})
-				if err != nil {
-					lg.Warnf("failed to fetch image for deal product with err %+v", err)
-				}
-				deal.ImageURL = image.ImageURL
 
+				var image *data.ProductImage
+				err = data.DB.ProductImage.Find(db.Cond{"product_id": product.ID}).OrderBy("ordering DESC").One(&image)
+				if err != nil {
+					lg.Warnf("failed to fetch deal product image with err %+v", err)
+					continue
+				} else {
+					deal.ImageURL = image.ImageURL
+				}
 			}
 
 			// save the deal.
