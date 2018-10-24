@@ -218,7 +218,7 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 	}
 
 	page := 1
-	createdAt := time.Now().Add(24 * time.Hour).UTC()
+	createdAt := time.Now().Add(-24 * time.Hour).UTC()
 
 	client, err := connect.GetShopifyClient(place.ID)
 	if err != nil {
@@ -345,14 +345,17 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 			//  - equal or betteer value
 			//  - same type of deal (value off, pct off etc)
 			//  - status: either queued or active
-			similarOrBetter, _ := data.DB.Deal.Find(db.Cond{
-				"value":       db.Gte(deal.Value),
-				"type":        deal.Type,
-				"merchant_id": deal.MerchantID,
-				"status":      []data.DealStatus{data.DealStatusQueued, data.DealStatusActive},
-			}).Exists()
-			if similarOrBetter {
-				continue
+			if len(rule.EntitledProductIds) == 0  {
+				similarOrBetter, _ := data.DB.Deal.Find(db.Cond{
+					"value":       db.Gte(deal.Value),
+					"type":        deal.Type,
+					"merchant_id": deal.MerchantID,
+					"status":      []data.DealStatus{data.DealStatusQueued, data.DealStatusActive},
+				}).Exists()
+				if similarOrBetter {
+					lg.Debugf("skipping similar deals: %d", deal.ExternalID)
+					continue
+				}
 			}
 
 			// if rule id already exists in database, update the deal with the new parameters
