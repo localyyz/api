@@ -415,6 +415,22 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 				deal.Status = data.DealStatusPending
 			}
 
+			// set deals of the day from localyyz store as featured and attach the product image
+			if place.ID == LocalyyzStoreId && deal.ProductListType == data.ProductListTypeAssociated {
+				deal.Featured = true
+
+				product, err := data.DB.Product.FindOne(db.Cond{"external_id": rule.EntitledProductIds})
+				if err != nil {
+					lg.Warnf("failed to fetch deal products for imageURL with err %+v", err)
+				}
+				image, err := data.DB.ProductImage.FindOne(db.Cond{"product_id": product.ID})
+				if err != nil {
+					lg.Warnf("failed to fetch image for deal product with err %+v", err)
+				}
+				deal.ImageURL = image.ImageURL
+
+			}
+
 			// save the deal.
 			if err := data.DB.Deal.Save(deal); err != nil {
 				lg.Warnf("failed to save deal with err %+v", err)
