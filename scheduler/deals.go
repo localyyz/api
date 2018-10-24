@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
+	"bitbucket.org/moodie-app/moodie-api/lib/onesignal"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/pressly/lg"
 	"upper.io/db.v3"
@@ -32,6 +34,138 @@ func (h *Handler) ScheduleDeals() {
 
 	// activate deals
 	h.DB.Exec(`UPDATE deals SET status = 3 WHERE NOW() at time zone 'utc' > start_at and status = 1`)
+}
+
+func (h *Handler) CreateDealOfTheDay() {
+	h.wg.Add(1)
+	defer h.wg.Done()
+
+	s := time.Now()
+	lg.Info("job_create_deal_of_day running...")
+	defer func() {
+		lg.Infof("job_create_deal_of_day finished in %s", time.Since(s))
+	}()
+
+	client, err := connect.GetShopifyClient(LocalyyzStoreId)
+	client.Debug = true
+	if err != nil {
+		lg.Warnf("Get Price Rules: Failed to instantiate Shopify client for merchant %s", LocalyyzStoreId)
+		return
+	}
+
+	productFemale, err := data.DB.Product.FindOne(
+		db.Cond{
+			"place_id":         LocalyyzStoreId,
+			"status":           data.ProductStatusApproved,
+			"gender":           data.ProductGenderFemale,
+			"price":            db.Gte(100),
+			db.Raw("random()"): db.Lt(0.5),
+		})
+	if err != nil {
+		lg.Alert("Failed to get female product for automated deal of the day")
+		return
+	}
+
+	productMale, err := data.DB.Product.FindOne(
+		db.Cond{
+			"place_id":         LocalyyzStoreId,
+			"status":           data.ProductStatusApproved,
+			"gender":           data.ProductGenderMale,
+			"price":            db.Gte(100),
+			db.Raw("random()"): db.Lt(0.5),
+		})
+	if err != nil {
+		lg.Alert("Failed to get male product for automated deal of the day")
+		return
+	}
+
+	dealProducts := []*data.Product{productFemale, productMale}
+
+	var hour = []time.Duration{16 * time.Hour, 19 * time.Hour, 22 * time.Hour}
+	i := rand.Intn(len(hour))
+
+	//setting the start and end time for the deals
+	start := time.Now().UTC().Truncate(24 * time.Hour).Add(24 * time.Hour).Add(hour[i])
+	end := start.Add(1 * time.Hour)
+
+	var toSend []data.Notification
+
+	for _, product := range dealProducts {
+
+		discount := "-70"
+
+		//creating the price rule for the deal
+		priceRule := &shopify.PriceRule{
+			Title:              fmt.Sprintf("DOTD-%s-%s", time.Now().Add(24*time.Hour).Format("02-Jan-2006"), product.Gender),
+			TargetType:         shopify.PriceRuleTargetTypeLineItem,
+			TargetSelection:    shopify.PriceRuleTargetSelectionEntitled,
+			ValueType:          shopify.PriceRuleValueTypeFixedAmount,
+			Value:              discount,
+			AllocationMethod:   "each",
+			CustomerSelection:  "all",
+			EntitledProductIds: []int64{*product.ExternalID},
+			StartsAt:           start,
+			EndsAt:             &end,
+			AllocationLimit:    1,
+			OncePerCustomer:    true,
+			//UsageLimit: stock available
+		}
+
+		_, _, err = client.PriceRule.CreatePriceRule(context.Background(), priceRule)
+		if err != nil {
+			lg.Warn("Failed to create price rule")
+			continue
+		}
+
+		discountCode := &shopify.DiscountCode{
+			Code:        priceRule.Title,
+			PriceRuleID: priceRule.ID,
+		}
+
+		_, _, err = client.DiscountCode.Create(context.Background(), discountCode)
+		if err != nil {
+			lg.Warn("Failed to create discount code")
+			continue
+		}
+
+		ntf := data.Notification{
+			ProductID: product.ID,
+			Heading:   "⚡️ Deals of the Day! ⚡️",
+			Content:   "Hurry in now to save $70 on great products 🤩. Deals end in one hour!",
+		}
+
+		toSend = append(toSend, ntf)
+
+	}
+
+	// if toSend has at least 1 notification, only create 1 push
+	for i := range toSend {
+		createPush(toSend[i], start)
+		break
+	}
+}
+
+func createPush(ntf data.Notification, startTime time.Time) {
+
+	req := onesignal.NotificationRequest{
+		Headings:         map[string]string{"en": ntf.Heading},
+		Contents:         map[string]string{"en": ntf.Content},
+		IncludedSegments: []string{"Subscribed Users"},
+		SendAfter:        startTime.String(),
+	}
+
+	resp, _, err := connect.ON.Notifications.Create(&req)
+	if err != nil {
+		lg.Warnf("failed to schedule notification: %v", err)
+		return
+	}
+
+	ntf.ExternalID = resp.ID
+	if err := data.DB.Notification.Save(&ntf); err != nil {
+		lg.Warnf("failed to save notification to db: %v", err)
+		return
+	}
+
 }
 
 func (h *Handler) SyncDiscountCodes() {
@@ -84,7 +218,7 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 	}
 
 	page := 1
-	createdAt := time.Now().Add(24 * time.Hour).UTC()
+	createdAt := time.Now().Add(-24 * time.Hour).UTC()
 
 	client, err := connect.GetShopifyClient(place.ID)
 	if err != nil {
@@ -211,14 +345,17 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 			//  - equal or betteer value
 			//  - same type of deal (value off, pct off etc)
 			//  - status: either queued or active
-			similarOrBetter, _ := data.DB.Deal.Find(db.Cond{
-				"value":       db.Gte(deal.Value),
-				"type":        deal.Type,
-				"merchant_id": deal.MerchantID,
-				"status":      []data.DealStatus{data.DealStatusQueued, data.DealStatusActive},
-			}).Exists()
-			if similarOrBetter {
-				continue
+			if len(rule.EntitledProductIds) == 0 {
+				similarOrBetter, _ := data.DB.Deal.Find(db.Cond{
+					"value":       db.Gte(deal.Value),
+					"type":        deal.Type,
+					"merchant_id": deal.MerchantID,
+					"status":      []data.DealStatus{data.DealStatusQueued, data.DealStatusActive},
+				}).Exists()
+				if similarOrBetter {
+					lg.Debugf("skipping similar deals: %d", deal.ExternalID)
+					continue
+				}
 			}
 
 			// if rule id already exists in database, update the deal with the new parameters
@@ -279,6 +416,26 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 				deal.Prerequisite.SubtotalRange == 0 &&
 				deal.Prerequisite.QuantityRange == 0 {
 				deal.Status = data.DealStatusPending
+			}
+
+			// set deals of the day from localyyz store as featured and attach the product image
+			if place.ID == LocalyyzStoreId && deal.ProductListType == data.ProductListTypeAssociated && len(rule.EntitledProductIds) > 0 {
+				deal.Featured = true
+
+				product, err := data.DB.Product.FindByExternalID(rule.EntitledProductIds[0])
+				if err != nil {
+					lg.Warnf("failed to fetch deal product for deal of the day with err %+v", err)
+					continue
+				}
+
+				var image *data.ProductImage
+				err = data.DB.ProductImage.Find(db.Cond{"product_id": product.ID}).OrderBy("ordering DESC").One(&image)
+				if err != nil {
+					lg.Warnf("failed to fetch deal product image with err %+v", err)
+					continue
+				} else {
+					deal.ImageURL = image.ImageURL
+				}
 			}
 
 			// save the deal.
