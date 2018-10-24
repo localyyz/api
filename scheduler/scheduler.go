@@ -77,7 +77,6 @@ func (h *Handler) Start() {
 			name:           "job_get_merchant_deals",
 			spec:           fmt.Sprintf("@every %s", 1*time.Hour),
 			fn:             h.SyncDiscountCodes,
-			runImmediately: true,
 		},
 		{
 			name: "job_create_deal_of_day",
