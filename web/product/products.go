@@ -54,6 +54,7 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product := ctx.Value("product").(*data.Product)
 	cursor := ctx.Value("cursor").(*api.Page)
+	filterSort := ctx.Value(api.FilterSortCtxKey).(*api.FilterSort)
 
 	if product.Category.Value == "" {
 		render.Respond(w, r, []struct{}{})
@@ -65,16 +66,23 @@ func ListRelatedProduct(w http.ResponseWriter, r *http.Request) {
 		From("products p").
 		Where(
 			db.Cond{
-				"p.place_id":                   product.PlaceID,
 				"p.gender":                     product.Gender,
 				"p.id":                         db.NotEq(product.ID),
 				"p.status":                     data.ProductStatusApproved,
+				"p.category_id":                product.CategoryID,
+				"p.price":                      db.Between(product.Price-10, product.Price+10),
 				db.Raw("p.category->>'value'"): product.Category.Value,
 			}).
-		OrderBy("p.score desc")
-	paginate := cursor.UpdateQueryBuilder(query)
+		OrderBy("p.score desc", "p.id desc")
+	query = filterSort.UpdateQueryBuilder(query)
+
+	if filterSort.HasFilter() {
+		w.Write([]byte{})
+		return
+	}
 
 	var products []*data.Product
+	paginate := cursor.UpdateQueryBuilder(query)
 	if err := paginate.All(&products); err != nil {
 		render.Respond(w, r, err)
 		return

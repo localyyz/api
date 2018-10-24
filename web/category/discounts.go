@@ -29,10 +29,7 @@ func ListDiscountProducts(w http.ResponseWriter, r *http.Request) {
 		db.Cond{
 			"p.status":     data.ProductStatusApproved,
 			"p.deleted_at": nil,
-			"m.collection": []data.MerchantApprovalCollection{
-				data.MerchantApprovalCollectionBoutique,
-				data.MerchantApprovalCollectionLuxury,
-			},
+			"m.pricing":    []string{"medium", "high"},
 		},
 	)
 	if discountCond, ok := ctx.Value("discountCond").(db.Cond); ok {
@@ -41,7 +38,7 @@ func ListDiscountProducts(w http.ResponseWriter, r *http.Request) {
 
 	query := data.DB.Select("p.*").
 		From("products p").
-		LeftJoin("merchant_approvals m").On("m.place_id = p.place_id").
+		LeftJoin("place_meta m").On("m.place_id = p.place_id").
 		Where(cond).
 		OrderBy("p.id desc")
 	query = filterSort.UpdateQueryBuilder(query)

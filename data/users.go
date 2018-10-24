@@ -128,6 +128,21 @@ func (u *User) GetTotalCheckout(productID int64) (int, error) {
 	return count, nil
 }
 
+func (u *User) GetPreferredGenders() []ProductGender {
+	if u.Preference == nil {
+		return nil
+	}
+	g := make([]ProductGender, len(u.Preference.Gender))
+	for i, p := range u.Preference.Gender {
+		if p == "man" {
+			g[i] = ProductGenderMale
+		} else {
+			g[i] = ProductGenderFemale
+		}
+	}
+	return g
+}
+
 func (s UserStore) FindByUsername(username string) (*User, error) {
 	return s.FindOne(db.Cond{"username": username})
 }

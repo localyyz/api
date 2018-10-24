@@ -37,26 +37,23 @@ func CollectionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func ListCollection(w http.ResponseWriter, r *http.Request) {
+func ListFeaturedCollection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	user := ctx.Value("session.user").(*data.User)
+	cursor := ctx.Value("cursor").(*api.Page)
 
-	genderScope := []int{
-		int(data.ProductGenderFemale),
-		int(data.ProductGenderMale),
-		int(data.ProductGenderUnisex),
+	cond := db.Cond{"featured": true}
+	if p := user.GetPreferredGenders(); len(p) > 0 {
+		cond["gender"] = append(p, data.ProductGenderUnisex)
 	}
-	if gender, ok := ctx.Value("session.gender").(data.UserGender); ok {
-		genderScope = []int{int(gender)}
-	}
+
+	query := data.DB.Collection.
+		Find(cond).
+		OrderBy("ordering")
+
+	paginate := cursor.UpdateQueryUpper(query)
 	var collections []*data.Collection
-	err := data.DB.Collection.
-		Find(db.Cond{
-			"gender":   genderScope,
-			"featured": true,
-		}).
-		OrderBy("ordering").
-		All(&collections)
-	if err != nil {
+	if err := paginate.All(&collections); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
