@@ -47,10 +47,11 @@ func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 	inventorySum := 0
 	managedInventory := true
 	for _, v := range variants {
-		inventorySum += v.InventoryQuantity
 		if v.InventoryManagement != "shopify" {
 			managedInventory = false
+			break
 		}
+		inventorySum += v.InventoryQuantity
 	}
 	// some merchants DO NOT automatically manage inventory
 	// via shopify. Only mark product unavailable if inventory
@@ -120,6 +121,15 @@ func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 			Price:       price,
 			PrevPrice:   prevPrice,
 			Etc:         etc,
+		}
+
+		// some merchants DO NOT automatically manage inventory
+		// via shopify. Only mark product unavailable if inventory
+		// is managed by shopify
+		// NOTE: hard code inventory to 999
+		if !managedInventory {
+			//
+			editV.Limits = 999
 		}
 
 		// check if variant has changed from the one in db
