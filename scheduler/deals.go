@@ -429,7 +429,7 @@ func parseDeals(ctx context.Context, place *data.Place, wg *sync.WaitGroup) {
 				}
 
 				var image *data.ProductImage
-				err = data.DB.ProductImage.Find(db.Cond{"product_id": product.ID}).OrderBy("ordering DESC").One(&image)
+				err = data.DB.ProductImage.Find(db.Cond{"product_id": product.ID}).OrderBy("ordering").One(&image)
 				if err != nil {
 					lg.Warnf("failed to fetch deal product image with err %+v", err)
 					continue
