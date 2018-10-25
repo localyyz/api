@@ -45,10 +45,17 @@ func (s *shopifyVariantSyncer) FetchFromDB() ([]*data.ProductVariant, error) {
 
 func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 	inventorySum := 0
+	managedInventory := true
 	for _, v := range variants {
 		inventorySum += v.InventoryQuantity
+		if v.InventoryManagement != "shopify" {
+			managedInventory = false
+		}
 	}
-	if inventorySum == 0 {
+	// some merchants DO NOT automatically manage inventory
+	// via shopify. Only mark product unavailable if inventory
+	// is managed by shopify
+	if inventorySum <= 0 && managedInventory {
 		return ErrProductUnavailable
 	}
 
