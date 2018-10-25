@@ -16,15 +16,16 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
-	productCond := db.Or(
-		db.Raw("p.id IN (SELECT product_id FROM collection_products WHERE collection_id = ?)", collection.ID),
-	)
+	// default ->
+	productCond := db.Cond{
+		"p.id": db.Raw("p.id IN (SELECT product_id FROM collection_products WHERE collection_id = ?)", collection.ID),
+	}
 	if collection.PlaceIDs != nil {
 		placeIDs := make([]int64, len(*collection.PlaceIDs))
 		for i, v := range *collection.PlaceIDs {
 			placeIDs[i] = int64(v)
 		}
-		productCond = productCond.Or(db.Cond{"p.place_id": placeIDs})
+		productCond = db.Cond{"p.place_id": placeIDs}
 	}
 	cond := db.And(
 		productCond,
