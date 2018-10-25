@@ -42,6 +42,7 @@ var (
 
 const (
 	FeedTypeFavourite = "favourite"
+	FeedTypeRelated   = "related"
 	FeedTypeRecommend = "recommend"
 	FeedTypeSale      = "sale"
 )
@@ -130,6 +131,11 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := ctx.Value("session.user").(*data.User)
 
+	if user.Preference == nil {
+		render.Respond(w, r, []struct{}{})
+		return
+	}
+
 	var (
 		rows          []feedRow
 		onSaleRow     feedRow
@@ -137,6 +143,7 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 			Title:     "Your favourite products",
 			FetchPath: "products/favourite",
 			Products:  []render.Renderer{},
+			Type:      FeedTypeFavourite,
 			Order:     2,
 		}
 	)
@@ -210,7 +217,7 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 					rows = append(rows,
 						feedRow{
 							Title:     product.Title,
-							Type:      FeedTypeFavourite,
+							Type:      FeedTypeRelated,
 							Products:  presenter.NewProductList(ctx, related),
 							FetchPath: fmt.Sprintf("products/%d/related", product.ID),
 						})
