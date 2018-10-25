@@ -39,7 +39,9 @@ type shopifyImageFetcher struct{}
 
 func (s *shopifyImageFinalizer) Finalize() error {
 	for _, img := range s.toSaves {
-		data.DB.ProductImage.Save(img)
+		if err := data.DB.ProductImage.Save(img); err != nil {
+			continue
+		}
 
 		// if img has variant ids associated, save to pivot table
 		for _, vID := range img.VariantIDs {
