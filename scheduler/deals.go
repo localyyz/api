@@ -152,7 +152,6 @@ func createPush(ntf data.Notification, startTime time.Time) {
 		Contents:         map[string]string{"en": ntf.Content},
 		IncludedSegments: []string{"Subscribed Users"},
 		SendAfter:        startTime.String(),
-		Data:			  map[string]string{"destination": "deal"},
 		Data:             map[string]string{"destination": "deal"},
 	}
 
