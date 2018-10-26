@@ -99,19 +99,18 @@ func DeviceCtx(next http.Handler) http.Handler {
 			// did not find user by either username or device token
 			// so create new shadow user and save it
 			user = &data.User{
-				Username:    deviceId,
-				Email:       deviceId,
-				Network:     "shadow",
-				LastLogInAt: data.GetTimeUTCPointer(),
-				LoggedIn:    true,
-			}
-
-			// save the new user
-			if err := data.DB.User.Save(user); err != nil {
-				render.Respond(w, r, err)
-				return
+				Username: deviceId,
+				Email:    deviceId,
+				Network:  "shadow",
 			}
 		}
+
+		// update last time user was logged in
+		user.LastLogInAt = data.GetTimeUTCPointer()
+		user.LoggedIn = true
+
+		// save the new user
+		data.DB.User.Save(user)
 
 		lg.SetEntryField(ctx, "user_id", user.ID)
 		ctx = context.WithValue(ctx, "session.user", user)

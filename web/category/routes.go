@@ -14,6 +14,7 @@ func Routes() chi.Router {
 	r.With(discountCtx(0.20, 0.49)).Route("/11/products", api.FilterRoutes(ListDiscountProducts))
 	r.With(discountCtx(0.50, 0.69)).Route("/12/products", api.FilterRoutes(ListDiscountProducts))
 	r.With(discountCtx(0.70, 1)).Route("/13/products", api.FilterRoutes(ListDiscountProducts))
+	r.With(discountCtx(0.50, 1)).Route("/onsale", api.FilterRoutes(ListDiscountProducts))
 
 	r.With(segmentCtx(segmentTypeSmart)).Mount("/21", segmentRoutes())
 	r.With(segmentCtx(segmentTypeBoutique)).Mount("/22", segmentRoutes())

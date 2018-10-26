@@ -28,6 +28,18 @@ func NewCollection(ctx context.Context, collection *data.Collection) *Collection
 
 	// count number of products
 	c.ProductCount, _ = data.DB.CollectionProduct.Find(db.Cond{"collection_id": c.ID}).Count()
+	if collection.PlaceIDs != nil {
+		placeIDs := make([]int64, len(*collection.PlaceIDs))
+		for i, v := range *collection.PlaceIDs {
+			placeIDs[i] = int64(v)
+		}
+		count, _ := data.DB.Product.Find(
+			db.Cond{
+				"place_id": placeIDs,
+				"status":   data.ProductStatusApproved,
+			}).Count()
+		c.ProductCount += count
+	}
 
 	if c.OwnerID != nil {
 		if owner, _ := data.DB.User.FindByID(*c.OwnerID); owner != nil {

@@ -16,16 +16,25 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	cursor := ctx.Value("cursor").(*api.Page)
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
+	// default ->
+	productCond := db.Cond{
+		"p.id": db.Raw("p.id IN (SELECT product_id FROM collection_products WHERE collection_id = ?)", collection.ID),
+	}
+	if collection.PlaceIDs != nil {
+		placeIDs := make([]int64, len(*collection.PlaceIDs))
+		for i, v := range *collection.PlaceIDs {
+			placeIDs[i] = int64(v)
+		}
+		productCond = db.Cond{"p.place_id": placeIDs}
+	}
 	cond := db.And(
-		db.Raw("p.id IN (SELECT product_id FROM collection_products WHERE collection_id = ?)", collection.ID),
+		productCond,
 		db.Cond{"p.status": data.ProductStatusApproved},
 	)
-
 	query := data.DB.Select(db.Raw("distinct p.*")).
 		From("products p").
 		Where(cond).
 		OrderBy("p.score DESC", "p.created_at DESC")
-
 	query = filterSort.UpdateQueryBuilder(query)
 
 	if filterSort.HasFilter() {
