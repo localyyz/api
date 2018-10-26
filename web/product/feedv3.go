@@ -231,9 +231,42 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 	for _, gd := range user.Preference.Gender {
 		var categoryIDs []int64
 		if gd == "man" {
-			categoryIDs = []int64{11000, 12000, 13000, 14000, 15000}
+			categoryIDs = []int64{
+				// NOTE: break up apparel into sub categories
+				11020, // activewear
+				11040, // blazer
+				11060, // coatjacket
+				11080, // jeans
+				11120, // shirt
+				11160, // sweatshirt
+				11180, // suit
+				11200, // sweater
+				11220, // tshirt
+
+				12000,
+				13000,
+				14000,
+				15000,
+			}
 		} else {
-			categoryIDs = []int64{21000, 22000, 23000, 24000, 25000, 26000, 27000}
+			categoryIDs = []int64{
+				// NOTE: break up apparel into sub categories
+				21020, // activewear
+				21040, // coatjacket
+				21060, // dress
+				21100, // jeans
+				21120, // jumpsuit
+				21180, // pants
+				21260, // sweater
+				21280, // top
+
+				22000,
+				23000,
+				24000,
+				25000,
+				26000,
+				27000,
+			}
 		}
 		// for every gender
 		for _, pr := range user.Preference.Pricings {
