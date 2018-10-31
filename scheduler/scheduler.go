@@ -16,6 +16,7 @@ import (
 type Handler struct {
 	DB          *data.Database
 	Environment string
+	Debug       bool
 
 	jobs []FuncJob
 	wg   sync.WaitGroup
@@ -74,9 +75,9 @@ func (h *Handler) Start() {
 			runImmediately: true,
 		},
 		{
-			name:           "job_get_merchant_deals",
-			spec:           fmt.Sprintf("@every %s", 1*time.Hour),
-			fn:             h.SyncDiscountCodes,
+			name: "job_get_merchant_deals",
+			spec: fmt.Sprintf("@every %s", 1*time.Hour),
+			fn:   h.SyncDiscountCodes,
 		},
 		{
 			name: "job_create_deal_of_day",
