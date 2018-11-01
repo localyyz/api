@@ -40,9 +40,8 @@ func (h *Handler) CreateDealOfTheDay() {
 	h.wg.Add(1)
 	defer h.wg.Done()
 
-	if h.Environment != "production" && !h.Debug {
+	if h.Environment != "production" {
 		// for now, return right away if outside of production
-		// NOTE: if needed, set Debug option to 'true'
 		return
 	}
 
