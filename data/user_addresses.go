@@ -11,14 +11,16 @@ type UserAddress struct {
 	ID     int64 `db:"id,pk,omitempty" json:"id"`
 	UserID int64 `db:"user_id" json:"userId"`
 
-	FirstName  string `db:"first_name" json:"firstName"`
-	LastName   string `db:"last_name" json:"lastName"`
-	Address    string `db:"address" json:"address"`
-	AddressOpt string `db:"address_opt" json:"addressOpt"`
-	City       string `db:"city" json:"city"`
-	Country    string `db:"country" json:"country"`
-	Province   string `db:"province" json:"province"`
-	Zip        string `db:"zip" json:"zip"`
+	FirstName    string `db:"first_name" json:"firstName"`
+	LastName     string `db:"last_name" json:"lastName"`
+	Address      string `db:"address" json:"address"`
+	AddressOpt   string `db:"address_opt" json:"addressOpt"`
+	City         string `db:"city" json:"city"`
+	Country      string `db:"country" json:"country"`
+	CountryCode  string `db:"country_code" json:"countryCode"`
+	Province     string `db:"province" json:"province"`
+	ProvinceCode string `db:"province_code" json:"provinceCode"`
+	Zip          string `db:"zip" json:"zip"`
 
 	IsShipping bool `db:"is_shipping" json:"isShipping"`
 	IsBilling  bool `db:"is_billing" json:"isBilling"`

@@ -22,14 +22,16 @@ const PaymentCardCtxKey = "shopper.payment.card"
 
 func toShopifyAddress(a *data.CartAddress) *shopify.CustomerAddress {
 	return &shopify.CustomerAddress{
-		Address1:  a.Address,
-		Address2:  a.AddressOpt,
-		City:      a.City,
-		Country:   a.Country,
-		FirstName: a.FirstName,
-		LastName:  a.LastName,
-		Province:  a.Province,
-		Zip:       a.Zip,
+		Address1:     a.Address,
+		Address2:     a.AddressOpt,
+		City:         a.City,
+		Country:      a.Country,
+		CountryCode:  a.CountryCode,
+		FirstName:    a.FirstName,
+		LastName:     a.LastName,
+		Province:     a.Province,
+		ProvinceCode: a.ProvinceCode,
+		Zip:          a.Zip,
 	}
 }
 
