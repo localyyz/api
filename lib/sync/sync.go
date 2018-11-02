@@ -140,5 +140,9 @@ func (s *productSyncer) Finalize() error {
 	if s.product.Status == data.ProductStatusProcessing {
 		s.product.Status = data.ProductStatusApproved
 	}
+	// if deleted at timestamp is set, mark as deleted
+	if s.product.DeletedAt != nil {
+		s.product.Status = data.ProductStatusDeleted
+	}
 	return data.DB.Product.Save(s.product)
 }
