@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	ErrProductUnavailable = errors.New("unavailable")
+	ErrProductUnavailable  = errors.New("unavailable")
+	ErrProductInvalidPrice = errors.New("invalid price")
 )
 
 type shopifyVariantSyncer struct {
@@ -82,6 +83,9 @@ func (s *shopifyVariantSyncer) Sync(variants []*shopify.ProductVariant) error {
 			v.Price,
 			v.CompareAtPrice,
 		)
+		if price == 0 {
+			return ErrProductInvalidPrice
+		}
 
 		if i == 0 {
 			s.product.Price = xchange.ToUSD(price, s.place.Currency)

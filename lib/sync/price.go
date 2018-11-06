@@ -8,16 +8,19 @@ import (
 // setPrices helper compares product.price and product.comparePrice
 // and always sets the lower one to the `price` field and higher one to `prevPrice`
 // field.
-func setPrices(a, b string) (price, comparePrice float64) {
-	price1, _ := strconv.ParseFloat(a, 64)
-	if len(b) == 0 {
+func setPrices(priceStr, compareStr string) (price, comparePrice float64) {
+	price1, _ := strconv.ParseFloat(priceStr, 64)
+	if len(compareStr) == 0 {
 		price = price1
 		return
 	}
-	price2, _ := strconv.ParseFloat(b, 64)
+	price2, _ := strconv.ParseFloat(compareStr, 64)
 	if price2 > 0 && price1 > price2 {
-		price = price2
-		comparePrice = price1
+		//price = price2
+		//comparePrice = price1
+
+		// some how, compare at price is invalid
+		return price1, 0
 	} else if price2 > 0 && price2 > price1 {
 		price = price1
 		comparePrice = price2

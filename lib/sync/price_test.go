@@ -32,6 +32,12 @@ func TestSetPrices(t *testing.T) {
 			comparePrice:  "50.00",
 			expectedPrice: 50.00,
 		},
+		{
+			name:          "compare at price < price (invalid)",
+			price:         "50.00",
+			comparePrice:  "10.00",
+			expectedPrice: 0.00,
+		},
 	}
 
 	for _, tt := range tests {
