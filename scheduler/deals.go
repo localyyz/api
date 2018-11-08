@@ -51,6 +51,7 @@ func (h *Handler) CreateDealOfTheDay() {
 		lg.Infof("job_create_deal_of_day finished in %s", time.Since(s))
 	}()
 
+	var err error
 	client, err := connect.GetShopifyClient(LocalyyzStoreId)
 	client.Debug = true
 	if err != nil {
@@ -58,33 +59,46 @@ func (h *Handler) CreateDealOfTheDay() {
 		return
 	}
 
-	productFemale, err := data.DB.Product.FindOne(
-		db.Cond{
-			"place_id":         LocalyyzStoreId,
-			"status":           data.ProductStatusApproved,
-			"gender":           data.ProductGenderFemale,
-			"price":            db.Gte(100),
-			db.Raw("random()"): db.Lt(0.5),
+	// filter out the products we've picked in the the last 30 days
+	pastProductQ := data.DB.Select(db.Raw("dp.product_id")).
+		From("deals d").
+		LeftJoin("deal_products dp").On("dp.deal_id = d.id").
+		Where(db.Cond{
+			"d.featured": true,
+			"d.start_at": db.Gt(db.Raw("NOW()::date - 30")),
 		})
+
+	var productFemale *data.Product
+	err = data.DB.Product.Find(
+		db.Cond{
+			"place_id":           LocalyyzStoreId,
+			"status":             data.ProductStatusApproved,
+			"gender":             data.ProductGenderFemale,
+			"price":              db.Gte(100),
+			"external_id NOT IN": pastProductQ,
+		}).
+		OrderBy(db.Raw("random() * id")).
+		One(&productFemale)
 	if err != nil {
 		lg.Alert("Failed to get female product for automated deal of the day")
 		return
 	}
 
-	productMale, err := data.DB.Product.FindOne(
+	var productMale *data.Product
+	err = data.DB.Product.Find(
 		db.Cond{
-			"place_id":         LocalyyzStoreId,
-			"status":           data.ProductStatusApproved,
-			"gender":           data.ProductGenderMale,
-			"price":            db.Gte(100),
-			db.Raw("random()"): db.Lt(0.5),
-		})
+			"place_id":           LocalyyzStoreId,
+			"status":             data.ProductStatusApproved,
+			"gender":             data.ProductGenderMale,
+			"price":              db.Gte(100),
+			"external_id NOT IN": pastProductQ,
+		}).
+		OrderBy(db.Raw("random() * id")).
+		One(&productMale)
 	if err != nil {
 		lg.Alert("Failed to get male product for automated deal of the day")
 		return
 	}
-
-	dealProducts := []*data.Product{productFemale, productMale}
 
 	var hour = []time.Duration{16 * time.Hour, 19 * time.Hour, 22 * time.Hour}
 	i := rand.Intn(len(hour))
@@ -94,9 +108,7 @@ func (h *Handler) CreateDealOfTheDay() {
 	end := start.Add(1 * time.Hour)
 
 	var toSend []data.Notification
-
-	for _, product := range dealProducts {
-
+	for _, product := range []*data.Product{productFemale, productMale} {
 		discount := "-70"
 
 		//creating the price rule for the deal
@@ -140,7 +152,6 @@ func (h *Handler) CreateDealOfTheDay() {
 		}
 
 		toSend = append(toSend, ntf)
-
 	}
 
 	// if toSend has at least 1 notification, only create 1 push
