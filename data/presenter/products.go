@@ -68,6 +68,9 @@ const PlaceCacheCtxKey = "place.cache"
 
 func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	list := []*Product{}
+	if len(products) == 0 {
+		return list
+	}
 
 	productCache := make(ProductCache)
 	productIDSet := set.New()

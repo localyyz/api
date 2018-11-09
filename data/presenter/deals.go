@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 
@@ -28,77 +29,78 @@ type Deal struct {
 	Info        string `json:"info"`
 
 	// for putting together into and titles
-	products         []*Product `json:"products"`
-	preReqProducts   []*Product `json:"prereqProducts"`
-	entitledProducts []*Product `json:"entitledProducts"`
+	Products         []*Product `json:"products"`
+	PreReqProducts   []*Product `json:"prereqProducts"`
+	EntitledProducts []*Product `json:"entitledProducts"`
 }
 
 const DealCtxKey = "presenter.deal"
+const (
+	DealInfoQuantityRange  = "When you buy at least %d products."
+	DealInfoSubtotalRange  = "When you spend at least $%d."
+	DealInfoShippingRange  = "For shipping fees under $%d."
+	DealInfoBXGY           = "Up to %d use(s)."
+	DealInfoUsePerCustomer = "One use per customer per order."
+	DealInfoCondition      = "(other conditions may apply.)"
+)
 
 func (c *Deal) Render(w http.ResponseWriter, r *http.Request) error {
-
 	switch c.Type {
-	case data.DealTypePercentageOff:
-		c.RenderDealTypePercentage()
-	case data.DealTypeAmountOff:
-		c.RenderDealTypeAmount()
+	case data.DealTypePercentageOff, data.DealTypeAmountOff:
+		c.renderDealTypeXOff()
 	case data.DealTypeFreeShipping:
 		c.Title = "Free Shipping"
 		c.Description = "Free Shipping"
 	case data.DealTypeBXGY:
-		c.RenderDealTypeBXGY()
-
+		c.renderDealTypeBXGY()
 	}
 
-	if c.Prerequisite.QuantityRange >= 1 {
-		c.Info = fmt.Sprintf("When you buy at least %d products from %s.", c.Prerequisite.QuantityRange, c.Place.Name)
+	infos := []string{}
+	if x := c.Prerequisite.QuantityRange; x >= 1 {
+		infos = append(infos, fmt.Sprintf(DealInfoQuantityRange, x))
 	}
-	if c.Prerequisite.SubtotalRange >= 1 {
-		c.Info = fmt.Sprintf("%s\nWhen you spend at least $%d on %s products.", c.Info, c.Prerequisite.SubtotalRange/100, c.Place.Name)
+	if x := c.Prerequisite.SubtotalRange / 100; x >= 1 {
+		infos = append(infos, fmt.Sprintf(DealInfoSubtotalRange, x))
 	}
-	if c.BXGYPrerequisite.AllocationLimit >= 1 {
-		c.Info = fmt.Sprintf("%s\nUp to %d use(s).", c.Info, c.BXGYPrerequisite.AllocationLimit)
+	if x := c.BXGYPrerequisite.AllocationLimit; x >= 1 {
+		infos = append(infos, fmt.Sprintf(DealInfoBXGY, x))
 	}
-	if c.Prerequisite.ShippingPriceRange >= 1 {
-		c.Info = fmt.Sprintf("%s\nFor shipping fees under $%d.", c.Info, c.Prerequisite.ShippingPriceRange/100)
+	if x := c.Prerequisite.ShippingPriceRange / 100; x >= 1 {
+		infos = append(infos, fmt.Sprintf(DealInfoShippingRange, x))
 	}
-	if c.OncePerCustomer == true {
-		c.Info = fmt.Sprintf("%s\nOne use per customer per order.", c.Info)
+	if c.OncePerCustomer {
+		infos = append(infos, DealInfoUsePerCustomer)
 	}
-	c.Info = fmt.Sprintf("%s\nConditions may apply.", c.Info)
+	c.Info = strings.Join(append(infos, DealInfoCondition), "\n")
 
 	c.Cap = c.UsageLimit
 	return nil
 }
 
-func (c *Deal) RenderDealTypePercentage() {
-	// store wide discount by percentage
-	if c.ProductListType == data.ProductListTypeMerch {
-		c.Title = c.Place.Name
-		c.Description = fmt.Sprintf("%d%% Off Storewide", int(math.Abs(c.Value)))
-		return
+func (c *Deal) renderDealTypeXOff() {
+	amount := int(math.Abs(c.Value))
+	val := ""
+	if c.Type == data.DealTypePercentageOff {
+		val = fmt.Sprintf("%d%%", amount)
+	} else {
+		val = fmt.Sprintf("$%d", amount)
 	}
-	// product(s) discounted by percentage
-	c.Title = "Discounted Products"
-	c.Description = fmt.Sprintf("%d%% Off Select Products", int(math.Abs(c.Value)))
+
+	if c.ProductListType == data.ProductListTypeMerch {
+		// store wide discount
+		c.Title = c.Place.Name
+		c.Description = fmt.Sprintf("%s Off Storewide", val)
+	} else {
+		// product(s) discounted
+		c.Title = "Discounted Products"
+		c.Description = fmt.Sprintf("%s Off Select Products", val)
+	}
 }
 
-func (c *Deal) RenderDealTypeAmount() {
-	// store wide discount by dollar value
-	if c.ProductListType == data.ProductListTypeMerch {
-		c.Title = c.Place.Name
-		c.Description = fmt.Sprintf("$%d Off Storewide", int(math.Abs(c.Value)))
-		return
-	}
-	// product(s) discounted by dollar value
-	c.Title = "Discounted Products"
-	c.Description = fmt.Sprintf("$%d Off Select Products", int(math.Abs(c.Value)))
-}
-
-func (c *Deal) RenderDealTypeBXGY() {
-	if len(c.preReqProducts) > 0 && len(c.entitledProducts) > 0 {
-		p := c.preReqProducts[0]
-		e := c.entitledProducts[0]
+func (c *Deal) renderDealTypeBXGY() {
+	if len(c.PreReqProducts) > 0 && len(c.EntitledProducts) > 0 {
+		p := c.PreReqProducts[0]
+		e := c.EntitledProducts[0]
 		c.Title = "Discounted Products"
 		var value string
 		if c.Value == 100 {
@@ -127,7 +129,7 @@ func NewDealList(ctx context.Context, deals []*data.Deal) []render.Renderer {
 	for _, c := range deals {
 		//append to the final list to return
 		d := NewDeal(ctx, c)
-		if d.ProductListType != data.ProductListTypeMerch && len(d.products) == 0 {
+		if d.ProductListType != data.ProductListTypeMerch && len(d.Products) == 0 {
 			continue
 		}
 		list = append(list, d)
@@ -146,27 +148,34 @@ func NewDeal(ctx context.Context, deal *data.Deal) *Deal {
 	for _, p := range dps {
 		productIDs = append(productIDs, p.ProductID)
 	}
-	products, err := data.DB.Product.FindAll(db.Cond{
-		"id":     productIDs,
-		"status": data.ProductStatusApproved,
-	})
-	if err != nil && err != db.ErrNoMoreRows {
-		return presented
+	cond := db.Cond{
+		"place_id": deal.MerchantID,
+		"status":   data.ProductStatusApproved,
 	}
+	if len(productIDs) != 0 {
+		cond["id"] = productIDs
+	}
+	var products []*data.Product
+	data.DB.Product.Find(cond).OrderBy("-id", "-score").Limit(5).All(&products)
+	presented.Products = newProductList(ctx, products)
 
 	// prerequiste products (for bxgy)
-	preReqProdIDs := deal.BXGYPrerequisite.PrerequisiteProductIds
-	preReqProds, err := data.DB.Product.FindAll(db.Cond{
-		"id":     preReqProdIDs,
-		"status": data.ProductStatusApproved,
-	})
+	if IDs := deal.BXGYPrerequisite.PrerequisiteProductIds; len(IDs) > 0 {
+		products, _ := data.DB.Product.FindAll(db.Cond{
+			"id":     IDs,
+			"status": data.ProductStatusApproved,
+		})
+		presented.PreReqProducts = newProductList(ctx, products)
+	}
 
 	// entitled products (for bxgy)
-	entProdIDs := deal.BXGYPrerequisite.EntitledProductIds
-	entProds, err := data.DB.Product.FindAll(db.Cond{
-		"id":     entProdIDs,
-		"status": data.ProductStatusApproved,
-	})
+	if IDs := deal.BXGYPrerequisite.EntitledProductIds; len(IDs) > 0 {
+		products, _ := data.DB.Product.FindAll(db.Cond{
+			"id":     IDs,
+			"status": data.ProductStatusApproved,
+		})
+		presented.EntitledProducts = newProductList(ctx, products)
+	}
 
 	// fill in the merchant
 	place, _ := data.DB.Place.FindByID(deal.MerchantID)
@@ -174,9 +183,6 @@ func NewDeal(ctx context.Context, deal *data.Deal) *Deal {
 
 	// shove into context for later consumption
 	ctx = context.WithValue(ctx, DealCtxKey, presented)
-	presented.products = newProductList(ctx, products)
-	presented.preReqProducts = newProductList(ctx, preReqProds)
-	presented.entitledProducts = newProductList(ctx, entProds)
 
 	return presented
 }
