@@ -145,11 +145,11 @@ func (h *Handler) CreateDealOfTheDay() {
 			continue
 		}
 
-		ntf := data.Notification{
-			ProductID: product.ID,
-			Heading:   "⚡️ Deals of the Day! ⚡️",
-			Content:   "Hurry in now to save $70 on great products 🤩. Deals end in one hour!",
-		}
+		//ntf := data.Notification{
+		//ProductID: product.ID,
+		//Heading:   "⚡️ Deals of the Day! ⚡️",
+		//Content:   "Hurry in now to save $70 on great products 🤩. Deals end in one hour!",
+		//}
 
 		//toSend = append(toSend, ntf)
 	}
