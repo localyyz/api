@@ -107,7 +107,7 @@ func (h *Handler) CreateDealOfTheDay() {
 	start := time.Now().UTC().Truncate(24 * time.Hour).Add(24 * time.Hour).Add(hour[i])
 	end := start.Add(1 * time.Hour)
 
-	var toSend []data.Notification
+	//var toSend []data.Notification
 	for _, product := range []*data.Product{productFemale, productMale} {
 		discount := "-70"
 
@@ -151,9 +151,10 @@ func (h *Handler) CreateDealOfTheDay() {
 			Content:   "Hurry in now to save $70 on great products 🤩. Deals end in one hour!",
 		}
 
-		toSend = append(toSend, ntf)
+		//toSend = append(toSend, ntf)
 	}
 
+	// TODO: create the deal, don't send the push
 	// if toSend has at least 1 notification, only create 1 push
 	//for i := range toSend {
 	//createPush(toSend[i], start)
