@@ -155,10 +155,10 @@ func (h *Handler) CreateDealOfTheDay() {
 	}
 
 	// if toSend has at least 1 notification, only create 1 push
-	for i := range toSend {
-		createPush(toSend[i], start)
-		break
-	}
+	//for i := range toSend {
+	//createPush(toSend[i], start)
+	//break
+	//}
 }
 
 func createPush(ntf data.Notification, startTime time.Time) {
