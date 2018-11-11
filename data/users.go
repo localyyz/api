@@ -93,8 +93,9 @@ func (u *User) CollectionName() string {
 }
 
 func (u *User) BeforeCreate(bond.Session) error {
-	u.InviteCode = RandString(6) // random user invite_code hash
 	//TODO: unlikely event of conflict, do something
+	u.InviteCode = RandString(6) // random user invite_code hash
+	u.CreatedAt = GetTimeUTCPointer()
 
 	return nil
 }
