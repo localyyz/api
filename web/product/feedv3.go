@@ -15,36 +15,9 @@ import (
 	db "upper.io/db.v3"
 )
 
-type feedType string
-
-type Preference struct {
-	Style      string `json:"style"`
-	Gender     string `json:"gender"`
-	Pricing    string `json:"pricing"`
-	categoryID int64  `json:"-"`
-}
-
-type feedRow struct {
-	Preference
-	Type      feedType          `json:"type"`
-	Title     string            `json:"title"`
-	Category  *data.Category    `json:"category"`
-	Ordering  int               `json:"ordering"`
-	Products  []render.Renderer `json:"products"`
-	FetchPath string            `json:"fetchPath"`
-	Order     int               `json:"order,omitempty"`
-}
-
 var (
 	MaxRowNum    = 14
 	MaxFavRowNum = 3
-)
-
-const (
-	FeedTypeFavourite = "favourite"
-	FeedTypeRelated   = "related"
-	FeedTypeRecommend = "recommend"
-	FeedTypeSale      = "sale"
 )
 
 func ListFeedV3Products(w http.ResponseWriter, r *http.Request) {
@@ -137,14 +110,14 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		rows          []feedRow
-		onSaleRow     feedRow
-		favouritesRow = feedRow{
+		rows          []*data.Feed
+		onSaleRow     *data.Feed
+		favouritesRow = &data.Feed{
 			Title:     "Your favourite products",
 			FetchPath: "products/favourite",
-			Products:  []render.Renderer{},
-			Type:      FeedTypeFavourite,
+			Type:      data.FeedTypeFavourite,
 			Order:     2,
+			Products:  []*data.Product{},
 		}
 	)
 
@@ -164,9 +137,9 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 		var products []*data.Product
 		query.All(&products)
 		if len(products) > 0 {
-			onSaleRow = feedRow{
+			onSaleRow = &data.Feed{
 				Title:     "Products on sale you may like.",
-				Products:  presenter.NewProductList(ctx, products),
+				Products:  products,
 				FetchPath: "products/feedv3/onsale",
 				Order:     1,
 			}
@@ -188,7 +161,7 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 				Limit(10).
 				All(&products)
 
-			favouritesRow.Products = presenter.NewProductList(ctx, products)
+			favouritesRow.Products = products
 
 			for i, product := range products {
 				if i > MaxFavRowNum {
@@ -215,10 +188,10 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 
 				if len(related) > 0 {
 					rows = append(rows,
-						feedRow{
+						&data.Feed{
 							Title:     product.Title,
-							Type:      FeedTypeRelated,
-							Products:  presenter.NewProductList(ctx, related),
+							Type:      data.FeedTypeRelated,
+							Products:  related,
 							FetchPath: fmt.Sprintf("products/%d/related", product.ID),
 						})
 				}
@@ -226,7 +199,7 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var preferences []Preference
+	var preferences []data.Preference
 	// make a matrix of user preferences
 	for _, gd := range user.Preference.Gender {
 		var categoryIDs []int64
@@ -274,11 +247,11 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 			for _, st := range user.Preference.Styles {
 				for _, cID := range categoryIDs {
 					// for every style
-					p := Preference{
+					p := data.Preference{
 						Gender:     gd,
 						Pricing:    pr,
 						Style:      st,
-						categoryID: cID,
+						CategoryID: cID,
 					}
 					preferences = append(preferences, p)
 				}
@@ -301,7 +274,7 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// we've already selected the same category
-		if selectedCategorySet.Has(prf.categoryID) {
+		if selectedCategorySet.Has(prf.CategoryID) {
 			continue
 		}
 
@@ -355,7 +328,7 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 			cond["price"] = db.Gte(150)
 		}
 
-		category, _ := data.DB.Category.FindByID(prf.categoryID)
+		category, _ := data.DB.Category.FindByID(prf.CategoryID)
 		descendantIDs, _ := data.DB.Category.FindDescendantIDs(category.ID)
 		catCond := db.And(
 			cond,
@@ -380,13 +353,13 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		selectedCategorySet.Add(prf.categoryID)
-		rows = append(rows, feedRow{
+		selectedCategorySet.Add(prf.CategoryID)
+		rows = append(rows, &data.Feed{
 			Preference: prf,
 			Category:   category,
-			Type:       FeedTypeRecommend,
+			Type:       data.FeedTypeRecommend,
 			FetchPath:  "/products/feedv3/products",
-			Products:   presenter.NewProductList(ctx, products),
+			Products:   products,
 		})
 
 		// sale cat cond
@@ -399,12 +372,12 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 			All(&saleProducts)
 
 		if len(saleProducts) == 5 {
-			rows = append(rows, feedRow{
+			rows = append(rows, &data.Feed{
 				Preference: prf,
 				Category:   category,
-				Type:       FeedTypeSale,
+				Type:       data.FeedTypeSale,
 				FetchPath:  "/products/feedv3/products",
-				Products:   presenter.NewProductList(ctx, saleProducts),
+				Products:   saleProducts,
 			})
 		}
 
@@ -416,10 +389,13 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 		j := rand.Intn(i + 1)
 		rows[i], rows[j] = rows[j], rows[i]
 	}
-	rows = append([]feedRow{favouritesRow}, rows...)
+	rows = append([]*data.Feed{favouritesRow}, rows...)
 	if len(onSaleRow.Products) != 0 {
-		rows = append([]feedRow{onSaleRow}, rows...)
+		rows = append([]*data.Feed{onSaleRow}, rows...)
 	}
 
-	render.Respond(w, r, rows)
+	presented := presenter.NewFeedList(ctx, rows)
+	if err := render.RenderList(w, r, presented); err != nil {
+		render.Respond(w, r, err)
+	}
 }
