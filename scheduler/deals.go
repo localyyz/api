@@ -23,11 +23,11 @@ func (h *Handler) ScheduleDeals() {
 	h.wg.Add(1)
 	defer h.wg.Done()
 
-	s := time.Now()
-	lg.Info("job_schedule_deals running...")
-	defer func() {
-		lg.Infof("job_schedule_deals finished in %s", time.Since(s))
-	}()
+	//s := time.Now()
+	//lg.Debugf("job_schedule_deals running...")
+	//defer func() {
+	//lg.Debugf("job_schedule_deals finished in %s", time.Since(s))
+	//}()
 
 	// expire deals
 	h.DB.Exec(`UPDATE deals SET status = 2 WHERE NOW() at time zone 'utc' > end_at and status = 3`)
@@ -80,7 +80,7 @@ func (h *Handler) CreateDealOfTheDay() {
 		OrderBy(db.Raw("random() * id")).
 		One(&productFemale)
 	if err != nil {
-		lg.Alert("Failed to get female product for automated deal of the day")
+		lg.Alertf("dotd fetch female product %+v", err)
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h *Handler) CreateDealOfTheDay() {
 		OrderBy(db.Raw("random() * id")).
 		One(&productMale)
 	if err != nil {
-		lg.Alert("Failed to get male product for automated deal of the day")
+		lg.Alertf("dotd fetch male product %+v", err)
 		return
 	}
 
