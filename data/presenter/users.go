@@ -3,6 +3,7 @@ package presenter
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 )
@@ -10,8 +11,13 @@ import (
 type User struct {
 	*data.User
 
-	Addresses []*data.UserAddress `json:"addresses"`
+	Addresses   []*data.UserAddress `json:"addresses"`
+	AutoOnboard bool                `json:"autoOnboard"`
 }
+
+const (
+	MaxOnboardPromptDuration = 120 * time.Second
+)
 
 func NewUser(ctx context.Context, user *data.User) *User {
 	u := &User{
@@ -22,6 +28,8 @@ func NewUser(ctx context.Context, user *data.User) *User {
 	if dbAddresses, _ := data.DB.UserAddress.FindByUserID(user.ID); dbAddresses != nil {
 		u.Addresses = dbAddresses
 	}
+
+	u.AutoOnboard = user.Etc.AutoOnboard && time.Since(*user.CreatedAt) < MaxOnboardPromptDuration
 
 	return u
 }
