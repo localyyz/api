@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/pkg/errors"
@@ -67,8 +68,9 @@ type UserEtc struct {
 	FirstName string     `json:"firstName"`
 	Gender    UserGender `json:"gender"`
 	// OneSignal player id
-	OSPlayerID string `json:"osId"`
-	InvitedBy  int64  `json:"invitedBy"`
+	OSPlayerID  string `json:"osId"`
+	InvitedBy   int64  `json:"invitedBy"`
+	AutoOnboard bool   `json:"autoOnboard"`
 
 	*postgresql.JSONBConverter
 }
@@ -96,6 +98,12 @@ func (u *User) BeforeCreate(bond.Session) error {
 	//TODO: unlikely event of conflict, do something
 	u.InviteCode = RandString(6) // random user invite_code hash
 	u.CreatedAt = GetTimeUTCPointer()
+
+	// random integer between 0-100
+	if i := rand.Intn(100); i < 50 {
+		// segment the user into auto onboard
+		u.Etc.AutoOnboard = true
+	}
 
 	return nil
 }
