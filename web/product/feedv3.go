@@ -110,8 +110,10 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		rows          []*data.Feed
-		onSaleRow     *data.Feed
+		rows      []*data.Feed
+		onSaleRow = &data.Feed{
+			Products: []*data.Product{},
+		}
 		favouritesRow = &data.Feed{
 			Title:     "Your favourite products",
 			FetchPath: "products/favourite",
