@@ -29,7 +29,8 @@ func NewUser(ctx context.Context, user *data.User) *User {
 		u.Addresses = dbAddresses
 	}
 
-	u.AutoOnboard = user.Etc.AutoOnboard && time.Since(*user.CreatedAt) < MaxOnboardPromptDuration
+	// should the user be auto prompted with personalization question
+	u.AutoOnboard = user.Preference == nil && user.Etc.AutoOnboard && time.Since(*user.CreatedAt) < MaxOnboardPromptDuration
 
 	return u
 }
