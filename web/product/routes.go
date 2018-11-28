@@ -10,13 +10,11 @@ import (
 func Routes() chi.Router {
 
 	r := api.WithFilterRoutes(ListProducts)
-	r.Route("/feed", api.FilterRoutes(ListRandomProduct))
-	r.Route("/feedv2", api.FilterRoutes(ListFeedProduct))
 	r.Route("/feedv3", func(r chi.Router) {
 		r.Use(api.FilterSortCtx)
 		r.Get("/", ListFeedV3)
-		r.Get("/onsale", ListFeedV3Onsale)
-		r.Get("/products", ListFeedV3Products)
+		r.Route("/onsale", api.FilterRoutes(ListFeedV3Onsale))
+		r.Route("/products", api.FilterRoutes(ListFeedV3Products))
 	})
 
 	r.Get("/trend", ListTrending)
