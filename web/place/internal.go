@@ -13,8 +13,8 @@ type internalUpdateRequest struct {
 	ID          string           `json:"id"`
 	Status      data.PlaceStatus `json:"status"`
 	Gender      *data.Gender     `json:"gender"`
-	StyleFemale *data.PlaceStyle `json:"style_female"`
-	StyleMale   *data.PlaceStyle `json:"style_male"`
+	StyleFemale *data.PlaceStyle `json:"styleFemale"`
+	StyleMale   *data.PlaceStyle `json:"styleMale"`
 	Pricing     string           `json:"pricing"`
 }
 
@@ -70,8 +70,14 @@ func UpdateInternal(w http.ResponseWriter, r *http.Request) {
 	placeMeta.StyleFemale = payload.StyleFemale
 	placeMeta.Pricing = payload.Pricing
 
-	data.DB.Place.Save(place)
-	data.DB.PlaceMeta.Save(placeMeta)
+	if err := data.DB.Place.Save(place); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
+	if err := data.DB.PlaceMeta.Save(placeMeta); err != nil {
+		render.Respond(w, r, err)
+		return
+	}
 
 	render.Respond(w, r, "ok")
 }
