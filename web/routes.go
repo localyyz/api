@@ -109,6 +109,8 @@ func (h *Handler) Routes() chi.Router {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.SessionCtx)
 		r.Mount("/session", session.Routes())
+
+		r.Put("/places/internal", place.UpdateInternal)
 	})
 
 	return r

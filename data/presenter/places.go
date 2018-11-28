@@ -3,6 +3,7 @@ package presenter
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/go-chi/render"
@@ -70,4 +71,52 @@ func (pl *Place) Render(w http.ResponseWriter, r *http.Request) error {
 		pl.IsFeatured = true
 	}
 	return nil
+}
+
+// PlaceApproval is used to combine useful fields
+// to sent to Zapier and then synced to a google spread sheet
+type PlaceApproval struct {
+	ID        int64            `json:"id"`
+	Name      string           `json:"name"`
+	Status    data.PlaceStatus `json:"status"`
+	Plan      string           `json:"shopify_plan"`
+	Currency  string           `json:"currency"`
+	Website   string           `json:"website"`
+	CreatedAt time.Time        `json:"createdAt"`
+
+	PlanType      data.BillingPlanType `json:"subscription"`
+	BillingStatus data.BillingStatus   `json:"billing_status"`
+
+	Gender      *data.Gender     `json:"gender"`
+	StyleFemale *data.PlaceStyle `json:"style_female"`
+	StyleMale   *data.PlaceStyle `json:"style_male"`
+	Pricing     string           `json:"pricing"`
+}
+
+func NewPlaceApproval(place *data.Place) *PlaceApproval {
+	presented := &PlaceApproval{
+		ID:        place.ID,
+		Name:      place.Name,
+		Status:    place.Status,
+		Plan:      place.Plan,
+		Currency:  place.Currency,
+		Website:   place.Website,
+		CreatedAt: *place.CreatedAt,
+	}
+
+	if b, _ := data.DB.PlaceBilling.FindByPlaceID(place.ID); b != nil {
+		if plan, _ := data.DB.BillingPlan.FindByID(b.PlanID); plan != nil {
+			presented.PlanType = plan.PlanType
+			presented.BillingStatus = b.Status
+		}
+	}
+
+	if pm, _ := data.DB.PlaceMeta.FindByPlaceID(place.ID); pm != nil {
+		presented.Gender = pm.Gender
+		presented.StyleMale = pm.StyleMale
+		presented.StyleFemale = pm.StyleFemale
+		presented.Pricing = pm.Pricing
+	}
+
+	return presented
 }

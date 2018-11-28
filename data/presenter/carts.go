@@ -34,6 +34,8 @@ type Cart struct {
 	TotalPrice      int64                      `json:"totalPrice"`
 	TotalDiscount   int64                      `json:"totalDiscount"`
 
+	TransactionID string `json:"transactionId,omitempty"`
+
 	ctx context.Context
 }
 

@@ -32,6 +32,15 @@ func (b *PlaceMeta) CollectionName() string {
 	return `place_meta`
 }
 
+func (store *PlaceMetaStore) FindByPlaceID(ID int64) (*PlaceMeta, error) {
+	var placeMeta *PlaceMeta
+	err := store.Find(db.Cond{"place_id": ID}).One(&placeMeta)
+	if err != nil {
+		return nil, err
+	}
+	return placeMeta, nil
+}
+
 func (store *PlaceMetaStore) GetPlacesFromPreference(prf *UserPreference) ([]int64, error) {
 	if prf == nil {
 		return nil, ErrNoPreference
