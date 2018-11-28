@@ -38,6 +38,9 @@ func main() {
 	//[jwt]
 	token.SetupJWTAuth(conf.Jwt.Secret)
 
+	//[connect]
+	connect.Configure(conf.Connect)
+
 	graceful.AddSignal(syscall.SIGINT, syscall.SIGTERM)
 	graceful.Timeout(10 * time.Second) // Wait timeout for handlers to finish.
 	graceful.PreHook(func() {
@@ -54,8 +57,8 @@ func main() {
 	router := merchant.New(
 		&merchant.Handler{
 			Debug:       (conf.Environment == "development"),
-			SH:          connect.SetupShopify(conf.Connect.Shopify),
-			SL:          connect.SetupSlack(conf.Connect.Slack),
+			SH:          connect.SH,
+			SL:          connect.SL,
 			ApiURL:      conf.Api.ApiURL,
 			Environment: conf.Environment,
 		},

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/slack"
 	"github.com/go-chi/render"
@@ -43,6 +44,9 @@ func AcceptTOS(w http.ResponseWriter, r *http.Request) {
 			Color:      "0195ff",
 		},
 	)
+
+	// post merchant create to zapier for syncing to google sheets
+	connect.ZP.Post("merchant-create", presenter.NewPlaceApproval(place))
 
 	render.Respond(w, r, "success")
 	return

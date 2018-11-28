@@ -12,6 +12,10 @@ type SlackConfig struct {
 	Webhooks map[string]Config `toml:"webhooks"`
 }
 
+type ZapierConfig struct {
+	Webhooks map[string]Config `toml:"webhooks"`
+}
+
 type NatsConfig struct {
 	ServerURL   string                 `toml:"server_url"`
 	ClusterID   string                 `toml:"cluster_id"`
@@ -31,9 +35,11 @@ type Configs struct {
 	Shopify   Config         `toml:"shopify"`
 	Stripe    Config         `toml:"stripe"`
 	OneSignal Config         `toml:"onesignal"`
+	Google    Config         `toml:"google"`
 	Slack     SlackConfig    `toml:"slack"`
 	Nats      NatsConfig     `toml:"nats"`
 	Reporter  ReporterConfig `toml:"reporter"`
+	Zapier    ZapierConfig   `toml:"zapier"`
 }
 
 // Configure loads the connect configs from config file
@@ -45,4 +51,5 @@ func Configure(confs Configs) {
 	SetupNatsStream(confs.Nats)
 	SetupOneSignal(confs.OneSignal)
 	SetupReporter(confs.Reporter)
+	SetupZapier(confs.Zapier)
 }
