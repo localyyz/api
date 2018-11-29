@@ -10,7 +10,7 @@ import (
 )
 
 type internalUpdateRequest struct {
-	ID          string           `json:"id"`
+	ID          string           `json:"id"` // place id
 	Status      data.PlaceStatus `json:"status"`
 	Gender      *data.Gender     `json:"gender"`
 	StyleFemale *data.PlaceStyle `json:"styleFemale"`
@@ -61,11 +61,7 @@ func UpdateInternal(w http.ResponseWriter, r *http.Request) {
 		// ignore other status
 	}
 
-	if payload.Gender != nil &&
-		(*payload.Gender == data.GenderMale ||
-			*payload.Gender == data.GenderFemale) {
-		placeMeta.Gender = payload.Gender
-	}
+	placeMeta.Gender = payload.Gender
 	placeMeta.StyleMale = payload.StyleMale
 	placeMeta.StyleFemale = payload.StyleFemale
 	placeMeta.Pricing = payload.Pricing
