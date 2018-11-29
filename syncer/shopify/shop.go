@@ -5,6 +5,8 @@ import (
 	"net/url"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
+	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	lib "bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
@@ -76,13 +78,14 @@ func ShopHandler(r *http.Request) error {
 			return errors.Wrapf(err, "uninstall place(%d)", place.ID)
 		}
 
+		// post merchant create to zapier for syncing to google sheets
+		connect.ZP.Post("merchant-create", presenter.NewPlaceApproval(place))
 		lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
 	case lib.TopicShopUpdate:
 		if place.Status == data.PlaceStatusRejected {
 			// NOTE: place was rejected. ignore updates
 			return nil
 		}
-
 		if place.Plan != wrapper.PlanName {
 			lg.Alertf("webhook: place(%s) is now %s", place.Name, wrapper.PlanName)
 			place.Plan = wrapper.PlanName
@@ -101,7 +104,7 @@ func ShopHandler(r *http.Request) error {
 					}).
 					Exec()
 				if err != nil {
-					return errors.Wrapf(err, "update place(%d)", place.ID)
+					return errors.Wrapf(err, "update place(%s,%d)", place.Name, place.ID)
 				}
 			case "affiliate", "staff", "professional",
 				"custom", "shopify_plus", "unlimited",
@@ -117,7 +120,11 @@ func ShopHandler(r *http.Request) error {
 		place.Phone = wrapper.Phone
 		place.Currency = wrapper.Currency
 
-		data.DB.Place.Save(place)
+		if err := data.DB.Place.Save(place); err != nil {
+			return errors.Wrapf(err, "update place(%s,%d)", place.Name, place.ID)
+		}
+		// post merchant create to zapier for syncing to google sheets
+		connect.ZP.Post("merchant-create", presenter.NewPlaceApproval(place))
 	}
 	return nil
 }
