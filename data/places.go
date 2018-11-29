@@ -104,7 +104,7 @@ var (
 		"waitAgreement",
 		"waitApproval",
 		"active",
-		"notApproved",
+		"inactive",
 		"reviewing",
 		"selectplan",
 		"rejected",
