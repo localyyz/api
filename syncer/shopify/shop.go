@@ -76,6 +76,11 @@ func ShopHandler(r *http.Request) error {
 
 		lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
 	case lib.TopicShopUpdate:
+		if place.Status == data.PlaceStatusRejected {
+			// NOTE: place was rejected. ignore updates
+			return nil
+		}
+
 		if place.Plan != wrapper.PlanName {
 			lg.Alertf("webhook: place(%s) is now %s", place.Name, wrapper.PlanName)
 			place.Plan = wrapper.PlanName
