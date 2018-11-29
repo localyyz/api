@@ -79,7 +79,11 @@ func ShopHandler(r *http.Request) error {
 		if place.Plan != wrapper.PlanName {
 			lg.Alertf("webhook: place(%s) is now %s", place.Name, wrapper.PlanName)
 			place.Plan = wrapper.PlanName
-			if place.Plan == "dormant" {
+
+			// update the shop status according to the plan name
+			switch wrapper.PlanName {
+			case "dormant", "cancelled", "frozen",
+				"fraudulent", "enterprise", "starter":
 				place.Status = data.PlaceStatusInActive
 
 				// clean up the products. mark as pending
@@ -92,7 +96,13 @@ func ShopHandler(r *http.Request) error {
 				if err != nil {
 					return errors.Wrapf(err, "update place(%d)", place.ID)
 				}
-
+			case "affiliate", "staff", "professional",
+				"custom", "shopify_plus", "unlimited",
+				"basic", "staff_business", "trial",
+				"npo_lite", "npo_full", "business":
+				place.Status = data.PlaceStatusActive
+			default:
+				place.Status = data.PlaceStatusReviewing
 			}
 		}
 

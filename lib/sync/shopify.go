@@ -72,7 +72,6 @@ func ShopifyProductListingsUpdate(ctx context.Context) error {
 		//if product.Status == data.ProductStatusRejected && time.Since(*product.CreatedAt) > 24*time.Hour {
 		//return ErrProductRejected
 		//}
-
 		product.Status = data.ProductStatusProcessing
 		// lock product in as processing
 		if err := data.DB.Product.Save(product); err != nil {
