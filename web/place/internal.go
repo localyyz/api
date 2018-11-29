@@ -41,36 +41,36 @@ func UpdateInternal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	placeMeta, err := data.DB.PlaceMeta.FindByPlaceID(place.ID)
-	if err != nil {
-		if err != db.ErrNoMoreRows {
+	switch data.PlaceStatus(payload.Status) {
+	case data.PlaceStatusSelectPlan:
+		place.Status = payload.Status
+
+		placeMeta, err := data.DB.PlaceMeta.FindByPlaceID(place.ID)
+		if err != nil {
+			if err != db.ErrNoMoreRows {
+				render.Respond(w, r, err)
+				return
+			}
+			placeMeta = &data.PlaceMeta{
+				PlaceID: place.ID,
+			}
+		}
+		placeMeta.Gender = payload.Gender
+		placeMeta.StyleMale = payload.StyleMale
+		placeMeta.StyleFemale = payload.StyleFemale
+		placeMeta.Pricing = payload.Pricing
+		if err := data.DB.PlaceMeta.Save(placeMeta); err != nil {
 			render.Respond(w, r, err)
 			return
 		}
-		placeMeta = &data.PlaceMeta{
-			PlaceID: place.ID,
-		}
-	}
 
-	switch data.PlaceStatus(payload.Status) {
-	case data.PlaceStatusReviewing,
-		data.PlaceStatusSelectPlan,
-		data.PlaceStatusInActive:
+	case data.PlaceStatusRejected, data.PlaceStatusReviewing:
 		place.Status = payload.Status
 	default:
 		// ignore other status
 	}
 
-	placeMeta.Gender = payload.Gender
-	placeMeta.StyleMale = payload.StyleMale
-	placeMeta.StyleFemale = payload.StyleFemale
-	placeMeta.Pricing = payload.Pricing
-
 	if err := data.DB.Place.Save(place); err != nil {
-		render.Respond(w, r, err)
-		return
-	}
-	if err := data.DB.PlaceMeta.Save(placeMeta); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
