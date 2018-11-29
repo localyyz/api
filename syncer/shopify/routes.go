@@ -98,7 +98,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		lib.TopicProductListingsUpdate,
 		lib.TopicProductListingsRemove:
 		if err := ProductListingHandler(r); err != nil {
-			lg.Alertf("webhook: %s for place(%s) failed with %v", topic, place.Name, err)
+			lg.Warnf("webhook: %s for place(%s) failed with %v", topic, place.Name, err)
 			lg.SetEntryField(ctx, "error", err)
 			return
 		}
@@ -106,7 +106,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		lib.TopicCollectionListingsRemove,
 		lib.TopicCollectionListingsUpdate:
 		if err := CollectionListingHandler(r); err != nil {
-			lg.Alertf("webhook: %s for place(%s) failed with %v", topic, place.Name, err)
+			lg.Warnf("webhook: %s for place(%s) failed with %v", topic, place.Name, err)
 			lg.SetEntryField(ctx, "error", err)
 			return
 		}
