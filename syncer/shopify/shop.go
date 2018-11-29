@@ -8,6 +8,7 @@ import (
 	lib "bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"github.com/go-chi/render"
+	"github.com/pkg/errors"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
 )
@@ -60,7 +61,18 @@ func ShopHandler(r *http.Request) error {
 		data.DB.Place.Save(place)
 
 		// clean up products
-		data.DB.Product.Find(db.Cond{"place_id": place.ID}).Delete()
+		_, err = data.DB.Update("products").
+			Set(
+				db.Raw("status = ?", data.ProductStatusDeleted),
+				db.Raw("deleted_at = NOW()"),
+			).
+			Where(db.Cond{
+				"place_id": place.ID,
+			}).
+			Exec()
+		if err != nil {
+			return errors.Wrapf(err, "uninstall place(%d)", place.ID)
+		}
 
 		lg.Alertf("webhook: place(%s) uninstalled Localyyz", place.Name)
 	case lib.TopicShopUpdate:
@@ -69,7 +81,18 @@ func ShopHandler(r *http.Request) error {
 			place.Plan = wrapper.PlanName
 			if place.Plan == "dormant" {
 				place.Status = data.PlaceStatusInActive
-				// TODO: Should we clean up everything? probably
+
+				// clean up the products. mark as pending
+				_, err := data.DB.Update("products").
+					Set(db.Raw("status = ?", data.ProductStatusPending)).
+					Where(db.Cond{
+						"place_id": place.ID,
+					}).
+					Exec()
+				if err != nil {
+					return errors.Wrapf(err, "update place(%d)", place.ID)
+				}
+
 			}
 		}
 
