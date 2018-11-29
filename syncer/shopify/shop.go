@@ -56,9 +56,11 @@ func ShopHandler(r *http.Request) error {
 		// remove the credential
 		data.DB.ShopifyCred.Delete(cred)
 
-		// set place status to inactive
-		place.Status = data.PlaceStatusInActive
-		data.DB.Place.Save(place)
+		// set place status to "uninstalled"
+		place.Status = data.PlaceStatusUninstalled
+		if err := data.DB.Place.Save(place); err != nil {
+			return errors.Wrapf(err, "webhook: appUninstall place(%s,%d)", place.Name, place.ID)
+		}
 
 		// clean up products
 		_, err = data.DB.Update("products").

@@ -77,10 +77,11 @@ const (
 	PlaceStatusWaitAgreement                    // 1
 	PlaceStatusWaitApproval                     // 2
 	PlaceStatusActive                           // 3
-	PlaceStatusInActive                         // 4, closed/dormant/uninstalled
+	PlaceStatusInActive                         // 4, closed/dormant
 	PlaceStatusReviewing                        // 5, started review process
 	PlaceStatusSelectPlan                       // 6
 	PlaceStatusRejected                         // 7, rejected
+	PlaceStatusUninstalled                      // 8, uninstalled
 )
 
 // featured merchant cutoff
@@ -108,6 +109,7 @@ var (
 		"reviewing",
 		"selectplan",
 		"rejected",
+		"uninstalled",
 	}
 	planWeighting = map[string]int32{
 		"":         0,

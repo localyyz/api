@@ -111,7 +111,11 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case lib.TopicAppUninstalled, lib.TopicShopUpdate:
-		ShopHandler(r)
+		if err := ShopHandler(r); err != nil {
+			lg.Alertf("webhook: %s failed with %v", topic, err)
+			lg.SetEntryField(ctx, "error", err)
+			return
+		}
 	case lib.TopicCheckoutsUpdate:
 		CheckoutHandler(r)
 	default:
