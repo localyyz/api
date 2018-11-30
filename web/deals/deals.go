@@ -1,8 +1,9 @@
 package deals
 
 import (
-	"bitbucket.org/moodie-app/moodie-api/web/api"
 	"net/http"
+
+	"bitbucket.org/moodie-app/moodie-api/web/api"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -227,6 +228,15 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 			).
 			GroupBy("p.id").
 			OrderBy("p.created_at DESC")
+	} else {
+		query = data.DB.Select("p.*").
+			From("products p").
+			Where(
+				db.Cond{
+					"p.place_id": deal.MerchantID,
+					"p.status":   data.ProductStatusApproved,
+				}).
+			OrderBy("p.id DESC")
 	}
 	query = filterSort.UpdateQueryBuilder(query)
 
