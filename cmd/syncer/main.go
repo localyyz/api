@@ -44,6 +44,7 @@ func main() {
 	//[connect]
 	connect.SetupSlack(conf.Connect.Slack)
 	connect.SetupNatsStream(conf.Connect.Nats)
+	connect.SetupZapier(conf.Connect.Zapier)
 
 	// new web handler
 	h := syncer.New(db)
