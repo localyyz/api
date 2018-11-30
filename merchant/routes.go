@@ -12,7 +12,6 @@ import (
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/lib/token"
-	"bitbucket.org/moodie-app/moodie-api/merchant/approval"
 	"github.com/flosch/pongo2"
 	_ "github.com/flosch/pongo2-addons"
 	"github.com/go-chi/chi"
@@ -47,10 +46,6 @@ func New(h *Handler) chi.Router {
 		indexTmpl = pongo2.Must(pongo2.FromFile("/merchant/index.html"))
 	}
 
-	// initialize approval
-	// TODO: move this to TOOL
-	approval.Init(h.Environment)
-
 	r.Use(middleware.RealIP)
 	r.Use(middleware.NoCache)
 	r.Use(middleware.Logger)
@@ -80,9 +75,6 @@ func New(h *Handler) chi.Router {
 		r.Post("/tos", AcceptTOS)
 		r.Mount("/plan", planRoutes())
 	})
-
-	// TODO: move this to the TOOL
-	r.Mount("/approval", approval.Routes())
 
 	return r
 }

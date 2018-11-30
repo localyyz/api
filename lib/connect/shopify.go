@@ -301,15 +301,9 @@ func (s *Shopify) finalizeCallback(ctx context.Context, shopID string, creds *da
 			// NOTE: for now the id returned on checkout is stripe specific
 			place.PaymentMethods = append(place.PaymentMethods, &data.PaymentMethod{Type: "stripe", ID: checkout.ShopifyPaymentAccountID})
 		}
-		var merchantApproval *data.MerchantApproval
 		// save the place!
 		if err := data.DB.Place.Save(place); err != nil {
 			return errors.Wrap(err, "failed to save place")
-		}
-		// if merchant approval is not nil, save
-		if merchantApproval != nil {
-			merchantApproval.PlaceID = place.ID
-			data.DB.MerchantApproval.Save(merchantApproval)
 		}
 		// create the webhook
 		wh, _, err := sh.Webhook.Create(

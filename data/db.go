@@ -35,8 +35,6 @@ type Database struct {
 	ShippingZone     ShippingZoneStore
 	PriorityMerchant PriorityMerchantStore
 
-	MerchantApproval MerchantApprovalStore
-
 	Collection        CollectionStore
 	CollectionProduct CollectionProductStore
 
@@ -121,8 +119,6 @@ func NewDBSession(conf *DBConf) (*Database, error) {
 	db.PlaceMeta = PlaceMetaStore{db.Store(&PlaceMeta{})}
 	db.ShippingZone = ShippingZoneStore{db.Store(&ShippingZone{})}
 	db.PriorityMerchant = PriorityMerchantStore{db.Store(&PriorityMerchant{})}
-
-	db.MerchantApproval = MerchantApprovalStore{db.Store(&MerchantApproval{})}
 
 	db.Collection = CollectionStore{db.Store(&Collection{})}
 	db.CollectionProduct = CollectionProductStore{db.Store(&CollectionProduct{})}

@@ -113,11 +113,8 @@ type activePlace struct {
 	Status       data.PlaceStatus `json:"status"`
 	ProductCount uint64           `json:"productCount"`
 
-	PriceRange    data.MerchantApprovalPriceRange `json:"priceRange,omitempty"`
-	Category      data.MerchantApprovalCategory   `json:"category,omitempty"`
-	Collection    data.MerchantApprovalCollection `json:"collection,omitempty"`
-	PriceRules    []shopify.PriceRule             `json:"price_rules,omitempty"`
-	DateOnboarded time.Time                       `json:"dateOnboarded"`
+	PriceRules    []shopify.PriceRule `json:"price_rules,omitempty"`
+	DateOnboarded time.Time           `json:"dateOnboarded"`
 
 	FacebookURL  string           `json:"fb_url"`
 	InstagramURL string           `json:"insta_url"`
@@ -148,11 +145,6 @@ func ListActive(w http.ResponseWriter, r *http.Request) {
 					Ratings:       place.Ratings,
 					FacebookURL:   place.FacebookURL,
 					InstagramURL:  place.InstagramURL,
-				}
-				if approval, _ := data.DB.MerchantApproval.FindByPlaceID(cred.PlaceID); approval != nil {
-					a.PriceRange = approval.PriceRange
-					a.Category = approval.Category
-					a.Collection = approval.Collection
 				}
 				if place.Status == data.PlaceStatusActive {
 					client := shopify.NewClient(nil, cred.AccessToken)
@@ -272,37 +264,70 @@ func GetMerchantField() {
 	}
 }
 
-func GetShopifyPaymentMethods() {
-	cond := db.And(
-		db.Cond{"status": data.PlaceStatusActive},
-		db.Or(
-			db.Cond{"payment_methods": db.IsNull()},
-			db.Cond{"payment_methods": "null"},
-			db.Cond{"payment_methods": "[]"},
-		),
-	)
+func GetShopifyPaymentMethods(w http.ResponseWriter, r *http.Request) {
+	//cond := db.And(
+	//db.Cond{"status": data.PlaceStatusActive},
+	//db.Or(
+	//db.Cond{"payment_methods": db.IsNull()},
+	//db.Cond{"payment_methods": "null"},
+	//db.Cond{"payment_methods": "[]"},
+	//),
+	//)
 
 	var places []*data.Place
-	data.DB.Place.Find(cond).All(&places)
+	data.DB.Place.Find().OrderBy("id").All(&places)
 
+	type wrapper struct {
+		ID      int64         `json:"id"`
+		Name    string        `json:"name"`
+		Website string        `json:"website"`
+		Shop    *shopify.Shop `json:"shop"`
+		Error   string        `json:"error"`
+	}
+
+	var shops []wrapper
 	for _, p := range places {
-		cred, err := data.DB.ShopifyCred.FindByPlaceID(p.ID)
+		w := wrapper{ID: p.ID, Name: p.Name, Website: p.Website}
+
+		// first make an http call to see if we can get the status
+		// without calling the api
+		u := fmt.Sprintf("https://%s.myshopify.com", p.ShopifyID)
+		resp, err := http.Get(u)
 		if err != nil {
+			w.Error = err.Error()
+		}
+		if resp.StatusCode == http.StatusNotFound {
+			w.Error = "not found"
+		} else if resp.StatusCode == http.StatusPaymentRequired {
+			w.Error = "payment required"
+		} else if resp.StatusCode != http.StatusOK {
+			w.Error = resp.Status
+		}
+		if w.Error != "" {
+			shops = append(shops, w)
 			continue
 		}
-		client := shopify.NewClient(nil, cred.AccessToken)
-		client.BaseURL, _ = url.Parse(cred.ApiURL)
+		//client, err := connect.GetShopifyClient(p.ID)
+		//if err != nil {
+		//w.Error = "no credential"
+		//} else {
+		//shop, _, err := client.Shop.Get(context.Background())
+		//w.Error = err.Error()
+		//w.Shop = shop
+		//}
 
-		p.PaymentMethods = []*data.PaymentMethod{}
-		if checkout, _, _ := client.Checkout.Create(context.Background(), nil); checkout != nil && len(checkout.ShopifyPaymentAccountID) != 0 {
-			// NOTE: for now the id returned on checkout is stripe specific
-			p.PaymentMethods = append(p.PaymentMethods, &data.PaymentMethod{Type: "stripe", ID: checkout.ShopifyPaymentAccountID})
+		//p.PaymentMethods = []*data.PaymentMethod{}
+		//if checkout, _, _ := client.Checkout.Create(context.Background(), nil); checkout != nil && len(checkout.ShopifyPaymentAccountID) != 0 {
+		////NOTE: for now the id returned on checkout is stripe specific
+		//p.PaymentMethods = append(p.PaymentMethods, &data.PaymentMethod{Type: "stripe", ID: checkout.ShopifyPaymentAccountID})
 
-			log.Printf("found payment method for place %d, %s", p.ID, p.Name)
-			data.DB.Place.Save(p)
-		}
-		fmt.Printf(".")
+		//log.Printf("found payment method for place %d, %s", p.ID, p.Name)
+		//data.DB.Place.Save(p)
+		//}
+		//fmt.Printf(".")
 	}
+
+	render.Respond(w, r, shops)
 }
 
 func GetCheckoutStatus() {

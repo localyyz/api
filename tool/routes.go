@@ -56,6 +56,7 @@ func (h *Handler) Routes() chi.Router {
 
 	r.Post("/testdata", InsertTestPurchasableProduct)
 	r.Get("/products/score", syncProductImageScores)
+	r.Get("/test1", activeMerchantSync)
 
 	r.Get("/products/update", UpdateCategories)
 	r.Get("/products/count", GetMerchantProductCount)
@@ -63,6 +64,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/places/permissions", ListPermissions)
 	r.Get("/places/social", GetSocialMedia)
 	r.Get("/places/policies", GetPolicies)
+	r.Get("/places/payments", GetShopifyPaymentMethods)
 	r.Route("/places/{placeID}", func(r chi.Router) {
 		r.Use(PlaceCtx)
 		r.Use(func(next http.Handler) http.Handler {
