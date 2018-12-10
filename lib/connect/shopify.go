@@ -38,6 +38,8 @@ type Shopify struct {
 var (
 	SH     *Shopify
 	Scopes = []string{
+		"read_payment_gateways",
+		"read_orders",
 		"read_content",
 		"read_products",
 		"read_product_listings",

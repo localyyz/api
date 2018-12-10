@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/data/presenter"
 	"bitbucket.org/moodie-app/moodie-api/lib/connect"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"bitbucket.org/moodie-app/moodie-api/web/api"
@@ -124,13 +125,16 @@ func activateBilling(ctx context.Context) error {
 	connect.SL.Notify(
 		"store",
 		fmt.Sprintf(
-			"merchant(%d: %s) billing plan (%s) is now %v",
+			"merchant(%d: %s) billing plan (%d) is now %v",
 			place.ID,
 			place.Name,
-			shopifyBilling.Terms,
+			billing.PlanID,
 			billing.Status,
 		),
 	)
+	// post merchant create to zapier for syncing to google sheets the new
+	// billing status
+	connect.ZP.Post("merchant-create", presenter.NewPlaceApproval(place))
 	return nil
 }
 

@@ -79,7 +79,7 @@ const (
 	PlaceStatusActive                           // 3
 	PlaceStatusInActive                         // 4, closed/dormant
 	PlaceStatusReviewing                        // 5, started review process
-	PlaceStatusSelectPlan                       // 6
+	PlaceStatusSelectPlan                       // 6, waiting for merchant to select plan
 	PlaceStatusRejected                         // 7, rejected
 	PlaceStatusUninstalled                      // 8, uninstalled
 )
