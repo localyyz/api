@@ -7,12 +7,14 @@ import (
 )
 
 type PlaceMeta struct {
-	ID          int64       `db:"id,omitempty" json:"id"`
-	PlaceID     int64       `db:"place_id" json:"placeID"`
-	Gender      *Gender     `db:"gender,omitempty"`
-	StyleFemale *PlaceStyle `db:"style_female,omitempty"`
-	StyleMale   *PlaceStyle `db:"style_male,omitempty"`
-	Pricing     string      `db:"pricing"`
+	ID           int64       `db:"id,omitempty" json:"id"`
+	PlaceID      int64       `db:"place_id" json:"placeID"`
+	Gender       *Gender     `db:"gender,omitempty"`
+	StyleFemale  *PlaceStyle `db:"style_female,omitempty"`
+	StyleMale    *PlaceStyle `db:"style_male,omitempty"`
+	Pricing      string      `db:"pricing"`
+	FreeReturns  bool        `db:"free_returns"`
+	FreeShipping bool        `db:"free_ship"`
 }
 
 type Gender string
@@ -40,6 +42,14 @@ func (store *PlaceMetaStore) FindByPlaceID(ID int64) (*PlaceMeta, error) {
 		return nil, err
 	}
 	return placeMeta, nil
+}
+
+func (store *PlaceMetaStore) FindAll(cond db.Cond) ([]*PlaceMeta, error) {
+	var placeMetas []*PlaceMeta
+	if err := store.Find(cond).All(&placeMetas); err != nil {
+			return nil, err
+	}
+	return placeMetas, nil
 }
 
 func (store *PlaceMetaStore) GetPlacesFromPreference(prf *UserPreference) ([]int64, error) {
