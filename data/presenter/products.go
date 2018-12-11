@@ -2,6 +2,7 @@ package presenter
 
 import (
 	"context"
+	"github.com/pressly/lg"
 	"net/http"
 	"sort"
 
@@ -37,6 +38,7 @@ type Product struct {
 
 	IsFavourite     bool `json:"isFavourite"`
 	HasFreeShipping bool `json:"hasFreeShipping,omitempty"`
+	HasFreeReturn bool `json:"hasFreeReturn,omitempty"`
 
 	CreateAt  interface{} `json:"createdAt,omitempty"`
 	UpdatedAt interface{} `json:"updatedAt,omitempty"`
@@ -63,6 +65,8 @@ type PlaceCache map[int64]*data.Place
 type ImageCache map[int64][]*data.ProductImage
 type FavoriteCache map[int64]bool
 type ShippingZoneCache map[int64]bool
+type FreeShippingCache map[int64]bool
+type FreeReturnCache map[int64]bool
 
 const PlaceCacheCtxKey = "place.cache"
 
@@ -97,6 +101,20 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 		}
 	}
 	ctx = context.WithValue(ctx, PlaceCacheCtxKey, placeCache)
+
+	freeShippingCache := make(FreeShippingCache)
+	freeReturnCache := make(FreeReturnCache)
+
+	if metas, err := data.DB.PlaceMeta.FindAll(db.Cond{"place_id": set.IntSlice(placeIDset)}); metas != nil {
+		for _, m := range metas {
+			freeShippingCache[m.PlaceID] = m.FreeShipping
+			freeReturnCache[m.PlaceID] = m.FreeReturns
+		}
+	} else {
+		lg.Print("Failed to find meta data: ", err)
+	}
+	// look up place meta with all the place ids
+	// and iterate and set hasFreeShipping on Product
 
 	// fetch free shipping zones on merchant
 	zones, _ := data.DB.ShippingZone.FindAll(db.Cond{
@@ -162,6 +180,8 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	ctx = context.WithValue(ctx, "image.cache", imageCache)
 	ctx = context.WithValue(ctx, "favourite.cache", favouriteCache)
 	ctx = context.WithValue(ctx, "shippingzone.cache", zoneCache)
+	ctx = context.WithValue(ctx, "freeShip.cache", freeShippingCache)
+	ctx = context.WithValue(ctx, "freeReturn.cache", freeReturnCache)
 
 	for _, product := range products {
 		list = append(list, NewProduct(ctx, product))
@@ -278,14 +298,21 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 		}
 	}
 
-	if cache, _ := ctx.Value("shippingzone.cache").(ShippingZoneCache); cache != nil {
-		p.HasFreeShipping, _ = cache[p.PlaceID]
+	if cache, _ := ctx.Value("freeShip.cache").(FreeShippingCache); cache != nil {
+		lg.Print(cache[p.PlaceID])
+		p.HasFreeShipping = cache[p.PlaceID]
 	} else {
-		p.HasFreeShipping, _ = data.DB.ShippingZone.Find(db.Cond{
-			"place_id": p.PlaceID,
-			"type":     data.ShippingZoneTypeByPrice,
-			"price":    db.Eq(0),
-		}).Exists()
+		if meta, _ := data.DB.PlaceMeta.FindByPlaceID(product.PlaceID); meta != nil {
+			p.HasFreeShipping = meta.FreeShipping
+		}
+	}
+
+	if cache, _ := ctx.Value("freeReturn.cache").(FreeReturnCache); cache != nil {
+		p.HasFreeReturn = cache[p.PlaceID]
+	} else {
+		if meta, _ := data.DB.PlaceMeta.FindByPlaceID(product.PlaceID); meta != nil {
+			p.HasFreeReturn = meta.FreeReturns
+		}
 	}
 
 	p.ViewCount, _ = stash.GetProductViews(p.ID)
