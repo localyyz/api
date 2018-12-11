@@ -7,6 +7,7 @@ import (
 )
 
 type PlaceMeta struct {
+	ID           int64       `db:"id,omitempty" json:"id"`
 	PlaceID      int64       `db:"place_id" json:"placeID"`
 	Gender       *Gender     `db:"gender,omitempty"`
 	StyleFemale  *PlaceStyle `db:"style_female,omitempty"`

@@ -2,7 +2,6 @@ package presenter
 
 import (
 	"context"
-	"github.com/pressly/lg"
 	"net/http"
 	"sort"
 
@@ -102,19 +101,16 @@ func newProductList(ctx context.Context, products []*data.Product) []*Product {
 	}
 	ctx = context.WithValue(ctx, PlaceCacheCtxKey, placeCache)
 
+	//iterate and set hasFreeShipping on Product
 	freeShippingCache := make(FreeShippingCache)
 	freeReturnCache := make(FreeReturnCache)
 
-	if metas, err := data.DB.PlaceMeta.FindAll(db.Cond{"place_id": set.IntSlice(placeIDset)}); metas != nil {
+	if metas, _ := data.DB.PlaceMeta.FindAll(db.Cond{"place_id": set.IntSlice(placeIDset)}); metas != nil {
 		for _, m := range metas {
 			freeShippingCache[m.PlaceID] = m.FreeShipping
 			freeReturnCache[m.PlaceID] = m.FreeReturns
 		}
-	} else {
-		lg.Print("Failed to find meta data: ", err)
 	}
-	// look up place meta with all the place ids
-	// and iterate and set hasFreeShipping on Product
 
 	// fetch free shipping zones on merchant
 	zones, _ := data.DB.ShippingZone.FindAll(db.Cond{
@@ -299,7 +295,6 @@ func NewProduct(ctx context.Context, product *data.Product) *Product {
 	}
 
 	if cache, _ := ctx.Value("freeShip.cache").(FreeShippingCache); cache != nil {
-		lg.Print(cache[p.PlaceID])
 		p.HasFreeShipping = cache[p.PlaceID]
 	} else {
 		if meta, _ := data.DB.PlaceMeta.FindByPlaceID(product.PlaceID); meta != nil {
