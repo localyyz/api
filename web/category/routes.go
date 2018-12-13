@@ -10,6 +10,8 @@ func Routes() chi.Router {
 
 	// parse gender context
 	r.With(api.FilterSortCtx).With(CategoryRootCtx).Get("/", List)
+
+	// TODO: deprecate
 	r.With(discountCtx(0.1, 1)).Route("/10/products", api.FilterRoutes(ListDiscountProducts))
 	r.With(discountCtx(0.20, 0.49)).Route("/11/products", api.FilterRoutes(ListDiscountProducts))
 	r.With(discountCtx(0.50, 0.69)).Route("/12/products", api.FilterRoutes(ListDiscountProducts))

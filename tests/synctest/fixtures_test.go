@@ -25,7 +25,11 @@ type fixture struct {
 	// discount
 	discount []*shopify.ProductList
 
-	testStore *data.Place
+	// other tests, see comments
+	parse1 []*shopify.ProductList
+
+	testStore       *data.Place
+	testStoreFemale *data.Place
 
 	// collection sync test
 	collection *data.Collection
@@ -90,6 +94,13 @@ func (f *fixture) SetupData(t *testing.T) {
 		assert.NotEmpty(t, f.discount)
 	}
 
+	{ // product list parse testing 1 -> correct gender parsed from description
+		w := &wrapper{}
+		assert.NoError(t, json.Unmarshal(fixtures.ProductListingsParse1, &w))
+		f.parse1 = w.ProductListings
+		assert.NotEmpty(t, f.parse1)
+	}
+
 	// setup shop
 	f.testStore = &data.Place{
 		Name:   "best merchant",
@@ -97,6 +108,14 @@ func (f *fixture) SetupData(t *testing.T) {
 		Weight: int32(1),
 	}
 	assert.NoError(t, data.DB.Save(f.testStore))
+
+	// setup shop
+	f.testStoreFemale = &data.Place{
+		Name:   "best merchant female",
+		Gender: data.PlaceGenderFemale,
+		Weight: int32(1),
+	}
+	assert.NoError(t, data.DB.Save(f.testStoreFemale))
 
 	malePants := &data.Category{
 		ID:    1001,

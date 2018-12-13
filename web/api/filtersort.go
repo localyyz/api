@@ -34,6 +34,8 @@ type FilterSort struct {
 	ctx context.Context
 }
 
+const FilterDelim = "|"
+
 var (
 	SortParam   = `sort`
 	FilterParam = `filter`
@@ -139,7 +141,7 @@ func wrapFilterRoutes(r chi.Router, handlerFn http.HandlerFunc) {
 	r.With(WithFilterBy("lower(pv.etc->>'color')")).Handle("/colors", handlerFn)
 	r.With(WithFilterBy("lower(p.category->>'value')")).Handle("/subcategories", handlerFn)
 	r.With(WithFilterBy("lower(p.category->>'type')")).Handle("/categories", handlerFn)
-	r.With(WithFilterBy("to_char(round(p.price, -1), '999')")).Handle("/prices", handlerFn)
+	r.With(WithFilterBy("pv.price")).Handle("/prices", handlerFn)
 	r.With(WithFilterBy("lower(pl.name)")).Handle("/stores", handlerFn)
 }
 
@@ -192,7 +194,7 @@ func NewFilterSort(w http.ResponseWriter, r *http.Request) *FilterSort {
 			} else if strings.HasPrefix(p, "max") {
 				f.MaxValue = p[4:]
 			} else if strings.HasPrefix(p, "val") {
-				f.Value = p[4:]
+				f.Value = strings.TrimSpace(p[4:])
 			} else {
 				f.Type = p
 			}
@@ -226,7 +228,49 @@ func (o *FilterSort) HasFilter() bool {
 func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 	var rows *sql.Rows
 	var err error
-	if strings.Contains(o.filterBy.Raw(), "pv.") {
+	if strings.Contains(o.filterBy.Raw(), "pl.name") {
+		rows, err = data.DB.Select(o.filterBy).
+			From("places pl").
+			Where(
+				db.Raw(
+					"pl.id IN (?)",
+					o.selector.SetColumns(db.Raw("p.place_id")).
+						GroupBy("p.place_id").
+						OrderBy(nil),
+				),
+			).
+			Query()
+	} else if strings.Contains(o.filterBy.Raw(), "pv.price") {
+		row, err := data.DB.Select(
+			db.Raw("min(pv.price)"),
+			db.Raw("max(pv.price)"),
+		).
+			From("product_variants pv").
+			Where(
+				db.Raw(
+					"product_id IN (?)",
+					o.selector.
+						SetColumns("p.id").
+						OrderBy("p.score DESC").
+						Limit(100),
+				),
+				db.Cond{"pv.price": db.Gt(0)},
+			).
+			QueryRow()
+		if err != nil {
+			return []string{}, err
+		}
+
+		var min float64
+		var max float64
+		if err := row.Scan(&min, &max); err != nil {
+			return []string{}, err
+		}
+		return []string{
+			fmt.Sprintf("%d", int64(min)),
+			fmt.Sprintf("%d", int64(max)),
+		}, nil
+	} else if strings.Contains(o.filterBy.Raw(), "pv.") {
 		// TODO: really? best way? cache options on product_sizes / product_colors child table?
 		// some kind of quick look up that makes it easier to do this???
 		// get top 100 products from the selector
@@ -246,20 +290,6 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 			OrderBy(db.Raw("count(1) DESC")).
 			Limit(30).
 			Query()
-	} else if strings.Contains(o.filterBy.Raw(), "pl.name") {
-		rows, err = data.DB.Select(o.filterBy).
-			From("places pl").
-			Where(
-				db.Raw(
-					"pl.id IN (?)",
-					o.selector.SetColumns(db.Raw("p.place_id")).
-						GroupBy("p.place_id").
-						OrderBy(nil),
-				),
-			).
-			Query()
-	} else if o.filterBy.Raw() == "p.price" {
-		//
 	} else if o.selector != nil {
 		rows, err = o.selector.
 			SetColumns(o.filterBy).
@@ -303,6 +333,14 @@ func (o *FilterSort) GetValues(ctx context.Context) ([]string, error) {
 	return values, nil
 }
 
+func parseFilter(v interface{}) (s []string) {
+	vv, ok := v.(string)
+	if !ok || v == "" {
+		return
+	}
+	return strings.Split(strings.ToLower(vv), FilterDelim)
+}
+
 func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder.Selector {
 	if s := o.Sort; s != nil {
 		var orderBy string
@@ -327,29 +365,40 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 		// NOTE: this is to increase query performance. sorting by multiple
 		// values will dramatically slow down the query
 		switch f.Type {
-		case "brand":
-			fConds = append(fConds, db.Cond{
-				db.Raw("lower(p.brand)"): strings.ToLower(f.Value.(string)),
-			})
-		case "place_id":
+		case "brand", "brands":
+			// list of brands
+			if brands := parseFilter(f.Value); len(brands) > 0 {
+				fConds = append(fConds, db.Cond{
+					db.Raw("lower(p.brand)"): db.In(brands),
+				})
+			}
+		case "place_id", "place_ids":
 			fConds = append(fConds, db.Cond{"p.place_id": f.Value})
-		case "gender":
-			v := new(data.ProductGender)
-			if err := v.UnmarshalText([]byte(f.Value.(string))); err != nil {
-				continue
+		case "gender", "genders":
+			var genders []data.ProductGender
+			for _, g := range parseFilter(f.Value) {
+				v := new(data.ProductGender)
+				if err := v.UnmarshalText([]byte(g)); err != nil {
+					continue
+				}
+				if *v != data.ProductGenderUnisex {
+					genders = append(genders, *v)
+				}
 			}
-			// skip if unisex
-			if *v != data.ProductGenderUnisex {
-				fConds = append(fConds, db.Cond{"p.gender": []data.ProductGender{*v, data.ProductGenderUnisex}})
+			lg.Warn(genders)
+			if len(genders) > 0 {
+				fConds = append(fConds, db.Cond{"p.gender": genders})
 			}
-		case "categoryType":
+		case "categoryType", "categoryTypes":
 			fConds = append(fConds, db.Cond{
 				db.Raw("lower(p.category->>'type')"): strings.ToLower(f.Value.(string)),
 			})
-		case "categoryValue":
-			fConds = append(fConds, db.Cond{
-				db.Raw("lower(p.category->>'value')"): strings.ToLower(f.Value.(string)),
-			})
+		case "categoryValue", "categoryValues":
+			if vals := parseFilter(f.Value); len(vals) > 0 {
+				fConds = append(fConds, db.Cond{
+					db.Raw("lower(p.category->>'value')"): vals,
+				})
+			}
 		case "categories":
 			var ancIDs []int64
 			if err := json.Unmarshal([]byte(f.Value.(string)), &ancIDs); err == nil {
@@ -365,36 +414,42 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 					})
 				}
 			}
-		case "size":
+		case "size", "sizes":
 			// TODO: clean this up? is there a better way?
-			sizeSelector := data.DB.
-				Select("pv.product_id").
-				From("product_variants pv").
-				Where(db.Cond{
-					db.Raw("lower(pv.etc->>'size')"): strings.ToLower(f.Value.(string)),
-				})
-			selector = selector.Where(db.Cond{"p.id IN": sizeSelector})
-		case "color":
+			if sizes := parseFilter(f.Value); len(sizes) > 0 {
+				sizeSelector := data.DB.
+					Select("pv.product_id").
+					From("product_variants pv").
+					Where(db.Cond{
+						db.Raw("lower(pv.etc->>'size')"): db.In(sizes),
+					})
+				selector = selector.Where(db.Cond{"p.id IN": sizeSelector})
+			}
+		case "color", "colors":
 			// TODO: clean this up? is there a better way?
-			colorSelector := data.DB.
-				Select("pv.product_id").
-				From("product_variants pv").
-				Where(db.Cond{
-					db.Raw("lower(pv.etc->>'color')"): strings.ToLower(f.Value.(string)),
-				})
-			selector = selector.Where(db.Cond{"p.id IN": colorSelector})
-		case "merchant":
-			merchantSelector := data.DB.
-				Select("pl.id").
-				From("places pl").
-				Where(db.Cond{
-					db.Raw("lower(pl.name)"): strings.ToLower(f.Value.(string)),
-				})
-			selector = selector.Where(db.Cond{"p.place_id IN": merchantSelector})
-		case "discount":
+			if colors := parseFilter(f.Value); len(colors) > 0 {
+				colorSelector := data.DB.
+					Select("pv.product_id").
+					From("product_variants pv").
+					Where(db.Cond{
+						db.Raw("lower(pv.etc->>'color')"): colors,
+					})
+				selector = selector.Where(db.Cond{"p.id IN": colorSelector})
+			}
+		case "merchant", "merchants":
+			if merchants := parseFilter(f.Value); len(merchants) > 0 {
+				merchantSelector := data.DB.
+					Select("pl.id").
+					From("places pl").
+					Where(db.Cond{
+						db.Raw("lower(pl.name)"): db.In(merchants),
+					})
+				selector = selector.Where(db.Cond{"p.place_id IN": merchantSelector})
+			}
+		case "discount", "discounts":
 			minDiscountPct, _ := strconv.ParseFloat(f.MinValue.(string), 64)
 			fConds = append(fConds, db.Cond{"p.discount_pct": db.Gte(minDiscountPct / 100.0)})
-		case "price":
+		case "price", "prices":
 			if f.MinValue != nil {
 				min, _ := strconv.ParseFloat(f.MinValue.(string), 64)
 				fConds = append(fConds, db.Cond{"p.price": db.Gte(min)})
@@ -403,7 +458,7 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 				max, _ := strconv.ParseFloat(f.MaxValue.(string), 64)
 				fConds = append(fConds, db.Cond{"p.price": db.Lte(max)})
 			}
-		case "score":
+		case "score", "scores":
 			if f.MinValue != nil {
 				min, _ := strconv.Atoi(f.MinValue.(string))
 				fConds = append(fConds, db.Cond{"p.score": db.Gte(min)})

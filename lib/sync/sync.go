@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
+	"bitbucket.org/moodie-app/moodie-api/lib/htmlx"
 	"bitbucket.org/moodie-app/moodie-api/lib/shopify"
 	"github.com/pressly/lg"
 	db "upper.io/db.v3"
@@ -47,7 +48,7 @@ func (s *productSyncer) Sync(sy *shopify.ProductList) error {
 			// inform caller that we're done
 			defer func() { s.listener <- 1 }()
 		}
-		if err := s.SyncCategories(sy.Title, sy.Tags, sy.ProductType, sy.Handle); err != nil {
+		if err := s.SyncCategories(sy.Title, sy.Tags, sy.ProductType, sy.Handle, sy.BodyHTML); err != nil {
 			lg.Warnf("shopify sync categories: %v", err)
 			return
 		}
@@ -75,12 +76,12 @@ func (s *productSyncer) Sync(sy *shopify.ProductList) error {
 func (s *productSyncer) Retry() {
 }
 
-func (s *productSyncer) SyncCategories(title, tags, productType, handle string) error {
+func (s *productSyncer) SyncCategories(title, tags, productType, handle, description string) error {
 	catSync := &shopifyCategorySyncer{
 		product: s.product,
 		place:   s.place,
 	}
-	if err := catSync.Sync(title, tags, productType, handle); err != nil {
+	if err := catSync.Sync(title, tags, productType, handle, htmlx.StripTags(description)); err != nil {
 		if err == ErrBlacklisted {
 			// rejected. product category is blacklisted
 			if err := s.FinalizeStatus(data.ProductStatusRejected); err != nil {

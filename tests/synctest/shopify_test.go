@@ -312,7 +312,6 @@ func (suite *SyncTestSuite) TestSyncProductListingDiscount() {
 			suite.EqualValues(atof(variantMap[v.OfferID].CompareAtPrice), v.PrevPrice)
 		}
 	}
-
 }
 
 func atof(a string) float64 {
