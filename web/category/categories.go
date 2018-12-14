@@ -68,94 +68,17 @@ func CategoryRootCtx(next http.Handler) http.Handler {
 
 func List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	var (
-		categories []*data.Category
-		err        error
-	)
-	if root, ok := ctx.Value("category").(*data.Category); ok {
-		// NOTE/TODO: this is for backwards compatibility.
-		// check if a root node is found
-		// frontend is querying via FilterSort params
-		// ie: /categories?filter=gender,val=man
-		categories, err = data.DB.Category.FindDescendants(root.ID)
-	} else {
-		err = data.DB.Category.
-			Find().
-			OrderBy("id").
-			All(&categories)
-	}
-	if err != nil {
+
+	var categories []*data.Category
+	if err := data.DB.Category.
+		Find().
+		OrderBy("id").
+		All(&categories); err != nil {
 		render.Respond(w, r, err)
 		return
 	}
 
 	presented := presenter.NewCategoryList(ctx, categories)
-	presented = append(presented, []render.Renderer{
-		&presenter.Node{
-			Category: &data.Category{
-				ID:    10,
-				Label: "Sales",
-				Value: "sales",
-			},
-			Values: []*presenter.Node{
-				{
-					Category: &data.Category{
-						ID:       13,
-						Label:    "70% OFF",
-						Value:    "70%+ OFF",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/70.png?17957505310432019141",
-					},
-				},
-				{
-					Category: &data.Category{
-						ID:       12,
-						Label:    "50%-70% OFF",
-						Value:    "50%-70% OFF",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/50.png?5115785919598170614",
-					},
-				},
-				{
-					Category: &data.Category{
-						ID:       11,
-						Value:    "20% OFF",
-						Label:    "20%-50% OFF",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0052/8731/3526/files/20.png?14969378164451378728",
-					},
-				},
-			},
-		},
-		&presenter.Node{
-			Category: &data.Category{
-				ID:    20,
-				Value: "collections",
-				Label: "Collections",
-			},
-			Values: []*presenter.Node{
-				{
-					Category: &data.Category{
-						ID:       21,
-						Label:    "Under $50",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0835/3729/products/Oversized_Hoodies_-4_eda921cf-882d-479f-8d07-ed1c070b0a0a.jpg",
-					},
-				},
-				{
-					Category: &data.Category{
-						ID:       22,
-						Label:    "$50 - $200",
-						ImageURL: "https://cdn.shopify.com/s/files/1/1066/9348/products/UNG85206_red_0.jpg",
-					},
-				},
-				{
-					Category: &data.Category{
-						ID:       23,
-						Label:    "$200 plus",
-						ImageURL: "https://cdn.shopify.com/s/files/1/0444/7969/products/mens-jackets-coats-hexagon-stitch-brother-jacket-1.jpg",
-					},
-				},
-			},
-		},
-	}...)
-
 	render.RenderList(w, r, presented)
 }
 

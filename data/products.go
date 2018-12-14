@@ -6,7 +6,6 @@ import (
 
 	"upper.io/bond"
 	db "upper.io/db.v3"
-	"upper.io/db.v3/postgresql"
 )
 
 type Product struct {
@@ -35,12 +34,6 @@ type Product struct {
 	CreatedAt *time.Time `db:"created_at,omitempty" json:"createdAt"`
 	UpdatedAt *time.Time `db:"updated_at,omitempty" json:"updatedAt"`
 	DeletedAt *time.Time `db:"deleted_at,omitempty" json:"deletedAt"`
-}
-
-type ProductCategory struct {
-	Type  ProductCategoryType `json:"type,omitempty"`
-	Value string              `json:"value,omitempty"`
-	*postgresql.JSONBConverter
 }
 
 var productStatuses = []string{
@@ -103,50 +96,6 @@ const (
 	ProductQueryWeightWithID = `ts_rank_cd(tsv, to_tsquery($$?$$), 32) + (ln(p.id)+p.score) / (4+ln(p.id)+p.score::float)`
 	ProductFuzzyWeight       = `CASE WHEN category != '{}' THEN 1 ELSE 0 END + ts_rank_cd(tsv, to_tsquery(?), 16) + (p.score / (4+p.score::float))`
 	ProductFuzzyWeightWithID = `CASE WHEN category != '{}' THEN 1 ELSE 0 END + ts_rank_cd(tsv, to_tsquery(?), 16) + ((ln(p.id)+p.score) / (4+ln(p.id)+p.score::float))`
-)
-
-type ProductCategoryType uint32
-
-const (
-	_                 ProductCategoryType = iota // 0
-	CategoryAccessory                            // 1
-	CategoryApparel                              // 2
-	CategoryHandbag                              // 3
-	CategoryJewelry                              // 4
-	CategoryShoe                                 // 5
-	CategoryCosmetic                             // 6
-	CategoryFragrance                            // 7
-	CategoryHome                                 // 8
-	CategoryBag                                  // 9
-	CategoryLingerie                             // 10
-	CategorySneaker                              // 11
-	CategorySwimwear                             // 12
-
-	// Special non DB category
-	CategorySale       // 13
-	CategoryNewIn      // 14
-	CategoryCollection // 15
-)
-
-var (
-	categoryTypes = []string{
-		"unknown",
-		"accessories",
-		"apparel",
-		"handbags",
-		"jewelry",
-		"shoes",
-		"cosmetics",
-		"fragrances",
-		"home",
-		"bags",
-		"lingerie",
-		"sneakers",
-		"swimwear",
-		"sales",
-		"newin",
-		"collections",
-	}
 )
 
 type ProductStore struct {
@@ -261,26 +210,4 @@ func (s *ProductStatus) UnmarshalText(text []byte) error {
 		}
 	}
 	return fmt.Errorf("unknown product status %s", enum)
-}
-
-// String returns the string value of the status.
-func (t ProductCategoryType) String() string {
-	return categoryTypes[t]
-}
-
-// MarshalText satisfies TextMarshaler
-func (t ProductCategoryType) MarshalText() ([]byte, error) {
-	return []byte(t.String()), nil
-}
-
-// UnmarshalText satisfies TextUnmarshaler
-func (t *ProductCategoryType) UnmarshalText(text []byte) error {
-	enum := string(text)
-	for i := 0; i < len(categoryTypes); i++ {
-		if enum == categoryTypes[i] {
-			*t = ProductCategoryType(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("unknown product category type %s", enum)
 }

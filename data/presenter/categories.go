@@ -71,15 +71,14 @@ func newCategoryList(categories []*data.Category) []*Node {
 		//
 		// ie-> id is BETWEEN cache[key].Left AND cache[key].Right then
 		// it is a >child< of said cache[key]
-		//
 		var parent *Node
 		for _, v := range cache {
-			// check if v could be 'a' parent
-			if v.Left < c.ID && v.Right > c.ID {
+			// check if 'v' could be a parent (c.ID is between v.Left and [v.Right])
+			if v.Left < c.ID && v.Right >= c.ID {
 				if parent == nil {
 					// starting value is the first valid value
 					parent = v
-				} else if parent.Left < v.ID && parent.Right > v.ID {
+				} else if parent.Left < v.ID && parent.Right >= v.ID {
 					// check if this is the nearest parent found
 					parent = v
 				}

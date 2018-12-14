@@ -64,6 +64,15 @@ func UpdateInternal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if payload.Gender != nil {
+			if *payload.Gender == data.GenderMale {
+				place.Gender = data.PlaceGenderMale
+			}
+			if *payload.Gender == data.GenderFemale {
+				place.Gender = data.PlaceGenderFemale
+			}
+		}
+
 	case data.PlaceStatusRejected, data.PlaceStatusReviewing:
 		place.Status = payload.Status
 	default:

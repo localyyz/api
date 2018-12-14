@@ -113,6 +113,8 @@ type parser struct {
 
 	whitelist whitelist
 	blacklist blacklist
+
+	ctx context.Context
 }
 
 // filter tags for categories
@@ -164,6 +166,7 @@ func (p *parser) parseCategory(tokens []string) {
 // filter tags for genders
 func (p *parser) parseGender(tokens []string) {
 	if p.gender != data.ProductGenderUnisex {
+		// if we've found some hint. continue
 		return
 	}
 
@@ -196,13 +199,12 @@ func (p *parser) parseGender(tokens []string) {
 }
 
 func newParser(ctx context.Context) *parser {
-	place := ctx.Value("sync.place").(*data.Place)
 	return &parser{
-		// assuming place Gender is (at least) Unisex
-		gender:     data.ProductGender(place.Gender),
+		gender:     data.ProductGenderUnisex,
 		categories: map[string]data.Whitelist{},
 		whitelist:  whitelistCache,
 		blacklist:  blacklistCache,
+		ctx:        ctx,
 	}
 }
 
@@ -233,6 +235,11 @@ func (p *parser) searchWhiteList(inputs ...string) data.Whitelist {
 		tokens := p.tokenize(s)
 		p.parseGender(tokens)
 		p.parseCategory(tokens)
+	}
+
+	if p.gender == data.ProductGenderUnisex {
+		place := p.ctx.Value("sync.place").(*data.Place)
+		p.gender = data.ProductGender(place.Gender)
 	}
 
 	var aggregates aggregateCategory
