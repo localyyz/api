@@ -469,7 +469,7 @@ func (o *FilterSort) UpdateQueryBuilder(selector sqlbuilder.Selector) sqlbuilder
 				continue
 			}
 			user, ok := o.ctx.Value("session.user").(*data.User)
-			if !ok {
+			if !ok || user.Preference == nil {
 				continue
 			}
 			userPref := *user.Preference
