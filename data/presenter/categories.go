@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"sort"
-	"strconv"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"github.com/go-chi/render"
@@ -16,10 +15,6 @@ type Node struct {
 
 	// parent node
 	parent *Node
-
-	// backwards compatible fields below
-	Type  string `json:"type"`
-	Title string `json:"title"`
 }
 
 type sortedCategory []*Node
@@ -29,12 +24,6 @@ func (a sortedCategory) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a sortedCategory) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
 func (n *Node) Render(w http.ResponseWriter, r *http.Request) error {
-	if len(n.Type) == 0 {
-		n.Type = strconv.FormatInt(n.ID, 10)
-	}
-	if len(n.Title) == 0 {
-		n.Title = n.Label
-	}
 	if n.Values == nil {
 		n.Values = make([]*Node, 0)
 	}

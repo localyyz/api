@@ -104,7 +104,6 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	for _, d := range descendents {
 		categoryIDs = append(categoryIDs, d.ID)
 	}
-
 	cond := db.Cond{
 		"p.status":      data.ProductStatusApproved,
 		"p.deleted_at":  nil,
