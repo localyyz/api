@@ -18,6 +18,17 @@ import (
 var (
 	MaxRowNum    = 14
 	MaxFavRowNum = 3
+
+	IgnoreCategory = []string{
+		"bodysuit",
+		"boxer-brief",
+		"boxer-trunk",
+		"bra",
+		"deodorant",
+		"lingerie",
+		"loungewear",
+		"thong",
+	}
 )
 
 func ListFeedV3Products(w http.ResponseWriter, r *http.Request) {
@@ -65,11 +76,14 @@ func ListFeedV3Onsale(w http.ResponseWriter, r *http.Request) {
 	filterSort := ctx.Value("filter.sort").(*api.FilterSort)
 
 	preferedPlaceIDs, _ := data.DB.PlaceMeta.GetPlacesFromPreference(user.Preference)
+	preferedGender := user.GetPreferredGenders()
 	cond := db.Cond{
-		"p.status":       data.ProductStatusApproved,
-		"p.category_id":  db.IsNotNull(),
-		"p.discount_pct": db.Gte(0.5),
-		"p.place_id":     preferedPlaceIDs,
+		"p.status":                     data.ProductStatusApproved,
+		"p.category_id":                db.IsNotNull(),
+		"p.discount_pct":               db.Gte(0.5),
+		"p.place_id":                   preferedPlaceIDs,
+		"p.gender":                     preferedGender,
+		db.Raw("p.category->>'value'"): db.NotIn(IgnoreCategory),
 	}
 	query := data.DB.
 		Select("p.*").
@@ -128,11 +142,12 @@ func ListFeedV3(w http.ResponseWriter, r *http.Request) {
 	{ // all items on sale -> greater than 50%
 		query := data.DB.Product.
 			Find(db.Cond{
-				"status":       data.ProductStatusApproved,
-				"category_id":  db.IsNotNull(),
-				"discount_pct": db.Gte(0.5),
-				"place_id":     preferedPlaceIDs,
-				"gender":       preferedGender,
+				"status":                     data.ProductStatusApproved,
+				"category_id":                db.IsNotNull(),
+				"discount_pct":               db.Gte(0.5),
+				"place_id":                   preferedPlaceIDs,
+				"gender":                     preferedGender,
+				db.Raw("category->>'value'"): db.NotIn(IgnoreCategory),
 			}).
 			OrderBy(db.Raw("random()")).
 			Limit(10)

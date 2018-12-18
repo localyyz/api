@@ -47,7 +47,7 @@ func (store *PlaceMetaStore) FindByPlaceID(ID int64) (*PlaceMeta, error) {
 func (store *PlaceMetaStore) FindAll(cond db.Cond) ([]*PlaceMeta, error) {
 	var placeMetas []*PlaceMeta
 	if err := store.Find(cond).All(&placeMetas); err != nil {
-			return nil, err
+		return nil, err
 	}
 	return placeMetas, nil
 }
@@ -57,27 +57,26 @@ func (store *PlaceMetaStore) GetPlacesFromPreference(prf *UserPreference) ([]int
 		return nil, ErrNoPreference
 	}
 
-	styleCol := "style_female"
-	if prf.Gender[0] == "man" {
-		styleCol = "style_male"
+	cond := db.And(
+		db.Or(
+			db.Cond{"gender": prf.Gender},
+			db.Cond{"gender": db.IsNull()},
+		),
+	)
+
+	if len(prf.Pricings) > 0 {
+		cond.And(db.Cond{"pricing": prf.Pricings})
+	}
+	if len(prf.Styles) > 0 {
+		if prf.Gender[0] == "man" {
+			cond.And(db.Cond{"style_male": prf.Styles})
+		} else {
+			cond.And(db.Cond{"style_female": prf.Styles})
+		}
 	}
 
 	var meta []PlaceMeta
-	err := store.
-		Find(
-			db.And(
-				db.Or(
-					db.Cond{"gender": prf.Gender},
-					db.Cond{"gender": db.IsNull()},
-				),
-				db.Cond{
-					"pricing": prf.Pricings,
-					styleCol:  prf.Styles,
-				},
-			),
-		).
-		All(&meta)
-	if err != nil {
+	if err := store.Find(cond).All(&meta); err != nil {
 		return nil, err
 	}
 
