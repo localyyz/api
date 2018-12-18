@@ -37,7 +37,7 @@ type Product struct {
 
 	IsFavourite     bool `json:"isFavourite"`
 	HasFreeShipping bool `json:"hasFreeShipping,omitempty"`
-	HasFreeReturn bool `json:"hasFreeReturn,omitempty"`
+	HasFreeReturn   bool `json:"hasFreeReturn,omitempty"`
 
 	CreateAt  interface{} `json:"createdAt,omitempty"`
 	UpdatedAt interface{} `json:"updatedAt,omitempty"`

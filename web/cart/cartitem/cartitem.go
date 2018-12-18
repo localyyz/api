@@ -3,6 +3,7 @@ package cartitem
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	db "upper.io/db.v3"
 
@@ -33,6 +34,8 @@ func (c *CartItemRequest) Bind(r *http.Request) error {
 	if c.Quantity < 1 {
 		c.Quantity = 1
 	}
+	c.Color = strings.ToLower(c.Color)
+	c.Size = strings.ToLower(c.Size)
 	return nil
 }
 

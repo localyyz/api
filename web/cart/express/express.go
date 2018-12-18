@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"bitbucket.org/moodie-app/moodie-api/data"
 	"bitbucket.org/moodie-app/moodie-api/data/presenter"
@@ -28,6 +29,8 @@ type CartItemRequest struct {
 }
 
 func (c *CartItemRequest) Bind(r *http.Request) error {
+	c.Color = strings.ToLower(c.Color)
+	c.Size = strings.ToLower(c.Size)
 	return nil
 }
 
