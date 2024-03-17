@@ -5,10 +5,16 @@ config/tool.conf
 config/api.conf
 config/merchant.conf
 config/push.pem
+config/*.pem
+config/*.production.conf
+config/*.staging.conf
+config/*.pem
 tools/*/data
 .idea/
 dump.rdb
 scratch/*
+
+ca-Certificates.crt
 
 *~
 \#*\#
